@@ -9,10 +9,10 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate",
-    "db:migrate": "cd packages/db && pnpm prisma migrate dev",
-    "db:migrate:prod": "cd packages/db && pnpm prisma migrate deploy",
-    "db:studio": "cd packages/db && pnpm prisma studio",
-    "db:seed": "cd packages/db && pnpm tsx src/seed.ts",
+    "db:migrate": "pnpm --filter @pulse/db db:migrate",
+    "db:migrate:prod": "pnpm --filter @pulse/db db:migrate:prod",
+    "db:studio": "pnpm --filter @pulse/db db:studio",
+    "db:seed": "pnpm --filter @pulse/db db:seed",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore"
   },
   "devDependencies": {
