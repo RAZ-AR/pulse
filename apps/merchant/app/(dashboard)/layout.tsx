@@ -8,18 +8,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="ml-2 text-xs text-[#6B7280] font-medium uppercase tracking-wide">Merchant</span>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
-          <a href="/dashboard" className="flex items-center px-3 py-2 text-sm rounded-lg text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0F1115] transition-colors">
-            Dashboard
-          </a>
-          <a href="/dashboard/rewards" className="flex items-center px-3 py-2 text-sm rounded-lg text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0F1115] transition-colors">
-            Rewards
-          </a>
-          <a href="/dashboard/transactions" className="flex items-center px-3 py-2 text-sm rounded-lg text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0F1115] transition-colors">
-            Transactions
-          </a>
-          <a href="/dashboard/settings" className="flex items-center px-3 py-2 text-sm rounded-lg text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0F1115] transition-colors">
-            Settings
-          </a>
+          {[
+            { href: "/dashboard", label: "Dashboard" },
+            { href: "/dashboard/purchase", label: "New Purchase" },
+            { href: "/dashboard/redeem", label: "Redeem Reward" },
+            { href: "/dashboard/rewards", label: "Rewards" },
+            { href: "/dashboard/transactions", label: "Transactions" },
+            { href: "/dashboard/settings", label: "Settings" },
+          ].map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              className="flex items-center px-3 py-2 text-sm rounded-lg text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0F1115] transition-colors"
+            >
+              {label}
+            </a>
+          ))}
         </nav>
       </aside>
 

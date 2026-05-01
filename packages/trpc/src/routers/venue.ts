@@ -18,12 +18,12 @@ export const venueRouter = router({
     .query(async ({ ctx, input }) => {
       const venues = await ctx.db.venue.findMany({
         where: {
-          city: input.city ? { equals: input.city, mode: "insensitive" } : undefined,
-          category: input.category,
-          isPartner: input.isPartner,
+          ...(input.city ? { city: { equals: input.city, mode: "insensitive" } } : {}),
+          ...(input.category ? { category: input.category } : {}),
+          ...(input.isPartner !== undefined ? { isPartner: input.isPartner } : {}),
         },
         take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
+        ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
         orderBy: [{ isPartner: "desc" }, { pointsPerCurrency: "desc" }, { name: "asc" }],
         select: {
           id: true, name: true, category: true, city: true, country: true,
@@ -66,7 +66,7 @@ export const venueRouter = router({
       return ctx.db.venue.findMany({
         where: {
           name: { contains: input.query, mode: "insensitive" },
-          city: input.city ? { equals: input.city, mode: "insensitive" } : undefined,
+          ...(input.city ? { city: { equals: input.city, mode: "insensitive" } } : {}),
         },
         take: input.limit,
         select: {
@@ -94,7 +94,7 @@ export const venueRouter = router({
         where: {
           lat: { gte: box.minLat, lte: box.maxLat },
           lng: { gte: box.minLng, lte: box.maxLng },
-          isPartner: input.isPartner,
+          ...(input.isPartner !== undefined ? { isPartner: input.isPartner } : {}),
         },
         select: {
           id: true, name: true, category: true, city: true, address: true,
@@ -130,8 +130,8 @@ export const venueRouter = router({
         where: {
           isPartner: true,
           pointsPerCurrency: { not: null },
-          city: input.city ? { equals: input.city, mode: "insensitive" } : undefined,
-          category: input.category,
+          ...(input.city ? { city: { equals: input.city, mode: "insensitive" } } : {}),
+          ...(input.category ? { category: input.category } : {}),
         },
         orderBy: { pointsPerCurrency: "desc" }, // most generous first
         take: input.limit,

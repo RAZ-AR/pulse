@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
-import { router, protectedProcedure, publicProcedure } from "../trpc"
+import { router, protectedProcedure, publicProcedure, merchantProcedure } from "../trpc"
 import { REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
 
 export const userRouter = router({
@@ -74,12 +74,11 @@ export const userRouter = router({
           where: { id: ctx.userId },
           data: {
             name: input.name,
-            language: input.language,
+            ...(input.language !== undefined ? { language: input.language } : {}),
             onboardingDone: true,
-            deviceFingerprint: input.deviceFingerprint,
-            ...(referrerId && { referredById: referrerId }),
-            // Referral signup bonus: +50 earnedPoints for the new user
-            ...(referrerId && { earnedPoints: { increment: REFERRAL_SIGNUP_POINTS } }),
+            ...(input.deviceFingerprint !== undefined ? { deviceFingerprint: input.deviceFingerprint } : {}),
+            ...(referrerId ? { referredById: referrerId } : {}),
+            ...(referrerId ? { earnedPoints: { increment: REFERRAL_SIGNUP_POINTS } } : {}),
           },
           select: { id: true, earnedPoints: true, welcomePoints: true, referralCode: true },
         })
@@ -115,9 +114,15 @@ export const userRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const { name, homeCity, language, avatarUrl } = input
       return ctx.db.user.update({
         where: { id: ctx.userId },
-        data: input,
+        data: {
+          ...(name !== undefined ? { name } : {}),
+          ...(homeCity !== undefined ? { homeCity } : {}),
+          ...(language !== undefined ? { language } : {}),
+          ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+        },
         select: { id: true, name: true, homeCity: true, language: true, avatarUrl: true },
       })
     }),
@@ -136,6 +141,103 @@ export const userRouter = router({
       orderBy: { createdAt: "desc" },
     })
   }),
+
+  // Merchant: look up a user by their QR (userId) or referral code before purchase
+  lookupForMerchant: merchantProcedure
+    .input(
+      z.object({
+        userId: z.string().optional(),
+        referralCode: z.string().length(6).optional(),
+      }).refine((d) => d.userId ?? d.referralCode, {
+        message: "Provide userId or referralCode",
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findFirst({
+        where: input.userId
+          ? { id: input.userId }
+          : { referralCode: input.referralCode!.toUpperCase() },
+        select: {
+          id: true,
+          name: true,
+          earnedPoints: true,
+          welcomePoints: true,
+          currentStreak: true,
+        },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" })
+      return {
+        ...user,
+        totalPoints: user.earnedPoints + user.welcomePoints,
+      }
+    }),
+
+  // Profile stats — lifetime summary for the profile screen
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const [user, txCount, venueCount, redemptionCount] = await Promise.all([
+      ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: {
+          totalEarnedLifetime: true,
+          spentPoints: true,
+          currentStreak: true,
+          longestStreak: true,
+          referralCode: true,
+        },
+      }),
+      ctx.db.transaction.count({
+        where: { userId: ctx.userId, status: "VERIFIED" },
+      }),
+      ctx.db.transaction.findMany({
+        where: { userId: ctx.userId, venueId: { not: null }, status: "VERIFIED" },
+        select: { venueId: true },
+        distinct: ["venueId"],
+      }).then((rows) => rows.length),
+      ctx.db.redemption.count({
+        where: { userId: ctx.userId, status: "USED" },
+      }),
+    ])
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" })
+    return {
+      totalEarnedLifetime: user.totalEarnedLifetime,
+      spentPoints: user.spentPoints,
+      currentStreak: user.currentStreak,
+      longestStreak: user.longestStreak,
+      referralCode: user.referralCode,
+      transactionCount: txCount,
+      uniqueVenuesVisited: venueCount,
+      rewardsRedeemed: redemptionCount,
+    }
+  }),
+
+  // Redemption history for profile screen
+  myRedemptions: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+        cursor: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const redemptions = await ctx.db.redemption.findMany({
+        where: { userId: ctx.userId },
+        take: input.limit + 1,
+        ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
+        orderBy: { createdAt: "desc" },
+        include: {
+          reward: {
+            select: {
+              title: true,
+              pointsCost: true,
+              venue: { select: { id: true, name: true } },
+            },
+          },
+        },
+      })
+      let nextCursor: string | undefined
+      if (redemptions.length > input.limit) nextCursor = redemptions.pop()!.id
+      return { redemptions, nextCursor }
+    }),
 
   // Public: check if a referral code is valid (for onboarding UX)
   validateReferralCode: publicProcedure

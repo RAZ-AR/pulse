@@ -1,21 +1,21 @@
 import Anthropic from "@anthropic-ai/sdk"
 
-export type VerifyResult = {
-  isAuthentic: boolean
+export type CheckinVerifyResult = {
+  isValid: boolean
   confidence: number
   reason: string
 }
 
-const VERIFY_PROMPT = `Is this image a genuine receipt photo from a physical venue?
+const PROMPT = `Is this photo taken at a physical venue (café, restaurant, shop, or similar)?
 
 Check:
-1. Real photo — not a screenshot, not a digital render, not an edited image
-2. Actually a receipt or bill document (not just any paper)
-3. Not a photo of a screen showing a receipt (POS terminal, phone display)
-4. Not sourced from the internet (no watermarks, no image-search-style cropping)
+1. Photo shows an interior or exterior of a real brick-and-mortar venue
+2. Not a stock photo, screenshot, or image sourced from the internet
+3. Not a photo of a menu, receipt, or sign only — must show the actual space
+4. Not an obvious duplicate or edited version of a previously submitted photo
 
-Return ONLY this JSON (no other text):
-{"is_authentic": boolean, "confidence": 0.0_to_1.0, "reason": "one short sentence"}`
+Return ONLY this JSON:
+{"is_valid": boolean, "confidence": 0.0_to_1.0, "reason": "one short sentence"}`
 
 async function fetchAsBase64(url: string): Promise<{ data: string; mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" }> {
   const res = await fetch(url)
@@ -25,13 +25,13 @@ async function fetchAsBase64(url: string): Promise<{ data: string; mediaType: "i
   return { data: Buffer.from(buf).toString("base64"), mediaType }
 }
 
-export async function verifyReceiptPhoto(imageUrl: string): Promise<VerifyResult> {
+export async function verifyCheckinPhoto(photoUrl: string): Promise<CheckinVerifyResult> {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return { isAuthentic: true, confidence: 1, reason: "verification_skipped_no_key" }
+    return { isValid: true, confidence: 1, reason: "verification_skipped_no_key" }
   }
 
   const client = new Anthropic()
-  const img = await fetchAsBase64(imageUrl)
+  const img = await fetchAsBase64(photoUrl)
 
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
@@ -41,7 +41,7 @@ export async function verifyReceiptPhoto(imageUrl: string): Promise<VerifyResult
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
-          { type: "text", text: VERIFY_PROMPT },
+          { type: "text", text: PROMPT },
         ],
       },
     ],
@@ -50,12 +50,8 @@ export async function verifyReceiptPhoto(imageUrl: string): Promise<VerifyResult
   const block = message.content[0]
   if (block?.type !== "text") throw new Error("Unexpected Claude response type")
 
-  type Parsed = { is_authentic: boolean; confidence: number; reason: string }
+  type Parsed = { is_valid: boolean; confidence: number; reason: string }
   const parsed = JSON.parse(block.text) as Parsed
 
-  return {
-    isAuthentic: parsed.is_authentic,
-    confidence: parsed.confidence,
-    reason: parsed.reason,
-  }
+  return { isValid: parsed.is_valid, confidence: parsed.confidence, reason: parsed.reason }
 }

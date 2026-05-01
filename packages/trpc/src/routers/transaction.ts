@@ -1,16 +1,20 @@
 import { z } from "zod"
+import { Prisma } from "@pulse/db"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, merchantProcedure } from "../trpc"
 import { extractReceiptData, computeReceiptHash } from "../services/ocr"
 import { verifyReceiptPhoto } from "../services/receipt-verify"
-import { checkReceiptScanLimits } from "../services/rate-limit"
+import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
+import { trackSpend } from "../services/challenge-progress"
 import {
   SCAN_POINTS_PER_CURRENCY,
   RECEIPT_MAX_AGE_DAYS,
   RECEIPT_SUSPICIOUS_DAILY_COUNT,
   RECEIPT_MANUAL_REVIEW_THRESHOLD,
   OCR_CONFIDENCE_THRESHOLD,
+  calculatePartnerPoints,
   computeStreakUpdate,
+  REFERRAL_REWARD_POINTS,
 } from "@pulse/shared"
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -50,6 +54,15 @@ export const transactionRouter = router({
     .mutation(async ({ ctx, input }) => {
       // 1. Rate limiting (Redis; graceful if not configured)
       await checkReceiptScanLimits(ctx.userId)
+
+      // 1b. Image fingerprint dedup — same URL = same photo upload
+      const isDuplicateImage = await checkImageFingerprint(input.imageUrl)
+      if (isDuplicateImage) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This receipt photo has already been scanned.",
+        })
+      }
 
       // 2. Suspicious activity flag: check today's scan count
       const todayStart = new Date()
@@ -155,6 +168,9 @@ export const transactionRouter = router({
       // 1. Date validation
       validateReceiptDate(input.date)
 
+      // 1b. Per-vendor velocity (max 2 receipts/day per user per vendor)
+      await checkVendorVelocity(ctx.userId, input.vendor)
+
       // 2. Compute (or reuse) receipt hash
       const receiptHash =
         input.receiptHash ??
@@ -163,7 +179,7 @@ export const transactionRouter = router({
           total: input.amount,
           currency: input.currency,
           date: input.date,
-          receiptNumber: input.receiptNumber,
+          receiptNumber: input.receiptNumber ?? null,
         })
 
       // 3. Duplicate check (unique index enforces this at DB level too)
@@ -223,7 +239,7 @@ export const transactionRouter = router({
             pointsEarned: totalPoints,
             receiptImageUrl: input.imageUrl,
             receiptHash,
-            ocrRawData: input.ocrRawData ?? null,
+            ocrRawData: (input.ocrRawData as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull,
             ocrConfidence: input.ocrConfidence ?? null,
             status,
             verifiedAt: status === "VERIFIED" ? new Date() : null,
@@ -255,6 +271,11 @@ export const transactionRouter = router({
           })
         }
 
+        // Challenge progress: SPEND_AMOUNT (only for verified receipts)
+        if (status === "VERIFIED") {
+          await trackSpend(tx, ctx.userId, input.amount)
+        }
+
         return { transaction, updatedUser }
       })
 
@@ -283,9 +304,132 @@ export const transactionRouter = router({
         currency: z.string().length(3),
       })
     )
-    .mutation(async () => {
-      // TODO: Tier 1 Step 4
-      return { pointsEarned: 0 }
+    .mutation(async ({ ctx, input }) => {
+      // 1. Load venue and verify merchant ownership
+      const venue = await ctx.db.venue.findUnique({
+        where: { id: input.venueId },
+        select: {
+          id: true,
+          ownerId: true,
+          isPartner: true,
+          pointsPerCurrency: true,
+          boostMultiplier: true,
+          boostUntil: true,
+        },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND", message: "Venue not found" })
+      if (venue.ownerId !== ctx.merchantId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Venue does not belong to this merchant" })
+      }
+      if (!venue.isPartner || !venue.pointsPerCurrency) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Venue is not an active partner" })
+      }
+
+      // 2. Load user (streak + referral info)
+      const [user, priorPurchaseCount] = await Promise.all([
+        ctx.db.user.findUnique({
+          where: { id: input.userId },
+          select: {
+            id: true,
+            earnedPoints: true,
+            currentStreak: true,
+            longestStreak: true,
+            lastCheckinAt: true,
+            referredById: true,
+          },
+        }),
+        ctx.db.transaction.count({
+          where: { userId: input.userId, type: "PARTNER_PURCHASE", status: "VERIFIED" },
+        }),
+      ])
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" })
+
+      const isFirstPurchase = priorPurchaseCount === 0
+
+      // 3. Calculate points
+      const pointsEarned = calculatePartnerPoints(
+        input.amount,
+        venue.pointsPerCurrency,
+        venue.boostMultiplier,
+        venue.boostUntil,
+      )
+
+      const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
+      const totalPoints = pointsEarned + streak.milestoneBonus
+
+      // 4. DB transaction: award points + update streak
+      const result = await ctx.db.$transaction(async (tx) => {
+        const transaction = await tx.transaction.create({
+          data: {
+            userId: input.userId,
+            venueId: input.venueId,
+            type: "PARTNER_PURCHASE",
+            amount: input.amount,
+            currency: input.currency,
+            pointsEarned: totalPoints,
+            status: "VERIFIED",
+            verifiedAt: new Date(),
+          },
+        })
+
+        const updatedUser = await tx.user.update({
+          where: { id: input.userId },
+          data: {
+            earnedPoints: { increment: totalPoints },
+            totalEarnedLifetime: { increment: totalPoints },
+            currentStreak: streak.currentStreak,
+            longestStreak: streak.longestStreak,
+            lastCheckinAt: new Date(),
+          },
+          select: { earnedPoints: true, welcomePoints: true, currentStreak: true },
+        })
+
+        if (streak.milestoneBonus > 0) {
+          await tx.transaction.create({
+            data: {
+              userId: input.userId,
+              type: "BONUS",
+              pointsEarned: streak.milestoneBonus,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+        }
+
+        // Challenge progress: SPEND_AMOUNT
+        await trackSpend(tx, input.userId, input.amount)
+
+        // Referral reward: referrer gets 100pts on referee's first partner purchase
+        if (isFirstPurchase && user.referredById) {
+          await tx.user.update({
+            where: { id: user.referredById },
+            data: {
+              earnedPoints: { increment: REFERRAL_REWARD_POINTS },
+              totalEarnedLifetime: { increment: REFERRAL_REWARD_POINTS },
+            },
+          })
+          await tx.transaction.create({
+            data: {
+              userId: user.referredById,
+              type: "REFERRAL",
+              pointsEarned: REFERRAL_REWARD_POINTS,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+        }
+
+        return { transaction, updatedUser }
+      })
+
+      return {
+        transactionId: result.transaction.id,
+        pointsEarned: totalPoints,
+        streakBonus: streak.milestoneBonus,
+        newStreak: streak.currentStreak,
+        newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
+        referralRewarded: isFirstPurchase && !!user.referredById,
+      }
     }),
 
   history: protectedProcedure
@@ -304,10 +448,10 @@ export const transactionRouter = router({
       const transactions = await ctx.db.transaction.findMany({
         where: {
           userId: ctx.userId,
-          type: input.type,
+          ...(input.type ? { type: input.type } : {}),
         },
         take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
+        ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
         orderBy: { createdAt: "desc" },
         include: { venue: { select: { id: true, name: true } } },
       })
