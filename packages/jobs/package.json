@@ -1,0 +1,16 @@
+{
+  "name": "@pulse/jobs",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./handlers/*": "./src/handlers/*"
+  },
+  "dependencies": {
+    "@pulse/db": "workspace:*",
+    "@pulse/shared": "workspace:*",
+    "@upstash/qstash": "^2.7.13",
+    "zod": "^3.23.8"
+  }
+}

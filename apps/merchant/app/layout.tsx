@@ -1,0 +1,15 @@
+import type { Metadata } from "next"
+import "./globals.css"
+
+export const metadata: Metadata = {
+  title: "PULSE Merchant",
+  description: "Manage your PULSE loyalty program",
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body className="min-h-screen bg-[#F9FAFB]">{children}</body>
+    </html>
+  )
+}

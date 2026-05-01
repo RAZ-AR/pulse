@@ -1,0 +1,18 @@
+{
+  "appName": "PULSE",
+  "tagline": "Loyalty that competes for you",
+  "loading": "Loading...",
+  "error": "Something went wrong",
+  "retry": "Try again",
+  "save": "Save",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "back": "Back",
+  "next": "Next",
+  "done": "Done",
+  "points": "{count, plural, one {# point} other {# points}}",
+  "pointsBalance": "Points balance",
+  "earnedPoints": "Earned points",
+  "welcomePoints": "Welcome points",
+  "streak": "{count, plural, one {# day streak} other {# days streak}}"
+}

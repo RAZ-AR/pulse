@@ -1,0 +1,418 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Locale {
+  EN
+  RU
+  SR
+}
+
+enum VenueCategory {
+  CAFE
+  RESTAURANT
+  RETAIL
+  SERVICE
+  OTHER
+}
+
+enum SubscriptionTier {
+  BASIC
+  PRO
+  FEATURED
+}
+
+enum TransactionType {
+  PARTNER_PURCHASE
+  RECEIPT_SCAN
+  CHECKIN_PHOTO
+  REFERRAL
+  CHALLENGE_COMPLETE
+  BONUS
+  GIFT_RECEIVED
+  GIFT_SENT
+  REWARD_REDEEMED
+}
+
+enum TransactionStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  DISPUTED
+}
+
+enum CheckinStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum RedemptionStatus {
+  ACTIVE
+  USED
+  EXPIRED
+}
+
+enum ChallengeType {
+  VISIT_N_VENUES
+  SPEND_AMOUNT
+  WALK_STEPS
+  COMBO
+  STREAK
+}
+
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum RedemptionType {
+  FULL_FREE
+  PERCENT_OFF
+  FIXED_AMOUNT_OFF
+}
+
+// ============================================================
+// Users
+// ============================================================
+
+model User {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  phone     String? @unique
+  name      String
+  avatarUrl String?
+  homeCity  String?
+  language  Locale  @default(EN)
+
+  // Two-wallet points system (see spec §4.6)
+  earnedPoints      Int       @default(0)
+  welcomePoints     Int       @default(500)
+  welcomeExpiresAt  DateTime?
+  lastWelcomeUsedAt DateTime?
+
+  // Lifetime metrics
+  totalEarnedLifetime Int @default(0)
+  spentPoints         Int @default(0)
+
+  // Gamification
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastCheckinAt DateTime?
+
+  // Steps (HealthKit / Google Fit — Tier 3)
+  stepsToday Int @default(0)
+  stepsTotal Int @default(0)
+
+  // Anti-fraud
+  deviceFingerprint String?
+  emailVerified     Boolean @default(false)
+  phoneVerified     Boolean @default(false)
+
+  // Referrals
+  referralCode String  @unique
+  referredById String?
+  referredBy   User?   @relation("Referrals", fields: [referredById], references: [id])
+  referrals    User[]  @relation("Referrals")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  transactions   Transaction[]
+  checkins       Checkin[]
+  badges         UserBadge[]
+  challenges     UserChallenge[]
+  reviews        Review[]
+  pointsGifts    PointsGift[] @relation("Sender")
+  pointsReceived PointsGift[] @relation("Receiver")
+
+  @@index([referralCode])
+  @@index([email])
+}
+
+// ============================================================
+// Merchants (B2B cabinet owners)
+// ============================================================
+
+model Merchant {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  phone        String?
+  passwordHash String
+  venues       Venue[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================================
+// Venues
+// ============================================================
+
+model Venue {
+  id          String        @id @default(cuid())
+  name        String
+  category    VenueCategory
+  description String?
+  address     String
+  city        String
+  country     String
+  lat         Float
+  lng         Float
+  photos      String[]
+  workingHours Json?
+
+  // Partnership
+  isPartner         Boolean           @default(false)
+  partnerSince      DateTime?
+  subscriptionTier  SubscriptionTier?
+  subscriptionUntil DateTime?
+
+  // Points rate (partners only)
+  pointsPerCurrency Float?
+  currency          String?
+  boostUntil        DateTime?
+  boostMultiplier   Float?
+
+  // Redemption models (spec §4.8)
+  enableRewards      Boolean @default(true)
+  enableDiscount     Boolean @default(false)
+  maxDiscountPercent Int     @default(0)
+
+  // External ratings (post-MVP fields, ready for Tier 4)
+  googleRating  Float?
+  googleReviews Int?
+  yandexRating  Float?
+  woltRating    Float?
+
+  // Relations
+  ownerId    String?
+  owner      Merchant?   @relation(fields: [ownerId], references: [id])
+  transactions Transaction[]
+  checkins   Checkin[]
+  rewards    Reward[]
+  reviews    Review[]
+  challenges Challenge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([city, category])
+  @@index([lat, lng])
+  @@index([isPartner])
+}
+
+// ============================================================
+// Transactions (points earning)
+// ============================================================
+
+model Transaction {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id])
+  venueId String?
+  venue   Venue?  @relation(fields: [venueId], references: [id])
+
+  type     TransactionType
+  amount   Float?
+  currency String?
+
+  pointsEarned      Int @default(0)
+  // Breakdown for redemptions (spec §4.6)
+  pointsFromEarned  Int @default(0)
+  pointsFromWelcome Int @default(0)
+
+  // OCR data (RECEIPT_SCAN)
+  receiptImageUrl String?
+  ocrRawData      Json?
+  ocrConfidence   Float?
+  receiptHash     String? @unique
+
+  // Verification
+  status          TransactionStatus @default(PENDING)
+  rejectionReason String?
+  verifiedAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([receiptHash])
+}
+
+// ============================================================
+// Checkins (photo verification)
+// ============================================================
+
+model Checkin {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  venueId String
+  venue   Venue  @relation(fields: [venueId], references: [id])
+
+  photoUrl          String
+  lat               Float
+  lng               Float
+  distanceFromVenue Float
+  aiVerification    Json?
+  status            CheckinStatus @default(PENDING)
+  pointsEarned      Int
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([venueId, userId])
+}
+
+// ============================================================
+// Rewards & Redemptions
+// ============================================================
+
+model Reward {
+  id          String        @id @default(cuid())
+  venueId     String
+  venue       Venue         @relation(fields: [venueId], references: [id])
+  title       String
+  description String?
+  pointsCost  Int
+  imageUrl    String?
+  isActive    Boolean       @default(true)
+  stockLimit  Int?
+  redeemedCount Int         @default(0)
+  redemptionType RedemptionType @default(FULL_FREE)
+  redemptions Redemption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([venueId, isActive])
+}
+
+model Redemption {
+  id             String           @id @default(cuid())
+  userId         String
+  rewardId       String
+  reward         Reward           @relation(fields: [rewardId], references: [id])
+  pointsSpent    Int
+  redemptionCode String           @unique @default(cuid())
+  status         RedemptionStatus @default(ACTIVE)
+  usedAt         DateTime?
+  expiresAt      DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([redemptionCode])
+  @@index([userId])
+}
+
+// ============================================================
+// Challenges
+// ============================================================
+
+model Challenge {
+  id           String        @id @default(cuid())
+  title        String
+  description  String
+  type         ChallengeType
+  rules        Json
+  pointsReward Int
+  badgeId      String?
+  startDate    DateTime
+  endDate      DateTime
+  isGlobal     Boolean       @default(true)
+  venueId      String?
+  venue        Venue?        @relation(fields: [venueId], references: [id])
+  participants UserChallenge[]
+
+  createdAt DateTime @default(now())
+
+  @@index([startDate, endDate])
+}
+
+model UserChallenge {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  progress    Int       @default(0)
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  @@unique([userId, challengeId])
+}
+
+// ============================================================
+// Badges
+// ============================================================
+
+model Badge {
+  id              String      @id @default(cuid())
+  name            String
+  description     String
+  iconUrl         String
+  rarity          BadgeRarity
+  unlockCondition Json
+  users           UserBadge[]
+}
+
+model UserBadge {
+  userId     String
+  badgeId    String
+  user       User     @relation(fields: [userId], references: [id])
+  badge      Badge    @relation(fields: [badgeId], references: [id])
+  unlockedAt DateTime @default(now())
+
+  @@id([userId, badgeId])
+}
+
+// ============================================================
+// Reviews
+// ============================================================
+
+model Review {
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id])
+  venueId String
+  venue   Venue   @relation(fields: [venueId], references: [id])
+  rating  Int
+  text    String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, venueId])
+}
+
+// ============================================================
+// Points Gifts
+// ============================================================
+
+model PointsGift {
+  id         String  @id @default(cuid())
+  senderId   String
+  sender     User    @relation("Sender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User    @relation("Receiver", fields: [receiverId], references: [id])
+  amount     Int
+  message    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+}

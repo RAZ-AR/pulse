@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --border: #e5e7eb;
+    --text-primary: #0f1115;
+    --text-secondary: #6b7280;
+    --pulse-pink: #ff4d8f;
+    --pulse-blue: #3dbeff;
+    --pulse-green: #1fe3a0;
+  }
+
+  body {
+    @apply bg-white text-[#0F1115] font-sans;
+  }
+}
