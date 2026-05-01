@@ -1,3 +1,5 @@
+export { computeReceiptHash } from "./services/ocr"
+
 import { router } from "./trpc"
 import { userRouter } from "./routers/user"
 import { venueRouter } from "./routers/venue"
