@@ -3,6 +3,18 @@ export const SCAN_RATE_RATIO = 10 // partner rate is 10x better than scan rate
 export const MIN_REDEEM = 100 // minimum points to redeem
 export const SCAN_POINTS_PER_CURRENCY = 0.001 // 1 point per 1000 RSD (baseline scan rate)
 
+/** Partner points calculation — apply active boost if any */
+export function calculatePartnerPoints(
+  amount: number,
+  pointsPerCurrency: number,
+  boostMultiplier: number | null | undefined,
+  boostUntil: Date | null | undefined,
+): number {
+  const boostActive = boostUntil != null && boostUntil > new Date()
+  const multiplier = boostActive && boostMultiplier ? boostMultiplier : 1
+  return Math.floor(amount * pointsPerCurrency * multiplier)
+}
+
 // ── Welcome bonus (spec §4.6) ─────────────────────────────────
 export const WELCOME_BONUS_AMOUNT = 500
 export const WELCOME_MAX_PER_TRANSACTION = 100

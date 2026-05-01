@@ -1,0 +1,16 @@
+{
+  "title": "Награды",
+  "redeem": "Получить",
+  "redeemFor": "Получить за {points} баллов",
+  "redeemSuccess": "Награда получена!",
+  "redeemSuccessDescription": "Покажи этот код кассиру",
+  "codeExpiresIn": "Код действует {hours}ч",
+  "outOfStock": "Закончилось",
+  "notEnoughPoints": "Недостаточно баллов",
+  "cooldown": "Приветственные баллы на перезарядке",
+  "expired": "Приветственные баллы истекли",
+  "noRewards": "В этом заведении пока нет наград",
+  "pointsCost": "{points} баллов",
+  "history": "История получения наград",
+  "noHistory": "Ещё нет полученных наград"
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Rewards",
+  "redeem": "Redeem",
+  "redeemFor": "Redeem for {points} pts",
+  "redeemSuccess": "Reward redeemed!",
+  "redeemSuccessDescription": "Show this code to the cashier",
+  "codeExpiresIn": "Code expires in {hours}h",
+  "outOfStock": "Out of stock",
+  "notEnoughPoints": "Not enough points",
+  "cooldown": "Welcome points on cooldown",
+  "expired": "Welcome points expired",
+  "noRewards": "No rewards available at this venue yet",
+  "pointsCost": "{points} pts",
+  "history": "Redemption history",
+  "noHistory": "No rewards redeemed yet"
+}

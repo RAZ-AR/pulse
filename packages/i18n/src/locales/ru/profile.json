@@ -1,0 +1,21 @@
+{
+  "title": "Профиль",
+  "editProfile": "Редактировать профиль",
+  "name": "Имя",
+  "email": "Email",
+  "language": "Язык",
+  "homeCity": "Город",
+  "stats": "Твоя статистика",
+  "totalEarned": "Всего заработано (за всё время)",
+  "streakCurrent": "Текущая серия",
+  "streakLongest": "Лучшая серия",
+  "venuesVisited": "Посещено заведений",
+  "rewardsRedeemed": "Получено наград",
+  "referrals": "Рефералы",
+  "referralCode": "Твой реферальный код",
+  "referralCodeHint": "Поделись с друзьями — им +50 баллов, тебе +100 баллов после их первой покупки",
+  "referralCount": "{count, plural, one {# друг приглашён} few {# друга приглашено} many {# друзей приглашено} other {# друга приглашено}}",
+  "signOut": "Выйти",
+  "deleteAccount": "Удалить аккаунт",
+  "saved": "Профиль сохранён"
+}

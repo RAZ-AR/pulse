@@ -1,0 +1,24 @@
+{
+  "nearby": "Ближайшие заведения",
+  "partners": "Заведения-партнёры",
+  "all": "Все заведения",
+  "search": "Поиск заведений",
+  "searchPlaceholder": "Кафе, ресторан…",
+  "noResults": "Заведения не найдены",
+  "rate": "{pts} баллов за {amount} {currency}",
+  "boostActive": "×{multiplier} буст активен",
+  "boostUntil": "Буст до {date}",
+  "rewards": "Награды",
+  "noRewards": "Пока нет наград",
+  "distance": "{meters} м",
+  "distanceKm": "{km} км",
+  "leaderboard": "Рейтинг курса",
+  "leaderboardHint": "Заведения отсортированы по курсу начисления — чем выше, тем выгоднее для тебя",
+  "category": {
+    "CAFE": "Кафе",
+    "RESTAURANT": "Ресторан",
+    "RETAIL": "Магазин",
+    "SERVICE": "Сервис",
+    "OTHER": "Другое"
+  }
+}

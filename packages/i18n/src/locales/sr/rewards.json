@@ -1,0 +1,16 @@
+{
+  "title": "Nagrade",
+  "redeem": "Preuzmi",
+  "redeemFor": "Preuzmi za {points} bodova",
+  "redeemSuccess": "Nagrada preuzeta!",
+  "redeemSuccessDescription": "Pokaži ovaj kod kasiru",
+  "codeExpiresIn": "Kod važi {hours}h",
+  "outOfStock": "Rasprodato",
+  "notEnoughPoints": "Nema dovoljno bodova",
+  "cooldown": "Dobrodošlica bodovi su na pauzi",
+  "expired": "Dobrodošlica bodovi su istekli",
+  "noRewards": "Još nema nagrada u ovom mestu",
+  "pointsCost": "{points} bod.",
+  "history": "Istorija preuzimanja",
+  "noHistory": "Još nema preuzetih nagrada"
+}

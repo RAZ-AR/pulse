@@ -1,0 +1,24 @@
+{
+  "nearby": "Obližnja mesta",
+  "partners": "Partner mesta",
+  "all": "Sva mesta",
+  "search": "Pretraži mesta",
+  "searchPlaceholder": "Kafić, restoran…",
+  "noResults": "Nema rezultata",
+  "rate": "{pts} bod. za {amount} {currency}",
+  "boostActive": "×{multiplier} boost aktivan",
+  "boostUntil": "Boost do {date}",
+  "rewards": "Nagrade",
+  "noRewards": "Još nema nagrada",
+  "distance": "{meters} m",
+  "distanceKm": "{km} km",
+  "leaderboard": "Rang kurseva",
+  "leaderboardHint": "Mesta rangirana po kursu bodova — viši kurs = veća vrednost za tebe",
+  "category": {
+    "CAFE": "Kafić",
+    "RESTAURANT": "Restoran",
+    "RETAIL": "Prodavnica",
+    "SERVICE": "Usluga",
+    "OTHER": "Ostalo"
+  }
+}

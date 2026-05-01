@@ -1,0 +1,24 @@
+{
+  "title": "Istorija",
+  "empty": "Još nema transakcija",
+  "types": {
+    "PARTNER_PURCHASE": "Kupovina kod partnera",
+    "RECEIPT_SCAN": "Skeniranje računa",
+    "CHECKIN_PHOTO": "Prijava",
+    "REFERRAL": "Referalni bonus",
+    "CHALLENGE_COMPLETE": "Izazov završen",
+    "BONUS": "Bonus za niz",
+    "GIFT_RECEIVED": "Poklon primljen",
+    "GIFT_SENT": "Poklon poslat",
+    "REWARD_REDEEMED": "Nagrada preuzeta"
+  },
+  "status": {
+    "PENDING": "Na pregledu",
+    "VERIFIED": "Verifikovano",
+    "REJECTED": "Odbijeno"
+  },
+  "earned": "+{points} bod.",
+  "spent": "-{points} bod.",
+  "at": "u {venue}",
+  "pendingNote": "Bodovi će biti dodati nakon ručnog pregleda (1-2 radna dana)"
+}

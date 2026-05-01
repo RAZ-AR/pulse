@@ -1,0 +1,14 @@
+{
+  "title": "Check in",
+  "subtitle": "Take a photo at the venue to earn points",
+  "takePhoto": "Take photo",
+  "tooFar": "You're {distance}m away — get within {radius}m to check in",
+  "weakGps": "GPS signal too weak. Move outside and try again.",
+  "cooldown": "Already checked in here. Try again in {hours}h.",
+  "fakePhoto": "Photo does not appear to be taken at this venue.",
+  "success": "Checked in!",
+  "pointsEarned": "+{points} pts",
+  "history": "Check-in history",
+  "noHistory": "No check-ins yet",
+  "streakBonus": "+{points} streak bonus"
+}

@@ -1,0 +1,21 @@
+{
+  "title": "Profile",
+  "editProfile": "Edit profile",
+  "name": "Name",
+  "email": "Email",
+  "language": "Language",
+  "homeCity": "Home city",
+  "stats": "Your stats",
+  "totalEarned": "Total earned (lifetime)",
+  "streakCurrent": "Current streak",
+  "streakLongest": "Longest streak",
+  "venuesVisited": "Venues visited",
+  "rewardsRedeemed": "Rewards redeemed",
+  "referrals": "Referrals",
+  "referralCode": "Your referral code",
+  "referralCodeHint": "Share with friends — they get 50 pts, you get 100 pts after their first purchase",
+  "referralCount": "{count, plural, one {# friend referred} other {# friends referred}}",
+  "signOut": "Sign out",
+  "deleteAccount": "Delete account",
+  "saved": "Profile saved"
+}

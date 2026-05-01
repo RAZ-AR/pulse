@@ -1,0 +1,24 @@
+{
+  "title": "История",
+  "empty": "Пока нет транзакций",
+  "types": {
+    "PARTNER_PURCHASE": "Покупка у партнёра",
+    "RECEIPT_SCAN": "Сканирование чека",
+    "CHECKIN_PHOTO": "Чек-ин",
+    "REFERRAL": "Реферальный бонус",
+    "CHALLENGE_COMPLETE": "Задание выполнено",
+    "BONUS": "Бонус за серию",
+    "GIFT_RECEIVED": "Подарок получен",
+    "GIFT_SENT": "Подарок отправлен",
+    "REWARD_REDEEMED": "Награда получена"
+  },
+  "status": {
+    "PENDING": "На проверке",
+    "VERIFIED": "Подтверждено",
+    "REJECTED": "Отклонено"
+  },
+  "earned": "+{points} баллов",
+  "spent": "-{points} баллов",
+  "at": "в {venue}",
+  "pendingNote": "Баллы будут начислены после ручной проверки (1-2 рабочих дня)"
+}

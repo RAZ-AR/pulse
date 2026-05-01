@@ -1,0 +1,21 @@
+{
+  "title": "Profil",
+  "editProfile": "Uredi profil",
+  "name": "Ime",
+  "email": "Email",
+  "language": "Jezik",
+  "homeCity": "Grad",
+  "stats": "Tvoja statistika",
+  "totalEarned": "Ukupno zarađeno (sve vreme)",
+  "streakCurrent": "Trenutni niz",
+  "streakLongest": "Najduži niz",
+  "venuesVisited": "Posećena mesta",
+  "rewardsRedeemed": "Preuzete nagrade",
+  "referrals": "Referali",
+  "referralCode": "Tvoj referalni kod",
+  "referralCodeHint": "Podeli sa prijateljem — on dobija 50 bod., ti dobijaš 100 bod. posle prve kupovine",
+  "referralCount": "{count, plural, one {# prijatelj pozvan} few {# prijatelja pozvana} other {# prijatelja pozvano}}",
+  "signOut": "Odjavi se",
+  "deleteAccount": "Obriši nalog",
+  "saved": "Profil sačuvan"
+}

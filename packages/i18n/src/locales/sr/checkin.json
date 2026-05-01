@@ -1,0 +1,14 @@
+{
+  "title": "Prijava",
+  "subtitle": "Napravi fotografiju u mestu da zaradiš bodove",
+  "takePhoto": "Fotografiši",
+  "tooFar": "Udaljen si {distance} m — budi unutar {radius} m",
+  "weakGps": "GPS signal je slab. Izađi napolje i pokušaj ponovo.",
+  "cooldown": "Već si se prijavio ovde. Pokušaj za {hours}č.",
+  "fakePhoto": "Fotografija ne izgleda kao da je snimljena u ovom mestu.",
+  "success": "Prijavljen!",
+  "pointsEarned": "+{points} bod.",
+  "history": "Istorija prijava",
+  "noHistory": "Još nema prijava",
+  "streakBonus": "+{points} bonus za niz"
+}

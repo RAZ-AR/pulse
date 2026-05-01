@@ -1,0 +1,24 @@
+{
+  "nearby": "Nearby venues",
+  "partners": "Partner venues",
+  "all": "All venues",
+  "search": "Search venues",
+  "searchPlaceholder": "Café, restaurant…",
+  "noResults": "No venues found",
+  "rate": "{pts} pts per {amount} {currency}",
+  "boostActive": "×{multiplier} boost active",
+  "boostUntil": "Boost until {date}",
+  "rewards": "Rewards",
+  "noRewards": "No rewards available yet",
+  "distance": "{meters}m away",
+  "distanceKm": "{km} km away",
+  "leaderboard": "Rate leaderboard",
+  "leaderboardHint": "Venues ranked by points exchange rate — higher rate = more value for you",
+  "category": {
+    "CAFE": "Café",
+    "RESTAURANT": "Restaurant",
+    "RETAIL": "Retail",
+    "SERVICE": "Service",
+    "OTHER": "Other"
+  }
+}

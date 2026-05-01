@@ -1,0 +1,24 @@
+{
+  "title": "History",
+  "empty": "No transactions yet",
+  "types": {
+    "PARTNER_PURCHASE": "Partner purchase",
+    "RECEIPT_SCAN": "Receipt scan",
+    "CHECKIN_PHOTO": "Check-in",
+    "REFERRAL": "Referral bonus",
+    "CHALLENGE_COMPLETE": "Challenge completed",
+    "BONUS": "Streak bonus",
+    "GIFT_RECEIVED": "Gift received",
+    "GIFT_SENT": "Gift sent",
+    "REWARD_REDEEMED": "Reward redeemed"
+  },
+  "status": {
+    "PENDING": "Pending review",
+    "VERIFIED": "Verified",
+    "REJECTED": "Rejected"
+  },
+  "earned": "+{points} pts",
+  "spent": "-{points} pts",
+  "at": "at {venue}",
+  "pendingNote": "Points will be added after manual review (1-2 business days)"
+}
