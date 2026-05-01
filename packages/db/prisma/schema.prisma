@@ -90,15 +90,21 @@ enum RedemptionType {
 // ============================================================
 
 model User {
-  id        String  @id @default(cuid())
-  email     String  @unique
-  phone     String? @unique
-  name      String
+  id    String  @id @default(cuid())
+  email String  @unique
+  phone String? @unique
+
+  // NextAuth required fields
+  name          String?   // nullable: collected during onboarding
+  image         String?   // NextAuth avatar field
+  emailVerified DateTime? // NextAuth email verification timestamp
+
+  // Our fields
   avatarUrl String?
   homeCity  String?
   language  Locale  @default(EN)
 
-  // Two-wallet points system (see spec §4.6)
+  // Two-wallet points system (spec §4.6)
   earnedPoints      Int       @default(0)
   welcomePoints     Int       @default(500)
   welcomeExpiresAt  DateTime?
@@ -119,8 +125,11 @@ model User {
 
   // Anti-fraud
   deviceFingerprint String?
-  emailVerified     Boolean @default(false)
-  phoneVerified     Boolean @default(false)
+  isEmailVerified   Boolean @default(false)
+  isPhoneVerified   Boolean @default(false)
+
+  // Onboarding state
+  onboardingDone Boolean @default(false)
 
   // Referrals
   referralCode String  @unique
@@ -131,7 +140,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
+  // NextAuth relations
+  accounts Account[]
+
+  // App relations
   transactions   Transaction[]
   checkins       Checkin[]
   badges         UserBadge[]
@@ -142,6 +154,36 @@ model User {
 
   @@index([referralCode])
   @@index([email])
+}
+
+// ============================================================
+// NextAuth models
+// ============================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 // ============================================================
