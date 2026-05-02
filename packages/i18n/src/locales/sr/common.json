@@ -2,6 +2,7 @@
   "appName": "PULSE",
   "tagline": "Lojalnost koja se takmiči za tebe",
   "loading": "Učitavanje...",
+  "saving": "Čuvanje...",
   "error": "Nešto nije u redu",
   "retry": "Pokušaj ponovo",
   "save": "Sačuvaj",
@@ -10,9 +11,19 @@
   "back": "Nazad",
   "next": "Dalje",
   "done": "Gotovo",
-  "points": "{count, plural, one {# bod} few {# boda} other {# bodova}}",
+  "days": "dana",
+  "comingSoon": "Uskoro",
+  "notSignedIn": "Niste prijavljeni",
+  "points": "{{count}} bodova",
   "pointsBalance": "Stanje bodova",
   "earnedPoints": "Zarađeni bodovi",
   "welcomePoints": "Dobrodošlica bodovi",
-  "streak": "{count, plural, one {# dan zaredom} few {# dana zaredom} other {# dana zaredom}}"
+  "streak": "{{count}} dana zaredom",
+  "nav": {
+    "home": "Početna",
+    "map": "Mapa",
+    "earn": "Zaradi",
+    "rewards": "Nagrade",
+    "profile": "Profil"
+  }
 }

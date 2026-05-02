@@ -2,6 +2,7 @@
   "appName": "PULSE",
   "tagline": "Лояльность, которая борется за тебя",
   "loading": "Загрузка...",
+  "saving": "Сохранение...",
   "error": "Что-то пошло не так",
   "retry": "Попробовать снова",
   "save": "Сохранить",
@@ -10,9 +11,19 @@
   "back": "Назад",
   "next": "Далее",
   "done": "Готово",
-  "points": "{count, plural, one {# балл} few {# балла} many {# баллов} other {# балла}}",
+  "days": "дней",
+  "comingSoon": "Скоро",
+  "notSignedIn": "Не авторизован",
+  "points": "{{count}} баллов",
   "pointsBalance": "Баланс баллов",
   "earnedPoints": "Заработанные баллы",
   "welcomePoints": "Приветственные баллы",
-  "streak": "{count, plural, one {# день подряд} few {# дня подряд} many {# дней подряд} other {# дня подряд}}"
+  "streak": "{{count}} дней подряд",
+  "nav": {
+    "home": "Главная",
+    "map": "Карта",
+    "earn": "Заработать",
+    "rewards": "Награды",
+    "profile": "Профиль"
+  }
 }

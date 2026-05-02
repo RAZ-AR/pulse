@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "PULSE",
+    "slug": "pulse",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "pulse",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pulse.app"
+    },
+    "android": {
+      "package": "com.pulse.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F1115"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
