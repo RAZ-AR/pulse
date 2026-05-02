@@ -1,11 +1,13 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
+import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
 import { colors, useTheme } from "../../src/lib/theme"
 
 export default function EarnScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
+  const router = useRouter()
   const me = trpc.user.me.useQuery()
 
   const totalPoints = me.data ? me.data.earnedPoints + me.data.welcomePoints : 0
@@ -28,7 +30,7 @@ export default function EarnScreen() {
           title={t("scanReceipt", "Scan receipt")}
           subtitle={t("scanReceiptDesc", "Get points for any restaurant or shop receipt")}
           color={colors.pink}
-          onPress={() => Alert.alert(t("comingSoon", "Coming soon"), "Receipt scan — Tier 1 Step 6 (mobile UI pending)")}
+          onPress={() => router.push("/scan")}
         />
         <ActionCard
           icon="📍"

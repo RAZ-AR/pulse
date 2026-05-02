@@ -24,6 +24,10 @@
       [
         "expo-location",
         { "locationAlwaysAndWhenInUsePermission": "Allow PULSE to use your location to show nearby partner venues." }
+      ],
+      [
+        "expo-camera",
+        { "cameraPermission": "Allow PULSE to use the camera to scan receipts and check in at venues." }
       ]
     ],
     "experiments": {
