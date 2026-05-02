@@ -38,6 +38,7 @@ export default function RootLayout() {
             <Stack.Screen name="venue/[id]" />
             <Stack.Screen name="leaderboard" />
             <Stack.Screen name="scan" />
+            <Stack.Screen name="checkin" />
           </Stack>
         </Providers>
       </SafeAreaProvider>

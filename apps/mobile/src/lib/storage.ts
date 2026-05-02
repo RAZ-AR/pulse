@@ -4,8 +4,6 @@ import * as FileSystem from "expo-file-system"
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
 
-const RECEIPTS_BUCKET = "receipts"
-
 let supabaseClient: ReturnType<typeof createClient> | null = null
 
 function getSupabase() {
@@ -21,13 +19,17 @@ function getSupabase() {
 }
 
 /**
- * Uploads a local image (file:// URI) to Supabase Storage.
+ * Uploads a local image (file:// URI) to a Supabase Storage bucket.
  * Returns the public URL of the uploaded file.
+ *
+ * Buckets must be created with public read access:
+ *   - receipts (receipt photos)
+ *   - checkins (venue check-in photos)
  */
-export async function uploadReceiptImage(localUri: string, userId: string): Promise<string> {
+async function uploadImage(bucket: string, localUri: string, userId: string): Promise<string> {
   const supabase = getSupabase()
 
-  // Read file as base64, convert to ArrayBuffer
+  // Read file as base64, convert to byte array (RN-friendly: avoid Blob)
   const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: FileSystem.EncodingType.Base64 })
   const binary = atob(base64)
   const bytes = new Uint8Array(binary.length)
@@ -38,12 +40,15 @@ export async function uploadReceiptImage(localUri: string, userId: string): Prom
 
   const path = `${userId}/${Date.now()}.jpg`
 
-  const { error } = await supabase.storage.from(RECEIPTS_BUCKET).upload(path, bytes, {
+  const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType: "image/jpeg",
     upsert: false,
   })
   if (error) throw new Error(`Upload failed: ${error.message}`)
 
-  const { data } = supabase.storage.from(RECEIPTS_BUCKET).getPublicUrl(path)
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
   return data.publicUrl
 }
+
+export const uploadReceiptImage = (localUri: string, userId: string) => uploadImage("receipts", localUri, userId)
+export const uploadCheckinImage = (localUri: string, userId: string) => uploadImage("checkins", localUri, userId)

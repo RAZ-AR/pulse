@@ -37,7 +37,7 @@ export default function EarnScreen() {
           title={t("checkinPhoto", "Check-in photo")}
           subtitle={t("checkinPhotoDesc", "Take a photo at a venue to earn streak points")}
           color={colors.sky}
-          onPress={() => Alert.alert(t("comingSoon", "Coming soon"), "Checkin — Tier 2 Step 9")}
+          onPress={() => router.push("/checkin")}
         />
         <ActionCard
           icon="👟"
