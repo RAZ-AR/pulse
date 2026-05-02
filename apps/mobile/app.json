@@ -20,7 +20,11 @@
     "plugins": [
       "expo-router",
       "expo-localization",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        { "locationAlwaysAndWhenInUsePermission": "Allow PULSE to use your location to show nearby partner venues." }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

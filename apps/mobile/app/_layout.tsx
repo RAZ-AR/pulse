@@ -14,6 +14,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="reward/[id]" />
             <Stack.Screen name="venue/[id]" />
+            <Stack.Screen name="leaderboard" />
           </Stack>
         </Providers>
       </SafeAreaProvider>

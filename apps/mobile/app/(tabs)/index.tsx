@@ -56,9 +56,14 @@ export default function HomeScreen() {
       </View>
 
       {/* Top venues by points rate */}
-      <Text style={[s.sectionTitle, { color: theme.textSecondary }]}>
-        {t("topRates", "Top points rate").toUpperCase()}
-      </Text>
+      <View style={s.sectionHeader}>
+        <Text style={[s.sectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+          {t("topRates", "Top points rate").toUpperCase()}
+        </Text>
+        <Pressable onPress={() => router.push("/leaderboard")}>
+          <Text style={[s.seeAll, { color: theme.text }]}>{t("seeAll", "See all →")}</Text>
+        </Pressable>
+      </View>
       {!leaderboard.data || leaderboard.data.length === 0 ? (
         <View style={[s.empty, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
@@ -130,6 +135,8 @@ const s = StyleSheet.create({
   actionIcon: { fontSize: 28, marginBottom: 4 },
   actionLabel: { fontSize: 13, fontWeight: "600" },
   empty: { padding: 16, borderRadius: 12, borderWidth: 1, alignItems: "center" },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingHorizontal: 4 },
+  seeAll: { fontSize: 12, fontWeight: "600" },
   list: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   row: { padding: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
