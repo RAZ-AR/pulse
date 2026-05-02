@@ -6,13 +6,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./user": "./src/user.ts",
-    "./merchant": "./src/merchant.ts"
+    "./merchant": "./src/merchant.ts",
+    "./mobile-jwt": "./src/mobile-jwt.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
     "@pulse/db": "workspace:*",
     "next-auth": "5.0.0-beta.25",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6"

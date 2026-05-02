@@ -1,6 +1,7 @@
 export { computeReceiptHash } from "./services/ocr"
 
 import { router } from "./trpc"
+import { authRouter } from "./routers/auth"
 import { userRouter } from "./routers/user"
 import { venueRouter } from "./routers/venue"
 import { transactionRouter } from "./routers/transaction"
@@ -12,6 +13,7 @@ import { leaderboardRouter } from "./routers/leaderboard"
 import { merchantRouter } from "./routers/merchant"
 
 export const appRouter = router({
+  auth: authRouter,
   user: userRouter,
   venue: venueRouter,
   transaction: transactionRouter,

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
+    "@pulse/auth": "workspace:*",
     "@pulse/db": "workspace:*",
     "@pulse/shared": "workspace:*",
     "@trpc/server": "^11.0.0",

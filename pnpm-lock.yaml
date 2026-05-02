@@ -263,6 +263,9 @@ importers:
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
+      jose:
+        specifier: ^5.9.6
+        version: 5.10.0
       next:
         specifier: ^15.0.0
         version: 15.5.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -325,6 +328,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.36.3
         version: 0.36.3
+      '@pulse/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@pulse/db':
         specifier: workspace:*
         version: link:../db
