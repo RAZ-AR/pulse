@@ -118,6 +118,148 @@ export const merchantRouter = router({
       }
     }),
 
+  /**
+   * Deeper analytics — daily time-series, hour-of-day heatmap,
+   * reward conversion, customer segmentation, and city-rank for the venue.
+   */
+  analytics: merchantProcedure
+    .input(z.object({ venueId: z.string(), days: z.number().int().min(7).max(90).default(30) }))
+    .query(async ({ ctx, input }) => {
+      // Ownership guard
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: input.venueId, ownerId: ctx.merchantId },
+        select: { id: true, city: true, category: true, pointsPerCurrency: true },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND" })
+
+      const now = new Date()
+      const rangeStart = new Date(now)
+      rangeStart.setDate(rangeStart.getDate() - (input.days - 1))
+      rangeStart.setHours(0, 0, 0, 0)
+
+      // 1. All purchase txns in range — drives daily, hourly, customer maps
+      const txns = await ctx.db.transaction.findMany({
+        where: {
+          venueId: input.venueId,
+          type: "PARTNER_PURCHASE",
+          status: "VERIFIED",
+          createdAt: { gte: rangeStart },
+        },
+        select: { createdAt: true, pointsEarned: true, amount: true, userId: true },
+      })
+
+      // Daily aggregation
+      const dayKey = (d: Date) => {
+        const y = d.getFullYear()
+        const m = String(d.getMonth() + 1).padStart(2, "0")
+        const day = String(d.getDate()).padStart(2, "0")
+        return `${y}-${m}-${day}`
+      }
+      type DayBucket = { date: string; points: number; txns: number; revenue: number; customerIds: Set<string> }
+      const buckets = new Map<string, DayBucket>()
+      for (let i = 0; i < input.days; i++) {
+        const d = new Date(rangeStart)
+        d.setDate(d.getDate() + i)
+        const k = dayKey(d)
+        buckets.set(k, { date: k, points: 0, txns: 0, revenue: 0, customerIds: new Set() })
+      }
+      for (const t of txns) {
+        const b = buckets.get(dayKey(t.createdAt))
+        if (!b) continue
+        b.points += t.pointsEarned
+        b.txns += 1
+        b.revenue += t.amount ?? 0
+        b.customerIds.add(t.userId)
+      }
+      const daily = Array.from(buckets.values()).map((b) => ({
+        date: b.date,
+        points: b.points,
+        transactions: b.txns,
+        revenue: b.revenue,
+        uniqueCustomers: b.customerIds.size,
+      }))
+
+      // Hour-of-day heatmap (24 buckets, weekday-bucketed: 0=Sun..6=Sat)
+      const heatmap: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0))
+      for (const t of txns) {
+        const dow = t.createdAt.getDay()
+        const hour = t.createdAt.getHours()
+        heatmap[dow]![hour]! += 1
+      }
+
+      // 2. Reward conversion per reward
+      const rewards = await ctx.db.reward.findMany({
+        where: { venueId: input.venueId },
+        select: { id: true, title: true, pointsCost: true, redeemedCount: true, isActive: true },
+        orderBy: { redeemedCount: "desc" },
+      })
+      const usedRedemptions = await ctx.db.redemption.count({
+        where: { reward: { venueId: input.venueId }, status: "USED" },
+      })
+      const totalRedemptions = await ctx.db.redemption.count({
+        where: { reward: { venueId: input.venueId } },
+      })
+      const conversionRate = totalRedemptions > 0 ? usedRedemptions / totalRedemptions : 0
+
+      // 3. Customer segmentation — count visits per customer in range
+      const visitsByCustomer = new Map<string, number>()
+      for (const t of txns) {
+        visitsByCustomer.set(t.userId, (visitsByCustomer.get(t.userId) ?? 0) + 1)
+      }
+      let newCount = 0
+      let returningCount = 0
+      let frequentCount = 0
+      for (const visits of visitsByCustomer.values()) {
+        if (visits === 1) newCount += 1
+        else if (visits <= 4) returningCount += 1
+        else frequentCount += 1
+      }
+
+      // 4. City rank — among partner venues in the same city + category, sort by pointsPerCurrency
+      const peers = await ctx.db.venue.findMany({
+        where: {
+          city: venue.city,
+          category: venue.category,
+          isPartner: true,
+          pointsPerCurrency: { not: null },
+        },
+        select: { id: true, pointsPerCurrency: true },
+        orderBy: { pointsPerCurrency: "desc" },
+      })
+      const rank = peers.findIndex((p) => p.id === venue.id) + 1 // 1-based; 0 if not found
+
+      return {
+        rangeStart: rangeStart.toISOString(),
+        days: input.days,
+        daily,
+        heatmap,
+        rewards: rewards.map((r) => ({
+          id: r.id,
+          title: r.title,
+          pointsCost: r.pointsCost,
+          redeemedCount: r.redeemedCount,
+          isActive: r.isActive,
+        })),
+        redemptionConversion: {
+          total: totalRedemptions,
+          used: usedRedemptions,
+          rate: conversionRate,
+        },
+        customers: {
+          new: newCount,
+          returning: returningCount,
+          frequent: frequentCount,
+          unique: visitsByCustomer.size,
+        },
+        cityRank: {
+          rank,
+          peerCount: peers.length,
+          city: venue.city,
+          category: venue.category,
+        },
+      }
+    }),
+
   myVenues: merchantProcedure.query(async ({ ctx }) => {
     return ctx.db.venue.findMany({
       where: { ownerId: ctx.merchantId },

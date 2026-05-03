@@ -10,6 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="flex-1 px-4 py-4 space-y-1">
           {[
             { href: "/dashboard", label: "Dashboard" },
+            { href: "/dashboard/analytics", label: "Analytics" },
             { href: "/dashboard/purchase", label: "New Purchase" },
             { href: "/dashboard/redeem", label: "Redeem Reward" },
             { href: "/dashboard/rewards", label: "Rewards" },

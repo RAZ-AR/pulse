@@ -77,12 +77,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="mt-6 flex gap-3">
+      <div className="mt-6 flex gap-3 flex-wrap">
         <a href="/dashboard/purchase" className="inline-flex items-center px-4 py-2 bg-[#0F1115] text-white text-sm font-medium rounded-xl hover:bg-[#1f2228] transition-colors">
           New Purchase
         </a>
         <a href="/dashboard/redeem" className="inline-flex items-center px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB] transition-colors">
           Validate Reward
+        </a>
+        <a href="/dashboard/analytics" className="inline-flex items-center px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB] transition-colors">
+          View Analytics →
         </a>
       </div>
     </div>
