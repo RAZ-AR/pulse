@@ -40,6 +40,7 @@ export default function RootLayout() {
             <Stack.Screen name="scan" />
             <Stack.Screen name="checkin" />
             <Stack.Screen name="badges" />
+            <Stack.Screen name="referrals" />
           </Stack>
         </Providers>
       </SafeAreaProvider>

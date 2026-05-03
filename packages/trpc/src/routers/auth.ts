@@ -2,7 +2,12 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, publicProcedure } from "../trpc"
 import { signMobileToken } from "@pulse/auth/mobile-jwt"
-import { generateReferralCode, WELCOME_BONUS_AMOUNT, WELCOME_EXPIRY_DAYS } from "@pulse/shared"
+import {
+  generateReferralCode,
+  WELCOME_BONUS_AMOUNT,
+  WELCOME_EXPIRY_DAYS,
+  REFERRAL_SIGNUP_POINTS,
+} from "@pulse/shared"
 import { checkAndAwardBadges } from "../services/badges"
 
 /**
@@ -18,6 +23,7 @@ export const authRouter = router({
         email: z.string().email().toLowerCase().trim(),
         name: z.string().min(1).max(100).trim().optional(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
+        referralCode: z.string().length(6).toUpperCase().trim().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -29,6 +35,17 @@ export const authRouter = router({
       })
 
       if (!user) {
+        // Resolve referrer if a code was provided. Silently ignore unknown codes —
+        // a bad referral shouldn't block signup.
+        let referrerId: string | undefined
+        if (input.referralCode) {
+          const referrer = await ctx.db.user.findUnique({
+            where: { referralCode: input.referralCode },
+            select: { id: true },
+          })
+          if (referrer) referrerId = referrer.id
+        }
+
         const expiresAt = new Date()
         expiresAt.setDate(expiresAt.getDate() + WELCOME_EXPIRY_DAYS)
 
@@ -44,6 +61,14 @@ export const authRouter = router({
                 referralCode: generateReferralCode(),
                 welcomePoints: WELCOME_BONUS_AMOUNT,
                 welcomeExpiresAt: expiresAt,
+                // Signup with valid referral: link + give +50 earnedPoints to referee
+                ...(referrerId
+                  ? {
+                      referredById: referrerId,
+                      earnedPoints: REFERRAL_SIGNUP_POINTS,
+                      totalEarnedLifetime: REFERRAL_SIGNUP_POINTS,
+                    }
+                  : {}),
               },
               select: { id: true, email: true, onboardingDone: true, name: true, language: true },
             })
@@ -57,6 +82,19 @@ export const authRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user account" })
         }
         user = created
+
+        // Log the referral signup transaction so it shows in history
+        if (referrerId) {
+          await ctx.db.transaction.create({
+            data: {
+              userId: created.id,
+              type: "REFERRAL",
+              pointsEarned: REFERRAL_SIGNUP_POINTS,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+        }
 
         // Award welcome badge on signup (idempotent — only fires for fresh accounts)
         await ctx.db.$transaction(async (tx) => {

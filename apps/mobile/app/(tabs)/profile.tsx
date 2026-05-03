@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { useTheme, colors } from "../../src/lib/theme"
@@ -18,6 +18,17 @@ export default function ProfileScreen() {
   const profile = trpc.user.me.useQuery()
   const stats = trpc.user.getStats.useQuery()
   const myBadges = trpc.badge.mine.useQuery()
+  const myReferrals = trpc.user.getReferrals.useQuery()
+
+  async function shareReferral(code: string) {
+    try {
+      await Share.share({
+        message: t("shareMessage", "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}", { code }),
+      })
+    } catch {
+      // user cancelled or platform error — silent
+    }
+  }
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       utils.user.me.invalidate()
@@ -177,9 +188,18 @@ export default function ProfileScreen() {
         <View style={[s.codeBox, { borderColor: theme.border, backgroundColor: theme.surface }]}>
           <Text style={[s.code, { color: theme.text }]}>{u.referralCode}</Text>
         </View>
-        <Text style={[s.subtle, { color: theme.textSecondary, marginTop: 8 }]}>
+        <Text style={[s.subtle, { color: theme.textSecondary, marginTop: 8, marginBottom: 12 }]}>
           {t("referralCodeHint", "Share with friends — they get 50 pts, you get 100 pts after their first purchase")}
         </Text>
+        <View style={s.btnRow}>
+          <Button label={t("share", "Share")} onPress={() => shareReferral(u.referralCode)} theme={theme} />
+          <Button
+            label={t("referralsCount", "{{count}} friends referred", { count: myReferrals.data?.length ?? 0 })}
+            variant="ghost"
+            onPress={() => router.push("/referrals")}
+            theme={theme}
+          />
+        </View>
       </Section>
 
       {/* Sign out */}

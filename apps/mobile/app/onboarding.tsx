@@ -19,6 +19,7 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState<Step>("language")
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
+  const [referralCode, setReferralCode] = useState("")
   const [error, setError] = useState("")
 
   const signInMutation = trpc.auth.signInWithEmail.useMutation()
@@ -48,10 +49,12 @@ export default function OnboardingScreen() {
     }
     try {
       const lng = (i18n.language as SupportedLocale).toUpperCase() as "EN" | "RU" | "SR"
+      const code = referralCode.trim().toUpperCase()
       const result = await signInMutation.mutateAsync({
         email,
         name: trimmedName,
         language: lng,
+        ...(code.length === 6 ? { referralCode: code } : {}),
       })
       await signIn(result.token)
       router.replace("/(tabs)")
@@ -129,6 +132,28 @@ export default function OnboardingScreen() {
                 style={[s.input, { borderColor: theme.border, color: theme.text }]}
               />
             </View>
+
+            <View style={s.field}>
+              <Text style={[s.label, { color: theme.textSecondary }]}>
+                {t("referralCode", "Referral code")} <Text style={[s.optional, { color: theme.textSecondary }]}>· {t("common:optional", "optional")}</Text>
+              </Text>
+              <TextInput
+                value={referralCode}
+                onChangeText={(v) => setReferralCode(v.toUpperCase())}
+                placeholder={t("referralCodePlaceholder", "ABC123")}
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={6}
+                style={[s.input, { borderColor: theme.border, color: theme.text, letterSpacing: 3, fontFamily: "monospace" }]}
+              />
+              {referralCode.length === 6 ? (
+                <Text style={[s.bonus, { color: colors.mint }]}>
+                  {t("referralBonus", "+50 bonus points for joining with a referral")}
+                </Text>
+              ) : null}
+            </View>
+
             {error ? <Text style={s.error}>{error}</Text> : null}
             <Pressable
               onPress={submit}
@@ -187,4 +212,6 @@ const s = StyleSheet.create({
   btn: { padding: 14, borderRadius: 12, alignItems: "center", marginTop: 4 },
   linkBtn: { padding: 12, alignItems: "center", marginTop: 4 },
   error: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
+  optional: { fontSize: 11, fontWeight: "500" },
+  bonus: { fontSize: 12, fontWeight: "700", marginTop: 6 },
 })
