@@ -284,6 +284,21 @@ export const userRouter = router({
       return { redemptions, nextCursor }
     }),
 
+  /** Look up another user by their referral code — used by gift flow. */
+  findByReferralCode: protectedProcedure
+    .input(z.object({ code: z.string().length(6) }))
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { referralCode: input.code.toUpperCase() },
+        select: { id: true, name: true, avatarUrl: true },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "No user with that code" })
+      if (user.id === ctx.userId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "That's your own code" })
+      }
+      return user
+    }),
+
   // Public: check if a referral code is valid (for onboarding UX)
   validateReferralCode: publicProcedure
     .input(z.object({ code: z.string().length(6) }))

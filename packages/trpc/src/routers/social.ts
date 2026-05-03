@@ -58,7 +58,7 @@ export const socialRouter = router({
         })
       }
 
-      // 4. DB transaction: transfer points + create both transaction records
+      // 4. DB transaction: transfer points + record the gift + both transaction lines
       await ctx.db.$transaction(async (tx) => {
         await tx.user.update({
           where: { id: ctx.userId },
@@ -73,6 +73,15 @@ export const socialRouter = router({
           data: {
             earnedPoints: { increment: input.amount },
             totalEarnedLifetime: { increment: input.amount },
+          },
+        })
+
+        await tx.pointsGift.create({
+          data: {
+            senderId: ctx.userId,
+            receiverId: input.receiverId,
+            amount: input.amount,
+            ...(input.message ? { message: input.message } : {}),
           },
         })
 
