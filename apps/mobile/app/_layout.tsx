@@ -43,6 +43,7 @@ export default function RootLayout() {
             <Stack.Screen name="referrals" />
             <Stack.Screen name="challenges" />
             <Stack.Screen name="challenge/[id]" />
+            <Stack.Screen name="steps" />
           </Stack>
         </Providers>
       </SafeAreaProvider>

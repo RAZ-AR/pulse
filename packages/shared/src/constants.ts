@@ -42,6 +42,15 @@ export const OCR_CONFIDENCE_THRESHOLD = 0.85
 export const GIFT_MIN_AMOUNT = 50
 export const GIFT_DAILY_LIMIT = 500
 
+// ── Steps multiplier (spec §4.3) ──────────────────────────────
+/** Returns earnings multiplier based on today's step count. */
+export function stepMultiplier(steps: number): number {
+  if (steps >= 15000) return 1.3
+  if (steps >= 10000) return 1.2
+  if (steps >= 5000) return 1.1
+  return 1.0
+}
+
 // ── Streak milestones (spec §5.1) ─────────────────────────────
 export const STREAK_MILESTONES: Record<number, number> = {
   7: 50,

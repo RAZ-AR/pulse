@@ -42,9 +42,9 @@ export default function EarnScreen() {
         <ActionCard
           icon="👟"
           title={t("steps", "Steps")}
-          subtitle={t("stepsDesc", "Sync HealthKit/Google Fit for streak multipliers")}
+          subtitle={t("stepsDesc", "Sync HealthKit/Google Fit for earn multipliers")}
           color={colors.mint}
-          onPress={() => Alert.alert(t("comingSoon", "Coming soon"), "Steps — Tier 3 Step 16")}
+          onPress={() => router.push("/steps")}
         />
       </View>
     </ScrollView>

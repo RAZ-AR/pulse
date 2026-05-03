@@ -15,6 +15,7 @@ import {
   OCR_CONFIDENCE_THRESHOLD,
   calculatePartnerPoints,
   computeStreakUpdate,
+  stepMultiplier,
   REFERRAL_REWARD_POINTS,
 } from "@pulse/shared"
 
@@ -195,20 +196,13 @@ export const transactionRouter = router({
         })
       }
 
-      // 4. Determine status and points
-      const needsManualReview = input.amount > RECEIPT_MANUAL_REVIEW_THRESHOLD
-      const status = needsManualReview ? "PENDING" : "VERIFIED"
-      const pointsEarned = needsManualReview
-        ? 0
-        : Math.floor(input.amount * SCAN_POINTS_PER_CURRENCY)
-
       // 5. Try to match vendor to a known venue (B2B lead if no match)
       const matchedVenue = await ctx.db.venue.findFirst({
         where: { name: { contains: input.vendor, mode: "insensitive" } },
         select: { id: true },
       })
 
-      // 6. Load user for streak calculation
+      // 6. Load user for streak + step-multiplier calculation
       const user = await ctx.db.user.findUnique({
         where: { id: ctx.userId },
         select: {
@@ -217,9 +211,18 @@ export const transactionRouter = router({
           longestStreak: true,
           lastCheckinAt: true,
           totalEarnedLifetime: true,
+          stepsToday: true,
         },
       })
       if (!user) throw new TRPCError({ code: "NOT_FOUND" })
+
+      // 4. Determine status and points (after user load so we can apply step multiplier)
+      const needsManualReview = input.amount > RECEIPT_MANUAL_REVIEW_THRESHOLD
+      const status = needsManualReview ? "PENDING" : "VERIFIED"
+      const stepMult = stepMultiplier(user.stepsToday)
+      const pointsEarned = needsManualReview
+        ? 0
+        : Math.floor(input.amount * SCAN_POINTS_PER_CURRENCY * stepMult)
 
       const streak = computeStreakUpdate(
         user.currentStreak,
@@ -329,7 +332,7 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Venue is not an active partner" })
       }
 
-      // 2. Load user (streak + referral info)
+      // 2. Load user (streak + referral info + steps for multiplier)
       const [user, priorPurchaseCount] = await Promise.all([
         ctx.db.user.findUnique({
           where: { id: input.userId },
@@ -340,6 +343,7 @@ export const transactionRouter = router({
             longestStreak: true,
             lastCheckinAt: true,
             referredById: true,
+            stepsToday: true,
           },
         }),
         ctx.db.transaction.count({
@@ -350,13 +354,15 @@ export const transactionRouter = router({
 
       const isFirstPurchase = priorPurchaseCount === 0
 
-      // 3. Calculate points
-      const pointsEarned = calculatePartnerPoints(
+      // 3. Calculate points (apply step multiplier to base earnings)
+      const stepMult = stepMultiplier(user.stepsToday)
+      const basePoints = calculatePartnerPoints(
         input.amount,
         venue.pointsPerCurrency,
         venue.boostMultiplier,
         venue.boostUntil,
       )
+      const pointsEarned = Math.floor(basePoints * stepMult)
 
       const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
       const totalPoints = pointsEarned + streak.milestoneBonus

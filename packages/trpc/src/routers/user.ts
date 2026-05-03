@@ -23,6 +23,8 @@ export const userRouter = router({
         currentStreak: true,
         longestStreak: true,
         lastCheckinAt: true,
+        stepsToday: true,
+        stepsTotal: true,
         referralCode: true,
         referredById: true,
         onboardingDone: true,
@@ -125,6 +127,49 @@ export const userRouter = router({
         },
         select: { id: true, name: true, homeCity: true, language: true, avatarUrl: true },
       })
+    }),
+
+  /**
+   * Daily step sync — mobile reports today's step count from HealthKit / Google Fit.
+   * Persists `stepsToday` (replaces) and bumps `stepsTotal` if the new value is higher
+   * (avoids double-counting on resync).
+   *
+   * The multiplier itself is applied at earn-time (receipt confirm + partner purchase)
+   * by reading the freshest stepsToday for the user.
+   */
+  syncSteps: protectedProcedure
+    .input(z.object({ steps: z.number().int().min(0).max(100_000) }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: { stepsToday: true, stepsTotal: true },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" })
+
+      // Only credit the *delta* against today's previously-reported steps.
+      // First sync of the day: delta = input.steps. Re-sync mid-day: delta = new - old (clipped to >=0).
+      const delta = Math.max(0, input.steps - user.stepsToday)
+
+      const updated = await ctx.db.user.update({
+        where: { id: ctx.userId },
+        data: {
+          stepsToday: input.steps,
+          stepsTotal: { increment: delta },
+        },
+        select: { stepsToday: true, stepsTotal: true },
+      })
+
+      return updated
+    }),
+
+  /** Reset all users' stepsToday — called by daily Upstash QStash cron at user's local midnight (server UTC for v1). */
+  resetDailySteps: publicProcedure
+    .mutation(async ({ ctx }) => {
+      const result = await ctx.db.user.updateMany({
+        where: { stepsToday: { gt: 0 } },
+        data: { stepsToday: 0 },
+      })
+      return { resetCount: result.count }
     }),
 
   getStreak: protectedProcedure.query(async ({ ctx }) => {
