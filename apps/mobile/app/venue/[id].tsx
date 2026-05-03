@@ -40,7 +40,12 @@ export default function VenueDetailScreen() {
       <Stack.Screen options={{ headerShown: true, title: v.name, headerStyle: { backgroundColor: theme.bg }, headerTintColor: theme.text }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <Text style={[s.name, { color: theme.text }]}>{v.name}</Text>
+        <View style={s.heroNameRow}>
+          <Text style={[s.name, { color: theme.text }]}>{v.name}</Text>
+          {v.subscriptionTier === "FEATURED" ? (
+            <Text style={s.featuredBadge}>★ FEATURED</Text>
+          ) : null}
+        </View>
         <Text style={[s.subtle, { color: theme.textSecondary }]}>
           {v.category.toLowerCase()} · {v.city}
         </Text>
@@ -156,6 +161,8 @@ const s = StyleSheet.create({
   content: { padding: 20, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   name: { fontSize: 26, fontWeight: "800" },
+  heroNameRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  featuredBadge: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5, color: "#FFF", backgroundColor: "#FF4D8F", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, overflow: "hidden" },
   subtle: { fontSize: 13, marginTop: 4 },
   rateCard: { padding: 24, borderRadius: 16, alignItems: "center", marginTop: 20, marginBottom: 20 },
   rateLabel: { color: "#FFF", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },

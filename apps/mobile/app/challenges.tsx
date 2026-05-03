@@ -133,32 +133,40 @@ export default function ChallengesScreen() {
               theme={theme}
             />
           ) : (
-            (available.data ?? []).map((c) => (
-              <Pressable
-                key={c.id}
-                onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: c.id } })}
-                style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
-              >
-                <View style={s.cardHead}>
-                  <Text style={[s.typeTag, { color: theme.textSecondary }]}>
-                    {TYPE_LABELS[c.type] ?? c.type}
+            (available.data ?? []).map((c) => {
+              const isSponsored = c.venue !== null
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: c.id } })}
+                  style={[s.card, { backgroundColor: theme.surface, borderColor: isSponsored ? colors.pink : theme.border }]}
+                >
+                  <View style={s.cardHead}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <Text style={[s.typeTag, { color: theme.textSecondary }]}>
+                        {TYPE_LABELS[c.type] ?? c.type}
+                      </Text>
+                      {isSponsored ? (
+                        <Text style={s.sponsoredBadge}>{c.venue!.name.toUpperCase()}</Text>
+                      ) : null}
+                    </View>
+                    <Text style={[s.daysLeft, { color: theme.textSecondary }]}>
+                      {daysLeft(c.endDate)}d {t("left", "left")}
+                    </Text>
+                  </View>
+                  <Text style={[s.title, { color: theme.text }]}>{c.title}</Text>
+                  <Text style={[s.desc, { color: theme.textSecondary }]} numberOfLines={3}>
+                    {c.description}
                   </Text>
-                  <Text style={[s.daysLeft, { color: theme.textSecondary }]}>
-                    {daysLeft(c.endDate)}d {t("left", "left")}
-                  </Text>
-                </View>
-                <Text style={[s.title, { color: theme.text }]}>{c.title}</Text>
-                <Text style={[s.desc, { color: theme.textSecondary }]} numberOfLines={3}>
-                  {c.description}
-                </Text>
-                <View style={[s.footer, { borderTopColor: theme.border }]}>
-                  <Text style={[s.reward, { color: colors.mint }]}>+{c.pointsReward} pts</Text>
-                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: "700" }}>
-                    {t("tapToJoin", "Tap to join")} →
-                  </Text>
-                </View>
-              </Pressable>
-            ))
+                  <View style={[s.footer, { borderTopColor: theme.border }]}>
+                    <Text style={[s.reward, { color: colors.mint }]}>+{c.pointsReward} pts</Text>
+                    <Text style={{ color: theme.text, fontSize: 12, fontWeight: "700" }}>
+                      {t("tapToJoin", "Tap to join")} →
+                    </Text>
+                  </View>
+                </Pressable>
+              )
+            })
           )}
         </ScrollView>
       </View>
@@ -219,6 +227,7 @@ const s = StyleSheet.create({
   card: { padding: 16, borderRadius: 14, borderWidth: 1 },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   typeTag: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
+  sponsoredBadge: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5, color: "#FFF", backgroundColor: "#FF4D8F", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
   daysLeft: { fontSize: 11, fontWeight: "600" },
   title: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
   desc: { fontSize: 13, lineHeight: 18, marginBottom: 12 },

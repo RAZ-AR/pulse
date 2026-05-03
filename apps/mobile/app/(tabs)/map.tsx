@@ -74,18 +74,21 @@ export default function MapScreen() {
         showsUserLocation={hasLocation}
         showsMyLocationButton={false}
       >
-        {(venues.data ?? []).map((v) => (
-          <Marker
-            key={v.id}
-            coordinate={{ latitude: v.lat, longitude: v.lng }}
-            pinColor={v.isPartner ? colors.pink : colors.sky}
-            title={v.name}
-            description={v.isPartner && v.pointsPerCurrency
-              ? `${v.pointsPerCurrency.toFixed(3)} pts/RSD`
-              : v.category.toLowerCase()}
-            onCalloutPress={() => router.push({ pathname: "/venue/[id]", params: { id: v.id } })}
-          />
-        ))}
+        {(venues.data ?? []).map((v) => {
+          const isFeatured = v.subscriptionTier === "FEATURED"
+          return (
+            <Marker
+              key={v.id}
+              coordinate={{ latitude: v.lat, longitude: v.lng }}
+              pinColor={isFeatured ? "#FFD400" : v.isPartner ? colors.pink : colors.sky}
+              title={isFeatured ? `★ ${v.name}` : v.name}
+              description={v.isPartner && v.pointsPerCurrency
+                ? `${v.pointsPerCurrency.toFixed(3)} pts/RSD${isFeatured ? " · FEATURED" : ""}`
+                : v.category.toLowerCase()}
+              onCalloutPress={() => router.push({ pathname: "/venue/[id]", params: { id: v.id } })}
+            />
+          )
+        })}
       </MapView>
 
       {/* Loading overlay */}

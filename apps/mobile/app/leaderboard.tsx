@@ -80,7 +80,12 @@ export default function LeaderboardScreen() {
                       <Text style={[s.rank, i < 3 ? { color: "#FFF" } : { color: theme.textSecondary }]}>{i + 1}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.name, { color: theme.text }]}>{v.name}</Text>
+                      <View style={s.nameRow}>
+                        <Text style={[s.name, { color: theme.text }]}>{v.name}</Text>
+                        {v.subscriptionTier === "FEATURED" ? (
+                          <Text style={s.featuredBadge}>★ FEATURED</Text>
+                        ) : null}
+                      </View>
                       <Text style={[s.sub, { color: theme.textSecondary }]} numberOfLines={1}>
                         {v.city} · {v.category.toLowerCase()}
                       </Text>
@@ -135,6 +140,8 @@ const s = StyleSheet.create({
   rankBox: { width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center" },
   rank: { fontSize: 13, fontWeight: "800" },
   name: { fontSize: 14, fontWeight: "600" },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  featuredBadge: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5, color: "#FFF", backgroundColor: "#FF4D8F", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
   sub: { fontSize: 11, marginTop: 2 },
   rowRight: { alignItems: "flex-end" },
   rate: { fontSize: 16, fontWeight: "800" },

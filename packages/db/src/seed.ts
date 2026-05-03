@@ -60,10 +60,12 @@ async function seed() {
     where: { id: "venue_willow" },
     update: {
       pointsPerCurrency: WILLOW_JAN_RATE,
+      subscriptionTier: "FEATURED",
     },
     create: {
       id: "venue_willow",
       name: "Café Willow",
+      subscriptionTier: "FEATURED",
       category: "CAFE",
       description: "Specialty coffee and homemade pastries in Dorćol.",
       address: "Skadarska 36, Beograd",
@@ -253,7 +255,25 @@ async function seed() {
       isGlobal: true,
     },
   })
-  console.log(`  ↳ 3 challenges (active for 30 days)`)
+
+  // Sponsored challenge — paid placement by Café Willow (FEATURED tier)
+  await db.challenge.upsert({
+    where: { id: "challenge_willow_spend" },
+    update: { startDate: challengeStart, endDate: challengeEnd },
+    create: {
+      id: "challenge_willow_spend",
+      title: "Willow regular",
+      description: "Spend 1,500 RSD at Café Willow this month — sponsored by the venue.",
+      type: "SPEND_AMOUNT",
+      rules: { threshold: 1500 },
+      pointsReward: 200,
+      startDate: challengeStart,
+      endDate: challengeEnd,
+      isGlobal: false,
+      venueId: "venue_willow",
+    },
+  })
+  console.log(`  ↳ 4 challenges (3 global + 1 sponsored)`)
 
   console.log(`
 ✅ Seed complete!

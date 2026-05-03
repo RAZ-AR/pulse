@@ -101,6 +101,7 @@ export const venueRouter = router({
           lat: true, lng: true, photos: true,
           isPartner: true, pointsPerCurrency: true, currency: true,
           boostMultiplier: true, boostUntil: true,
+          subscriptionTier: true,
         },
       })
 
@@ -133,7 +134,14 @@ export const venueRouter = router({
           ...(input.city ? { city: { equals: input.city, mode: "insensitive" } } : {}),
           ...(input.category ? { category: input.category } : {}),
         },
-        orderBy: { pointsPerCurrency: "desc" }, // most generous first
+        orderBy: [
+          // FEATURED venues bubble to top regardless of rate, then PRO, then BASIC/null,
+          // then within each tier rate desc. Postgres sorts NULL last — we want
+          // FEATURED first (alphabetically: BASIC < FEATURED < PRO), so sort by
+          // tier desc then rate desc — but we need FEATURED > PRO > BASIC > null.
+          // Easiest: sort by a synthetic — fall back to client-side reorder below.
+          { pointsPerCurrency: "desc" },
+        ],
         take: input.limit,
         select: {
           id: true, name: true, category: true, city: true, address: true,
@@ -144,13 +152,22 @@ export const venueRouter = router({
         },
       })
 
-      // Annotate with effective rate (applying active boosts)
+      // Annotate with effective rate (applying active boosts), then reorder so
+      // FEATURED tier surfaces first while preserving rate ordering within each tier.
+      const TIER_RANK: Record<string, number> = { FEATURED: 3, PRO: 2, BASIC: 1 }
       const now = new Date()
-      return venues.map((v) => {
-        const boostActive = v.boostUntil && v.boostUntil > now
-        const effectiveRate = v.pointsPerCurrency! * (boostActive ? (v.boostMultiplier ?? 1) : 1)
-        const rsdPerPoint = Math.round(1 / effectiveRate)
-        return { ...v, effectiveRate, rsdPerPoint, boostActive: !!boostActive }
-      })
+      return venues
+        .map((v) => {
+          const boostActive = v.boostUntil && v.boostUntil > now
+          const effectiveRate = v.pointsPerCurrency! * (boostActive ? (v.boostMultiplier ?? 1) : 1)
+          const rsdPerPoint = Math.round(1 / effectiveRate)
+          return { ...v, effectiveRate, rsdPerPoint, boostActive: !!boostActive }
+        })
+        .sort((a, b) => {
+          const ta = TIER_RANK[a.subscriptionTier ?? ""] ?? 0
+          const tb = TIER_RANK[b.subscriptionTier ?? ""] ?? 0
+          if (ta !== tb) return tb - ta
+          return b.effectiveRate - a.effectiveRate
+        })
     }),
 })

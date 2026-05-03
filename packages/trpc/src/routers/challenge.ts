@@ -3,24 +3,33 @@ import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, publicProcedure } from "../trpc"
 
 export const challengeRouter = router({
-  // All active challenges (not yet joined by this user)
+  // All active challenges (not yet joined by this user). Sponsored challenges
+  // (challenge.venueId set) bubble to top — they're paid placements per spec §6.2.
   listAvailable: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date()
 
-    // IDs the user has already joined
     const joined = await ctx.db.userChallenge.findMany({
       where: { userId: ctx.userId },
       select: { challengeId: true },
     })
     const joinedIds = joined.map((j) => j.challengeId)
 
-    return ctx.db.challenge.findMany({
+    const challenges = await ctx.db.challenge.findMany({
       where: {
         startDate: { lte: now },
         endDate: { gte: now },
         ...(joinedIds.length > 0 && { id: { notIn: joinedIds } }),
       },
+      include: { venue: { select: { id: true, name: true, subscriptionTier: true } } },
       orderBy: { endDate: "asc" },
+    })
+
+    // Reorder so sponsored (has venueId) come first; preserve endDate within each bucket.
+    return challenges.sort((a, b) => {
+      const aSponsored = a.venueId !== null
+      const bSponsored = b.venueId !== null
+      if (aSponsored !== bSponsored) return aSponsored ? -1 : 1
+      return a.endDate.getTime() - b.endDate.getTime()
     })
   }),
 
@@ -32,7 +41,11 @@ export const challengeRouter = router({
         userId: ctx.userId,
         challenge: { startDate: { lte: now }, endDate: { gte: now } },
       },
-      include: { challenge: true },
+      include: {
+        challenge: {
+          include: { venue: { select: { id: true, name: true, subscriptionTier: true } } },
+        },
+      },
       orderBy: { challenge: { endDate: "asc" } },
     })
   }),
