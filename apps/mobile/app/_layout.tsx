@@ -45,6 +45,7 @@ export default function RootLayout() {
             <Stack.Screen name="challenge/[id]" />
             <Stack.Screen name="steps" />
             <Stack.Screen name="gift" />
+            <Stack.Screen name="friends" />
           </Stack>
         </Providers>
       </SafeAreaProvider>

@@ -195,12 +195,15 @@ export default function ProfileScreen() {
           <Button label={t("share", "Share")} onPress={() => shareReferral(u.referralCode)} theme={theme} />
           <Button label={t("giftPoints", "Gift points")} variant="ghost" onPress={() => router.push("/gift")} theme={theme} />
         </View>
-        <Button
-          label={t("referralsCount", "{{count}} friends referred", { count: myReferrals.data?.length ?? 0 })}
-          variant="ghost"
-          onPress={() => router.push("/referrals")}
-          theme={theme}
-        />
+        <View style={[s.btnRow, { marginTop: 8 }]}>
+          <Button label={t("friends", "Friends")} variant="ghost" onPress={() => router.push("/friends")} theme={theme} />
+          <Button
+            label={t("referralsCount", "{{count}} referred", { count: myReferrals.data?.length ?? 0 })}
+            variant="ghost"
+            onPress={() => router.push("/referrals")}
+            theme={theme}
+          />
+        </View>
       </Section>
 
       {/* Sign out */}

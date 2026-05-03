@@ -113,17 +113,87 @@ export const socialRouter = router({
       }
     }),
 
+  /**
+   * "Friends" for v1 = people you invited (your referrals) + the person who invited you.
+   * No mutual friendship model yet — that's deferred until requested by users.
+   */
   friends: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.user.findMany({
-      where: { referredById: ctx.userId },
-      select: { id: true, name: true, avatarUrl: true },
+    const me = await ctx.db.user.findUnique({
+      where: { id: ctx.userId },
+      select: { referredById: true },
     })
+
+    const referees = await ctx.db.user.findMany({
+      where: { referredById: ctx.userId, onboardingDone: true },
+      select: { id: true, name: true, avatarUrl: true, currentStreak: true },
+      orderBy: { lastCheckinAt: "desc" },
+    })
+
+    let referrer: { id: string; name: string | null; avatarUrl: string | null; currentStreak: number } | null = null
+    if (me?.referredById) {
+      referrer = await ctx.db.user.findUnique({
+        where: { id: me.referredById },
+        select: { id: true, name: true, avatarUrl: true, currentStreak: true },
+      })
+    }
+
+    // Dedupe — referrer might also be in referees (unlikely but cheap to be safe)
+    const allIds = new Set(referees.map((r) => r.id))
+    const friends = [...referees]
+    if (referrer && !allIds.has(referrer.id)) friends.push(referrer)
+
+    return friends
   }),
 
+  /**
+   * Activity feed — public actions by your friends in the last 14 days.
+   * Public events: CHECKIN_PHOTO, CHALLENGE_COMPLETE, REWARD_REDEEMED.
+   * Filters out private finance events (gifts, scans, etc).
+   */
   feed: protectedProcedure
-    .input(z.object({ limit: z.number().default(20) }))
-    .query(async () => {
-      // Friends activity feed — Tier 3 step 18
-      return { items: [] }
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(20) }))
+    .query(async ({ ctx, input }) => {
+      // Reuse the same friends-set logic
+      const me = await ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: { referredById: true },
+      })
+      const referees = await ctx.db.user.findMany({
+        where: { referredById: ctx.userId, onboardingDone: true },
+        select: { id: true },
+      })
+      const friendIds = new Set(referees.map((r) => r.id))
+      if (me?.referredById) friendIds.add(me.referredById)
+
+      if (friendIds.size === 0) return { items: [] }
+
+      const since = new Date()
+      since.setDate(since.getDate() - 14)
+
+      const transactions = await ctx.db.transaction.findMany({
+        where: {
+          userId: { in: Array.from(friendIds) },
+          status: "VERIFIED",
+          type: { in: ["CHECKIN_PHOTO", "CHALLENGE_COMPLETE", "REWARD_REDEEMED"] },
+          createdAt: { gte: since },
+        },
+        include: {
+          user: { select: { id: true, name: true, avatarUrl: true } },
+          venue: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: input.limit,
+      })
+
+      return {
+        items: transactions.map((t) => ({
+          id: t.id,
+          type: t.type,
+          createdAt: t.createdAt,
+          pointsEarned: t.pointsEarned,
+          user: t.user,
+          venue: t.venue,
+        })),
+      }
     }),
 })
