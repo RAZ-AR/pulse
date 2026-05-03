@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
+    "@pulse/shared": "workspace:*",
     "bcryptjs": "^2.4.3"
   },
   "devDependencies": {

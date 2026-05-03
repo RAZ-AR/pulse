@@ -404,12 +404,15 @@ model UserChallenge {
 
 model Badge {
   id              String      @id @default(cuid())
+  code            String      @unique // stable slug, matches BADGE_DEFINITIONS
   name            String
   description     String
-  iconUrl         String
+  iconUrl         String      // emoji or URL
   rarity          BadgeRarity
-  unlockCondition Json
+  unlockCondition Json        // human-readable description / metadata
   users           UserBadge[]
+
+  @@index([rarity])
 }
 
 model UserBadge {

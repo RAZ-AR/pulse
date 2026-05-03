@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure } from "../trpc"
 import { verifyCheckinPhoto } from "../services/checkin-verify"
 import { trackVisit, trackStreak } from "../services/challenge-progress"
+import { checkAndAwardBadges } from "../services/badges"
 import {
   haversineMeters,
   CHECKIN_POINTS,
@@ -147,7 +148,10 @@ export const checkinRouter = router({
         await trackVisit(tx, ctx.userId)
         await trackStreak(tx, ctx.userId, streak.currentStreak)
 
-        return { checkin, updatedUser }
+        // Badge check (after stats are committed in same tx)
+        const newBadges = await checkAndAwardBadges(tx, ctx.userId)
+
+        return { checkin, updatedUser, newBadges }
       })
 
       return {
@@ -157,6 +161,7 @@ export const checkinRouter = router({
         newStreak: streak.currentStreak,
         newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
         distanceMeters: Math.round(distanceMeters),
+        newBadges: result.newBadges,
       }
     }),
 

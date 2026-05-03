@@ -23,7 +23,7 @@ type Phase =
   | { kind: "camera"; coords: Coords; venue: NearbyVenue }
   | { kind: "uploading"; coords: Coords; venue: NearbyVenue }
   | { kind: "submitting"; coords: Coords; venue: NearbyVenue }
-  | { kind: "done"; pointsEarned: number; streakBonus: number; newStreak: number; venue: NearbyVenue }
+  | { kind: "done"; pointsEarned: number; streakBonus: number; newStreak: number; venue: NearbyVenue; newBadges: string[] }
 
 const NEARBY_RADIUS_KM = 0.1 // 100m matches CHECKIN_RADIUS_METERS on backend
 
@@ -144,6 +144,7 @@ export default function CheckinScreen() {
                   streakBonus: result.streakBonus,
                   newStreak: result.newStreak,
                   venue: phase.venue,
+                  newBadges: result.newBadges,
                 })
               } catch (e) {
                 Alert.alert(
@@ -176,6 +177,11 @@ export default function CheckinScreen() {
             <Text style={[s.streakInfo, { color: theme.textSecondary }]}>
               🔥 {phase.newStreak} {t("dayStreak", "day streak")}
             </Text>
+            {phase.newBadges.length > 0 ? (
+              <Text style={[s.newBadge, { color: colors.pink }]}>
+                🏆 {t("newBadge", "New badge unlocked!")}
+              </Text>
+            ) : null}
             <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: theme.text, marginTop: 24 }]}>
               <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
             </Pressable>
@@ -338,4 +344,5 @@ const s = StyleSheet.create({
   points: { fontSize: 36, fontWeight: "800", marginTop: 16 },
   streakBonus: { fontSize: 14, fontWeight: "700", marginTop: 4 },
   streakInfo: { fontSize: 13, marginTop: 12 },
+  newBadge: { fontSize: 14, fontWeight: "700", marginTop: 12 },
 })

@@ -7,6 +7,7 @@
  */
 import { hash } from "bcryptjs"
 import { db } from "./client"
+import { BADGE_DEFINITIONS } from "@pulse/shared"
 
 const MERCHANT_EMAIL = "armen@pulse.app"
 const MERCHANT_PASSWORD = "pulse-dev-2024!" // change before production
@@ -17,6 +18,28 @@ const WILLOW_JAN_RATE = 1 / 125
 
 async function seed() {
   console.log("🌱 Seeding PULSE database…\n")
+
+  // ── Badges (idempotent upsert by code) ───────────────────────
+  for (const def of BADGE_DEFINITIONS) {
+    await db.badge.upsert({
+      where: { code: def.code },
+      create: {
+        code: def.code,
+        name: def.name,
+        description: def.description,
+        iconUrl: def.iconUrl,
+        rarity: def.rarity,
+        unlockCondition: { description: def.description },
+      },
+      update: {
+        name: def.name,
+        description: def.description,
+        iconUrl: def.iconUrl,
+        rarity: def.rarity,
+      },
+    })
+  }
+  console.log(`  ↳ ${BADGE_DEFINITIONS.length} badges seeded`)
 
   // ── Merchant (Armen) ─────────────────────────────────────────
   const passwordHash = await hash(MERCHANT_PASSWORD, 12)

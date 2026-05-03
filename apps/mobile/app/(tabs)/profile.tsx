@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { useTranslation } from "react-i18next"
+import { useRouter } from "expo-router"
 import { useTheme, colors } from "../../src/lib/theme"
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
@@ -9,12 +10,14 @@ import type { SupportedLocale } from "@pulse/shared"
 
 export default function ProfileScreen() {
   const theme = useTheme()
+  const router = useRouter()
   const { t, i18n } = useTranslation("profile")
   const signOut = useAuth((s) => s.signOut)
   const utils = trpc.useUtils()
 
   const profile = trpc.user.me.useQuery()
   const stats = trpc.user.getStats.useQuery()
+  const myBadges = trpc.badge.mine.useQuery()
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       utils.user.me.invalidate()
@@ -102,6 +105,28 @@ export default function ProfileScreen() {
           </>
         ) : null}
       </Section>
+
+      {/* Badges preview */}
+      <Pressable onPress={() => router.push("/badges")} style={[s.badgesCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={s.badgesHeader}>
+          <Text style={[s.sectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+            {t("badges", "Badges").toUpperCase()}
+          </Text>
+          <Text style={{ color: theme.text, fontSize: 12, fontWeight: "700" }}>
+            {(myBadges.data ?? []).length} →
+          </Text>
+        </View>
+        <View style={s.badgesRow}>
+          {(myBadges.data ?? []).slice(0, 6).map((b) => (
+            <Text key={b.id} style={s.badgeIcon}>{b.iconUrl}</Text>
+          ))}
+          {(myBadges.data ?? []).length === 0 ? (
+            <Text style={{ color: theme.textSecondary, fontSize: 12, paddingVertical: 8 }}>
+              {t("noBadgesYet", "Earn your first badge by checking in or scanning a receipt")}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
 
       {/* Edit profile */}
       <Section title={t("editProfile", "Edit profile")} theme={theme}>
@@ -239,6 +264,10 @@ const s = StyleSheet.create({
   heroSub: { color: "#FFF", fontSize: 12, marginTop: 6, opacity: 0.85 },
   section: { marginBottom: 20 },
   sectionTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
+  badgesCard: { marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1 },
+  badgesHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  badgesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  badgeIcon: { fontSize: 28 },
   card: { borderRadius: 12, borderWidth: 1, padding: 4 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 12, borderBottomWidth: 1 },
   field: { padding: 12 },

@@ -6,6 +6,7 @@ import { extractReceiptData, computeReceiptHash } from "../services/ocr"
 import { verifyReceiptPhoto } from "../services/receipt-verify"
 import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
 import { trackSpend } from "../services/challenge-progress"
+import { checkAndAwardBadges } from "../services/badges"
 import {
   SCAN_POINTS_PER_CURRENCY,
   RECEIPT_MAX_AGE_DAYS,
@@ -272,11 +273,13 @@ export const transactionRouter = router({
         }
 
         // Challenge progress: SPEND_AMOUNT (only for verified receipts)
+        let newBadges: string[] = []
         if (status === "VERIFIED") {
           await trackSpend(tx, ctx.userId, input.amount)
+          newBadges = await checkAndAwardBadges(tx, ctx.userId)
         }
 
-        return { transaction, updatedUser }
+        return { transaction, updatedUser, newBadges }
       })
 
       return {
@@ -288,6 +291,7 @@ export const transactionRouter = router({
         status,
         needsManualReview,
         matchedVenue: matchedVenue?.id ?? null,
+        newBadges: result.newBadges,
       }
     }),
 
@@ -417,9 +421,14 @@ export const transactionRouter = router({
               verifiedAt: new Date(),
             },
           })
+          // Referrer may have just unlocked the "Connector"/"Influencer" badge
+          await checkAndAwardBadges(tx, user.referredById)
         }
 
-        return { transaction, updatedUser }
+        // Badge check for the buyer
+        const newBadges = await checkAndAwardBadges(tx, input.userId)
+
+        return { transaction, updatedUser, newBadges }
       })
 
       return {
@@ -429,6 +438,7 @@ export const transactionRouter = router({
         newStreak: streak.currentStreak,
         newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
         referralRewarded: isFirstPurchase && !!user.referredById,
+        newBadges: result.newBadges,
       }
     }),
 

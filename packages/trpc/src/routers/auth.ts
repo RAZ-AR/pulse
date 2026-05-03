@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server"
 import { router, publicProcedure } from "../trpc"
 import { signMobileToken } from "@pulse/auth/mobile-jwt"
 import { generateReferralCode, WELCOME_BONUS_AMOUNT, WELCOME_EXPIRY_DAYS } from "@pulse/shared"
+import { checkAndAwardBadges } from "../services/badges"
 
 /**
  * Mobile auth router.
@@ -56,6 +57,11 @@ export const authRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user account" })
         }
         user = created
+
+        // Award welcome badge on signup (idempotent — only fires for fresh accounts)
+        await ctx.db.$transaction(async (tx) => {
+          await checkAndAwardBadges(tx, created!.id)
+        })
       }
 
       const token = await signMobileToken({ userId: user.id, email: user.email })
