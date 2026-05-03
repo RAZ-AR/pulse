@@ -8,6 +8,7 @@ import { venueRouter } from "./routers/venue"
 import { transactionRouter } from "./routers/transaction"
 import { checkinRouter } from "./routers/checkin"
 import { rewardRouter } from "./routers/reward"
+import { reviewRouter } from "./routers/review"
 import { challengeRouter } from "./routers/challenge"
 import { socialRouter } from "./routers/social"
 import { leaderboardRouter } from "./routers/leaderboard"
@@ -21,6 +22,7 @@ export const appRouter = router({
   transaction: transactionRouter,
   checkin: checkinRouter,
   reward: rewardRouter,
+  review: reviewRouter,
   challenge: challengeRouter,
   social: socialRouter,
   leaderboard: leaderboardRouter,

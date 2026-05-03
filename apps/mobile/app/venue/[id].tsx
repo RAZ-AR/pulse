@@ -11,6 +11,7 @@ export default function VenueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const venue = trpc.venue.detail.useQuery({ id })
+  const reviews = trpc.review.listByVenue.useQuery({ venueId: id, limit: 10 })
 
   if (venue.isLoading) {
     return (
@@ -106,6 +107,45 @@ export default function VenueDetailScreen() {
             {t("noRewardsYet", "No rewards yet at this venue")}
           </Text>
         )}
+
+        {/* Reviews */}
+        <View style={s.reviewsHeader}>
+          <Text style={[s.heading, { color: theme.textSecondary, marginBottom: 0 }]}>
+            {t("reviews", "Reviews").toUpperCase()}
+            {reviews.data?.averageRating != null ? (
+              <Text style={{ color: theme.text }}>{"  "}★ {reviews.data.averageRating.toFixed(1)} · {reviews.data.count}</Text>
+            ) : null}
+          </Text>
+          <Pressable onPress={() => router.push({ pathname: "/venue/[id]/review", params: { id: v.id } })}>
+            <Text style={[s.writeBtn, { color: theme.text }]}>
+              {t("writeReview", "Write review")} →
+            </Text>
+          </Pressable>
+        </View>
+
+        {!reviews.data || reviews.data.reviews.length === 0 ? (
+          <View style={[s.section, { backgroundColor: theme.surface, borderColor: theme.border, alignItems: "center" }]}>
+            <Text style={[s.subtle, { color: theme.textSecondary }]}>
+              {t("noReviewsYet", "Be the first to leave a review")}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 8 }}>
+            {reviews.data.reviews.map((r) => (
+              <View key={r.id} style={[s.reviewCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <View style={s.reviewHead}>
+                  <Text style={[s.reviewAuthor, { color: theme.text }]} numberOfLines={1}>
+                    {r.user.name ?? "Anonymous"}
+                  </Text>
+                  <Text style={s.reviewStars}>{"★".repeat(r.rating)}<Text style={{ color: theme.textSecondary }}>{"★".repeat(5 - r.rating)}</Text></Text>
+                </View>
+                {r.text ? (
+                  <Text style={[s.reviewText, { color: theme.text }]}>{r.text}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </>
   )
@@ -132,4 +172,11 @@ const s = StyleSheet.create({
   rewardTitle: { fontSize: 14, fontWeight: "700" },
   rewardDesc: { fontSize: 12, marginTop: 2 },
   rewardCost: { fontSize: 14, fontWeight: "800" },
+  reviewsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 24, marginBottom: 8, paddingHorizontal: 4 },
+  writeBtn: { fontSize: 12, fontWeight: "700" },
+  reviewCard: { padding: 14, borderRadius: 12, borderWidth: 1 },
+  reviewHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  reviewAuthor: { fontSize: 14, fontWeight: "700", flex: 1, marginRight: 8 },
+  reviewStars: { fontSize: 13, color: "#FF4D8F" },
+  reviewText: { fontSize: 13, lineHeight: 18 },
 })
