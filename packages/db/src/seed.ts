@@ -201,6 +201,60 @@ async function seed() {
   })
   console.log(`  ↳ 2 rewards (100 / 250 pts)`)
 
+  // ── Sample challenges (active for 30 days from seed time) ───
+  const challengeStart = new Date()
+  const challengeEnd = new Date()
+  challengeEnd.setDate(challengeEnd.getDate() + 30)
+
+  await db.challenge.upsert({
+    where: { id: "challenge_spend_2k" },
+    update: { startDate: challengeStart, endDate: challengeEnd },
+    create: {
+      id: "challenge_spend_2k",
+      title: "Big spender",
+      description: "Spend 2,000 RSD at PULSE partners this month and earn 100 bonus points.",
+      type: "SPEND_AMOUNT",
+      rules: { threshold: 2000 },
+      pointsReward: 100,
+      startDate: challengeStart,
+      endDate: challengeEnd,
+      isGlobal: true,
+    },
+  })
+
+  await db.challenge.upsert({
+    where: { id: "challenge_visit_3" },
+    update: { startDate: challengeStart, endDate: challengeEnd },
+    create: {
+      id: "challenge_visit_3",
+      title: "Neighborhood explorer",
+      description: "Check in at 3 different venues this month.",
+      type: "VISIT_N_VENUES",
+      rules: { count: 3 },
+      pointsReward: 75,
+      startDate: challengeStart,
+      endDate: challengeEnd,
+      isGlobal: true,
+    },
+  })
+
+  await db.challenge.upsert({
+    where: { id: "challenge_streak_7" },
+    update: { startDate: challengeStart, endDate: challengeEnd },
+    create: {
+      id: "challenge_streak_7",
+      title: "Hot streak",
+      description: "Hit a 7-day check-in streak this month — extra rewards on top of milestone bonus.",
+      type: "STREAK",
+      rules: { days: 7 },
+      pointsReward: 50,
+      startDate: challengeStart,
+      endDate: challengeEnd,
+      isGlobal: true,
+    },
+  })
+  console.log(`  ↳ 3 challenges (active for 30 days)`)
+
   console.log(`
 ✅ Seed complete!
 

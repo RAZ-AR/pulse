@@ -11,6 +11,8 @@ export default function HomeScreen() {
 
   const me = trpc.user.me.useQuery()
   const leaderboard = trpc.venue.rateLeaderboard.useQuery({ limit: 5 })
+  const myChallenges = trpc.challenge.listMine.useQuery()
+  const activeChallenges = (myChallenges.data ?? []).filter((uc) => !uc.isCompleted).slice(0, 2)
 
   const totalPoints = me.data ? me.data.earnedPoints + me.data.welcomePoints : 0
 
@@ -52,8 +54,51 @@ export default function HomeScreen() {
       <View style={s.actions}>
         <ActionButton label={t("nav.earn", "Earn")} icon="📷" onPress={() => router.push("/earn")} theme={theme} />
         <ActionButton label={t("nav.rewards", "Rewards")} icon="🎁" onPress={() => router.push("/rewards")} theme={theme} />
-        <ActionButton label={t("nav.map", "Map")} icon="🗺️" onPress={() => router.push("/map")} theme={theme} />
+        <ActionButton label={t("nav.challenges", "Challenges")} icon="🎯" onPress={() => router.push("/challenges")} theme={theme} />
       </View>
+
+      {/* Active challenges */}
+      {activeChallenges.length > 0 ? (
+        <>
+          <View style={s.sectionHeader}>
+            <Text style={[s.sectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
+              {t("activeChallenges", "Your challenges").toUpperCase()}
+            </Text>
+            <Pressable onPress={() => router.push("/challenges")}>
+              <Text style={[s.seeAll, { color: theme.text }]}>{t("seeAll", "See all →")}</Text>
+            </Pressable>
+          </View>
+          <View style={{ gap: 8, marginBottom: 24 }}>
+            {activeChallenges.map((uc) => {
+              const target = (uc.challenge.rules as { threshold?: number; count?: number; days?: number })
+              const total = target.threshold ?? target.count ?? target.days ?? 1
+              const pct = Math.min(100, (uc.progress / total) * 100)
+              return (
+                <Pressable
+                  key={uc.id}
+                  onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: uc.challengeId } })}
+                  style={[s.challengeCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                >
+                  <View style={s.challengeHead}>
+                    <Text style={[s.challengeTitle, { color: theme.text }]} numberOfLines={1}>
+                      {uc.challenge.title}
+                    </Text>
+                    <Text style={[s.challengeReward, { color: colors.mint }]}>+{uc.challenge.pointsReward}</Text>
+                  </View>
+                  <View style={s.challengeProgress}>
+                    <View style={[s.challengeTrack, { backgroundColor: theme.border }]}>
+                      <View style={[s.challengeFill, { width: `${pct}%`, backgroundColor: colors.pink }]} />
+                    </View>
+                    <Text style={[s.challengeProgressText, { color: theme.textSecondary }]}>
+                      {uc.progress}/{total}
+                    </Text>
+                  </View>
+                </Pressable>
+              )
+            })}
+          </View>
+        </>
+      ) : null}
 
       {/* Top venues by points rate */}
       <View style={s.sectionHeader}>
@@ -137,6 +182,14 @@ const s = StyleSheet.create({
   empty: { padding: 16, borderRadius: 12, borderWidth: 1, alignItems: "center" },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingHorizontal: 4 },
   seeAll: { fontSize: 12, fontWeight: "600" },
+  challengeCard: { padding: 14, borderRadius: 12, borderWidth: 1 },
+  challengeHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  challengeTitle: { fontSize: 14, fontWeight: "700", flex: 1 },
+  challengeReward: { fontSize: 13, fontWeight: "800", marginLeft: 8 },
+  challengeProgress: { flexDirection: "row", alignItems: "center", gap: 10 },
+  challengeTrack: { flex: 1, height: 5, borderRadius: 3, overflow: "hidden" },
+  challengeFill: { height: "100%", borderRadius: 3 },
+  challengeProgressText: { fontSize: 11, fontWeight: "700", minWidth: 50, textAlign: "right" },
   list: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   row: { padding: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
