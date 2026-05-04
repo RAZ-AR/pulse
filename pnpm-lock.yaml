@@ -32,6 +32,9 @@ importers:
       '@pulse/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@pulse/jobs':
+        specifier: workspace:*
+        version: link:../../packages/jobs
       '@pulse/shared':
         specifier: workspace:*
         version: link:../../packages/shared
