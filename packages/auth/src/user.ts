@@ -49,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   providers: [
     Resend({
-      apiKey: process.env.RESEND_API_KEY,
+      apiKey: process.env.RESEND_API_KEY!,
       from: process.env.EMAIL_FROM ?? "PULSE <noreply@pulse.app>",
     }),
   ],
