@@ -1,8 +1,9 @@
-import { Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native"
+import { ScrollView, Share, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, useTheme } from "../src/lib/theme"
+import { fonts, gradients, useTheme } from "../src/lib/theme"
+import { NeuCard } from "../src/components/neu"
 import { REFERRAL_REWARD_POINTS, REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
 
 function formatDate(d: Date | string) {
@@ -22,7 +23,11 @@ export default function ReferralsScreen() {
     if (!code) return
     try {
       await Share.share({
-        message: t("shareMessage", "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}", { code }),
+        message: t(
+          "shareMessage",
+          "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}",
+          { code },
+        ),
       })
     } catch { /* cancelled */ }
   }
@@ -36,82 +41,92 @@ export default function ReferralsScreen() {
         headerShown: true,
         title: t("yourReferrals", "Your referrals"),
         headerStyle: { backgroundColor: theme.bg },
+        headerShadowVisible: false,
         headerTintColor: theme.text,
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <View style={[s.hero, { backgroundColor: colors.pink }]}>
-          <Text style={s.heroLabel}>{t("friendsReferred", "FRIENDS REFERRED")}</Text>
-          <Text style={s.heroValue}>{list.length}</Text>
+        <NeuCard gradient={gradients.rainbow} style={s.hero}>
+          <View style={s.heroBlob} />
+          <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold }]}>{t("friendsReferred", "FRIENDS REFERRED")}</Text>
+          <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy }]}>{list.length}</Text>
           <Text style={s.heroSub}>
             {onboardedCount} {t("active", "active")}
           </Text>
-        </View>
+        </NeuCard>
 
         {/* How it works */}
-        <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[s.cardTitle, { color: theme.text }]}>{t("howItWorks", "How it works")}</Text>
-          <Text style={[s.cardLine, { color: theme.textSecondary }]}>
+        <NeuCard style={{ padding: 16, marginBottom: 16 }}>
+          <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+            {t("howItWorks", "How it works")}
+          </Text>
+          <Text style={[s.line, { color: theme.textSecondary }]}>
             1. {t("step1", "Share your code with a friend")}
           </Text>
-          <Text style={[s.cardLine, { color: theme.textSecondary }]}>
+          <Text style={[s.line, { color: theme.textSecondary }]}>
             2. {t("step2", "They sign up and get +{{pts}} bonus", { pts: REFERRAL_SIGNUP_POINTS })}
           </Text>
-          <Text style={[s.cardLine, { color: theme.textSecondary }]}>
+          <Text style={[s.line, { color: theme.textSecondary }]}>
             3. {t("step3", "You get +{{pts}} when they make their first partner purchase", { pts: REFERRAL_REWARD_POINTS })}
           </Text>
-        </View>
+        </NeuCard>
 
         {/* Code + share */}
         {code ? (
-          <View style={[s.codeCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.codeLabel, { color: theme.textSecondary }]}>
+          <NeuCard gradient={gradients.rainbow3} style={s.codeCard}>
+            <View>
+              <Text style={[s.codeLabel, { fontFamily: fonts.bodyBold }]}>
                 {t("yourCode", "Your code").toUpperCase()}
               </Text>
-              <Text style={[s.codeValue, { color: theme.text }]}>{code}</Text>
+              <Text style={[s.codeValue, { fontFamily: fonts.displayHeavy }]}>{code}</Text>
             </View>
-            <Pressable onPress={share} style={[s.shareBtn, { backgroundColor: theme.text }]}>
-              <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("share", "Share")}</Text>
-            </Pressable>
-          </View>
+            <NeuCard
+              onPress={share}
+              gradient={gradients.pink}
+              small
+              style={{ paddingHorizontal: 18, paddingVertical: 10 }}
+            >
+              <Text style={[s.shareBtnText, { fontFamily: fonts.bodyBold }]}>{t("share", "Share")}</Text>
+            </NeuCard>
+          </NeuCard>
         ) : null}
 
         {/* Friends list */}
-        <Text style={[s.sectionTitle, { color: theme.textSecondary }]}>
+        <Text style={[s.sectionTitle, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
           {t("referredFriends", "Referred friends").toUpperCase()}
         </Text>
         {list.length === 0 ? (
-          <View style={[s.empty, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <NeuCard style={{ padding: 24, alignItems: "center" }}>
             <Text style={s.emptyEmoji}>🤝</Text>
-            <Text style={[s.emptyText, { color: theme.textSecondary }]}>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
               {t("noReferralsYet", "No referrals yet. Share your code to get started!")}
             </Text>
-          </View>
+          </NeuCard>
         ) : (
-          <View style={[s.list, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <NeuCard style={{ padding: 0 }}>
             {list.map((r, i) => (
               <View
                 key={r.id}
-                style={[s.row, i < list.length - 1 && { borderBottomColor: theme.border, borderBottomWidth: 1 }]}
+                style={[
+                  s.row,
+                  i < list.length - 1 && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 },
+                ]}
               >
-                <View style={s.rowLeft}>
-                  <View style={[s.avatar, { backgroundColor: theme.bg }]}>
-                    <Text style={[s.avatarLetter, { color: theme.text }]}>
-                      {(r.name?.[0] ?? "?").toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.name, { color: theme.text }]} numberOfLines={1}>
-                      {r.name ?? t("unnamedUser", "New user")}
-                    </Text>
-                    <Text style={[s.date, { color: theme.textSecondary }]}>
-                      {t("joined", "Joined")} {formatDate(r.createdAt)}
-                    </Text>
-                  </View>
+                <View style={[s.avatar, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
+                  <Text style={[s.avatarLetter, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                    {(r.name?.[0] ?? "?").toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={[s.name, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                    {r.name ?? t("unnamedUser", "New user")}
+                  </Text>
+                  <Text style={[s.date, { color: theme.textSecondary }]}>
+                    {t("joined", "Joined")} {formatDate(r.createdAt)}
+                  </Text>
                 </View>
                 {r.onboardingDone ? (
-                  <Text style={[s.statusActive, { color: colors.mint }]}>{t("active", "active")}</Text>
+                  <Text style={[s.statusActive, { fontFamily: fonts.bodyBold }]}>{t("active", "active")}</Text>
                 ) : (
                   <Text style={[s.statusPending, { color: theme.textSecondary }]}>
                     {t("pendingOnboarding", "pending")}
@@ -119,7 +134,7 @@ export default function ReferralsScreen() {
                 )}
               </View>
             ))}
-          </View>
+          </NeuCard>
         )}
       </ScrollView>
     </>
@@ -129,28 +144,28 @@ export default function ReferralsScreen() {
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
-  hero: { borderRadius: 16, padding: 20, alignItems: "center", marginBottom: 16 },
-  heroLabel: { color: "#FFF", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },
-  heroValue: { color: "#FFF", fontSize: 56, fontWeight: "800", marginTop: 4 },
-  heroSub: { color: "#FFF", fontSize: 13, marginTop: 4, opacity: 0.85 },
-  card: { padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
-  cardTitle: { fontSize: 14, fontWeight: "700", marginBottom: 8 },
-  cardLine: { fontSize: 13, lineHeight: 20 },
-  codeCard: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 24, flexDirection: "row", alignItems: "center", gap: 12 },
-  codeLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1 },
-  codeValue: { fontSize: 22, fontWeight: "800", letterSpacing: 4, fontFamily: "monospace", marginTop: 2 },
-  shareBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
-  sectionTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
-  empty: { padding: 24, borderRadius: 12, borderWidth: 1, alignItems: "center" },
+
+  hero: { padding: 24, alignItems: "center", marginBottom: 16, overflow: "hidden" },
+  heroBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.12)" },
+  heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
+  heroValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
+  heroSub: { color: "rgba(255,255,255,0.85)", fontSize: 13 },
+
+  h2: { fontSize: 15, marginBottom: 8 },
+  line: { fontSize: 13, lineHeight: 20 },
+
+  codeCard: { padding: 16, marginBottom: 24, flexDirection: "row", alignItems: "center", gap: 12 },
+  codeLabel: { color: "rgba(255,255,255,0.78)", fontSize: 10, letterSpacing: 1 },
+  codeValue: { color: "#FFF", fontSize: 22, letterSpacing: 4, marginTop: 2, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  shareBtnText: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+
+  sectionTitle: { fontSize: 11, letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
   emptyEmoji: { fontSize: 36, marginBottom: 8 },
-  emptyText: { fontSize: 13, textAlign: "center" },
-  list: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  row: { padding: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  avatar: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(0,0,0,0.05)" },
-  avatarLetter: { fontSize: 14, fontWeight: "800" },
-  name: { fontSize: 14, fontWeight: "600" },
+  row: { flexDirection: "row", alignItems: "center", padding: 14 },
+  avatar: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  avatarLetter: { fontSize: 14 },
+  name: { fontSize: 14 },
   date: { fontSize: 11, marginTop: 2 },
-  statusActive: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+  statusActive: { fontSize: 11, color: "#5FEFC0", letterSpacing: 0.5 },
   statusPending: { fontSize: 11, fontWeight: "600", letterSpacing: 0.5 },
 })

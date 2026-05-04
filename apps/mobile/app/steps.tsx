@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { Pedometer } from "expo-sensors"
 import { trpc } from "../src/lib/trpc"
-import { colors, useTheme } from "../src/lib/theme"
+import { fonts, gradients, useTheme } from "../src/lib/theme"
+import { NeuCard } from "../src/components/neu"
 import { stepMultiplier } from "@pulse/shared"
 
 const TIERS = [
@@ -34,7 +35,6 @@ export default function StepsScreen() {
   const [available, setAvailable] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Read steps from device pedometer (iOS HealthKit / Android Activity Recognition)
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -84,24 +84,28 @@ export default function StepsScreen() {
         headerShown: true,
         title: t("steps", "Steps"),
         headerStyle: { backgroundColor: theme.bg },
+        headerShadowVisible: false,
         headerTintColor: theme.text,
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <View style={[s.hero, { backgroundColor: colors.mint }]}>
-          <Text style={s.heroLabel}>{t("today", "TODAY")}</Text>
-          <Text style={s.heroValue}>{displaySteps.toLocaleString()}</Text>
+        <NeuCard gradient={gradients.mint} style={s.hero}>
+          <View style={s.heroBlob} />
+          <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold }]}>{t("today", "TODAY")}</Text>
+          <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy }]}>{displaySteps.toLocaleString()}</Text>
           <Text style={s.heroSub}>{t("steps", "steps")}</Text>
           <View style={s.multBadge}>
-            <Text style={s.multText}>×{currentMult.toFixed(1)} {t("multiplier", "multiplier").toUpperCase()}</Text>
+            <Text style={[s.multText, { fontFamily: fonts.bodyBold }]}>
+              ×{currentMult.toFixed(1)} {t("multiplier", "multiplier").toUpperCase()}
+            </Text>
           </View>
-        </View>
+        </NeuCard>
 
         {/* Multiplier tiers */}
-        <Text style={[s.sectionTitle, { color: theme.textSecondary }]}>
+        <Text style={[s.sectionTitle, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
           {t("multiplierTiers", "Multiplier tiers").toUpperCase()}
         </Text>
-        <View style={[s.tiersCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <NeuCard style={{ padding: 0, marginBottom: 16 }}>
           {TIERS.map((tier, i) => {
             const isActive = displaySteps >= tier.min && displaySteps <= tier.max
             return (
@@ -109,68 +113,77 @@ export default function StepsScreen() {
                 key={tier.label}
                 style={[
                   s.tierRow,
-                  i < TIERS.length - 1 && { borderBottomColor: theme.border, borderBottomWidth: 1 },
+                  i < TIERS.length - 1 && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 },
                 ]}
               >
                 <View style={s.tierLeft}>
-                  <Text style={[s.tierMult, { color: isActive ? colors.mint : theme.textSecondary, fontWeight: isActive ? "800" : "600" }]}>
+                  <Text style={[s.tierMult, {
+                    color: isActive ? "#5FEFC0" : theme.textSecondary,
+                    fontFamily: isActive ? fonts.displayHeavy : fonts.bodyBold,
+                  }]}>
                     ×{tier.mult.toFixed(1)}
                   </Text>
                   <View>
-                    <Text style={[s.tierLabel, { color: theme.text }]}>{tier.label}</Text>
+                    <Text style={[s.tierLabel, { color: theme.text, fontFamily: fonts.bodyBold }]}>{tier.label}</Text>
                     <Text style={[s.tierRange, { color: theme.textSecondary }]}>
                       {tier.max === Infinity ? `${tier.min.toLocaleString()}+` : `${tier.min.toLocaleString()}–${tier.max.toLocaleString()}`} {t("steps", "steps")}
                     </Text>
                   </View>
                 </View>
-                {isActive ? <Text style={[s.activeMark, { color: colors.mint }]}>✓</Text> : null}
+                {isActive ? <Text style={s.activeMark}>✓</Text> : null}
               </View>
             )
           })}
-        </View>
+        </NeuCard>
 
         {/* Next tier hint */}
         {nextTier ? (
-          <View style={[s.hint, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[s.hintText, { color: theme.text }]}>
+          <NeuCard style={{ padding: 14, marginBottom: 24 }}>
+            <Text style={[s.hintText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
               🚶 {stepsToNext.toLocaleString()} {t("stepsToNext", "more steps to ×")}{nextTier.mult.toFixed(1)} {t("multiplier", "multiplier")}
             </Text>
-          </View>
+          </NeuCard>
         ) : null}
 
         {/* Sync */}
-        <Text style={[s.sectionTitle, { color: theme.textSecondary }]}>
+        <Text style={[s.sectionTitle, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
           {t("syncWithDevice", "Device pedometer").toUpperCase()}
         </Text>
-        <View style={[s.syncCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <NeuCard style={{ padding: 16, marginBottom: 16 }}>
           {available === null ? (
             <ActivityIndicator color={theme.text} />
           ) : !available ? (
-            <Text style={[s.syncErr, { color: theme.textSecondary }]}>
+            <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
               {error ?? t("pedometerUnavailable", "Step tracking is not available on this device.")}
             </Text>
           ) : (
             <>
               <View style={s.syncRow}>
                 <Text style={[s.syncLabel, { color: theme.textSecondary }]}>{t("deviceSteps", "Device steps today")}</Text>
-                <Text style={[s.syncValue, { color: theme.text }]}>{(pedometerSteps ?? 0).toLocaleString()}</Text>
+                <Text style={[s.syncValue, { color: theme.text, fontFamily: fonts.bodyBold }]}>
+                  {(pedometerSteps ?? 0).toLocaleString()}
+                </Text>
               </View>
               <View style={s.syncRow}>
                 <Text style={[s.syncLabel, { color: theme.textSecondary }]}>{t("syncedSteps", "Last synced")}</Text>
-                <Text style={[s.syncValue, { color: theme.text }]}>{serverSteps.toLocaleString()}</Text>
-              </View>
-              <Pressable
-                onPress={syncNow}
-                disabled={sync.isPending || pedometerSteps === null}
-                style={[s.btn, { backgroundColor: theme.text, opacity: sync.isPending ? 0.5 : 1, marginTop: 8 }]}
-              >
-                <Text style={{ color: theme.bg, fontWeight: "700" }}>
-                  {sync.isPending ? t("syncing", "Syncing…") : t("syncNow", "Sync now")}
+                <Text style={[s.syncValue, { color: theme.text, fontFamily: fonts.bodyBold }]}>
+                  {serverSteps.toLocaleString()}
                 </Text>
+              </View>
+              <Pressable onPress={syncNow} disabled={sync.isPending || pedometerSteps === null} style={{ opacity: sync.isPending ? 0.5 : 1 }}>
+                <NeuCard
+                  gradient={gradients.mint}
+                  small
+                  style={{ padding: 12, alignItems: "center", marginTop: 4 }}
+                >
+                  <Text style={[s.syncBtnText, { fontFamily: fonts.bodyBold }]}>
+                    {sync.isPending ? t("syncing", "Syncing…") : t("syncNow", "Sync now")}
+                  </Text>
+                </NeuCard>
               </Pressable>
             </>
           )}
-        </View>
+        </NeuCard>
 
         <Text style={[s.footnote, { color: theme.textSecondary }]}>
           {t("stepsFootnote", "Multiplier applies to the next purchase or receipt scan today. Step count resets at midnight.")}
@@ -183,27 +196,30 @@ export default function StepsScreen() {
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
-  hero: { borderRadius: 16, padding: 24, alignItems: "center", marginBottom: 24 },
-  heroLabel: { color: "#FFF", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },
-  heroValue: { color: "#FFF", fontSize: 56, fontWeight: "800" },
-  heroSub: { color: "#FFF", fontSize: 13, opacity: 0.85, marginBottom: 12 },
-  multBadge: { backgroundColor: "rgba(255,255,255,0.25)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  multText: { color: "#FFF", fontSize: 12, fontWeight: "800", letterSpacing: 0.5 },
-  sectionTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
-  tiersCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden", marginBottom: 16 },
+
+  hero: { padding: 26, alignItems: "center", marginBottom: 24, overflow: "hidden" },
+  heroBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.15)" },
+  heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
+  heroValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
+  heroSub: { color: "rgba(255,255,255,0.85)", fontSize: 13, marginBottom: 12 },
+  multBadge: { backgroundColor: "rgba(255,255,255,0.28)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 99 },
+  multText: { color: "#FFF", fontSize: 12, letterSpacing: 0.5 },
+
+  sectionTitle: { fontSize: 11, letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
+
   tierRow: { padding: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  tierLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
+  tierLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },
   tierMult: { fontSize: 18, minWidth: 38 },
-  tierLabel: { fontSize: 14, fontWeight: "700" },
+  tierLabel: { fontSize: 14 },
   tierRange: { fontSize: 11, marginTop: 1 },
-  activeMark: { fontSize: 20, fontWeight: "800" },
-  hint: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 24 },
-  hintText: { fontSize: 13, fontWeight: "600" },
-  syncCard: { padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
+  activeMark: { fontSize: 20, color: "#5FEFC0", fontWeight: "800" },
+
+  hintText: { fontSize: 13 },
+
   syncRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   syncLabel: { fontSize: 12 },
-  syncValue: { fontSize: 14, fontWeight: "700" },
-  syncErr: { fontSize: 13 },
-  btn: { padding: 12, borderRadius: 10, alignItems: "center" },
+  syncValue: { fontSize: 14 },
+  syncBtnText: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+
   footnote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 4 },
 })
