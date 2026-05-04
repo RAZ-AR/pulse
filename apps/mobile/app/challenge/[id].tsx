@@ -1,28 +1,29 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
+import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../../src/lib/trpc"
-import { colors, useTheme } from "../../src/lib/theme"
+import { fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
+import { NeuCard } from "../../src/components/neu"
 
-const TYPE_LABELS: Record<string, string> = {
-  SPEND_AMOUNT: "💸 Spend",
-  VISIT_N_VENUES: "📍 Visit",
-  WALK_STEPS: "👟 Steps",
-  COMBO: "🎯 Combo",
-  STREAK: "🔥 Streak",
+const TYPE_ICON: Record<string, string> = {
+  SPEND_AMOUNT: "💸",
+  VISIT_N_VENUES: "📍",
+  WALK_STEPS: "👟",
+  COMBO: "🎯",
+  STREAK: "🔥",
 }
 
 function daysLeft(end: Date | string): number {
-  const ms = new Date(end).getTime() - Date.now()
-  return Math.max(0, Math.ceil(ms / 86_400_000))
+  return Math.max(0, Math.ceil((new Date(end).getTime() - Date.now()) / 86_400_000))
 }
 
 function ruleSummary(type: string, rules: unknown): string {
   const r = rules as { threshold?: number; count?: number; days?: number }
-  if (type === "SPEND_AMOUNT") return `Spend ${r.threshold} RSD`
-  if (type === "VISIT_N_VENUES") return `Visit ${r.count} venues`
-  if (type === "STREAK") return `${r.days}-day streak`
-  return ""
+  if (type === "SPEND_AMOUNT") return `${r.threshold} RSD`
+  if (type === "VISIT_N_VENUES") return `${r.count} venues`
+  if (type === "STREAK") return `${r.days} days`
+  return "—"
 }
 
 export default function ChallengeDetailScreen() {
@@ -50,7 +51,6 @@ export default function ChallengeDetailScreen() {
       </View>
     )
   }
-
   const c = detail.data
   if (!c) {
     return (
@@ -61,63 +61,66 @@ export default function ChallengeDetailScreen() {
   }
 
   const uc = progress.data
-  const target = (c.rules as { threshold?: number; count?: number; days?: number })
+  const target = c.rules as { threshold?: number; count?: number; days?: number }
   const total = target.threshold ?? target.count ?? target.days ?? 1
   const pct = uc?.isCompleted ? 100 : uc ? Math.min(100, (uc.progress / total) * 100) : 0
   const isJoined = !!uc
+  const heroGrad = uc?.isCompleted ? gradients.mint : gradients.rainbow2
 
   return (
     <>
       <Stack.Screen options={{
         headerShown: true,
         title: c.title,
-        headerStyle: { backgroundColor: theme.bg },
+        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
         headerTintColor: theme.text,
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <View style={[s.hero, { backgroundColor: uc?.isCompleted ? colors.mint : colors.pink }]}>
-          <Text style={s.heroType}>{TYPE_LABELS[c.type] ?? c.type}</Text>
-          <Text style={s.heroTitle}>{c.title}</Text>
-          <Text style={s.heroReward}>+{c.pointsReward} pts</Text>
-        </View>
+        <NeuCard gradient={heroGrad} style={s.hero}>
+          <View style={s.heroBlob} />
+          <Text style={s.heroIcon}>{TYPE_ICON[c.type] ?? "🎯"}</Text>
+          <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{c.title}</Text>
+          <Text style={[s.heroReward, { fontFamily: fonts.displayHeavy }]}>+{c.pointsReward} pts</Text>
+        </NeuCard>
 
         {/* Description */}
-        <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Text style={[s.cardLabel, { color: theme.textSecondary }]}>
+        <NeuCard style={s.card}>
+          <Text style={[s.cardLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
             {t("aboutChallenge", "About").toUpperCase()}
           </Text>
           <Text style={[s.body, { color: theme.text }]}>{c.description}</Text>
-        </View>
+        </NeuCard>
 
-        {/* Progress (only when joined) */}
+        {/* Progress */}
         {isJoined && uc ? (
-          <View style={[s.card, { backgroundColor: theme.surface, borderColor: uc.isCompleted ? colors.mint : theme.border }]}>
-            <Text style={[s.cardLabel, { color: theme.textSecondary }]}>
+          <NeuCard style={s.card}>
+            <Text style={[s.cardLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
               {t("progress", "Progress").toUpperCase()}
             </Text>
             <View style={s.progressBig}>
-              <Text style={[s.progressNumber, { color: theme.text }]}>
-                {uc.progress} <Text style={{ color: theme.textSecondary, fontSize: 18 }}>/ {total}</Text>
+              <Text style={[s.progressNumber, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                {uc.progress}
+                <Text style={{ color: theme.textSecondary, fontSize: 18, fontWeight: "500" }}> / {total}</Text>
               </Text>
               {uc.isCompleted ? (
-                <Text style={[s.completedTag, { color: colors.mint }]}>
+                <Text style={[s.completedTag, { color: "#5FEFC0", fontFamily: fonts.bodyBold }]}>
                   ✓ {t("completed", "Completed")}
                 </Text>
               ) : null}
             </View>
-            <View style={[s.progressTrack, { backgroundColor: theme.border }]}>
-              <View
-                style={[
-                  s.progressFill,
-                  { width: `${pct}%`, backgroundColor: uc.isCompleted ? colors.mint : colors.pink },
-                ]}
+            <View style={s.progressTrack}>
+              <LinearGradient
+                colors={(uc.isCompleted ? gradients.mint : gradients.rainbow) as unknown as [string, string, ...string[]]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[s.progressFill, { width: `${pct}%` }]}
               />
             </View>
-          </View>
+          </NeuCard>
         ) : null}
 
-        {/* Stats row */}
+        {/* Stats */}
         <View style={s.statsRow}>
           <Stat label={t("daysLeft", "Days left")} value={`${daysLeft(c.endDate)}`} theme={theme} />
           <Stat label={t("participants", "Participants")} value={`${c._count?.participants ?? 0}`} theme={theme} />
@@ -126,27 +129,27 @@ export default function ChallengeDetailScreen() {
 
         {/* Action */}
         {!isJoined ? (
-          <Pressable
+          <NeuCard
+            gradient={gradients.rainbow}
             onPress={() => join.mutate({ challengeId: c.id })}
             disabled={join.isPending}
-            style={[s.btn, { backgroundColor: theme.text, opacity: join.isPending ? 0.5 : 1 }]}
+            style={{ padding: 16, alignItems: "center" }}
           >
-            <Text style={{ color: theme.bg, fontWeight: "700", fontSize: 15 }}>
-              {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "Join challenge")}
+            <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
+              {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "🚀 Join challenge")}
             </Text>
-          </Pressable>
+          </NeuCard>
         ) : uc?.isCompleted ? (
-          <View style={[s.completedBox, { borderColor: colors.mint }]}>
-            <Text style={[s.completedTitle, { color: colors.mint }]}>
-              ✓ {t("rewardClaimed", "Reward claimed")}
-            </Text>
-            <Text style={[s.completedSub, { color: theme.textSecondary }]}>
-              +{c.pointsReward} pts {t("addedToBalance", "added to your balance")}
-            </Text>
-          </View>
+          <NeuCard gradient={gradients.mint} style={{ padding: 18, alignItems: "center" }}>
+            <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>✓ {t("rewardClaimed", "Reward claimed")}</Text>
+            <Text style={s.completedSub}>+{c.pointsReward} pts {t("addedToBalance", "added to your balance")}</Text>
+          </NeuCard>
         ) : (
-          <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border }]}>
-            <Text style={{ color: theme.textSecondary, fontWeight: "600", fontSize: 14 }}>
+          <Pressable
+            onPress={() => router.back()}
+            style={[s.encourageCard, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}
+          >
+            <Text style={{ color: theme.textSecondary, fontFamily: fonts.bodyBold, fontSize: 13 }}>
               {t("keepGoing", "Keep earning to complete this")}
             </Text>
           </Pressable>
@@ -158,14 +161,20 @@ export default function ChallengeDetailScreen() {
 
 function Stat({
   label, value, theme, small,
-}: { label: string; value: string; theme: ReturnType<typeof useTheme>; small?: boolean }) {
+}: { label: string; value: string; theme: Theme; small?: boolean }) {
   return (
-    <View style={[s.stat, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <Text style={[s.statLabel, { color: theme.textSecondary }]}>{label}</Text>
-      <Text style={[small ? s.statValueSmall : s.statValue, { color: theme.text }]} numberOfLines={1}>
+    <NeuCard small style={s.stat}>
+      <Text style={[s.statLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
+      <Text
+        style={[
+          small ? s.statValueSmall : s.statValue,
+          { color: theme.text, fontFamily: fonts.displayHeavy },
+        ]}
+        numberOfLines={1}
+      >
         {value}
       </Text>
-    </View>
+    </NeuCard>
   )
 }
 
@@ -173,25 +182,30 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { padding: 24, borderRadius: 16, alignItems: "center", marginBottom: 16 },
-  heroType: { color: "#FFF", fontSize: 12, fontWeight: "700", opacity: 0.85, letterSpacing: 0.5 },
-  heroTitle: { color: "#FFF", fontSize: 24, fontWeight: "800", marginTop: 4, textAlign: "center" },
-  heroReward: { color: "#FFF", fontSize: 28, fontWeight: "800", marginTop: 8 },
-  card: { padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
-  cardLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8 },
+
+  hero: { padding: 24, alignItems: "center", marginBottom: 16, overflow: "hidden" },
+  heroBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.12)" },
+  heroIcon: { fontSize: 48, marginBottom: 8 },
+  heroTitle: { color: "#FFF", fontSize: 24, textAlign: "center", textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  heroReward: { color: "#FFF", fontSize: 28, marginTop: 12 },
+
+  card: { padding: 16, marginBottom: 12 },
+  cardLabel: { fontSize: 11, letterSpacing: 1, marginBottom: 8 },
   body: { fontSize: 14, lineHeight: 20 },
+
   progressBig: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 },
-  progressNumber: { fontSize: 28, fontWeight: "800" },
-  completedTag: { fontSize: 13, fontWeight: "700" },
-  progressTrack: { height: 8, borderRadius: 4, overflow: "hidden" },
+  progressNumber: { fontSize: 28 },
+  completedTag: { fontSize: 13 },
+  progressTrack: { height: 8, backgroundColor: "rgba(163,160,200,0.2)", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4 },
-  statsRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
-  stat: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 1 },
-  statLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5, marginBottom: 4 },
-  statValue: { fontSize: 18, fontWeight: "800" },
-  statValueSmall: { fontSize: 12, fontWeight: "700" },
-  btn: { padding: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
-  completedBox: { padding: 16, borderRadius: 12, borderWidth: 2, alignItems: "center", marginTop: 8 },
-  completedTitle: { fontSize: 16, fontWeight: "800" },
-  completedSub: { fontSize: 12, marginTop: 4 },
+
+  statsRow: { flexDirection: "row", gap: 8, marginVertical: 12 },
+  stat: { flex: 1, padding: 12 },
+  statLabel: { fontSize: 9, letterSpacing: 0.5, marginBottom: 4 },
+  statValue: { fontSize: 18 },
+  statValueSmall: { fontSize: 12 },
+
+  cta: { color: "#FFF", fontSize: 16, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  completedSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 },
+  encourageCard: { padding: 16, borderRadius: 12, alignItems: "center", marginTop: 4 },
 })

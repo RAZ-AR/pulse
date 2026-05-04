@@ -1,12 +1,16 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
-import { useRouter, Stack } from "expo-router"
+import { Stack, useRouter } from "expo-router"
+import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../src/lib/trpc"
-import { colors, useTheme } from "../src/lib/theme"
+import { fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
+import { NeuCard, GradPill } from "../src/components/neu"
 
 const CATEGORIES = ["ALL", "CAFE", "RESTAURANT", "RETAIL", "SERVICE"] as const
 type Category = (typeof CATEGORIES)[number]
+
+const PODIUM_GRADS = [gradients.gold, ["#E8E8E8", "#C0C0C0"] as const, ["#F5C7A0", "#CD7F32"] as const]
 
 export default function LeaderboardScreen() {
   const theme = useTheme()
@@ -31,27 +35,22 @@ export default function LeaderboardScreen() {
       <Stack.Screen options={{
         headerShown: true,
         title: t("leaderboard", "Leaderboard"),
-        headerStyle: { backgroundColor: theme.bg },
+        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
         headerTintColor: theme.text,
       }} />
       <View style={[s.container, { backgroundColor: theme.bg }]}>
         {/* City filter */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
-          <FilterChip
-            label={t("allCities", "All cities")}
-            active={city === null}
-            onPress={() => setCity(null)}
-            theme={theme}
-          />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
+          <Chip label={t("allCities", "All cities")} active={city === null} onPress={() => setCity(null)} theme={theme} />
           {uniqueCities.map((c) => (
-            <FilterChip key={c} label={c} active={city === c} onPress={() => setCity(c)} theme={theme} />
+            <Chip key={c} label={c} active={city === c} onPress={() => setCity(c)} theme={theme} />
           ))}
         </ScrollView>
 
         {/* Category filter */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
           {CATEGORIES.map((cat) => (
-            <FilterChip
+            <Chip
               key={cat}
               label={cat === "ALL" ? t("allCategories", "All") : cat}
               active={category === cat}
@@ -61,46 +60,50 @@ export default function LeaderboardScreen() {
           ))}
         </ScrollView>
 
-        {/* Leaderboard list */}
-        <ScrollView style={s.list} contentContainerStyle={s.listContent}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.list}>
           {!venues.data || venues.data.length === 0 ? (
-            <View style={[s.empty, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={{ color: theme.textSecondary }}>{t("noVenues", "No partner venues match these filters")}</Text>
-            </View>
+            <NeuCard style={{ padding: 24, alignItems: "center" }}>
+              <Text style={{ color: theme.textSecondary }}>
+                {t("noVenues", "No partner venues match these filters")}
+              </Text>
+            </NeuCard>
           ) : (
-            <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <NeuCard style={{ padding: 0 }}>
               {venues.data.map((v, i) => (
                 <Pressable
                   key={v.id}
                   onPress={() => router.push({ pathname: "/venue/[id]", params: { id: v.id } })}
-                  style={[s.row, i < venues.data!.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border }]}
+                  style={[
+                    s.row,
+                    i < venues.data!.length - 1 && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 },
+                  ]}
                 >
-                  <View style={s.rowLeft}>
-                    <View style={[s.rankBox, i < 3 && { backgroundColor: i === 0 ? colors.pink : i === 1 ? colors.sky : colors.mint }]}>
-                      <Text style={[s.rank, i < 3 ? { color: "#FFF" } : { color: theme.textSecondary }]}>{i + 1}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <View style={s.nameRow}>
-                        <Text style={[s.name, { color: theme.text }]}>{v.name}</Text>
-                        {v.subscriptionTier === "FEATURED" ? (
-                          <Text style={s.featuredBadge}>★ FEATURED</Text>
-                        ) : null}
-                      </View>
-                      <Text style={[s.sub, { color: theme.textSecondary }]} numberOfLines={1}>
-                        {v.city} · {v.category.toLowerCase()}
+                  <RankBadge rank={i + 1} theme={theme} />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={s.nameRow}>
+                      <Text style={[s.name, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                        {v.name}
                       </Text>
+                      {v.subscriptionTier === "FEATURED" ? (
+                        <GradPill label="★ FEATURED" gradient={gradients.pink} />
+                      ) : null}
                     </View>
+                    <Text style={[s.sub, { color: theme.textSecondary }]} numberOfLines={1}>
+                      {v.city} · {v.category.toLowerCase()}
+                    </Text>
                   </View>
-                  <View style={s.rowRight}>
-                    <Text style={[s.rate, { color: theme.text }]}>{v.effectiveRate.toFixed(3)}</Text>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={[s.rate, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                      {v.effectiveRate.toFixed(3)}
+                    </Text>
                     <Text style={[s.rateUnit, { color: theme.textSecondary }]}>pts/RSD</Text>
                     {v.boostActive ? (
-                      <Text style={s.boost}>×{v.boostMultiplier}</Text>
+                      <Text style={[s.boost, { fontFamily: fonts.bodyBold }]}>×{v.boostMultiplier}</Text>
                     ) : null}
                   </View>
                 </Pressable>
               ))}
-            </View>
+            </NeuCard>
           )}
         </ScrollView>
       </View>
@@ -108,43 +111,69 @@ export default function LeaderboardScreen() {
   )
 }
 
-function FilterChip({
-  label, active, onPress, theme,
-}: { label: string; active: boolean; onPress: () => void; theme: ReturnType<typeof useTheme> }) {
+function RankBadge({ rank, theme }: { rank: number; theme: Theme }) {
+  if (rank <= 3) {
+    const grad = PODIUM_GRADS[rank - 1]!
+    return (
+      <LinearGradient
+        colors={grad as unknown as [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[s.rankBox, theme.shadowRaisedSm]}
+      >
+        <Text style={[s.rankText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>{rank}</Text>
+      </LinearGradient>
+    )
+  }
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        s.chip,
-        {
-          backgroundColor: active ? theme.text : "transparent",
-          borderColor: active ? theme.text : theme.border,
-        },
-      ]}
-    >
-      <Text style={{ color: active ? theme.bg : theme.text, fontSize: 12, fontWeight: "600" }}>{label}</Text>
+    <View style={[s.rankBox, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
+      <Text style={[s.rankText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{rank}</Text>
+    </View>
+  )
+}
+
+function Chip({
+  label, active, onPress, theme,
+}: { label: string; active: boolean; onPress: () => void; theme: Theme }) {
+  if (active) {
+    return (
+      <Pressable onPress={onPress}>
+        <LinearGradient
+          colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[s.chip, theme.shadowGlow]}
+        >
+          <Text style={[s.chipActive, { fontFamily: fonts.bodyBold }]}>{label}</Text>
+        </LinearGradient>
+      </Pressable>
+    )
+  }
+  return (
+    <Pressable onPress={onPress} style={[s.chip, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
+      <Text style={[s.chipText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{label}</Text>
     </Pressable>
   )
 }
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  filterRow: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  list: { flex: 1 },
-  listContent: { padding: 16, paddingBottom: 40 },
-  empty: { padding: 24, borderRadius: 12, borderWidth: 1, alignItems: "center" },
-  card: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  row: { padding: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  rowLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  rankBox: { width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center" },
-  rank: { fontSize: 13, fontWeight: "800" },
-  name: { fontSize: 14, fontWeight: "600" },
+  filters: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
+  chipText: { fontSize: 12 },
+  chipActive: { color: "#FFF", fontSize: 12, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+
+  list: { padding: 16, paddingBottom: 40 },
+  row: { flexDirection: "row", alignItems: "center", padding: 14 },
+
+  rankBox: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  rankText: { fontSize: 13 },
+
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
-  featuredBadge: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5, color: "#FFF", backgroundColor: "#FF4D8F", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
+  name: { fontSize: 14 },
   sub: { fontSize: 11, marginTop: 2 },
-  rowRight: { alignItems: "flex-end" },
-  rate: { fontSize: 16, fontWeight: "800" },
-  rateUnit: { fontSize: 10, fontWeight: "600" },
-  boost: { fontSize: 10, fontWeight: "700", color: colors.pink, marginTop: 2 },
+
+  rate: { fontSize: 16 },
+  rateUnit: { fontSize: 10 },
+  boost: { fontSize: 10, color: "#FF85D2", marginTop: 2 },
 })

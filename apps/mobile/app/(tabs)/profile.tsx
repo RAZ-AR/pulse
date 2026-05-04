@@ -1,12 +1,21 @@
 import { useState } from "react"
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
-import { useTheme, colors } from "../../src/lib/theme"
+import { LinearGradient } from "expo-linear-gradient"
+import { fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
+import { NeuCard, NeuInset } from "../../src/components/neu"
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
 import { setLocale } from "../../src/lib/i18n"
 import type { SupportedLocale } from "@pulse/shared"
+
+const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
+  COMMON: gradients.violet,
+  RARE: gradients.blue,
+  EPIC: gradients.violet,
+  LEGENDARY: gradients.rainbow,
+}
 
 export default function ProfileScreen() {
   const theme = useTheme()
@@ -20,15 +29,6 @@ export default function ProfileScreen() {
   const myBadges = trpc.badge.mine.useQuery()
   const myReferrals = trpc.user.getReferrals.useQuery()
 
-  async function shareReferral(code: string) {
-    try {
-      await Share.share({
-        message: t("shareMessage", "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}", { code }),
-      })
-    } catch {
-      // user cancelled or platform error — silent
-    }
-  }
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       utils.user.me.invalidate()
@@ -61,14 +61,25 @@ export default function ProfileScreen() {
     updateProfile.mutate({ language: lng.toUpperCase() as "EN" | "RU" | "SR" })
   }
 
+  async function shareReferral(code: string) {
+    try {
+      await Share.share({
+        message: t(
+          "shareMessage",
+          "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}",
+          { code },
+        ),
+      })
+    } catch { /* cancelled */ }
+  }
+
   if (profile.isLoading) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
-        <Text style={{ color: theme.textSecondary }}>{t("common:loading", "Loading…")}</Text>
+        <ActivityIndicator color={theme.text} />
       </View>
     )
   }
-
   const u = profile.data
   if (!u) {
     return (
@@ -78,197 +89,267 @@ export default function ProfileScreen() {
     )
   }
 
-  const totalPoints = u.earnedPoints + u.welcomePoints
   const initial = (u.name ?? u.email ?? "?")[0]?.toUpperCase() ?? "?"
   const currentLng = (i18n.language as SupportedLocale) ?? "en"
+  const badges = myBadges.data ?? []
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      {/* Avatar + name */}
-      <View style={s.header}>
-        <View style={[s.avatar, { backgroundColor: colors.pink }]}>
-          <Text style={s.avatarText}>{initial}</Text>
+      {/* Hero */}
+      <NeuCard gradient={gradients.rainbow} style={s.hero}>
+        <View style={s.heroBlob} />
+        <View style={s.heroRow}>
+          <View style={s.heroAvatar}>
+            <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.heroName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
+              {u.name ?? u.email}
+            </Text>
+            {u.homeCity ? (
+              <Text style={s.heroCity}>📍 {u.homeCity}</Text>
+            ) : null}
+            <View style={s.refBadge}>
+              <Text style={[s.refBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
+            </View>
+          </View>
         </View>
-        <Text style={[s.name, { color: theme.text }]}>{u.name ?? u.email}</Text>
-        {u.homeCity ? (
-          <Text style={[s.subtle, { color: theme.textSecondary }]}>{u.homeCity}</Text>
-        ) : null}
-      </View>
-
-      {/* Points hero */}
-      <View style={[s.hero, { backgroundColor: colors.pink }]}>
-        <Text style={s.heroLabel}>{t("totalPoints", "Total points")}</Text>
-        <Text style={s.heroValue}>{totalPoints.toLocaleString()}</Text>
-        <Text style={s.heroSub}>
-          {t("earned", "Earned")}: {u.earnedPoints} · {t("welcome", "Welcome")}: {u.welcomePoints}
-        </Text>
-      </View>
+      </NeuCard>
 
       {/* Stats */}
-      <Section title={t("stats", "Your stats")} theme={theme}>
-        <Row label={t("streakCurrent", "Current streak")} value={`${u.currentStreak} ${t("common:days", "days")}`} theme={theme} />
-        <Row label={t("streakLongest", "Longest streak")} value={`${u.longestStreak} ${t("common:days", "days")}`} theme={theme} />
-        <Row label={t("totalEarned", "Total earned (lifetime)")} value={`${u.totalEarnedLifetime}`} theme={theme} />
-        {stats.data ? (
-          <>
-            <Row label={t("venuesVisited", "Venues visited")} value={`${stats.data.uniqueVenuesVisited}`} theme={theme} />
-            <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${stats.data.rewardsRedeemed}`} theme={theme} />
-          </>
-        ) : null}
-      </Section>
+      <View style={s.statsRow}>
+        <StatTile
+          gradient={gradients.rainbow2}
+          label={t("totalPts", "Total pts")}
+          value={u.totalEarnedLifetime.toLocaleString()}
+        />
+        <StatTile
+          gradient={gradients.pink}
+          label={`${t("streak", "Streak")} 🔥`}
+          value={`${u.currentStreak}d`}
+        />
+        <StatTile
+          gradient={gradients.gold}
+          label={t("best", "Best")}
+          value={`${u.longestStreak}d`}
+        />
+      </View>
 
-      {/* Badges preview */}
-      <Pressable onPress={() => router.push("/badges")} style={[s.badgesCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        <View style={s.badgesHeader}>
-          <Text style={[s.sectionTitle, { color: theme.textSecondary, marginBottom: 0 }]}>
-            {t("badges", "Badges").toUpperCase()}
-          </Text>
-          <Text style={{ color: theme.text, fontSize: 12, fontWeight: "700" }}>
-            {(myBadges.data ?? []).length} →
-          </Text>
-        </View>
-        <View style={s.badgesRow}>
-          {(myBadges.data ?? []).slice(0, 6).map((b) => (
-            <Text key={b.id} style={s.badgeIcon}>{b.iconUrl}</Text>
-          ))}
-          {(myBadges.data ?? []).length === 0 ? (
-            <Text style={{ color: theme.textSecondary, fontSize: 12, paddingVertical: 8 }}>
+      {/* Lifetime stats */}
+      {stats.data ? (
+        <NeuCard style={{ marginBottom: 20, padding: 0 }}>
+          <Row label={t("venuesVisited", "Venues visited")} value={`${stats.data.uniqueVenuesVisited}`} theme={theme} last={false} />
+          <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${stats.data.rewardsRedeemed}`} theme={theme} last={true} />
+        </NeuCard>
+      ) : null}
+
+      {/* Badges */}
+      <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+        {t("badges", "Badges")}
+      </Text>
+      <Pressable onPress={() => router.push("/badges")}>
+        {badges.length === 0 ? (
+          <NeuCard style={{ padding: 20, alignItems: "center", marginBottom: 20 }}>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
               {t("noBadgesYet", "Earn your first badge by checking in or scanning a receipt")}
             </Text>
-          ) : null}
-        </View>
+          </NeuCard>
+        ) : (
+          <View style={s.badgeGrid}>
+            {badges.slice(0, 6).map((b) => {
+              const grad = RARITY_GRADIENT[b.rarity] ?? gradients.violet
+              return (
+                <NeuCard key={b.id} gradient={grad} small style={s.badgeCard}>
+                  <Text style={s.badgeIcon}>{b.iconUrl}</Text>
+                  <Text style={[s.badgeName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                    {b.name}
+                  </Text>
+                  <Text style={s.badgeRarity}>{b.rarity}</Text>
+                </NeuCard>
+              )
+            })}
+          </View>
+        )}
       </Pressable>
 
+      {/* Referral */}
+      <NeuCard gradient={gradients.rainbow3} style={s.referralCard}>
+        <Text style={s.referralLabel}>
+          {t("referralCode", "Referral code").toUpperCase()}
+        </Text>
+        <Text style={[s.referralCode, { fontFamily: fonts.displayHeavy }]}>{u.referralCode}</Text>
+        <Text style={s.referralHint}>{t("referralHintShort", "Friends +50 · You +100 after first buy")}</Text>
+        <View style={s.referralBtns}>
+          <Pressable
+            onPress={() => shareReferral(u.referralCode)}
+            style={s.referralBtnInner}
+          >
+            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>📤 {t("share", "Share")}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/gift")}
+            style={s.referralBtnInner}
+          >
+            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>🎁 {t("giftPoints", "Gift")}</Text>
+          </Pressable>
+        </View>
+        <Text
+          onPress={() => router.push("/referrals")}
+          style={s.refsCount}
+        >
+          {t("referralsCount", "{{count}} referred", { count: myReferrals.data?.length ?? 0 })} →
+        </Text>
+      </NeuCard>
+
+      {/* Friends shortcut */}
+      <NeuCard
+        onPress={() => router.push("/friends")}
+        style={{ padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}
+      >
+        <View>
+          <Text style={[s.shortcutTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>
+            {t("friends", "Friends")}
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
+            {t("seeFriendsActivity", "See what your friends are up to")}
+          </Text>
+        </View>
+        <Text style={{ color: theme.textSecondary, fontSize: 18 }}>→</Text>
+      </NeuCard>
+
       {/* Edit profile */}
-      <Section title={t("editProfile", "Edit profile")} theme={theme}>
+      <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+        {t("editProfile", "Edit profile")}
+      </Text>
+      <NeuCard style={{ padding: 14, marginBottom: 20 }}>
         {editing ? (
           <>
             <Field label={t("name", "Name")} value={name} onChangeText={setName} theme={theme} />
             <Field label={t("homeCity", "Home city")} value={homeCity} onChangeText={setHomeCity} theme={theme} />
-            <View style={s.btnRow}>
-              <Button label={t("common:cancel", "Cancel")} variant="ghost" onPress={() => setEditing(false)} theme={theme} />
-              <Button
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Btn label={t("common:cancel", "Cancel")} variant="ghost" onPress={() => setEditing(false)} />
+              <Btn
                 label={updateProfile.isPending ? t("common:saving", "Saving…") : t("common:save", "Save")}
                 onPress={save}
                 disabled={updateProfile.isPending}
-                theme={theme}
               />
             </View>
           </>
         ) : (
-          <Button label={t("editProfile", "Edit profile")} variant="ghost" onPress={startEditing} theme={theme} />
+          <Btn label={t("editProfile", "Edit profile")} variant="ghost" onPress={startEditing} />
         )}
-      </Section>
+      </NeuCard>
 
-      {/* Language switch */}
-      <Section title={t("language", "Language")} theme={theme}>
-        <View style={s.btnRow}>
-          {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => (
+      {/* Language */}
+      <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+        {t("language", "Language")}
+      </Text>
+      <View style={s.langRow}>
+        {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => {
+          const active = currentLng === lng
+          if (active) {
+            return (
+              <Pressable key={lng} onPress={() => changeLanguage(lng)} style={{ flex: 1 }}>
+                <LinearGradient
+                  colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[s.langChip, theme.shadowGlow]}
+                >
+                  <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold }]}>{lng.toUpperCase()}</Text>
+                </LinearGradient>
+              </Pressable>
+            )
+          }
+          return (
             <Pressable
               key={lng}
               onPress={() => changeLanguage(lng)}
-              style={[
-                s.langBtn,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: currentLng === lng ? theme.text : "transparent",
-                },
-              ]}
+              style={[s.langChip, { backgroundColor: theme.bg, flex: 1 }, theme.shadowRaisedSm]}
             >
-              <Text style={{ color: currentLng === lng ? theme.bg : theme.text, fontWeight: "600" }}>
+              <Text style={[s.langChipText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
                 {lng.toUpperCase()}
               </Text>
             </Pressable>
-          ))}
-        </View>
-      </Section>
-
-      {/* Referral */}
-      <Section title={t("referralCode", "Your referral code")} theme={theme}>
-        <View style={[s.codeBox, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-          <Text style={[s.code, { color: theme.text }]}>{u.referralCode}</Text>
-        </View>
-        <Text style={[s.subtle, { color: theme.textSecondary, marginTop: 8, marginBottom: 12 }]}>
-          {t("referralCodeHint", "Share with friends — they get 50 pts, you get 100 pts after their first purchase")}
-        </Text>
-        <View style={s.btnRow}>
-          <Button label={t("share", "Share")} onPress={() => shareReferral(u.referralCode)} theme={theme} />
-          <Button label={t("giftPoints", "Gift points")} variant="ghost" onPress={() => router.push("/gift")} theme={theme} />
-        </View>
-        <View style={[s.btnRow, { marginTop: 8 }]}>
-          <Button label={t("friends", "Friends")} variant="ghost" onPress={() => router.push("/friends")} theme={theme} />
-          <Button
-            label={t("referralsCount", "{{count}} referred", { count: myReferrals.data?.length ?? 0 })}
-            variant="ghost"
-            onPress={() => router.push("/referrals")}
-            theme={theme}
-          />
-        </View>
-      </Section>
+          )
+        })}
+      </View>
 
       {/* Sign out */}
-      <View style={s.footer}>
-        <Button label={t("signOut", "Sign out")} variant="danger" onPress={signOut} theme={theme} />
-      </View>
+      <Pressable onPress={signOut} style={[s.signOut, { backgroundColor: "rgba(220,38,38,0.08)" }]}>
+        <Text style={[s.signOutText, { fontFamily: fonts.bodyBold }]}>{t("signOut", "Sign out")}</Text>
+      </Pressable>
     </ScrollView>
   )
 }
 
-// ── Components ────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────
 
-function Section({ title, children, theme }: { title: string; children: React.ReactNode; theme: ReturnType<typeof useTheme> }) {
+function StatTile({
+  gradient, label, value,
+}: { gradient: readonly [string, string, ...string[]]; label: string; value: string }) {
   return (
-    <View style={s.section}>
-      <Text style={[s.sectionTitle, { color: theme.textSecondary }]}>{title.toUpperCase()}</Text>
-      <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-        {children}
-      </View>
+    <NeuCard gradient={gradient} style={s.statTile} small>
+      <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{value}</Text>
+      <Text style={s.statLabel}>{label.toUpperCase()}</Text>
+    </NeuCard>
+  )
+}
+
+function Row({ label, value, theme, last }: { label: string; value: string; theme: Theme; last: boolean }) {
+  return (
+    <View style={[s.row, !last && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 }]}>
+      <Text style={{ color: theme.textSecondary, fontSize: 13 }}>{label}</Text>
+      <Text style={{ color: theme.text, fontSize: 14, fontFamily: fonts.bodyBold }}>{value}</Text>
     </View>
   )
 }
 
-function Row({ label, value, theme }: { label: string; value: string; theme: ReturnType<typeof useTheme> }) {
+function Field({
+  label, value, onChangeText, theme,
+}: { label: string; value: string; onChangeText: (v: string) => void; theme: Theme }) {
   return (
-    <View style={[s.row, { borderBottomColor: theme.border }]}>
-      <Text style={{ color: theme.textSecondary, fontSize: 14 }}>{label}</Text>
-      <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{value}</Text>
+    <View style={{ marginBottom: 10 }}>
+      <Text style={{ color: theme.textSecondary, fontSize: 11, fontFamily: fonts.bodyBold, letterSpacing: 0.5, marginBottom: 4 }}>
+        {label.toUpperCase()}
+      </Text>
+      <NeuInset>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          style={{ padding: 12, fontSize: 14, color: theme.text, fontFamily: fonts.body }}
+          placeholderTextColor={theme.textMuted}
+        />
+      </NeuInset>
     </View>
   )
 }
 
-function Field({ label, value, onChangeText, theme }: { label: string; value: string; onChangeText: (v: string) => void; theme: ReturnType<typeof useTheme> }) {
-  return (
-    <View style={s.field}>
-      <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 4 }}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        style={[s.input, { color: theme.text, borderColor: theme.border }]}
-        placeholderTextColor={theme.textSecondary}
-      />
-    </View>
-  )
-}
-
-function Button({
-  label, onPress, disabled, variant = "primary", theme,
-}: {
-  label: string
-  onPress: () => void
-  disabled?: boolean
-  variant?: "primary" | "ghost" | "danger"
-  theme: ReturnType<typeof useTheme>
-}) {
-  const bg = variant === "primary" ? theme.text : variant === "danger" ? "#DC2626" : "transparent"
-  const fg = variant === "ghost" ? theme.text : "#FFFFFF"
-  const border = variant === "ghost" ? theme.border : "transparent"
+function Btn({
+  label, onPress, variant = "primary", disabled,
+}: { label: string; onPress: () => void; variant?: "primary" | "ghost"; disabled?: boolean }) {
+  const theme = useTheme()
+  if (variant === "primary") {
+    return (
+      <Pressable onPress={onPress} disabled={disabled} style={{ flex: 1, opacity: disabled ? 0.5 : 1 }}>
+        <LinearGradient
+          colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[{ padding: 12, borderRadius: 10, alignItems: "center" }, theme.shadowGlow]}
+        >
+          <Text style={{ color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
+        </LinearGradient>
+      </Pressable>
+    )
+  }
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[s.btn, { backgroundColor: bg, borderColor: border, opacity: disabled ? 0.5 : 1 }]}
+      style={[{ flex: 1, padding: 12, borderRadius: 10, alignItems: "center", backgroundColor: theme.bg }, theme.shadowRaisedSm]}
     >
-      <Text style={{ color: fg, fontWeight: "600" }}>{label}</Text>
+      <Text style={{ color: theme.text, fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
     </Pressable>
   )
 }
@@ -277,29 +358,52 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { alignItems: "center", marginBottom: 24 },
-  avatar: { width: 80, height: 80, borderRadius: 40, justifyContent: "center", alignItems: "center", marginBottom: 12 },
-  avatarText: { color: "#FFF", fontSize: 32, fontWeight: "700" },
-  name: { fontSize: 22, fontWeight: "700" },
-  subtle: { fontSize: 13, marginTop: 4 },
-  hero: { borderRadius: 16, padding: 20, marginBottom: 24, alignItems: "center" },
-  heroLabel: { color: "#FFF", fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1, opacity: 0.85 },
-  heroValue: { color: "#FFF", fontSize: 40, fontWeight: "800", marginTop: 4 },
-  heroSub: { color: "#FFF", fontSize: 12, marginTop: 6, opacity: 0.85 },
-  section: { marginBottom: 20 },
-  sectionTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
-  badgesCard: { marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1 },
-  badgesHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  badgesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  badgeIcon: { fontSize: 28 },
-  card: { borderRadius: 12, borderWidth: 1, padding: 4 },
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 12, borderBottomWidth: 1 },
-  field: { padding: 12 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 14 },
-  btnRow: { flexDirection: "row", gap: 8, padding: 12 },
-  btn: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: "center" },
-  langBtn: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: "center" },
-  codeBox: { padding: 14, borderRadius: 10, borderWidth: 1, alignItems: "center", margin: 12 },
-  code: { fontSize: 22, fontWeight: "700", letterSpacing: 4, fontFamily: "monospace" },
-  footer: { marginTop: 12 },
+
+  hero: { padding: 24, marginBottom: 16, overflow: "hidden" },
+  heroBlob: { position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.12)" },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: 16 },
+  heroAvatar: {
+    width: 70, height: 70, borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    alignItems: "center", justifyContent: "center",
+  },
+  heroAvatarText: { color: "#FFF", fontSize: 28, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  heroName: { color: "#FFF", fontSize: 22, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  heroCity: { color: "rgba(255,255,255,0.78)", fontSize: 13, marginTop: 2 },
+  refBadge: { marginTop: 8, alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  refBadgeText: { color: "#FFF", fontSize: 11, letterSpacing: 1.5 },
+
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  statTile: { flex: 1, padding: 14 },
+  statValue: { color: "#FFF", fontSize: 20, lineHeight: 22, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  statLabel: { color: "rgba(255,255,255,0.78)", fontSize: 9, marginTop: 4, letterSpacing: 0.5, fontWeight: "700" },
+
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+
+  h2: { fontSize: 18, marginBottom: 12 },
+
+  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  badgeCard: { width: "31%", padding: 12, alignItems: "center" },
+  badgeIcon: { fontSize: 26, marginBottom: 6 },
+  badgeName: { color: "#FFF", fontSize: 12, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  badgeRarity: { color: "rgba(255,255,255,0.75)", fontSize: 9, marginTop: 2, letterSpacing: 0.5, fontWeight: "700" },
+
+  referralCard: { padding: 20, marginBottom: 16, alignItems: "center" },
+  referralLabel: { color: "rgba(255,255,255,0.75)", fontSize: 11, letterSpacing: 1.5, fontWeight: "700", marginBottom: 8 },
+  referralCode: { color: "#FFF", fontSize: 28, letterSpacing: 5, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
+  referralHint: { color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 8, textAlign: "center" },
+  referralBtns: { flexDirection: "row", gap: 10, marginTop: 14 },
+  referralBtnInner: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 12, paddingHorizontal: 18, paddingVertical: 9 },
+  referralBtnText: { color: "#FFF", fontSize: 13 },
+  refsCount: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "700", marginTop: 12 },
+
+  shortcutTitle: { fontSize: 15 },
+
+  langRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
+  langChip: { paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  langChipText: { fontSize: 13 },
+  langChipActive: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+
+  signOut: { padding: 14, borderRadius: 12, alignItems: "center" },
+  signOutText: { color: "#DC2626", fontSize: 14 },
 })
