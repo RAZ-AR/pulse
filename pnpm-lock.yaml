@@ -272,6 +272,9 @@ importers:
       '@pulse/db':
         specifier: workspace:*
         version: link:../db
+      '@pulse/shared':
+        specifier: workspace:*
+        version: link:../shared
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -316,6 +319,9 @@ importers:
 
   packages/i18n:
     dependencies:
+      '@pulse/shared':
+        specifier: workspace:*
+        version: link:../shared
       next-intl:
         specifier: ^3.22.1
         version: 3.26.5(next@15.5.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)

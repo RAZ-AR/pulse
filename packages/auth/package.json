@@ -12,6 +12,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
     "@pulse/db": "workspace:*",
+    "@pulse/shared": "workspace:*",
     "next-auth": "5.0.0-beta.25",
     "bcryptjs": "^2.4.3",
     "jose": "^5.9.6",

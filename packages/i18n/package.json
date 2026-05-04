@@ -9,6 +9,7 @@
     "./locales/*": "./src/locales/*"
   },
   "dependencies": {
+    "@pulse/shared": "workspace:*",
     "next-intl": "^3.22.1"
   }
 }
