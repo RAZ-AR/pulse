@@ -1,4 +1,4 @@
-import { expireWelcomePoints } from "@pulse/jobs/handlers/expire-welcome-points"
+import { expireWelcomePoints } from "@pulse/jobs"
 import { verifyQStashSignature } from "../_verify"
 
 export async function POST(req: Request) {
