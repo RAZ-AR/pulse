@@ -15,7 +15,13 @@
       "package": "com.pulse.app",
       "adaptiveIcon": {
         "backgroundColor": "#0F1115"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -23,15 +29,28 @@
       "expo-secure-store",
       [
         "expo-location",
-        { "locationAlwaysAndWhenInUsePermission": "Allow PULSE to use your location to show nearby partner venues." }
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow PULSE to use your location to show nearby partner venues."
+        }
       ],
       [
         "expo-camera",
-        { "cameraPermission": "Allow PULSE to use the camera to scan receipts and check in at venues." }
+        {
+          "cameraPermission": "Allow PULSE to use the camera to scan receipts and check in at venues."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "ce9ee81f-84dc-43ff-8609-3b47205c4101"
+      }
+    },
+    "owner": "bari_lus"
   }
 }
