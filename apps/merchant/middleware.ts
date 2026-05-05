@@ -1,9 +1,9 @@
-import { merchantAuth } from "@pulse/auth/merchant"
+import { merchantAuthEdge } from "@pulse/auth/merchant-edge"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export async function middleware(req: NextRequest) {
-  const session = await merchantAuth()
+  const session = await merchantAuthEdge()
   const isAuthed = !!session
 
   const { pathname } = req.nextUrl
