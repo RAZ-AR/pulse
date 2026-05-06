@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Stack, useRouter, useSegments } from "expo-router"
+import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { SafeAreaProvider } from "react-native-safe-area-context"
@@ -10,16 +10,17 @@ function AuthGate() {
   const router = useRouter()
   const segments = useSegments()
   const { token, hydrated } = useAuth()
+  const navState = useRootNavigationState()
 
   useEffect(() => {
-    if (!hydrated) return
+    if (!hydrated || !navState?.key) return
     const onAuthRoute = segments[0] === "onboarding"
     if (!token && !onAuthRoute) {
       router.replace("/onboarding")
     } else if (token && onAuthRoute) {
       router.replace("/(tabs)")
     }
-  }, [hydrated, token, segments, router])
+  }, [hydrated, token, segments, router, navState?.key])
 
   return null
 }

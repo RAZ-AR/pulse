@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@expo-google-fonts/space-grotesk": "^0.2.3",
-    "@expo/metro-runtime": "^55.0.10",
+    "@expo/metro-runtime": "^4.0.1",
     "@pulse/shared": "workspace:*",
     "@pulse/trpc": "workspace:*",
     "@supabase/supabase-js": "^2.46.1",
@@ -35,7 +35,7 @@
     "i18next": "^23.16.4",
     "react": "18.3.1",
     "react-i18next": "^15.1.1",
-    "react-native": "0.76.3",
+    "react-native": "0.76.9",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-maps": "1.18.0",
     "react-native-qrcode-svg": "^6.3.0",
