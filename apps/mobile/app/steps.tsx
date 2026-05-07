@@ -199,11 +199,11 @@ const s = StyleSheet.create({
 
   hero: { padding: 26, alignItems: "center", marginBottom: 24, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
-  heroValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
-  heroSub: { color: "rgba(255,255,255,0.85)", fontSize: 13, marginBottom: 12 },
-  multBadge: { backgroundColor: "rgba(255,255,255,0.28)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 99 },
-  multText: { color: "#FFF", fontSize: 12, letterSpacing: 0.5 },
+  heroLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  heroValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
+  heroSub: { color: "#91A1B4", fontSize: 13, marginBottom: 12 },
+  multBadge: { backgroundColor: "rgba(255,255,255,0.58)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 99 },
+  multText: { color: colors.ink, fontSize: 12, letterSpacing: 0.5 },
 
   sectionTitle: { fontSize: 11, letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
 
@@ -219,7 +219,7 @@ const s = StyleSheet.create({
   syncRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   syncLabel: { fontSize: 12 },
   syncValue: { fontSize: 14 },
-  syncBtnText: { color: "#FFF", fontSize: 13 },
+  syncBtnText: { color: colors.ink, fontSize: 13 },
 
   footnote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 4 },
 })

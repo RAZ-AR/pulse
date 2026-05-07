@@ -109,12 +109,12 @@ export default function VenueReviewScreen() {
           <Pressable
             onPress={submit}
             disabled={upsert.isPending}
-            style={[s.btn, { backgroundColor: colors.lavaBase, opacity: upsert.isPending ? 0.5 : 1 }]}
+            style={[s.btn, { backgroundColor: "#F9FBFF", opacity: upsert.isPending ? 0.5 : 1 }]}
           >
             {upsert.isPending ? (
-              <ActivityIndicator color={theme.bg} />
+              <ActivityIndicator color={theme.text} />
             ) : (
-              <Text style={{ color: theme.bg, fontWeight: "700", fontSize: 15 }}>
+              <Text style={{ color: theme.text, fontWeight: "700", fontSize: 15 }}>
                 {myReview.data ? t("updateReview", "Update review") : t("submitReview", "Submit review")}
               </Text>
             )}

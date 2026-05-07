@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../src/lib/trpc"
 import { useAuth } from "../src/store/auth"
 import { setLocale } from "../src/lib/i18n"
-import { fonts, gradients, useTheme } from "../src/lib/theme"
+import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import type { SupportedLocale } from "@pulse/shared"
@@ -117,7 +117,7 @@ function Step0({ onPick }: { onPick: (lng: SupportedLocale) => void }) {
           end={{ x: 1, y: 1 }}
           style={[s.logoOrb, theme.shadowGlow]}
         >
-          <Text style={s.logoChar}>P</Text>
+        <Text style={s.logoChar}>P</Text>
         </LinearGradient>
         <Text style={[s.brand, { color: theme.text, fontFamily: fonts.displayHeavy }]}>PULSE</Text>
         <Text style={[s.tagline, { color: theme.textSecondary }]}>{t("tagline", "Loyalty that competes for you")}</Text>
@@ -162,7 +162,7 @@ function FeatureCard({
 }: { gradient: readonly [string, string, ...string[]]; icon: string; title: string; sub: string }) {
   return (
     <NeuCard gradient={gradient} style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}>
-        <Text style={s.featureIcon}>{icon}</Text>
+      <Text style={s.featureIcon}>{icon}</Text>
       <View style={{ flex: 1 }}>
         <Text style={[s.featureTitle, { fontFamily: fonts.bodyBold }]}>{title}</Text>
         <Text style={s.featureSub}>{sub}</Text>
@@ -285,7 +285,7 @@ function Step2({
               onPress={() => setHomeCity(city.name)}
               style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
             >
-              <Text style={[s.cityChipText, { color: active ? "#FFFFFF" : theme.text, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.cityChipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
                 {city.label}
               </Text>
             </Pressable>
@@ -317,7 +317,7 @@ function Step2({
       <View style={{ flex: 1, minHeight: 24 }} />
 
       <NeuCard gradient={gradients.black} onPress={onSubmit} disabled={isPending} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
-        {isPending ? <ActivityIndicator color="#FFF" /> : (
+        {isPending ? <ActivityIndicator color={colors.ink} /> : (
           <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Let's go!")}</Text>
         )}
       </NeuCard>
@@ -334,13 +334,13 @@ const s = StyleSheet.create({
     width: 88, height: 88, borderRadius: 34,
     alignItems: "center", justifyContent: "center", marginBottom: 16,
   },
-  logoChar: { color: "#FFFFFF", fontSize: 38, fontWeight: "900" },
+  logoChar: { color: colors.ink, fontSize: 38, fontWeight: "900" },
   brand: { fontSize: 36, letterSpacing: 4 },
   tagline: { fontSize: 13, marginTop: 6 },
 
-  featureIcon: { color: "#FFFFFF", fontSize: 28, fontWeight: "900", width: 32, textAlign: "center" },
-  featureTitle: { color: "#FFF", fontSize: 14 },
-  featureSub: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 2 },
+  featureIcon: { color: "#91A1B4", fontSize: 28, fontWeight: "900", width: 32, textAlign: "center" },
+  featureTitle: { color: colors.ink, fontSize: 14 },
+  featureSub: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
 
   label: { fontSize: 11, letterSpacing: 1.2, marginBottom: 8 },
   optional: { fontSize: 11, fontWeight: "500", letterSpacing: 0 },
@@ -352,14 +352,14 @@ const s = StyleSheet.create({
   input: { padding: 14, fontSize: 15 },
   cityRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center" },
-  cityChipActive: { backgroundColor: "#F7B8D5" },
-  cityChipIdle: { backgroundColor: "#FFFFFF" },
+  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
+  cityChipIdle: { backgroundColor: "rgba(249,251,255,0.66)" },
   cityChipText: { fontSize: 13 },
 
-  bonusIcon: { color: "#FFFFFF", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
-  bonusTitle: { color: "#FFF", fontSize: 25, lineHeight: 28, textAlign: "center" },
-  bonusSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 6 },
-  bonusHint: { color: "#05060A", fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  bonusIcon: { color: "#91A1B4", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
+  bonusTitle: { color: colors.ink, fontSize: 25, lineHeight: 28, textAlign: "center" },
+  bonusSub: { color: "#91A1B4", fontSize: 12, marginTop: 6 },
+  bonusHint: { color: colors.ink, fontSize: 12, fontWeight: "700", marginBottom: 8 },
 
   bigTitle: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 13, lineHeight: 18 },
@@ -369,5 +369,5 @@ const s = StyleSheet.create({
   backBtn: { alignSelf: "flex-start", paddingVertical: 4, paddingRight: 12, marginBottom: 18 },
   backText: { fontSize: 13 },
 
-  cta: { color: "#FFF", fontSize: 16 },
+  cta: { color: colors.ink, fontSize: 16 },
 })

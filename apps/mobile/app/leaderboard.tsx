@@ -245,7 +245,7 @@ function RankBadge({ rank, theme }: { rank: number; theme: Theme }) {
         end={{ x: 1, y: 1 }}
         style={[s.rankBox, theme.shadowRaisedSm]}
       >
-        <Text style={[s.rankText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>{rank}</Text>
+        <Text style={[s.rankText, { color: colors.ink, fontFamily: fonts.displayHeavy }]}>{rank}</Text>
       </LinearGradient>
     )
   }
@@ -288,14 +288,14 @@ const s = StyleSheet.create({
   scopeRow: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
   chipText: { fontSize: 12 },
-  chipActive: { color: "#FFF", fontSize: 12 },
+  chipActive: { color: colors.ink, fontSize: 12 },
 
   myRankBanner: { marginHorizontal: 16, marginBottom: 4, padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", overflow: "hidden", borderRadius: 30 },
   myRankBannerBlob: { position: "absolute", top: -28, right: -28, width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: "rgba(167,232,238,0.25)" },
-  myRankLabel: { color: "rgba(255,255,255,0.75)", fontSize: 10, letterSpacing: 1 },
-  myRankValue: { color: "#FFF", fontSize: 28 },
-  myRankPts: { color: "#FFF", fontSize: 20, fontWeight: "800" },
-  myRankPtsLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11 },
+  myRankLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
+  myRankValue: { color: colors.ink, fontSize: 28 },
+  myRankPts: { color: colors.ink, fontSize: 20, fontWeight: "800" },
+  myRankPtsLabel: { color: "#91A1B4", fontSize: 11 },
 
   list: { padding: 16, paddingBottom: 40 },
   row: { flexDirection: "row", alignItems: "center", padding: 14 },

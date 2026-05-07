@@ -1,8 +1,8 @@
 /**
- * PULSE design system — editorial health-fintech reference.
+ * PULSE design system — soft unicorn-neumorphic reference.
  *
- * Cool white surfaces, black pill controls, cyan plan cards, large
- * grotesk typography, and soft floating shadows.
+ * Cool raised surfaces, pastel RGB gradients, large grotesk typography,
+ * and pill controls with soft floating shadows.
  */
 
 export type Theme = {
@@ -65,8 +65,8 @@ export const colors = {
   pinkSolid: "#D96AA7",
   skySolid: "#73D0DA",
   mintSolid: "#BFF04C",
-  indigoDark: "#05060A",
-  ink: "#05060A",
+  indigoDark: "#6E7D8E",
+  ink: "#6E7D8E",
   lavaBase: "#E1E6EF",
   lavaPink: "#F199E3",
   lavaBlue: "#9DCCFF",

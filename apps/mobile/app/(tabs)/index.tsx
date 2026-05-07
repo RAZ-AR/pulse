@@ -288,12 +288,12 @@ function CircleButton({ label, onPress }: { label: string; onPress: () => void }
 }
 
 function MetricCard({ value, label, tone }: { value: string; label: string; tone: "cyan" | "white" | "black" }) {
-  const bg = tone === "cyan" ? colors.cyan : tone === "black" ? colors.lavaBase : "#FFFFFF"
-  const fg = tone === "black" ? "#FFFFFF" : colors.ink
+  const bg = tone === "cyan" ? colors.cyan : tone === "black" ? "rgba(255,244,254,0.92)" : "#FFFFFF"
+  const fg = colors.ink
   const content = (
     <>
       <Text style={[s.metricValue, { color: fg, fontFamily: fonts.displayHeavy }]}>{value}</Text>
-      <Text style={[s.metricLabel, { color: tone === "black" ? "rgba(255,255,255,0.82)" : "#7A808E", fontFamily: fonts.bodyBold }]}>
+      <Text style={[s.metricLabel, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>
         {label.toUpperCase()}
       </Text>
     </>
@@ -738,7 +738,7 @@ const s = StyleSheet.create({
   offerLogoDark: { backgroundColor: "rgba(255,255,255,0.72)" },
   offerLogoLight: { backgroundColor: "rgba(255,255,255,0.72)" },
   offerLogoText: { fontSize: 17, fontWeight: "900" },
-  offerPoints: { backgroundColor: "rgba(255,255,255,0.60)", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
+  offerPoints: { backgroundColor: "rgba(255,255,255,0.60)", color: "#6E7D8E", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
   offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
   offerVenue: { fontSize: 12, marginTop: 8 },
   offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.58)" },
@@ -766,7 +766,7 @@ const s = StyleSheet.create({
   venueMeta: { color: "#91A1B4", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
   venueAddress: { color: "#A3B1C6", fontSize: 12, marginTop: 2 },
   venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
-  venueChipDark: { backgroundColor: colors.lavaBase, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipDark: { backgroundColor: "rgba(255,244,254,0.92)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   venueChipDarkText: { color: "#7A8EA3", fontSize: 10 },
   venueChipLight: { backgroundColor: "rgba(225,230,239,0.58)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   venueChipLightText: { color: "#91A1B4", fontSize: 10 },

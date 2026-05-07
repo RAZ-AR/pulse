@@ -35,10 +35,10 @@ export default function TabsLayout() {
           paddingTop: 0,
           paddingBottom: 0,
           borderRadius: 32,
-          shadowColor: colors.lavaPink,
-          shadowOffset: { width: 0, height: 14 },
-          shadowOpacity: 0.28,
-          shadowRadius: 28,
+          shadowColor: "#A3B1C6",
+          shadowOffset: { width: 9, height: 9 },
+          shadowOpacity: 0.42,
+          shadowRadius: 16,
           elevation: 12,
           overflow: "hidden",
         },
@@ -103,7 +103,7 @@ function DockTabIcon({ icon, label, focused }: { icon: string; label: string; fo
 
   return (
     <LavaLampSurface intensity="glass" style={[s.tabItem, s.tabItemIdle]} contentStyle={s.tabItemContent}>
-      <Text style={[s.iconChar, { color: focused ? colors.ink : "rgba(255,255,255,0.58)" }]}>{icon}</Text>
+      <Text style={[s.iconChar, { color: focused ? colors.ink : "#91A1B4" }]}>{icon}</Text>
     </LavaLampSurface>
   )
 }
@@ -127,7 +127,7 @@ const s = StyleSheet.create({
   tabItemActive: {
     minWidth: 118,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.68)",
+    borderColor: "rgba(255,255,255,0.86)",
   },
   tabItemIdle: {
     width: 54,

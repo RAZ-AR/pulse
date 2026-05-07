@@ -203,8 +203,8 @@ function Empty({
       <Text style={[s.emptyTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{title}</Text>
       <Text style={[s.emptyDesc, { color: theme.textSecondary }]}>{desc}</Text>
       {action ? (
-        <Pressable onPress={onAction} style={[s.emptyBtn, { backgroundColor: colors.lavaBase }]}>
-          <Text style={{ color: theme.bg, fontFamily: fonts.bodyBold, fontSize: 13 }}>{action}</Text>
+        <Pressable onPress={onAction} style={[s.emptyBtn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+          <Text style={{ color: theme.text, fontFamily: fonts.bodyBold, fontSize: 13 }}>{action}</Text>
         </Pressable>
       ) : null}
     </NeuCard>
@@ -228,15 +228,15 @@ const ss = StyleSheet.create({
   card: { padding: 18, overflow: "hidden", borderRadius: 30 },
   cardBlob: { position: "absolute", top: -30, right: -30, width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: "rgba(167,232,238,0.25)" },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
-  iconText: { color: "#FFFFFF", fontSize: 20, fontWeight: "900" },
-  title: { color: "#FFF", fontSize: 16 },
-  desc: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
-  reward: { color: "#FFF", fontSize: 20, lineHeight: 22 },
-  rewardUnit: { color: "rgba(255,255,255,0.6)", fontSize: 10 },
-  progressTrack: { height: 8, backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 4, overflow: "hidden", marginBottom: 8 },
-  progressFill: { height: "100%", backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 4 },
+  icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
+  iconText: { color: "#91A1B4", fontSize: 20, fontWeight: "900" },
+  title: { color: colors.ink, fontSize: 16 },
+  desc: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
+  reward: { color: colors.ink, fontSize: 20, lineHeight: 22 },
+  rewardUnit: { color: "#91A1B4", fontSize: 10 },
+  progressTrack: { height: 8, backgroundColor: "rgba(163,177,198,0.18)", borderRadius: 4, overflow: "hidden", marginBottom: 8 },
+  progressFill: { height: "100%", backgroundColor: "rgba(133,245,242,0.95)", borderRadius: 4 },
   cardFoot: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  progressText: { color: "rgba(255,255,255,0.7)", fontSize: 11 },
-  daysLeft: { color: "#FFF", fontSize: 11, fontWeight: "700" },
+  progressText: { color: "#91A1B4", fontSize: 11 },
+  daysLeft: { color: colors.ink, fontSize: 11, fontWeight: "700" },
 })

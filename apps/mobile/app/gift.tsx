@@ -199,7 +199,7 @@ export default function GiftScreen() {
                 >
                   <NeuCard gradient={gradients.black} style={{ padding: 12, alignItems: "center", borderRadius: 99 }}>
                     {sendGift.isPending ? (
-                      <ActivityIndicator color="#FFF" />
+                      <ActivityIndicator color={colors.ink} />
                     ) : (
                       <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("sendGift", "Send gift")}</Text>
                     )}
@@ -249,14 +249,14 @@ const s = StyleSheet.create({
   label: { fontSize: 11, letterSpacing: 0.5, marginBottom: 6 },
   optional: { fontSize: 11, fontWeight: "500", letterSpacing: 0 },
   input: { padding: 14, fontSize: 15 },
-  cta: { color: "#FFF", fontSize: 15 },
+  cta: { color: colors.ink, fontSize: 15 },
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
 
   recipientCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, marginBottom: 20, borderRadius: 30 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
-  avatarLetter: { color: "#FFF", fontSize: 20 },
-  recipientName: { color: "#FFF", fontSize: 16 },
-  recipientCode: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2, letterSpacing: 2 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
+  avatarLetter: { color: colors.ink, fontSize: 20 },
+  recipientName: { color: colors.ink, fontSize: 16 },
+  recipientCode: { color: "#91A1B4", fontSize: 12, marginTop: 2, letterSpacing: 2 },
 
   btnRow: { flexDirection: "row", gap: 8, marginTop: 8 },
 

@@ -97,7 +97,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
       {/* Hero */}
-      <NeuCard gradient={gradients.black} style={s.hero}>
+      <NeuCard gradient={gradients.black} style={[s.hero, { borderRadius: 50 }]}>
         <View style={s.heroBlob} />
         <View style={s.heroRow}>
           <View style={s.heroAvatar}>
@@ -236,7 +236,7 @@ export default function ProfileScreen() {
                     onPress={() => setHomeCity(city.name)}
                     style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
                   >
-                    <Text style={[s.cityChipText, { color: active ? "#FFFFFF" : theme.text, fontFamily: fonts.bodyBold }]}>
+                    <Text style={[s.cityChipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
                       {city.label}
                     </Text>
                   </Pressable>
@@ -355,7 +355,7 @@ function Btn({
           end={{ x: 1, y: 0 }}
           style={[{ padding: 12, borderRadius: 10, alignItems: "center" }, theme.shadowGlow]}
         >
-          <Text style={{ color: "#FFF", fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
+          <Text style={{ color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
         </LinearGradient>
       </Pressable>
     )
@@ -381,20 +381,20 @@ const s = StyleSheet.create({
   heroRow: { flexDirection: "row", alignItems: "center", gap: 16 },
   heroAvatar: {
     width: 70, height: 70, borderRadius: 28,
-    backgroundColor: colors.lavaPink,
+    backgroundColor: "rgba(255,255,255,0.72)",
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.46)",
   },
-  heroAvatarText: { color: "#FFF", fontSize: 28 },
-  heroName: { color: "#FFF", fontSize: 25, lineHeight: 29 },
-  heroCity: { color: "rgba(255,255,255,0.62)", fontSize: 13, marginTop: 2 },
+  heroAvatarText: { color: colors.ink, fontSize: 28 },
+  heroName: { color: colors.ink, fontSize: 25, lineHeight: 29 },
+  heroCity: { color: "#91A1B4", fontSize: 13, marginTop: 2 },
   refBadge: { marginTop: 10, alignSelf: "flex-start", backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
   refBadgeText: { color: colors.ink, fontSize: 11, letterSpacing: 1.5 },
 
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
   statTile: { flex: 1, padding: 14, minHeight: 86 },
   statValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
-  statLabel: { color: "#6B7280", fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
+  statLabel: { color: "#91A1B4", fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
 
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
 
@@ -403,30 +403,30 @@ const s = StyleSheet.create({
   badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   badgeCard: { width: "31%", padding: 12, alignItems: "center", minHeight: 104 },
   badgeIcon: { fontSize: 26, marginBottom: 6 },
-  badgeName: { color: "#FFF", fontSize: 12, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  badgeRarity: { color: "rgba(255,255,255,0.75)", fontSize: 9, marginTop: 2, letterSpacing: 0.5, fontWeight: "700" },
+  badgeName: { color: colors.ink, fontSize: 12 },
+  badgeRarity: { color: "#91A1B4", fontSize: 9, marginTop: 2, letterSpacing: 0.5, fontWeight: "700" },
 
   referralCard: { padding: 20, marginBottom: 16, alignItems: "center" },
-  referralLabel: { color: "rgba(255,255,255,0.75)", fontSize: 11, letterSpacing: 1.5, fontWeight: "700", marginBottom: 8 },
-  referralCode: { color: "#FFF", fontSize: 28, letterSpacing: 5, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
-  referralHint: { color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 8, textAlign: "center" },
+  referralLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5, fontWeight: "700", marginBottom: 8 },
+  referralCode: { color: colors.ink, fontSize: 28, letterSpacing: 5 },
+  referralHint: { color: "#91A1B4", fontSize: 11, marginTop: 8, textAlign: "center" },
   referralBtns: { flexDirection: "row", gap: 10, marginTop: 14 },
   referralBtnInner: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
   referralBtnText: { color: colors.ink, fontSize: 13 },
-  refsCount: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "700", marginTop: 12 },
+  refsCount: { color: colors.ink, fontSize: 12, fontWeight: "700", marginTop: 12 },
 
   shortcutTitle: { fontSize: 15 },
 
   cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },
-  cityChipActive: { backgroundColor: colors.lavaBase },
-  cityChipIdle: { backgroundColor: "#FFFFFF" },
+  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
+  cityChipIdle: { backgroundColor: "rgba(249,251,255,0.66)" },
   cityChipText: { fontSize: 12 },
 
   langRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
   langChip: { paddingVertical: 12, borderRadius: 99, alignItems: "center" },
   langChipText: { fontSize: 13 },
-  langChipActive: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  langChipActive: { color: colors.ink, fontSize: 13 },
 
   signOut: { padding: 14, borderRadius: 99, alignItems: "center" },
   signOutText: { color: "#DC2626", fontSize: 14 },

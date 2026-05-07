@@ -43,7 +43,7 @@ export default function EarnScreen() {
         </View>
       </View>
 
-      <LavaLampSurface style={s.hero}>
+      <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
           <View style={s.blackLogo}><Text style={s.blackLogoText}>P</Text></View>
@@ -143,19 +143,19 @@ function EarnMethod({
   onPress: () => void
 }) {
   const dark = tone === "black"
-  const bg = tone === "cyan" ? colors.cyan : dark ? colors.lavaBase : "#FFFFFF"
-  const fg = dark ? "#FFFFFF" : colors.ink
+  const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : "#F9FBFF"
+  const fg = colors.ink
   const content = (
     <>
-      <View style={[s.methodIcon, { backgroundColor: dark ? "#FFFFFF" : colors.lavaPink }]}>
-        <Text style={[s.methodIconText, { color: dark ? colors.lavaPink : "#FFFFFF" }]}>{icon}</Text>
+      <View style={[s.methodIcon, { backgroundColor: dark ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.72)" }]}>
+        <Text style={[s.methodIconText, { color: dark ? "#B0D4E3" : "#91A1B4" }]}>{icon}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[s.methodTitle, { color: fg, fontFamily: fonts.displayHeavy }]}>{title}</Text>
-        <Text style={[s.methodSub, { color: dark ? "rgba(255,255,255,0.78)" : "#6B7280" }]}>{sub}</Text>
+        <Text style={[s.methodSub, { color: "#91A1B4" }]}>{sub}</Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>
-        <Text style={[s.methodNote, { color: dark ? "rgba(255,255,255,0.84)" : colors.ink, fontFamily: fonts.bodyBold }]}>{note}</Text>
+        <Text style={[s.methodNote, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{note}</Text>
         <Text style={[s.methodArrow, { color: fg }]}>↗</Text>
       </View>
     </>
@@ -164,7 +164,7 @@ function EarnMethod({
   if (dark) {
     return (
       <Pressable onPress={onPress}>
-        <LavaLampSurface style={s.methodCard} contentStyle={s.methodCardContent}>
+        <LavaLampSurface intensity="glass" style={s.methodCard} contentStyle={s.methodCardContent}>
           {content}
         </LavaLampSurface>
       </Pressable>
@@ -184,20 +184,20 @@ const s = StyleSheet.create({
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   title: { fontSize: 34, lineHeight: 38, letterSpacing: 0 },
-  balanceBubble: { width: 86, height: 86, borderRadius: 43, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  balanceBubble: { width: 86, height: 86, borderRadius: 43, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.34, shadowRadius: 12, elevation: 3 },
   balanceValue: { color: colors.ink, fontSize: 25, lineHeight: 27 },
   balanceLabel: { color: "#7A808E", fontSize: 11 },
   hero: { borderRadius: 32, padding: 18, minHeight: 214, marginBottom: 12, overflow: "hidden" },
   heroOrb: { position: "absolute", right: -52, top: -42, width: 170, height: 170, borderRadius: 85, borderWidth: 1, borderColor: "rgba(167,232,238,0.32)" },
   heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 34 },
-  blackLogo: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.46)" },
-  blackLogoText: { color: "#FFFFFF", fontWeight: "900" },
-  blackPill: { backgroundColor: "rgba(255,255,255,0.28)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
-  blackPillText: { color: "#FFFFFF", fontSize: 12 },
-  heroTitle: { color: "#FFFFFF", fontSize: 31, lineHeight: 34, width: 250 },
-  heroSub: { color: "rgba(255,255,255,0.62)", fontSize: 13, marginTop: 10 },
+  blackLogo: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
+  blackLogoText: { color: "#91A1B4", fontWeight: "900" },
+  blackPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
+  blackPillText: { color: "#91A1B4", fontSize: 12 },
+  heroTitle: { color: "#6E7D8E", fontSize: 31, lineHeight: 34, width: 250 },
+  heroSub: { color: "#91A1B4", fontSize: 13, marginTop: 10 },
   methods: { gap: 10, marginBottom: 24 },
-  methodCard: { borderRadius: 28, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
+  methodCard: { borderRadius: 32, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3 },
   methodCardContent: { flexDirection: "row", alignItems: "center", gap: 12 },
   methodIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   methodIconText: { fontSize: 18, fontWeight: "900" },

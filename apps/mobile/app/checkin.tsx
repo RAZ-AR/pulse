@@ -92,8 +92,8 @@ export default function CheckinScreen() {
             <Text style={s.bigIcon}>⌖</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("locationNeeded", "Location needed")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.reason}</Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: colors.lavaBase }]}>
-              <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("common:back", "Go back")}</Text>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+              <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:back", "Go back")}</Text>
             </Pressable>
           </Centered>
         ) : phase.kind === "pickingVenue" ? (
@@ -110,8 +110,8 @@ export default function CheckinScreen() {
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>
               {t("noVenuesNearbyDesc", "Move closer to a partner venue and try again. Check-ins require being within 100m of a venue.")}
             </Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: colors.lavaBase }]}>
-              <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("common:done", "OK")}</Text>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+              <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "OK")}</Text>
             </Pressable>
           </Centered>
         ) : phase.kind === "camera" ? (
@@ -182,8 +182,8 @@ export default function CheckinScreen() {
                 {t("newBadge", "New badge unlocked!")}
               </Text>
             ) : null}
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: colors.lavaBase, marginTop: 24 }]}>
-              <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF", marginTop: 24 }, theme.shadowRaisedSm]}>
+              <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
             </Pressable>
           </Centered>
         )}
@@ -285,8 +285,8 @@ function CameraPhase({
         <Text style={[s.subtitle, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "PULSE needs your camera to verify check-ins.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: colors.lavaBase }]}>
-          <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
+        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+          <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </Centered>
     )
@@ -295,7 +295,7 @@ function CameraPhase({
     <View style={s.cameraWrap}>
       <CameraView ref={cameraRef} style={s.camera} facing="back" />
       <View style={s.cameraOverlay}>
-        <View style={[s.venueBanner, { backgroundColor: "rgba(0,0,0,0.55)" }]}>
+        <View style={[s.venueBanner, { backgroundColor: "rgba(249,251,255,0.78)" }]}>
           <Text style={s.bannerLabel}>{t("checkingInAt", "Checking in at").toUpperCase()}</Text>
           <Text style={s.bannerName}>{venue.name}</Text>
         </View>
@@ -333,14 +333,14 @@ const s = StyleSheet.create({
   camera: { flex: 1 },
   cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "space-between", padding: 24, paddingTop: 24, paddingBottom: 120 },
   venueBanner: { padding: 12, borderRadius: 24, alignSelf: "center" },
-  bannerLabel: { color: "#FFF", fontSize: 10, fontWeight: "700", letterSpacing: 1, opacity: 0.8, textAlign: "center" },
-  bannerName: { color: "#FFF", fontSize: 15, fontWeight: "700", textAlign: "center", marginTop: 2 },
+  bannerLabel: { color: colors.ink, fontSize: 10, fontWeight: "700", letterSpacing: 1, opacity: 0.8, textAlign: "center" },
+  bannerName: { color: colors.ink, fontSize: 15, fontWeight: "700", textAlign: "center", marginTop: 2 },
   frameHint: { color: "#FFF", fontSize: 13, fontWeight: "600", textAlign: "center", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 40 },
   shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  backBtnText: { color: "#FFF", fontSize: 22, fontWeight: "300" },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(249,251,255,0.72)", justifyContent: "center", alignItems: "center" },
+  backBtnText: { color: colors.ink, fontSize: 22, fontWeight: "300" },
   points: { fontSize: 36, fontWeight: "800", marginTop: 16 },
   streakBonus: { fontSize: 14, fontWeight: "700", marginTop: 4 },
   streakInfo: { fontSize: 13, marginTop: 12 },

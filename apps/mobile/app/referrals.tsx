@@ -147,16 +147,16 @@ const s = StyleSheet.create({
 
   hero: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
-  heroValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
-  heroSub: { color: "rgba(255,255,255,0.85)", fontSize: 13 },
+  heroLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  heroValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
+  heroSub: { color: "#91A1B4", fontSize: 13 },
 
   h2: { fontSize: 22, marginBottom: 8 },
   line: { fontSize: 13, lineHeight: 20 },
 
   codeCard: { padding: 16, marginBottom: 24, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 30 },
-  codeLabel: { color: "rgba(255,255,255,0.78)", fontSize: 10, letterSpacing: 1 },
-  codeValue: { color: "#FFF", fontSize: 22, letterSpacing: 4, marginTop: 2, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  codeLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
+  codeValue: { color: colors.ink, fontSize: 22, letterSpacing: 4, marginTop: 2 },
   shareBtnText: { color: colors.ink, fontSize: 13 },
 
   sectionTitle: { fontSize: 11, letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },

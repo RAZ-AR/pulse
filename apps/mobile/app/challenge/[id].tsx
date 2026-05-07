@@ -185,9 +185,9 @@ const s = StyleSheet.create({
 
   hero: { padding: 22, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroIcon: { color: "#FFF", fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 8 },
-  heroTitle: { color: "#FFF", fontSize: 28, lineHeight: 31, textAlign: "center" },
-  heroReward: { color: "#FFF", fontSize: 28, marginTop: 12 },
+  heroIcon: { color: "#91A1B4", fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 8 },
+  heroTitle: { color: colors.ink, fontSize: 28, lineHeight: 31, textAlign: "center" },
+  heroReward: { color: colors.ink, fontSize: 28, marginTop: 12 },
 
   card: { padding: 16, marginBottom: 12 },
   cardLabel: { fontSize: 11, letterSpacing: 1, marginBottom: 8 },
@@ -205,7 +205,7 @@ const s = StyleSheet.create({
   statValue: { fontSize: 18 },
   statValueSmall: { fontSize: 12 },
 
-  cta: { color: "#FFF", fontSize: 16 },
-  completedSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 },
+  cta: { color: colors.ink, fontSize: 16 },
+  completedSub: { color: "#91A1B4", fontSize: 12, marginTop: 4 },
   encourageCard: { padding: 16, borderRadius: 99, alignItems: "center", marginTop: 4 },
 })

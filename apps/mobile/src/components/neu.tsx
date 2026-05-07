@@ -227,12 +227,12 @@ function PillLabel({ label }: { label: string }) {
   return (
     <Text
       style={{
-        color: "#FFFFFF",
+        color: "#6E7D8E",
         fontSize: 10,
         fontWeight: "800",
         letterSpacing: 0.5,
         textTransform: "uppercase",
-        textShadowColor: "rgba(0,0,0,0.15)",
+        textShadowColor: "rgba(255,255,255,0.9)",
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
       }}

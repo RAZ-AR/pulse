@@ -191,9 +191,9 @@ const s = StyleSheet.create({
 
   rateCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  rateLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
-  rateValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
-  rateUnit: { color: "rgba(255,255,255,0.85)", fontSize: 13 },
+  rateLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  rateValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
+  rateUnit: { color: "#91A1B4", fontSize: 13 },
   boostBadge: { marginTop: 10, backgroundColor: "#FFFFFF", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99 },
   boostText: { color: colors.ink, fontSize: 11 },
 
@@ -203,10 +203,10 @@ const s = StyleSheet.create({
   heading: { fontSize: 25, marginBottom: 12 },
 
   rewardRow: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 28 },
-  rewardTitle: { color: "#FFF", fontSize: 16 },
-  rewardDesc: { color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 2 },
-  rewardCost: { color: "#FFF", fontSize: 21, lineHeight: 23 },
-  rewardCostUnit: { color: "rgba(255,255,255,0.7)", fontSize: 10 },
+  rewardTitle: { color: colors.ink, fontSize: 16 },
+  rewardDesc: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
+  rewardCost: { color: colors.ink, fontSize: 21, lineHeight: 23 },
+  rewardCostUnit: { color: "#91A1B4", fontSize: 10 },
 
   reviewsHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 8 },
   writeBtn: { fontSize: 12 },

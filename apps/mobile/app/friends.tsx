@@ -140,7 +140,7 @@ const s = StyleSheet.create({
 
   emptyIcon: { color: colors.ink, fontSize: 42, lineHeight: 46, fontWeight: "900", marginBottom: 8 },
   emptyText: { fontSize: 13, textAlign: "center", lineHeight: 18 },
-  inviteText: { color: "#FFF", fontSize: 13 },
+  inviteText: { color: colors.ink, fontSize: 13 },
 
   friendsRow: { gap: 14, paddingVertical: 8, paddingHorizontal: 4 },
   friend: { width: 64, alignItems: "center" },

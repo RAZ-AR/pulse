@@ -142,9 +142,9 @@ const s = StyleSheet.create({
 
   priceCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   priceBlob: { position: "absolute", top: -40, right: -40, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  priceLabel: { color: "rgba(255,255,255,0.75)", fontSize: 11, letterSpacing: 1.5 },
-  priceValue: { color: "#FFF", fontSize: 52, lineHeight: 56, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
-  priceSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 },
+  priceLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  priceValue: { color: colors.ink, fontSize: 52, lineHeight: 56, marginTop: 4 },
+  priceSub: { color: "#91A1B4", fontSize: 12, marginTop: 4 },
 
   descText: { fontSize: 14, lineHeight: 20 },
 
@@ -152,7 +152,7 @@ const s = StyleSheet.create({
 
   btnGrad: { padding: 16, alignItems: "center", borderRadius: 99 },
   btnDisabled: { padding: 16, borderRadius: 99, alignItems: "center" },
-  cta: { color: "#FFF", fontSize: 16, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  cta: { color: colors.ink, fontSize: 16 },
   ctaDisabled: { fontSize: 14 },
 
   successTitle: { fontSize: 22 },

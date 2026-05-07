@@ -49,7 +49,7 @@ export default function MapWebScreen() {
                 onPress={() => updateProfile.mutate({ homeCity: city.name })}
                 style={[s.locationPill, active ? s.locationPillActive : s.locationPillIdle]}
               >
-                <Text style={[s.locationText, { color: active ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+                <Text style={[s.locationText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
                   {city.label}
                 </Text>
               </Pressable>
@@ -65,7 +65,7 @@ export default function MapWebScreen() {
             onPress={() => setActiveFilterKey(filter.key)}
             style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
           >
-            <Text style={[s.filterText, { color: filter.key === activeFilterKey ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.filterText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
               {filter.label}
             </Text>
           </Pressable>
@@ -150,29 +150,29 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   kicker: {
-    color: "rgba(255,255,255,0.62)",
+    color: "#B0D4E3",
     fontSize: 11,
     letterSpacing: 1.8,
   },
-  title: { color: "#FFFFFF", fontSize: 38, lineHeight: 42 },
+  title: { color: "#6E7D8E", fontSize: 38, lineHeight: 42 },
   citySwitch: { gap: 8, alignItems: "flex-end" },
   locationPill: { minHeight: 38, borderRadius: 99, paddingHorizontal: 14, justifyContent: "center" },
-  locationPillActive: { backgroundColor: "rgba(255,255,255,0.32)" },
+  locationPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   locationPillIdle: { backgroundColor: "rgba(255,255,255,0.82)" },
   locationText: { fontSize: 12 },
   filters: { gap: 8, paddingBottom: 14 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: colors.lavaBase },
-  filterChipIdle: { backgroundColor: "#FFFFFF" },
+  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  filterChipIdle: { backgroundColor: "rgba(249,251,255,0.62)" },
   filterText: { fontSize: 11 },
   list: { gap: 12 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12 },
+  card: { backgroundColor: "#F9FBFF", borderRadius: 34, padding: 12, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
   row: { flexDirection: "row", gap: 12 },
   logo: {
     width: 58,
     height: 58,
     borderRadius: 22,
-    backgroundColor: colors.cyan,
+    backgroundColor: "rgba(235,254,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -194,12 +194,12 @@ const s = StyleSheet.create({
   address: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
   chips: { flexDirection: "row", gap: 6, marginTop: 10, flexWrap: "wrap" },
   darkChip: {
-    backgroundColor: colors.lavaBase,
+    backgroundColor: "rgba(255,244,254,0.92)",
     borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  darkChipText: { color: "#FFFFFF", fontSize: 10 },
+  darkChipText: { color: colors.ink, fontSize: 10 },
   lightChip: {
     backgroundColor: "#EEF3FB",
     borderRadius: 99,
