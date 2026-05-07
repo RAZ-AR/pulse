@@ -32,8 +32,8 @@ export default function TabsLayout() {
           marginHorizontal: 14,
           marginBottom: 12,
           paddingHorizontal: 12,
-          paddingTop: 10,
-          paddingBottom: 10,
+          paddingTop: 0,
+          paddingBottom: 0,
           borderRadius: 32,
           shadowColor: colors.lavaPink,
           shadowOffset: { width: 0, height: 14 },
@@ -41,6 +41,21 @@ export default function TabsLayout() {
           shadowRadius: 28,
           elevation: 12,
           overflow: "hidden",
+        },
+        tabBarItemStyle: {
+          height: 78,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 0,
+          margin: 0,
+        },
+        tabBarIconStyle: {
+          height: 58,
+          width: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 0,
+          marginBottom: 0,
         },
         tabBarBackground: () => (
           <LavaLampSurface intensity="glass" style={StyleSheet.absoluteFill} />
@@ -100,6 +115,8 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
+    marginTop: 0,
+    marginBottom: 0,
   },
   tabItemContent: {
     flex: 1,
