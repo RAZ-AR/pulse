@@ -5,7 +5,7 @@ import { useRouter, Stack } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
-import { colors, useTheme } from "../src/lib/theme"
+import { colors, fonts, useTheme } from "../src/lib/theme"
 
 type Phase =
   | { kind: "camera" }
@@ -207,7 +207,7 @@ function CameraPhase({
 function LoadingPhase({ label, theme }: { label: string; theme: ReturnType<typeof useTheme> }) {
   return (
     <View style={s.center}>
-      <ActivityIndicator size="large" color={colors.pink} />
+      <ActivityIndicator size="large" color={colors.skySolid} />
       <Text style={[s.loadingLabel, { color: theme.textSecondary }]}>{label}</Text>
     </View>
   )
@@ -230,7 +230,7 @@ function ConfirmPhase({
       </Text>
       {confidence < 0.85 ? (
         <Text style={[s.lowConf, { color: colors.pink }]}>
-          {t("lowConfidence", "Low OCR confidence — please double-check fields below")}
+          {t("lowConfidence", "Low OCR confidence - please double-check fields below")}
         </Text>
       ) : null}
 
@@ -301,23 +301,23 @@ const s = StyleSheet.create({
   cameraWrap: { flex: 1 },
   camera: { flex: 1 },
   cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center", padding: 24 },
-  frame: { width: "100%", aspectRatio: 0.6, borderWidth: 2, borderColor: "#FFF", borderRadius: 12, opacity: 0.7 },
+  frame: { width: "100%", aspectRatio: 0.6, borderWidth: 2, borderColor: "#FFF", borderRadius: 30, opacity: 0.86 },
   frameHint: { color: "#FFF", marginTop: 12, fontSize: 13, fontWeight: "600", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, alignItems: "center" },
-  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.3)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#FFF" },
+  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
+  shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
   loadingLabel: { fontSize: 13, marginTop: 14 },
-  confirmContent: { padding: 20, paddingBottom: 40 },
-  confirmTitle: { fontSize: 18, fontWeight: "700", marginBottom: 4 },
+  confirmContent: { padding: 18, paddingBottom: 40 },
+  confirmTitle: { fontSize: 31, lineHeight: 34, fontFamily: fonts.displayHeavy, marginBottom: 6 },
   lowConf: { fontSize: 12, marginBottom: 16 },
   field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 11, fontWeight: "600", marginBottom: 4, letterSpacing: 0.3 },
-  input: { borderWidth: 1, borderRadius: 10, padding: 12, fontSize: 15 },
-  btn: { padding: 14, borderRadius: 12, alignItems: "center" },
-  dialogTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  fieldLabel: { fontSize: 11, fontWeight: "700", marginBottom: 6, letterSpacing: 0.8 },
+  input: { borderWidth: 1, borderRadius: 18, padding: 13, fontSize: 15, backgroundColor: "#FFFFFF" },
+  btn: { padding: 14, borderRadius: 99, alignItems: "center" },
+  dialogTitle: { fontSize: 26, fontWeight: "800", marginBottom: 8, textAlign: "center" },
   dialogText: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
   doneIcon: { fontSize: 64, marginBottom: 12 },
-  doneTitle: { fontSize: 22, fontWeight: "800" },
+  doneTitle: { fontSize: 31, lineHeight: 34, fontWeight: "800" },
   doneSub: { fontSize: 13, marginTop: 8, textAlign: "center", lineHeight: 18 },
   donePoints: { fontSize: 32, fontWeight: "800", marginTop: 12 },
 })

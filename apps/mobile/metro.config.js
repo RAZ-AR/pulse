@@ -21,6 +21,13 @@ config.resolver.nodeModulesPaths = [
   workspaceModules,
 ]
 
+config.resolver.disableHierarchicalLookup = true
+config.resolver.extraNodeModules = {
+  react: path.resolve(workspaceModules, "react"),
+  "react-dom": path.resolve(workspaceModules, "react-dom"),
+  "react/jsx-runtime": path.resolve(workspaceModules, "react/jsx-runtime"),
+}
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   // Map ESM-only packages to their concrete dist files
   if (ESM_ONLY_PACKAGES[moduleName]) {

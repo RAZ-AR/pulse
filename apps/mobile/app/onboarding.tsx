@@ -107,12 +107,12 @@ function Step0({ onPick }: { onPick: (lng: SupportedLocale) => void }) {
     <View style={s.step}>
       <View style={{ alignItems: "center", marginBottom: 24 }}>
         <LinearGradient
-          colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+          colors={gradients.black as unknown as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[s.logoOrb, theme.shadowGlow]}
         >
-          <Text style={s.logoChar}>⚡</Text>
+          <Text style={s.logoChar}>P</Text>
         </LinearGradient>
         <Text style={[s.brand, { color: theme.text, fontFamily: fonts.displayHeavy }]}>PULSE</Text>
         <Text style={[s.tagline, { color: theme.textSecondary }]}>{t("tagline", "Loyalty that competes for you")}</Text>
@@ -121,21 +121,21 @@ function Step0({ onPick }: { onPick: (lng: SupportedLocale) => void }) {
       {/* Feature cards */}
       <View style={{ gap: 12, marginBottom: 24 }}>
         <FeatureCard
-          gradient={gradients.rainbow}
-          icon="📊"
+          gradient={gradients.black}
+          icon="↗"
           title={t("feat1Title", "Venues fight for your visit")}
           sub={t("feat1Sub", "Public competitive rates — live")}
         />
         <FeatureCard
-          gradient={gradients.rainbow2}
-          icon="🎮"
+          gradient={gradients.graphite}
+          icon="✓"
           title={t("feat2Title", "Streaks, badges, challenges")}
           sub={t("feat2Sub", "Addictive loyalty mechanics")}
         />
         <FeatureCard
-          gradient={gradients.rainbow3}
-          icon="🎁"
-          title={t("welcomeBonus", "🎁 500 welcome points!")}
+          gradient={gradients.black}
+          icon="+"
+          title={t("welcomeBonus", "500 welcome points!")}
           sub={t("welcomeBonusDescription", "Up to 100 per visit · Valid 90 days")}
         />
       </View>
@@ -157,7 +157,7 @@ function FeatureCard({
 }: { gradient: readonly [string, string, ...string[]]; icon: string; title: string; sub: string }) {
   return (
     <NeuCard gradient={gradient} style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}>
-      <Text style={{ fontSize: 28 }}>{icon}</Text>
+        <Text style={s.featureIcon}>{icon}</Text>
       <View style={{ flex: 1 }}>
         <Text style={[s.featureTitle, { fontFamily: fonts.bodyBold }]}>{title}</Text>
         <Text style={s.featureSub}>{sub}</Text>
@@ -193,8 +193,8 @@ function Step1({
         <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>← {t("back", "Back")}</Text>
       </Pressable>
 
-      <NeuCard gradient={gradients.pink} style={{ padding: 22, marginBottom: 28, alignItems: "center" }}>
-        <Text style={{ fontSize: 36, marginBottom: 8 }}>🎁</Text>
+      <NeuCard gradient={gradients.black} style={{ padding: 22, marginBottom: 28, alignItems: "center", borderRadius: 32 }}>
+        <Text style={s.bonusIcon}>+</Text>
         <Text style={[s.bonusTitle, { fontFamily: fonts.displayHeavy }]}>
           {t("welcomeBonus", "500 welcome points!")}
         </Text>
@@ -220,7 +220,7 @@ function Step1({
 
       <View style={{ flex: 1, minHeight: 24 }} />
 
-      <NeuCard gradient={gradients.rainbow2} onPress={onContinue} style={{ padding: 16, alignItems: "center" }}>
+      <NeuCard gradient={gradients.black} onPress={onContinue} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
         <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("continue", "Continue →")}</Text>
       </NeuCard>
     </View>
@@ -290,9 +290,9 @@ function Step2({
 
       <View style={{ flex: 1, minHeight: 24 }} />
 
-      <NeuCard gradient={gradients.rainbow} onPress={onSubmit} disabled={isPending} style={{ padding: 16, alignItems: "center" }}>
+      <NeuCard gradient={gradients.black} onPress={onSubmit} disabled={isPending} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
         {isPending ? <ActivityIndicator color="#FFF" /> : (
-          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>🚀 {t("getStarted", "Let's go!")}</Text>
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Let's go!")}</Text>
         )}
       </NeuCard>
     </View>
@@ -301,18 +301,19 @@ function Step2({
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { flexGrow: 1, padding: 20, paddingTop: 32 },
+  scroll: { flexGrow: 1, padding: 18, paddingTop: 32 },
   step: { flex: 1, minHeight: 600 },
 
   logoOrb: {
-    width: 88, height: 88, borderRadius: 30,
+    width: 88, height: 88, borderRadius: 34,
     alignItems: "center", justifyContent: "center", marginBottom: 16,
   },
-  logoChar: { fontSize: 38 },
+  logoChar: { color: "#FFFFFF", fontSize: 38, fontWeight: "900" },
   brand: { fontSize: 36, letterSpacing: 4 },
   tagline: { fontSize: 13, marginTop: 6 },
 
-  featureTitle: { color: "#FFF", fontSize: 14, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  featureIcon: { color: "#FFFFFF", fontSize: 28, fontWeight: "900", width: 32, textAlign: "center" },
+  featureTitle: { color: "#FFF", fontSize: 14 },
   featureSub: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 2 },
 
   label: { fontSize: 11, letterSpacing: 1.2, marginBottom: 8 },
@@ -324,11 +325,12 @@ const s = StyleSheet.create({
 
   input: { padding: 14, fontSize: 15 },
 
-  bonusTitle: { color: "#FFF", fontSize: 22, textAlign: "center", textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  bonusIcon: { color: "#FFFFFF", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
+  bonusTitle: { color: "#FFF", fontSize: 25, lineHeight: 28, textAlign: "center" },
   bonusSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 6 },
-  bonusHint: { color: "#5FEFC0", fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  bonusHint: { color: "#05060A", fontSize: 12, fontWeight: "700", marginBottom: 8 },
 
-  bigTitle: { fontSize: 28, marginBottom: 6 },
+  bigTitle: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 13, lineHeight: 18 },
 
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
@@ -336,5 +338,5 @@ const s = StyleSheet.create({
   backBtn: { alignSelf: "flex-start", paddingVertical: 4, paddingRight: 12, marginBottom: 18 },
   backText: { fontSize: 13 },
 
-  cta: { color: "#FFF", fontSize: 16, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  cta: { color: "#FFF", fontSize: 16 },
 })

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import QRCode from "react-native-qrcode-svg"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, gradients, useTheme } from "../../src/lib/theme"
+import { colors, fonts, gradients, useTheme } from "../../src/lib/theme"
 import { NeuCard } from "../../src/components/neu"
 
 export default function RewardDetailScreen() {
@@ -25,7 +25,7 @@ export default function RewardDetailScreen() {
       utils.user.me.invalidate()
       utils.reward.list.invalidate()
     },
-    onError: (e) => Alert.alert(t("redeemFailed", "Redeem failed"), e.message),
+    onError: (e) => Alert.alert(t("redeemFailed"), e.message),
   })
 
   if (!reward) {
@@ -66,7 +66,7 @@ export default function RewardDetailScreen() {
               {t("codeExpiresIn", "Code expires in {{hours}}h", { hours: expiryHours })}
             </Text>
             <NeuCard
-              gradient={gradients.rainbow}
+              gradient={gradients.black}
               onPress={() => router.back()}
               style={{ padding: 16, alignItems: "center", width: "100%", marginTop: 12 }}
             >
@@ -80,14 +80,14 @@ export default function RewardDetailScreen() {
               {reward.venue.name} · {reward.venue.city}
             </Text>
 
-            <NeuCard gradient={gradients.rainbow} style={s.priceCard}>
+            <NeuCard gradient={gradients.black} style={s.priceCard}>
               <View style={s.priceBlob} />
               <Text style={[s.priceLabel, { fontFamily: fonts.bodyBold }]}>
-                {t("pointsCost", "Points cost").toUpperCase()}
+                {t("pointsCostLabel").toUpperCase()}
               </Text>
               <Text style={[s.priceValue, { fontFamily: fonts.displayHeavy }]}>{reward.pointsCost}</Text>
               <Text style={s.priceSub}>
-                {t("yourBalance", "Your balance")}: {totalPoints}
+                {t("yourBalance")}: {totalPoints}
               </Text>
             </NeuCard>
 
@@ -100,20 +100,20 @@ export default function RewardDetailScreen() {
             {stockLeft !== null ? (
               <Text style={[s.stock, { color: theme.textSecondary }]}>
                 {stockLeft > 0
-                  ? t("stockLeft", "{{count}} left", { count: stockLeft })
+                  ? t("stockLeft", { count: stockLeft })
                   : t("outOfStock", "Out of stock")}
               </Text>
             ) : null}
 
             {canRedeem ? (
               <NeuCard
-                gradient={gradients.rainbow}
+                gradient={gradients.black}
                 onPress={() => redeem.mutate({ rewardId: reward.id })}
                 disabled={redeem.isPending}
                 style={s.btnGrad}
               >
                 <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
-                  {redeem.isPending ? t("redeeming", "Redeeming…") : t("redeemFor", "Redeem for {{points}} pts", { points: reward.pointsCost })}
+                  {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
                 </Text>
               </NeuCard>
             ) : (
@@ -121,7 +121,7 @@ export default function RewardDetailScreen() {
                 <Text style={[s.ctaDisabled, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
                   {totalPoints < reward.pointsCost
                     ? t("notEnoughPoints", "Not enough points")
-                    : t("unavailable", "Unavailable")}
+                    : t("unavailable")}
                 </Text>
               </Pressable>
             )}
@@ -134,14 +134,14 @@ export default function RewardDetailScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  title: { fontSize: 24 },
-  venue: { fontSize: 13, marginTop: 4, marginBottom: 20 },
+  title: { fontSize: 34, lineHeight: 38 },
+  venue: { fontSize: 13, marginTop: 6, marginBottom: 18 },
 
-  priceCard: { padding: 24, alignItems: "center", marginBottom: 16, overflow: "hidden" },
-  priceBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.12)" },
+  priceCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
+  priceBlob: { position: "absolute", top: -40, right: -40, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
   priceLabel: { color: "rgba(255,255,255,0.75)", fontSize: 11, letterSpacing: 1.5 },
   priceValue: { color: "#FFF", fontSize: 52, lineHeight: 56, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
   priceSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 },
@@ -150,14 +150,14 @@ const s = StyleSheet.create({
 
   stock: { fontSize: 12, marginBottom: 12 },
 
-  btnGrad: { padding: 16, alignItems: "center" },
-  btnDisabled: { padding: 16, borderRadius: 22, alignItems: "center" },
+  btnGrad: { padding: 16, alignItems: "center", borderRadius: 99 },
+  btnDisabled: { padding: 16, borderRadius: 99, alignItems: "center" },
   cta: { color: "#FFF", fontSize: 16, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   ctaDisabled: { fontSize: 14 },
 
   successTitle: { fontSize: 22 },
   successDesc: { fontSize: 13, marginTop: 4, marginBottom: 24, textAlign: "center" },
-  qrBox: { padding: 20, marginBottom: 16, backgroundColor: "#FFFFFF" },
+  qrBox: { padding: 20, marginBottom: 16, backgroundColor: "#FFFFFF", borderRadius: 30 },
   code: { fontSize: 18, letterSpacing: 3, marginBottom: 8 },
   expiry: { fontSize: 12, marginBottom: 12 },
 })

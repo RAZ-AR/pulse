@@ -2,13 +2,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack, useRouter } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { fonts, gradients, useTheme } from "../src/lib/theme"
+import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard } from "../src/components/neu"
 
 const TYPE_ICON: Record<string, string> = {
-  CHECKIN_PHOTO: "📍",
-  CHALLENGE_COMPLETE: "🎯",
-  REWARD_REDEEMED: "🎁",
+  CHECKIN_PHOTO: "⌖",
+  CHALLENGE_COMPLETE: "✓",
+  REWARD_REDEEMED: "□",
 }
 
 function formatRelative(d: Date | string): string {
@@ -56,12 +56,12 @@ export default function FriendsScreen() {
         </Text>
         {friendsList.length === 0 ? (
           <NeuCard style={{ padding: 24, alignItems: "center", marginBottom: 24 }}>
-            <Text style={s.emptyEmoji}>🤝</Text>
+            <Text style={s.emptyIcon}>+</Text>
             <Text style={[s.emptyText, { color: theme.textSecondary }]}>
               {t("noFriendsYet", "Invite friends with your referral code to see their activity here")}
             </Text>
             <NeuCard
-              gradient={gradients.rainbow}
+              gradient={gradients.black}
               onPress={() => router.push("/referrals")}
               small
               style={{ paddingHorizontal: 18, paddingVertical: 10, marginTop: 12 }}
@@ -81,7 +81,7 @@ export default function FriendsScreen() {
                 <Text style={[s.friendName, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
                   {f.name ?? "User"}
                 </Text>
-                <Text style={[s.friendStreak, { fontFamily: fonts.bodyBold }]}>🔥 {f.currentStreak}</Text>
+                <Text style={[s.friendStreak, { fontFamily: fonts.bodyBold }]}>{f.currentStreak}d</Text>
               </View>
             ))}
           </ScrollView>
@@ -93,7 +93,7 @@ export default function FriendsScreen() {
         </Text>
         {feedItems.length === 0 ? (
           <NeuCard style={{ padding: 24, alignItems: "center" }}>
-            <Text style={s.emptyEmoji}>👀</Text>
+            <Text style={s.emptyIcon}>◦</Text>
             <Text style={[s.emptyText, { color: theme.textSecondary }]}>
               {friendsList.length === 0
                 ? t("addFriendsToSeeFeed", "Once you have friends, you'll see their check-ins, completed challenges, and rewards here.")
@@ -135,24 +135,24 @@ export default function FriendsScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 40 },
   sectionTitle: { fontSize: 11, letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
 
-  emptyEmoji: { fontSize: 36, marginBottom: 8 },
+  emptyIcon: { color: colors.ink, fontSize: 42, lineHeight: 46, fontWeight: "900", marginBottom: 8 },
   emptyText: { fontSize: 13, textAlign: "center", lineHeight: 18 },
-  inviteText: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  inviteText: { color: "#FFF", fontSize: 13 },
 
   friendsRow: { gap: 14, paddingVertical: 8, paddingHorizontal: 4 },
   friend: { width: 64, alignItems: "center" },
-  friendAvatar: { width: 56, height: 56, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  friendAvatar: { width: 56, height: 56, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   friendLetter: { fontSize: 22 },
   friendName: { fontSize: 11, marginTop: 6, textAlign: "center" },
-  friendStreak: { fontSize: 11, color: "#FF85D2", marginTop: 2 },
+  friendStreak: { fontSize: 11, color: colors.ink, marginTop: 2 },
 
-  feedRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12 },
-  feedAvatar: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  feedRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 28 },
+  feedAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   feedLetter: { fontSize: 14 },
   feedText: { fontSize: 13, lineHeight: 18 },
   feedTime: { fontSize: 11, marginTop: 2 },
-  feedIcon: { fontSize: 22 },
+  feedIcon: { color: colors.ink, fontSize: 22, fontWeight: "900" },
 })

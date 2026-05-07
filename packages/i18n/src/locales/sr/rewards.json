@@ -1,10 +1,10 @@
 {
   "title": "Nagrade",
   "redeem": "Preuzmi",
-  "redeemFor": "Preuzmi za {points} bodova",
+  "redeemFor": "Preuzmi za {{points}} poena",
   "redeemSuccess": "Nagrada preuzeta!",
   "redeemSuccessDescription": "Pokaži ovaj kod kasiru",
-  "codeExpiresIn": "Kod važi {hours}h",
+  "codeExpiresIn": "Kod ističe za {{hours}}h",
   "outOfStock": "Rasprodato",
   "notEnoughPoints": "Nema dovoljno bodova",
   "cooldown": "Dobrodošlica bodovi su na pauzi",
@@ -12,5 +12,18 @@
   "noRewards": "Još nema nagrada u ovom mestu",
   "pointsCost": "{points} bod.",
   "history": "Istorija preuzimanja",
-  "noHistory": "Još nema preuzetih nagrada"
+  "noHistory": "Još nema preuzetih nagrada",
+  "subtitle": "Zameni poene za prave pogodnosti",
+  "all": "Sve",
+  "welcomeOnly": "Welcome ≤100",
+  "noRewardsAvailable": "Još nema nagrada",
+  "use": "Uzmi",
+  "pts": "poena",
+  "left": "ostalo {{count}}",
+  "pointsCostLabel": "Cena u poenima",
+  "yourBalance": "Tvoj balans",
+  "redeemFailed": "Preuzimanje nije uspelo",
+  "stockLeft": "ostalo {{count}}",
+  "redeeming": "Preuzimanje...",
+  "unavailable": "Nedostupno"
 }

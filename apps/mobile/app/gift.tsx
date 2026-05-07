@@ -3,7 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useTranslation } from "react-i18next"
 import { Stack, useRouter } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { fonts, gradients, useTheme } from "../src/lib/theme"
+import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT } from "@pulse/shared"
 
@@ -128,7 +128,7 @@ export default function GiftScreen() {
               {error ? <Text style={s.err}>{error}</Text> : null}
 
               <NeuCard
-                gradient={gradients.rainbow}
+                gradient={gradients.black}
                 onPress={lookup}
                 style={{ padding: 14, alignItems: "center", marginTop: 8 }}
               >
@@ -141,7 +141,7 @@ export default function GiftScreen() {
                 {t("sendTo", "Send to")}
               </Text>
 
-              <NeuCard gradient={gradients.pink} style={s.recipientCard}>
+              <NeuCard gradient={gradients.black} style={s.recipientCard}>
                 <View style={s.avatar}>
                   <Text style={[s.avatarLetter, { fontFamily: fonts.displayHeavy }]}>
                     {(phase.recipient.name?.[0] ?? "?").toUpperCase()}
@@ -197,7 +197,7 @@ export default function GiftScreen() {
                   disabled={sendGift.isPending}
                   style={{ flex: 0.6, opacity: sendGift.isPending ? 0.5 : 1 }}
                 >
-                  <NeuCard gradient={gradients.rainbow} style={{ padding: 12, alignItems: "center" }}>
+                  <NeuCard gradient={gradients.black} style={{ padding: 12, alignItems: "center", borderRadius: 99 }}>
                     {sendGift.isPending ? (
                       <ActivityIndicator color="#FFF" />
                     ) : (
@@ -209,7 +209,7 @@ export default function GiftScreen() {
             </>
           ) : (
             <View style={s.doneWrap}>
-              <Text style={s.doneEmoji}>🎁</Text>
+              <Text style={s.doneIcon}>□</Text>
               <Text style={[s.doneTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
                 {t("giftSent", "Gift sent!")}
               </Text>
@@ -220,7 +220,7 @@ export default function GiftScreen() {
                 {phase.remaining} pts {t("remainingToday", "remaining to gift today")}
               </Text>
               <NeuCard
-                gradient={gradients.rainbow}
+                gradient={gradients.black}
                 onPress={() => router.back()}
                 style={{ padding: 14, alignItems: "center", marginTop: 24, alignSelf: "stretch" }}
               >
@@ -236,12 +236,12 @@ export default function GiftScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 40 },
 
-  title: { fontSize: 24, marginBottom: 6 },
+  title: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 14, lineHeight: 20, marginBottom: 20 },
 
-  balanceTile: { padding: 14, marginBottom: 20 },
+  balanceTile: { padding: 14, marginBottom: 20, borderRadius: 30 },
   balanceLabel: { fontSize: 11, letterSpacing: 0.5 },
   balanceValue: { fontSize: 24, marginTop: 2 },
   balanceHint: { fontSize: 11, marginTop: 4 },
@@ -249,11 +249,11 @@ const s = StyleSheet.create({
   label: { fontSize: 11, letterSpacing: 0.5, marginBottom: 6 },
   optional: { fontSize: 11, fontWeight: "500", letterSpacing: 0 },
   input: { padding: 14, fontSize: 15 },
-  cta: { color: "#FFF", fontSize: 15, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  cta: { color: "#FFF", fontSize: 15 },
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
 
-  recipientCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, marginBottom: 20 },
-  avatar: { width: 44, height: 44, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.28)", alignItems: "center", justifyContent: "center" },
+  recipientCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, marginBottom: 20, borderRadius: 30 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
   avatarLetter: { color: "#FFF", fontSize: 20 },
   recipientName: { color: "#FFF", fontSize: 16 },
   recipientCode: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 2, letterSpacing: 2 },
@@ -261,8 +261,8 @@ const s = StyleSheet.create({
   btnRow: { flexDirection: "row", gap: 8, marginTop: 8 },
 
   doneWrap: { alignItems: "center", paddingTop: 40 },
-  doneEmoji: { fontSize: 72, marginBottom: 12 },
-  doneTitle: { fontSize: 24 },
+  doneIcon: { color: colors.ink, fontSize: 72, lineHeight: 76, fontWeight: "900", marginBottom: 12 },
+  doneTitle: { fontSize: 34, lineHeight: 38 },
   doneSub: { fontSize: 14, marginTop: 8 },
   doneRemain: { fontSize: 12, marginTop: 4 },
 })

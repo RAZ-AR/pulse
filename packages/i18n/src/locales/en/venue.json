@@ -20,5 +20,21 @@
     "RETAIL": "Retail",
     "SERVICE": "Service",
     "OTHER": "Other"
-  }
+  },
+  "map": "Map",
+  "belgrade": "Belgrade",
+  "receiptScan": "receipt scan",
+  "pointsRate": "Points rate",
+  "perCurrency": "pts per RSD",
+  "boostActiveLabel": "BOOST ACTIVE",
+  "notPartner": "Not a PULSE partner yet - receipt scans only",
+  "about": "About",
+  "availableRewards": "Available rewards",
+  "noRewardsYet": "No rewards yet at this venue",
+  "reviews": "Reviews",
+  "writeReview": "Write review",
+  "noReviewsYet": "Be the first to leave a review",
+  "anonymous": "Anonymous",
+  "featured": "FEATURED",
+  "noVenuesYet": "No venues yet"
 }

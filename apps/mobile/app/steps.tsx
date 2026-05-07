@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { Pedometer } from "expo-sensors"
 import { trpc } from "../src/lib/trpc"
-import { fonts, gradients, useTheme } from "../src/lib/theme"
+import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard } from "../src/components/neu"
 import { stepMultiplier } from "@pulse/shared"
 
@@ -89,7 +89,7 @@ export default function StepsScreen() {
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <NeuCard gradient={gradients.mint} style={s.hero}>
+        <NeuCard gradient={gradients.black} style={s.hero}>
           <View style={s.heroBlob} />
           <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold }]}>{t("today", "TODAY")}</Text>
           <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy }]}>{displaySteps.toLocaleString()}</Text>
@@ -118,7 +118,7 @@ export default function StepsScreen() {
               >
                 <View style={s.tierLeft}>
                   <Text style={[s.tierMult, {
-                    color: isActive ? "#5FEFC0" : theme.textSecondary,
+                    color: isActive ? colors.ink : theme.textSecondary,
                     fontFamily: isActive ? fonts.displayHeavy : fonts.bodyBold,
                   }]}>
                     ×{tier.mult.toFixed(1)}
@@ -140,7 +140,7 @@ export default function StepsScreen() {
         {nextTier ? (
           <NeuCard style={{ padding: 14, marginBottom: 24 }}>
             <Text style={[s.hintText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
-              🚶 {stepsToNext.toLocaleString()} {t("stepsToNext", "more steps to ×")}{nextTier.mult.toFixed(1)} {t("multiplier", "multiplier")}
+              {stepsToNext.toLocaleString()} {t("stepsToNext", "more steps to ×")}{nextTier.mult.toFixed(1)} {t("multiplier", "multiplier")}
             </Text>
           </NeuCard>
         ) : null}
@@ -172,7 +172,7 @@ export default function StepsScreen() {
               </View>
               <Pressable onPress={syncNow} disabled={sync.isPending || pedometerSteps === null} style={{ opacity: sync.isPending ? 0.5 : 1 }}>
                 <NeuCard
-                  gradient={gradients.mint}
+                  gradient={gradients.black}
                   small
                   style={{ padding: 12, alignItems: "center", marginTop: 4 }}
                 >
@@ -195,10 +195,10 @@ export default function StepsScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 40 },
 
-  hero: { padding: 26, alignItems: "center", marginBottom: 24, overflow: "hidden" },
-  heroBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.15)" },
+  hero: { padding: 26, alignItems: "center", marginBottom: 24, overflow: "hidden", borderRadius: 32 },
+  heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
   heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
   heroValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
   heroSub: { color: "rgba(255,255,255,0.85)", fontSize: 13, marginBottom: 12 },
@@ -212,14 +212,14 @@ const s = StyleSheet.create({
   tierMult: { fontSize: 18, minWidth: 38 },
   tierLabel: { fontSize: 14 },
   tierRange: { fontSize: 11, marginTop: 1 },
-  activeMark: { fontSize: 20, color: "#5FEFC0", fontWeight: "800" },
+  activeMark: { fontSize: 20, color: colors.ink, fontWeight: "800" },
 
   hintText: { fontSize: 13 },
 
   syncRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   syncLabel: { fontSize: 12 },
   syncValue: { fontSize: 14 },
-  syncBtnText: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  syncBtnText: { color: "#FFF", fontSize: 13 },
 
   footnote: { fontSize: 11, lineHeight: 16, paddingHorizontal: 4 },
 })

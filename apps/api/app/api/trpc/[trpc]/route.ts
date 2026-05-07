@@ -34,8 +34,21 @@ async function createContext(req: Request): Promise<TRPCContext> {
   }
 }
 
-const handler = (req: Request) =>
-  fetchRequestHandler({
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "content-type,authorization,trpc-accept",
+}
+
+function withCors(response: Response): Response {
+  for (const [key, value] of Object.entries(corsHeaders)) {
+    response.headers.set(key, value)
+  }
+  return response
+}
+
+const handler = async (req: Request) =>
+  withCors(await fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
     router: appRouter,
@@ -46,6 +59,10 @@ const handler = (req: Request) =>
         console.error(`tRPC error on ${path}:`, error)
       }
     },
-  })
+  }))
+
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: corsHeaders })
+}
 
 export { handler as GET, handler as POST }

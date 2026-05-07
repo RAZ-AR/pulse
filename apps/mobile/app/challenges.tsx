@@ -3,17 +3,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack, useRouter } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
+import { colors, fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
 import { NeuCard, GradPill } from "../src/components/neu"
 
-const CHALLENGE_GRADS = [gradients.rainbow2, gradients.pink, gradients.rainbow3, gradients.blue] as const
+const CHALLENGE_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
 
 const TYPE_LABELS: Record<string, string> = {
-  SPEND_AMOUNT: "💸 Spend",
-  VISIT_N_VENUES: "📍 Visit",
-  WALK_STEPS: "👟 Steps",
-  COMBO: "🎯 Combo",
-  STREAK: "🔥 Streak",
+  SPEND_AMOUNT: "Spend",
+  VISIT_N_VENUES: "Visit",
+  WALK_STEPS: "Steps",
+  COMBO: "Combo",
+  STREAK: "Streak",
 }
 
 type Tab = "mine" | "available"
@@ -51,7 +51,7 @@ export default function ChallengesScreen() {
           {tab === "mine" ? (
             mineList.length === 0 ? (
               <Empty
-                emoji="🎯"
+                icon="□"
                 title={t("noJoined", "No active challenges")}
                 desc={t("noJoinedDesc", "Pick one from Available to start earning bonus points")}
                 action={t("browseAvailable", "Browse available")}
@@ -63,7 +63,7 @@ export default function ChallengesScreen() {
                 const target = uc.challenge.rules as { threshold?: number; count?: number; days?: number }
                 const total = target.threshold ?? target.count ?? target.days ?? 1
                 const pct = uc.isCompleted ? 100 : Math.min(100, (uc.progress / total) * 100)
-                const grad = uc.isCompleted ? gradients.mint : CHALLENGE_GRADS[i % CHALLENGE_GRADS.length]!
+                const grad = uc.isCompleted ? gradients.aqua : CHALLENGE_GRADS[i % CHALLENGE_GRADS.length]!
                 return (
                   <ChallengeCard
                     key={uc.id}
@@ -85,7 +85,7 @@ export default function ChallengesScreen() {
             )
           ) : availableList.length === 0 ? (
             <Empty
-              emoji="🌱"
+              icon="+"
               title={t("noAvailable", "All caught up!")}
               desc={t("noAvailableDesc", "You've joined every active challenge.")}
               theme={theme}
@@ -95,7 +95,7 @@ export default function ChallengesScreen() {
               const target = c.rules as { threshold?: number; count?: number; days?: number }
               const total = target.threshold ?? target.count ?? target.days ?? 1
               const sponsored = c.venue !== null
-              const grad = sponsored ? gradients.pink : CHALLENGE_GRADS[i % CHALLENGE_GRADS.length]!
+              const grad = sponsored ? gradients.black : CHALLENGE_GRADS[i % CHALLENGE_GRADS.length]!
               return (
                 <ChallengeCard
                   key={c.id}
@@ -140,7 +140,7 @@ function ChallengeCard({
       <View style={ss.cardHead}>
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={ss.icon}>
-            <Text style={{ fontSize: 22 }}>{type === "SPEND_AMOUNT" ? "💸" : type === "VISIT_N_VENUES" ? "📍" : type === "STREAK" ? "🔥" : "🎯"}</Text>
+            <Text style={ss.iconText}>{type === "VISIT_N_VENUES" ? "⌖" : type === "STREAK" ? "✓" : type === "WALK_STEPS" ? "◦" : "□"}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[ss.title, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{title}</Text>
@@ -162,7 +162,7 @@ function ChallengeCard({
             <Text style={ss.progressText}>{progress ?? 0} / {total}</Text>
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
               {sponsorName ? <GradPill label={sponsorName} gradient={gradients.gold} /> : null}
-              <Text style={ss.daysLeft}>{completed ? "✓ Done!" : `${daysLeft}d left`}</Text>
+          <Text style={ss.daysLeft}>{completed ? "✓ Done" : `${daysLeft}d left`}</Text>
             </View>
           </View>
         </>
@@ -195,11 +195,11 @@ function TabButton({
 }
 
 function Empty({
-  emoji, title, desc, action, onAction, theme,
-}: { emoji: string; title: string; desc: string; action?: string; onAction?: () => void; theme: Theme }) {
+  icon, title, desc, action, onAction, theme,
+}: { icon: string; title: string; desc: string; action?: string; onAction?: () => void; theme: Theme }) {
   return (
     <NeuCard style={{ padding: 28, alignItems: "center" }}>
-      <Text style={{ fontSize: 48, marginBottom: 12 }}>{emoji}</Text>
+      <Text style={s.emptyIcon}>{icon}</Text>
       <Text style={[s.emptyTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{title}</Text>
       <Text style={[s.emptyDesc, { color: theme.textSecondary }]}>{desc}</Text>
       {action ? (
@@ -213,27 +213,26 @@ function Empty({
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  tabs: { flexDirection: "row", paddingHorizontal: 20, paddingVertical: 6, gap: 24 },
+  tabs: { flexDirection: "row", paddingHorizontal: 18, paddingVertical: 6, gap: 12 },
   tab: { paddingVertical: 12, position: "relative" },
   tabLabel: { fontSize: 15 },
-  tabIndicator: {
-    position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2,
-    backgroundColor: "#FFB3E6",
-  },
-  list: { padding: 20, gap: 12, paddingBottom: 40 },
-  emptyTitle: { fontSize: 16, marginBottom: 6 },
+  tabIndicator: { position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: "#000" },
+  list: { padding: 18, gap: 12, paddingBottom: 40 },
+  emptyIcon: { color: colors.ink, fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 12 },
+  emptyTitle: { fontSize: 24, marginBottom: 6 },
   emptyDesc: { fontSize: 13, textAlign: "center", lineHeight: 18, marginBottom: 16 },
-  emptyBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
+  emptyBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 99 },
 })
 
 const ss = StyleSheet.create({
-  card: { padding: 18, overflow: "hidden" },
-  cardBlob: { position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(255,255,255,0.1)" },
+  card: { padding: 18, overflow: "hidden", borderRadius: 30 },
+  cardBlob: { position: "absolute", top: -30, right: -30, width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: "rgba(167,232,238,0.25)" },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  icon: { width: 44, height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
-  title: { color: "#FFF", fontSize: 15, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
+  iconText: { color: "#FFFFFF", fontSize: 20, fontWeight: "900" },
+  title: { color: "#FFF", fontSize: 16 },
   desc: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
-  reward: { color: "#FFF", fontSize: 18, lineHeight: 20, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  reward: { color: "#FFF", fontSize: 20, lineHeight: 22 },
   rewardUnit: { color: "rgba(255,255,255,0.6)", fontSize: 10 },
   progressTrack: { height: 8, backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 4, overflow: "hidden", marginBottom: 8 },
   progressFill: { height: "100%", backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 4 },

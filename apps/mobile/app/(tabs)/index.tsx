@@ -1,12 +1,17 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
+import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, gradients, useTheme } from "../../src/lib/theme"
+import { colors, fonts, gradients, useTheme } from "../../src/lib/theme"
 import { NeuCard } from "../../src/components/neu"
 
-const VENUE_GRADIENTS = [gradients.rainbow, gradients.rainbow2, gradients.rainbow4] as const
+type RewardItem = {
+  id: string
+  title: string
+  pointsCost: number
+  venue: { id: string; name: string }
+}
 
 function fmt(n: number) {
   return n.toLocaleString()
@@ -17,165 +22,129 @@ function daysLeft(d: Date | string | null | undefined): number {
   return Math.max(0, Math.round((new Date(d).getTime() - Date.now()) / 86_400_000))
 }
 
+function initials(name: string | null | undefined) {
+  return (name ?? "P").slice(0, 1).toUpperCase()
+}
+
 export default function HomeScreen() {
   const theme = useTheme()
-  const { t } = useTranslation("common")
   const router = useRouter()
+  const { t } = useTranslation(["common", "venue"])
 
   const me = trpc.user.me.useQuery()
-  const leaderboard = trpc.venue.rateLeaderboard.useQuery({ limit: 6 })
-  const myChallenges = trpc.challenge.listMine.useQuery()
-  const activeChallenges = (myChallenges.data ?? []).filter((uc) => !uc.isCompleted).slice(0, 2)
+  const rewards = trpc.reward.list.useQuery({ limit: 8 })
+  const nearby = trpc.venue.nearby.useQuery({
+    lat: 44.7866,
+    lng: 20.4489,
+    radiusKm: 50,
+    limit: 8,
+  })
+  const challenges = trpc.challenge.listMine.useQuery()
 
+  const rewardItems = (rewards.data?.rewards ?? []) as RewardItem[]
+  const activeChallenges = (challenges.data ?? []).filter((uc) => !uc.isCompleted)
   const total = me.data ? me.data.earnedPoints + me.data.welcomePoints : 0
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      {/* Header */}
-      <View style={s.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.greeting, { color: theme.textSecondary, fontFamily: fonts.body }]}>
-            {t("goodMorning", "Good morning 👋")}
-          </Text>
-          <Text style={[s.userName, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
-            {me.data?.name ?? "—"}
+      <View style={s.topBar}>
+        <CircleButton label="+" onPress={() => router.push("/earn")} />
+        <View style={s.helloBlock}>
+          <Text style={[s.kicker, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>PULSE</Text>
+          <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+            {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
         </View>
-        <LinearGradient
-          colors={gradients.rainbow as unknown as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[s.avatar, theme.shadowRaisedSm]}
-        >
-          <Text style={s.avatarLetter}>{(me.data?.name?.[0] ?? "?").toUpperCase()}</Text>
-        </LinearGradient>
+        <CircleButton label="◦" onPress={() => router.push("/profile")} />
       </View>
 
-      {/* Points hero */}
-      <NeuCard gradient={gradients.rainbow} style={{ padding: 24, marginBottom: 16 }}>
-        <View style={[s.heroBlob, { top: -30, right: -30, width: 120, height: 120 }]} />
-        <View style={[s.heroBlob, { bottom: -20, left: 20, width: 80, height: 80, opacity: 0.6 }]} />
-        <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold }]}>
-          {t("pointsBalance", "Total balance").toUpperCase()}
-        </Text>
-        <View style={s.heroValueRow}>
-          <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy }]}>{fmt(total)}</Text>
-          <Text style={[s.heroValueUnit, { fontFamily: fonts.body }]}> pts</Text>
-        </View>
-        <View style={s.heroStats}>
-          <HeroStat label={t("earned", "Earned")} value={fmt(me.data?.earnedPoints ?? 0)} />
-          <HeroStat label={`${t("welcome", "Welcome")} 🎁`} value={fmt(me.data?.welcomePoints ?? 0)} />
-          <HeroStat label={t("expires", "Expires")} value={`${welcomeDays}d`} />
-        </View>
-      </NeuCard>
-
-      {/* Streak + quick actions */}
-      <View style={s.row}>
-        <NeuCard style={s.streakCard}>
-          <Text style={s.streakIcon}>🔥</Text>
-          <View>
-            <Text style={[s.streakValue, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-              {me.data?.currentStreak ?? 0}
-            </Text>
-            <Text style={[s.streakLabel, { color: theme.textSecondary, fontFamily: fonts.body }]}>
-              {t("dayStreak", "day streak")}
-            </Text>
+      <LinearGradient
+        colors={gradients.black as unknown as [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[s.dashboard, theme.shadowRaised]}
+      >
+        <View style={s.dashboardGrid} />
+        <View style={s.dashboardHead}>
+          <View style={s.blackLogo}>
+            <Text style={s.blackLogoText}>P</Text>
           </View>
-        </NeuCard>
-
-        <View style={s.quickCol}>
-          <NeuCard gradient={gradients.pink} style={s.quickAction} onPress={() => router.push("/earn")}>
-            <Text style={[s.quickLabel, { fontFamily: fonts.bodyBold }]}>📷  {t("scan", "Scan")}</Text>
-            <Text style={s.quickArrow}>→</Text>
-          </NeuCard>
-          <NeuCard gradient={gradients.blue} style={s.quickAction} onPress={() => router.push("/rewards")}>
-            <Text style={[s.quickLabel, { fontFamily: fonts.bodyBold }]}>🎁  {t("nav.rewards", "Rewards")}</Text>
-            <Text style={s.quickArrow}>→</Text>
-          </NeuCard>
+          <View style={s.blackPill}>
+            <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }]}>{t("dashboard")}</Text>
+          </View>
         </View>
+
+        <Text style={[s.dashboardTitle, { fontFamily: fonts.displayHeavy }]}>{t("loyaltyPlan")}</Text>
+        <View style={s.balanceRow}>
+          <Text style={[s.balance, { fontFamily: fonts.displayHeavy }]}>{fmt(total)}</Text>
+          <Text style={[s.balanceUnit, { fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
+        </View>
+
+        <View style={s.coverageTrack}>
+          <View style={[s.coverageFill, { width: `${Math.min(100, total / 50)}%` }]} />
+          <View style={s.coverageCut} />
+        </View>
+        <View style={s.coverageLabels}>
+          <Text style={s.coverageText}>{t("earnedShort", { count: me.data?.earnedPoints ?? 0 })}</Text>
+          <Text style={s.coverageText}>{t("welcomeShort", { count: me.data?.welcomePoints ?? 0 })}</Text>
+        </View>
+
+        <View style={s.dragAction}>
+          <View style={s.checkDot}>
+            <Text style={s.checkText}>✓</Text>
+          </View>
+          <Text style={[s.dragText, { fontFamily: fonts.bodyBold }]}>{t("scanVisitRedeem")}</Text>
+          <Text style={s.dragChevron}>›››</Text>
+        </View>
+      </LinearGradient>
+
+      <View style={s.metrics}>
+        <MetricCard value={`${me.data?.currentStreak ?? 0}d`} label={t("streakLabel")} tone="cyan" />
+        <MetricCard value={`${welcomeDays}d`} label={t("welcomeLeft")} tone="white" />
+        <MetricCard value={`${activeChallenges.length}`} label={t("quests")} tone="black" />
       </View>
 
-      {/* Active challenges */}
-      {activeChallenges.length > 0 ? (
-        <>
-          <View style={s.sectionHead}>
-            <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-              {t("activeChallenges", "Your quests")}
-            </Text>
-            <Pressable onPress={() => router.push("/challenges")}>
-              <Text style={[s.seeAll, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                {t("seeAll", "See all →")}
-              </Text>
-            </Pressable>
-          </View>
-          <View style={{ gap: 10, marginBottom: 24 }}>
-            {activeChallenges.map((uc) => {
-              const target = uc.challenge.rules as { threshold?: number; count?: number; days?: number }
-              const total = target.threshold ?? target.count ?? target.days ?? 1
-              const pct = Math.min(100, (uc.progress / total) * 100)
-              return (
-                <NeuCard
-                  key={uc.id}
-                  gradient={gradients.rainbow2}
-                  style={{ padding: 14 }}
-                  onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: uc.challengeId } })}
-                >
-                  <View style={s.challengeHead}>
-                    <Text style={[s.challengeTitle, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-                      {uc.challenge.title}
-                    </Text>
-                    <Text style={[s.challengeReward, { fontFamily: fonts.displayHeavy }]}>
-                      +{uc.challenge.pointsReward}
-                    </Text>
-                  </View>
-                  <View style={s.progressTrack}>
-                    <View style={[s.progressFill, { width: `${pct}%` }]} />
-                  </View>
-                  <Text style={[s.progressText, { fontFamily: fonts.bodyBold }]}>
-                    {uc.progress}/{total}
-                  </Text>
-                </NeuCard>
-              )
-            })}
-          </View>
-        </>
-      ) : null}
-
-      {/* Top venues */}
-      <View style={s.sectionHead}>
-        <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-          {t("topRates", "Top points rate")}
-        </Text>
-        <Pressable onPress={() => router.push("/leaderboard")}>
-          <Text style={[s.seeAll, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-            {t("seeAll", "See all →")}
-          </Text>
-        </Pressable>
+      <View style={s.actionRow}>
+        <ActionPill label={t("scanReceipt")} icon="⌁" onPress={() => router.push("/scan")} dark />
+        <ActionPill label={t("checkIn")} icon="⌖" onPress={() => router.push("/checkin")} />
       </View>
 
-      <View style={s.venueGrid}>
-        {(leaderboard.data ?? []).slice(0, 6).map((v, i) => {
-          const grad = VENUE_GRADIENTS[i % VENUE_GRADIENTS.length]!
-          const rate = v.effectiveRate
+      <SectionHeader title={t("specialOffers")} action={t("allRewards")} onPress={() => router.push("/rewards")} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.offerRail}>
+        {rewardItems.slice(0, 6).map((reward, index) => (
+          <OfferCard
+            key={reward.id}
+            title={reward.title}
+            venue={reward.venue.name}
+            points={reward.pointsCost}
+            pointsLabel={t("pointsUnit")}
+            openLabel={t("open")}
+            featured={index === 0}
+            onPress={() => router.push({ pathname: "/reward/[id]", params: { id: reward.id } })}
+          />
+        ))}
+      </ScrollView>
+
+      <SectionHeader title={t("venuesNearby")} action={t("nav.map")} onPress={() => router.push("/map")} />
+      <View style={s.venueList}>
+        {(nearby.data ?? []).slice(0, 5).map((venue) => {
+          const offer = rewardItems.find((reward) => reward.venue.id === venue.id)
           return (
-            <NeuCard
-              key={v.id}
-              gradient={grad}
-              style={s.venueCard}
-              onPress={() => router.push({ pathname: "/venue/[id]", params: { id: v.id } })}
-            >
-              <View style={[s.venueBlob]} />
-              <Text style={[s.venueName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{v.name}</Text>
-              <Text style={s.venueCity} numberOfLines={1}>{v.city}</Text>
-              <Text style={[s.venueRate, { fontFamily: fonts.displayHeavy }]}>{rate.toFixed(3)}</Text>
-              <Text style={s.venueRateUnit}>pts/RSD</Text>
-              {v.boostActive ? (
-                <View style={s.boostPill}>
-                  <Text style={[s.boostText, { fontFamily: fonts.bodyBold }]}>×{v.boostMultiplier} BOOST</Text>
-                </View>
-              ) : null}
-            </NeuCard>
+            <VenueCard
+              key={venue.id}
+              name={venue.name}
+              category={t(`venue:category.${venue.category}`, venue.category.toLowerCase())}
+              city={venue.city}
+              address={venue.address}
+              rate={venue.pointsPerCurrency ?? null}
+              offer={offer?.title ?? t("partnerPoints")}
+              logo={initials(venue.name)}
+              onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
+              receiptScanLabel={t("receiptScan")}
+              menuLabel={t("menu")}
+              routeLabel={t("route")}
+            />
           )
         })}
       </View>
@@ -183,71 +152,254 @@ export default function HomeScreen() {
   )
 }
 
-function HeroStat({ label, value }: { label: string; value: string }) {
+function CircleButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <View style={s.heroStat}>
-      <Text style={s.heroStatLabel}>{label}</Text>
-      <Text style={[s.heroStatValue, { fontFamily: fonts.bodyBold }]}>{value}</Text>
+    <Pressable onPress={onPress} style={s.circleButton}>
+      <Text style={s.circleButtonText}>{label}</Text>
+    </Pressable>
+  )
+}
+
+function MetricCard({ value, label, tone }: { value: string; label: string; tone: "cyan" | "white" | "black" }) {
+  const bg = tone === "cyan" ? colors.cyan : tone === "black" ? colors.ink : "#FFFFFF"
+  const fg = tone === "black" ? "#FFFFFF" : colors.ink
+  return (
+    <View style={[s.metricCard, { backgroundColor: bg }]}>
+      <Text style={[s.metricValue, { color: fg, fontFamily: fonts.displayHeavy }]}>{value}</Text>
+      <Text style={[s.metricLabel, { color: tone === "black" ? "rgba(255,255,255,0.62)" : "#7A808E", fontFamily: fonts.bodyBold }]}>
+        {label.toUpperCase()}
+      </Text>
     </View>
+  )
+}
+
+function ActionPill({ label, icon, onPress, dark }: { label: string; icon: string; onPress: () => void; dark?: boolean }) {
+  return (
+    <Pressable onPress={onPress} style={[s.actionPill, dark ? s.actionPillDark : s.actionPillLight]}>
+      <View style={[s.actionIcon, dark ? s.actionIconDark : s.actionIconLight]}>
+        <Text style={[s.actionIconText, { color: dark ? colors.ink : "#FFFFFF" }]}>{icon}</Text>
+      </View>
+      <Text style={[s.actionLabel, { color: dark ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+        {label}
+      </Text>
+    </Pressable>
+  )
+}
+
+function SectionHeader({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
+  return (
+    <View style={s.sectionHead}>
+      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy }]}>{title}</Text>
+      <Pressable onPress={onPress} style={s.sectionButton}>
+        <Text style={[s.sectionButtonText, { fontFamily: fonts.bodyBold }]}>{action}</Text>
+      </Pressable>
+    </View>
+  )
+}
+
+function OfferCard({
+  title,
+  venue,
+  points,
+  pointsLabel,
+  openLabel,
+  featured,
+  onPress,
+}: {
+  title: string
+  venue: string
+  points: number
+  pointsLabel: string
+  openLabel: string
+  featured: boolean
+  onPress: () => void
+}) {
+  return (
+    <Pressable onPress={onPress} style={[s.offerCard, featured ? s.offerCardFeatured : s.offerCardBase]}>
+      <View style={s.offerTop}>
+        <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
+          <Text style={[s.offerLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
+        </View>
+        <Text style={[s.offerPoints, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.bodyBold }]}>
+          {points} {pointsLabel}
+        </Text>
+      </View>
+      <Text style={[s.offerTitle, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
+        {title}
+      </Text>
+      <Text style={[s.offerVenue, { color: featured ? "#5A606C" : "rgba(255,255,255,0.62)", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+        {venue}
+      </Text>
+      <View style={[s.offerLink, featured ? s.offerLinkLight : s.offerLinkDark]}>
+        <Text style={[s.offerLinkText, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
+      </View>
+    </Pressable>
+  )
+}
+
+function VenueCard({
+  name,
+  category,
+  city,
+  address,
+  rate,
+  offer,
+  logo,
+  onPress,
+  receiptScanLabel,
+  menuLabel,
+  routeLabel,
+}: {
+  name: string
+  category: string
+  city: string
+  address: string
+  rate: number | null
+  offer: string
+  logo: string
+  onPress: () => void
+  receiptScanLabel: string
+  menuLabel: string
+  routeLabel: string
+}) {
+  const theme = useTheme()
+  return (
+    <Pressable onPress={onPress} style={[s.venueCard, theme.shadowRaisedSm]}>
+      <View style={s.venueLogo}>
+        <Text style={[s.venueLogoText, { fontFamily: fonts.displayHeavy }]}>{logo}</Text>
+      </View>
+      <View style={s.venueMain}>
+        <View style={s.venueTitleRow}>
+          <Text style={[s.venueName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{name}</Text>
+          <Text style={s.venueArrow}>↗</Text>
+        </View>
+        <Text style={[s.venueMeta, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+          {category} · {city}
+        </Text>
+        <Text style={s.venueAddress} numberOfLines={1}>{address}</Text>
+        <View style={s.venueChips}>
+          <View style={s.venueChipDark}>
+            <Text style={[s.venueChipDarkText, { fontFamily: fonts.bodyBold }]}>
+              {rate ? `${rate.toFixed(3)} pts/RSD` : receiptScanLabel}
+            </Text>
+          </View>
+          <View style={s.venueChipLight}>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{menuLabel}</Text>
+          </View>
+          <View style={s.venueChipLight}>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{routeLabel}</Text>
+          </View>
+        </View>
+        <View style={s.specialLine}>
+          <Text style={s.specialDot}>●</Text>
+          <Text style={[s.specialText, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{offer}</Text>
+        </View>
+      </View>
+    </Pressable>
   )
 }
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 },
-  greeting: { fontSize: 12 },
-  userName: { fontSize: 24 },
-  avatar: {
-    width: 46, height: 46, borderRadius: 16,
-    alignItems: "center", justifyContent: "center",
+  content: { padding: 18, paddingBottom: 34 },
+  topBar: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
+  helloBlock: { flex: 1 },
+  kicker: { fontSize: 11, letterSpacing: 1.8 },
+  hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
+  circleButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(5,6,10,0.06)",
   },
-  avatarLetter: { color: "#FFF", fontSize: 18, fontWeight: "800", textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  circleButtonText: { color: colors.ink, fontSize: 25, lineHeight: 27 },
 
-  // Hero
-  heroBlob: { position: "absolute", borderRadius: 999, backgroundColor: "rgba(255,255,255,0.18)" },
-  heroLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
-  heroValueRow: { flexDirection: "row", alignItems: "baseline", marginTop: 4, marginBottom: 14 },
-  heroValue: { color: "#FFF", fontSize: 54, lineHeight: 56, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
-  heroValueUnit: { color: "rgba(255,255,255,0.7)", fontSize: 18 },
-  heroStats: { flexDirection: "row", gap: 8 },
-  heroStat: { flex: 1, backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 12, padding: 8 },
-  heroStatLabel: { color: "rgba(255,255,255,0.7)", fontSize: 9, letterSpacing: 0.8, fontWeight: "700", textTransform: "uppercase" },
-  heroStatValue: { color: "#FFF", fontSize: 15, marginTop: 2 },
+  dashboard: { borderRadius: 32, padding: 16, marginBottom: 12, overflow: "hidden" },
+  dashboardGrid: {
+    position: "absolute",
+    top: -70,
+    right: -60,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 1,
+    borderColor: "rgba(167,232,238,0.28)",
+  },
+  dashboardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
+  blackLogo: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
+  blackLogoText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
+  blackPill: { backgroundColor: "#000", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
+  blackPillText: { color: "#FFFFFF", fontSize: 13 },
+  dashboardTitle: { color: "#FFFFFF", fontSize: 28, lineHeight: 30, width: 220, letterSpacing: 0 },
+  balanceRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 8 },
+  balance: { color: "#FFFFFF", fontSize: 64, lineHeight: 66, letterSpacing: 0 },
+  balanceUnit: { color: "rgba(255,255,255,0.62)", fontSize: 15, marginBottom: 9 },
+  coverageTrack: { height: 28, borderRadius: 14, backgroundColor: "#303440", overflow: "hidden", marginTop: 10 },
+  coverageFill: { height: "100%", backgroundColor: "#EAF0FA" },
+  coverageCut: { position: "absolute", right: 0, top: 0, bottom: 0, width: 62, backgroundColor: "rgba(255,255,255,0.08)" },
+  coverageLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
+  coverageText: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "700" },
+  dragAction: { marginTop: 13, backgroundColor: "#FFFFFF", borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10 },
+  checkDot: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#000", alignItems: "center", justifyContent: "center" },
+  checkText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
+  dragText: { color: colors.ink, fontSize: 14, flex: 1 },
+  dragChevron: { color: "#A7ADBA", fontSize: 19, marginRight: 8 },
 
-  // Streak + quick
-  row: { flexDirection: "row", gap: 12, marginBottom: 24 },
-  streakCard: { flex: 1, padding: 14, justifyContent: "space-between", minHeight: 110 },
-  streakIcon: { fontSize: 28 },
-  streakValue: { fontSize: 28, lineHeight: 30 },
-  streakLabel: { fontSize: 11, marginTop: 2 },
-  quickCol: { flex: 2, gap: 10 },
-  quickAction: { padding: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  quickLabel: { color: "#FFF", fontSize: 14, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  quickArrow: { color: "rgba(255,255,255,0.7)", fontSize: 16 },
+  metrics: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  metricCard: { flex: 1, borderRadius: 24, padding: 13, minHeight: 82, justifyContent: "center" },
+  metricValue: { fontSize: 26, lineHeight: 28, letterSpacing: 0 },
+  metricLabel: { fontSize: 9, marginTop: 5, letterSpacing: 0.8 },
+  actionRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
+  actionPill: { flex: 1, borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10 },
+  actionPillDark: { backgroundColor: "#000" },
+  actionPillLight: { backgroundColor: "#FFFFFF" },
+  actionIcon: { width: 35, height: 35, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  actionIconDark: { backgroundColor: "#FFFFFF" },
+  actionIconLight: { backgroundColor: "#000" },
+  actionIconText: { fontSize: 16, fontWeight: "900" },
+  actionLabel: { fontSize: 13 },
 
-  // Sections
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { fontSize: 18 },
-  seeAll: { fontSize: 12 },
+  sectionTitle: { color: colors.ink, fontSize: 25, letterSpacing: 0 },
+  sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
+  sectionButtonText: { color: colors.ink, fontSize: 11 },
+  offerRail: { gap: 12, paddingBottom: 20 },
+  offerCard: { width: 176, minHeight: 174, borderRadius: 30, padding: 14, overflow: "hidden" },
+  offerCardFeatured: { backgroundColor: colors.cyan },
+  offerCardBase: { backgroundColor: colors.ink },
+  offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  offerLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
+  offerLogoDark: { backgroundColor: "#000" },
+  offerLogoLight: { backgroundColor: "#FFFFFF" },
+  offerLogoText: { fontSize: 17, fontWeight: "900" },
+  offerPoints: { backgroundColor: "#000", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
+  offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
+  offerVenue: { fontSize: 12, marginTop: 8 },
+  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9 },
+  offerLinkLight: { backgroundColor: "rgba(255,255,255,0.72)" },
+  offerLinkDark: { backgroundColor: "rgba(255,255,255,0.14)" },
+  offerLinkText: { fontSize: 12 },
 
-  // Challenges
-  challengeHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  challengeTitle: { color: "#FFF", fontSize: 14, flex: 1, marginRight: 10, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  challengeReward: { color: "#FFF", fontSize: 15 },
-  progressTrack: { height: 6, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, marginBottom: 6, overflow: "hidden" },
-  progressFill: { height: "100%", backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 3 },
-  progressText: { color: "#FFF", fontSize: 11, alignSelf: "flex-end" },
-
-  // Venues
-  venueGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  venueCard: { width: "48%", padding: 16, minHeight: 140, overflow: "hidden" },
-  venueBlob: { position: "absolute", top: -16, right: -16, width: 64, height: 64, borderRadius: 32, backgroundColor: "rgba(255,255,255,0.15)" },
-  venueName: { color: "#FFF", fontSize: 13, marginBottom: 2, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  venueCity: { color: "rgba(255,255,255,0.7)", fontSize: 11, marginBottom: 12 },
-  venueRate: { color: "#FFF", fontSize: 22, lineHeight: 24, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-  venueRateUnit: { color: "rgba(255,255,255,0.65)", fontSize: 10, fontWeight: "700" },
-  boostPill: { marginTop: 8, alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  boostText: { color: "#FFF", fontSize: 9 },
+  venueList: { gap: 12 },
+  venueCard: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12, flexDirection: "row", gap: 12 },
+  venueLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "#EAF0FA", alignItems: "center", justifyContent: "center" },
+  venueLogoText: { color: colors.ink, fontSize: 22 },
+  venueMain: { flex: 1 },
+  venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  venueName: { color: colors.ink, fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
+  venueArrow: { color: colors.ink, fontSize: 22 },
+  venueMeta: { color: "#6B7280", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
+  venueAddress: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
+  venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
+  venueChipDark: { backgroundColor: "#000", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipDarkText: { color: "#FFFFFF", fontSize: 10 },
+  venueChipLight: { backgroundColor: "#EEF3FB", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipLightText: { color: colors.ink, fontSize: 10 },
+  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "#F3F7FF", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
+  specialDot: { color: colors.skySolid, fontSize: 10 },
+  specialText: { color: colors.ink, fontSize: 12, flex: 1 },
 })

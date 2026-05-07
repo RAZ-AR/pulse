@@ -6,7 +6,9 @@ import { generateReferralCode } from "@pulse/shared"
 import { WELCOME_BONUS_AMOUNT, WELCOME_EXPIRY_DAYS } from "@pulse/shared"
 
 function createAdapter() {
-  const base = PrismaAdapter(db)
+  const base = PrismaAdapter(
+    db as unknown as Parameters<typeof PrismaAdapter>[0],
+  )
   return {
     ...base,
     // Override createUser to inject our custom fields on first sign-in

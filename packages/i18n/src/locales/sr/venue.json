@@ -20,5 +20,21 @@
     "RETAIL": "Prodavnica",
     "SERVICE": "Usluga",
     "OTHER": "Ostalo"
-  }
+  },
+  "map": "Mapa",
+  "belgrade": "Beograd",
+  "receiptScan": "sken računa",
+  "pointsRate": "Kurs poena",
+  "perCurrency": "poena po RSD",
+  "boostActiveLabel": "BOOST AKTIVAN",
+  "notPartner": "Još nije PULSE partner - dostupno je samo skeniranje računa",
+  "about": "O mestu",
+  "availableRewards": "Dostupne nagrade",
+  "noRewardsYet": "Još nema nagrada na ovom mestu",
+  "reviews": "Recenzije",
+  "writeReview": "Napiši recenziju",
+  "noReviewsYet": "Budi prvi koji ostavlja recenziju",
+  "anonymous": "Anonimno",
+  "featured": "ISTAKNUTO",
+  "noVenuesYet": "Još nema mesta"
 }

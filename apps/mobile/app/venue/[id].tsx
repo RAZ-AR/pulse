@@ -2,10 +2,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
+import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
 import { NeuCard, GradPill } from "../../src/components/neu"
 
-const REWARD_GRADS = [gradients.rainbow2, gradients.pink, gradients.blue, gradients.mint] as const
+const REWARD_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
 
 export default function VenueDetailScreen() {
   const theme = useTheme()
@@ -61,13 +61,13 @@ export default function VenueDetailScreen() {
             ) : null}
           </View>
           {v.subscriptionTier === "FEATURED" ? (
-            <GradPill label="★ FEATURED" gradient={gradients.gold} />
+            <GradPill label={`★ ${t("featured")}`} gradient={gradients.gold} />
           ) : null}
         </View>
 
         {/* Points rate hero */}
         {v.isPartner && effectiveRate ? (
-          <NeuCard gradient={gradients.rainbow} style={s.rateCard}>
+          <NeuCard gradient={gradients.black} style={s.rateCard}>
             <View style={s.heroBlob} />
             <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold }]}>
               {t("pointsRate", "Points rate").toUpperCase()}
@@ -77,7 +77,7 @@ export default function VenueDetailScreen() {
             {boostActive ? (
               <View style={s.boostBadge}>
                 <Text style={[s.boostText, { fontFamily: fonts.bodyBold }]}>
-                  ×{v.boostMultiplier} {t("boostActive", "BOOST ACTIVE")}
+                  ×{v.boostMultiplier} {t("boostActiveLabel")}
                 </Text>
               </View>
             ) : null}
@@ -85,7 +85,7 @@ export default function VenueDetailScreen() {
         ) : (
           <NeuCard style={{ padding: 16, alignItems: "center", marginBottom: 16 }}>
             <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
-              {t("notPartner", "Not a PULSE partner yet — receipt scans only")}
+              {t("notPartner")}
             </Text>
           </NeuCard>
         )}
@@ -166,7 +166,7 @@ export default function VenueDetailScreen() {
               <NeuCard key={r.id} style={{ padding: 14 }}>
                 <View style={s.reviewHead}>
                   <Text style={[s.reviewAuthor, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-                    {r.user.name ?? "Anonymous"}
+                    {r.user.name ?? t("anonymous")}
                   </Text>
                   <Text style={s.reviewStars}>{"★".repeat(r.rating)}<Text style={{ color: theme.textMuted }}>{"★".repeat(5 - r.rating)}</Text></Text>
                 </View>
@@ -182,30 +182,30 @@ export default function VenueDetailScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  header: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 20 },
-  name: { fontSize: 26, lineHeight: 30 },
+  header: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 18 },
+  name: { fontSize: 34, lineHeight: 38 },
   subtle: { fontSize: 13, marginTop: 4 },
 
-  rateCard: { padding: 24, alignItems: "center", marginBottom: 16, overflow: "hidden" },
-  heroBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.12)" },
+  rateCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
+  heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
   rateLabel: { color: "rgba(255,255,255,0.78)", fontSize: 11, letterSpacing: 1.5 },
   rateValue: { color: "#FFF", fontSize: 56, lineHeight: 60, marginTop: 4, textShadowColor: "rgba(0,0,0,0.12)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 8 },
   rateUnit: { color: "rgba(255,255,255,0.85)", fontSize: 13 },
-  boostBadge: { marginTop: 10, backgroundColor: "rgba(255,255,255,0.25)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  boostText: { color: "#FFF", fontSize: 11 },
+  boostBadge: { marginTop: 10, backgroundColor: "#FFFFFF", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99 },
+  boostText: { color: colors.ink, fontSize: 11 },
 
   sectionLabel: { fontSize: 11, letterSpacing: 1, marginBottom: 8 },
   body: { fontSize: 14, lineHeight: 20 },
 
-  heading: { fontSize: 18, marginBottom: 12 },
+  heading: { fontSize: 25, marginBottom: 12 },
 
-  rewardRow: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
-  rewardTitle: { color: "#FFF", fontSize: 14, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  rewardDesc: { color: "rgba(255,255,255,0.78)", fontSize: 12, marginTop: 2 },
-  rewardCost: { color: "#FFF", fontSize: 18, lineHeight: 20, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  rewardRow: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 28 },
+  rewardTitle: { color: "#FFF", fontSize: 16 },
+  rewardDesc: { color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 2 },
+  rewardCost: { color: "#FFF", fontSize: 21, lineHeight: 23 },
   rewardCostUnit: { color: "rgba(255,255,255,0.7)", fontSize: 10 },
 
   reviewsHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 8 },

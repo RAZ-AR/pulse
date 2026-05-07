@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Tex
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
-import { fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
+import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
 import { NeuCard, NeuInset } from "../../src/components/neu"
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
@@ -11,10 +11,10 @@ import { setLocale } from "../../src/lib/i18n"
 import type { SupportedLocale } from "@pulse/shared"
 
 const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
-  COMMON: gradients.violet,
-  RARE: gradients.blue,
-  EPIC: gradients.violet,
-  LEGENDARY: gradients.rainbow,
+  COMMON: gradients.graphite,
+  RARE: gradients.black,
+  EPIC: gradients.graphite,
+  LEGENDARY: gradients.black,
 }
 
 export default function ProfileScreen() {
@@ -96,7 +96,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
       {/* Hero */}
-      <NeuCard gradient={gradients.rainbow} style={s.hero}>
+      <NeuCard gradient={gradients.black} style={s.hero}>
         <View style={s.heroBlob} />
         <View style={s.heroRow}>
           <View style={s.heroAvatar}>
@@ -107,7 +107,7 @@ export default function ProfileScreen() {
               {u.name ?? u.email}
             </Text>
             {u.homeCity ? (
-              <Text style={s.heroCity}>📍 {u.homeCity}</Text>
+              <Text style={s.heroCity}>⌖ {u.homeCity}</Text>
             ) : null}
             <View style={s.refBadge}>
               <Text style={[s.refBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
@@ -119,17 +119,17 @@ export default function ProfileScreen() {
       {/* Stats */}
       <View style={s.statsRow}>
         <StatTile
-          gradient={gradients.rainbow2}
+          gradient={gradients.aqua}
           label={t("totalPts", "Total pts")}
           value={u.totalEarnedLifetime.toLocaleString()}
         />
         <StatTile
-          gradient={gradients.pink}
-          label={`${t("streak", "Streak")} 🔥`}
+          gradient={gradients.aqua}
+          label={t("streak", "Streak")}
           value={`${u.currentStreak}d`}
         />
         <StatTile
-          gradient={gradients.gold}
+          gradient={gradients.pearl}
           label={t("best", "Best")}
           value={`${u.longestStreak}d`}
         />
@@ -173,7 +173,7 @@ export default function ProfileScreen() {
       </Pressable>
 
       {/* Referral */}
-      <NeuCard gradient={gradients.rainbow3} style={s.referralCard}>
+      <NeuCard gradient={gradients.black} style={s.referralCard}>
         <Text style={s.referralLabel}>
           {t("referralCode", "Referral code").toUpperCase()}
         </Text>
@@ -184,13 +184,13 @@ export default function ProfileScreen() {
             onPress={() => shareReferral(u.referralCode)}
             style={s.referralBtnInner}
           >
-            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>📤 {t("share", "Share")}</Text>
+            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>↗ {t("share", "Share")}</Text>
           </Pressable>
           <Pressable
             onPress={() => router.push("/gift")}
             style={s.referralBtnInner}
           >
-            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>🎁 {t("giftPoints", "Gift")}</Text>
+            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>□ {t("giftPoints", "Gift")}</Text>
           </Pressable>
         </View>
         <Text
@@ -251,7 +251,7 @@ export default function ProfileScreen() {
             return (
               <Pressable key={lng} onPress={() => changeLanguage(lng)} style={{ flex: 1 }}>
                 <LinearGradient
-                  colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+                  colors={gradients.black as unknown as [string, string, ...string[]]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={[s.langChip, theme.shadowGlow]}
@@ -333,7 +333,7 @@ function Btn({
     return (
       <Pressable onPress={onPress} disabled={disabled} style={{ flex: 1, opacity: disabled ? 0.5 : 1 }}>
         <LinearGradient
-          colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+          colors={gradients.black as unknown as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[{ padding: 12, borderRadius: 10, alignItems: "center" }, theme.shadowGlow]}
@@ -356,34 +356,35 @@ function Btn({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 34 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  hero: { padding: 24, marginBottom: 16, overflow: "hidden" },
-  heroBlob: { position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.12)" },
+  hero: { padding: 18, marginBottom: 14, overflow: "hidden" },
+  heroBlob: { position: "absolute", top: -48, right: -44, width: 160, height: 160, borderRadius: 80, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 16 },
   heroAvatar: {
-    width: 70, height: 70, borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.3)",
+    width: 70, height: 70, borderRadius: 28,
+    backgroundColor: "#000",
     alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: "#343844",
   },
-  heroAvatarText: { color: "#FFF", fontSize: 28, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  heroName: { color: "#FFF", fontSize: 22, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
-  heroCity: { color: "rgba(255,255,255,0.78)", fontSize: 13, marginTop: 2 },
-  refBadge: { marginTop: 8, alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  refBadgeText: { color: "#FFF", fontSize: 11, letterSpacing: 1.5 },
+  heroAvatarText: { color: "#FFF", fontSize: 28 },
+  heroName: { color: "#FFF", fontSize: 25, lineHeight: 29 },
+  heroCity: { color: "rgba(255,255,255,0.62)", fontSize: 13, marginTop: 2 },
+  refBadge: { marginTop: 10, alignSelf: "flex-start", backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
+  refBadgeText: { color: colors.ink, fontSize: 11, letterSpacing: 1.5 },
 
   statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  statTile: { flex: 1, padding: 14 },
-  statValue: { color: "#FFF", fontSize: 20, lineHeight: 22, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  statLabel: { color: "rgba(255,255,255,0.78)", fontSize: 9, marginTop: 4, letterSpacing: 0.5, fontWeight: "700" },
+  statTile: { flex: 1, padding: 14, minHeight: 86 },
+  statValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
+  statLabel: { color: "#6B7280", fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
 
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
 
-  h2: { fontSize: 18, marginBottom: 12 },
+  h2: { fontSize: 25, marginBottom: 12 },
 
   badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
-  badgeCard: { width: "31%", padding: 12, alignItems: "center" },
+  badgeCard: { width: "31%", padding: 12, alignItems: "center", minHeight: 104 },
   badgeIcon: { fontSize: 26, marginBottom: 6 },
   badgeName: { color: "#FFF", fontSize: 12, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   badgeRarity: { color: "rgba(255,255,255,0.75)", fontSize: 9, marginTop: 2, letterSpacing: 0.5, fontWeight: "700" },
@@ -393,17 +394,17 @@ const s = StyleSheet.create({
   referralCode: { color: "#FFF", fontSize: 28, letterSpacing: 5, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6 },
   referralHint: { color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 8, textAlign: "center" },
   referralBtns: { flexDirection: "row", gap: 10, marginTop: 14 },
-  referralBtnInner: { backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 12, paddingHorizontal: 18, paddingVertical: 9 },
-  referralBtnText: { color: "#FFF", fontSize: 13 },
+  referralBtnInner: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
+  referralBtnText: { color: colors.ink, fontSize: 13 },
   refsCount: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "700", marginTop: 12 },
 
   shortcutTitle: { fontSize: 15 },
 
   langRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  langChip: { paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  langChip: { paddingVertical: 12, borderRadius: 99, alignItems: "center" },
   langChipText: { fontSize: 13 },
   langChipActive: { color: "#FFF", fontSize: 13, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
 
-  signOut: { padding: 14, borderRadius: 12, alignItems: "center" },
+  signOut: { padding: 14, borderRadius: 99, alignItems: "center" },
   signOutText: { color: "#DC2626", fontSize: 14 },
 })

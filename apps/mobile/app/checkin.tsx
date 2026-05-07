@@ -6,7 +6,7 @@ import { CameraView, useCameraPermissions } from "expo-camera"
 import * as Location from "expo-location"
 import { trpc } from "../src/lib/trpc"
 import { uploadCheckinImage } from "../src/lib/storage"
-import { colors, useTheme } from "../src/lib/theme"
+import { colors, fonts, useTheme } from "../src/lib/theme"
 
 type Coords = { lat: number; lng: number; accuracy: number }
 type NearbyVenue = {
@@ -89,7 +89,7 @@ export default function CheckinScreen() {
           </Centered>
         ) : phase.kind === "noLocation" ? (
           <Centered>
-            <Text style={s.bigEmoji}>📍</Text>
+            <Text style={s.bigIcon}>⌖</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("locationNeeded", "Location needed")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.reason}</Text>
             <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: theme.text }]}>
@@ -105,7 +105,7 @@ export default function CheckinScreen() {
           />
         ) : phase.kind === "noVenuesNearby" ? (
           <Centered>
-            <Text style={s.bigEmoji}>🤔</Text>
+            <Text style={s.bigIcon}>?</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("noVenuesNearby", "No venues nearby")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>
               {t("noVenuesNearbyDesc", "Move closer to a partner venue and try again. Check-ins require being within 100m of a venue.")}
@@ -165,7 +165,7 @@ export default function CheckinScreen() {
           </Centered>
         ) : (
           <Centered>
-            <Text style={s.bigEmoji}>✓</Text>
+            <Text style={s.bigIcon}>✓</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("success", "Checked in!")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.venue.name}</Text>
             <Text style={[s.points, { color: colors.mint }]}>+{phase.pointsEarned} pts</Text>
@@ -175,11 +175,11 @@ export default function CheckinScreen() {
               </Text>
             ) : null}
             <Text style={[s.streakInfo, { color: theme.textSecondary }]}>
-              🔥 {phase.newStreak} {t("dayStreak", "day streak")}
+              {phase.newStreak} {t("dayStreak", "day streak")}
             </Text>
             {phase.newBadges.length > 0 ? (
               <Text style={[s.newBadge, { color: colors.pink }]}>
-                🏆 {t("newBadge", "New badge unlocked!")}
+                {t("newBadge", "New badge unlocked!")}
               </Text>
             ) : null}
             <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: theme.text, marginTop: 24 }]}>
@@ -241,7 +241,7 @@ function VenuePicker({
     <ScrollView contentContainerStyle={s.pickerContent}>
       <Text style={[s.title, { color: theme.text }]}>{t("pickVenue", "Where are you?")}</Text>
       <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 16 }]}>
-        {t("pickVenueDesc", "Pick the venue you're at — we'll verify with a photo")}
+        {t("pickVenueDesc", "Pick the venue you're at - we'll verify with a photo")}
       </Text>
       {venues.data.map((v) => (
         <Pressable
@@ -320,25 +320,25 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   label: { fontSize: 13, marginTop: 14 },
-  title: { fontSize: 22, fontWeight: "800", marginTop: 8 },
+  title: { fontSize: 31, lineHeight: 34, fontFamily: fonts.displayHeavy, marginTop: 8 },
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 8, textAlign: "center" },
-  bigEmoji: { fontSize: 72 },
-  btn: { padding: 14, paddingHorizontal: 28, borderRadius: 12, alignItems: "center", marginTop: 16 },
-  pickerContent: { padding: 20, paddingBottom: 40 },
-  venueCard: { padding: 14, borderRadius: 12, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
-  venueName: { fontSize: 15, fontWeight: "700" },
+  bigIcon: { fontSize: 64, fontWeight: "900", color: colors.ink },
+  btn: { padding: 14, paddingHorizontal: 28, borderRadius: 99, alignItems: "center", marginTop: 16 },
+  pickerContent: { padding: 18, paddingBottom: 40 },
+  venueCard: { padding: 14, borderRadius: 30, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
+  venueName: { fontSize: 18, fontWeight: "800" },
   venueSub: { fontSize: 12, marginTop: 2 },
   venueArrow: { fontSize: 18 },
   cameraWrap: { flex: 1 },
   camera: { flex: 1 },
   cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "space-between", padding: 24, paddingTop: 24, paddingBottom: 120 },
-  venueBanner: { padding: 12, borderRadius: 12, alignSelf: "center" },
+  venueBanner: { padding: 12, borderRadius: 24, alignSelf: "center" },
   bannerLabel: { color: "#FFF", fontSize: 10, fontWeight: "700", letterSpacing: 1, opacity: 0.8, textAlign: "center" },
   bannerName: { color: "#FFF", fontSize: 15, fontWeight: "700", textAlign: "center", marginTop: 2 },
   frameHint: { color: "#FFF", fontSize: 13, fontWeight: "600", textAlign: "center", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 40 },
-  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.3)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#FFF" },
+  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
+  shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
   backBtnText: { color: "#FFF", fontSize: 22, fontWeight: "300" },
   points: { fontSize: 36, fontWeight: "800", marginTop: 16 },

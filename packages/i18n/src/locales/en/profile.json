@@ -39,5 +39,11 @@
   "noBadgesYet": "Earn your first badge by checking in or scanning a receipt",
   "signOut": "Sign out",
   "deleteAccount": "Delete account",
-  "saved": "Profile saved"
+  "saved": "Profile saved",
+  "totalPts": "Total pts",
+  "best": "Best",
+  "referralHintShort": "Friends +50 · You +100 after first buy",
+  "giftPoints": "Gift",
+  "friends": "Friends",
+  "seeFriendsActivity": "See what your friends are up to"
 }

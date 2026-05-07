@@ -3,7 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useTranslation } from "react-i18next"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { trpc } from "../../../src/lib/trpc"
-import { colors, useTheme } from "../../../src/lib/theme"
+import { colors, fonts, useTheme } from "../../../src/lib/theme"
 
 export default function VenueReviewScreen() {
   const theme = useTheme()
@@ -75,7 +75,7 @@ export default function VenueReviewScreen() {
             <>
               <Text style={[s.venueName, { color: theme.text }]}>{venue.data.name}</Text>
               <Text style={[s.venueSub, { color: theme.textSecondary }]}>
-                {venue.data.category.toLowerCase()} · {venue.data.city}
+                {t(`venue:category.${venue.data.category}`, venue.data.category.toLowerCase())} · {venue.data.city}
               </Text>
             </>
           ) : null}
@@ -84,7 +84,7 @@ export default function VenueReviewScreen() {
           <View style={s.starsRow}>
             {[1, 2, 3, 4, 5].map((n) => (
               <Pressable key={n} onPress={() => setRating(n)} hitSlop={6}>
-                <Text style={[s.star, { color: n <= rating ? colors.pink : theme.border }]}>★</Text>
+                <Text style={[s.star, { color: n <= rating ? colors.ink : theme.border }]}>★</Text>
               </Pressable>
             ))}
           </View>
@@ -139,16 +139,16 @@ export default function VenueReviewScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-  venueName: { fontSize: 22, fontWeight: "800" },
+  content: { padding: 18, paddingBottom: 40 },
+  venueName: { fontSize: 34, lineHeight: 38, fontFamily: fonts.displayHeavy },
   venueSub: { fontSize: 13, marginTop: 4, marginBottom: 24 },
   label: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginBottom: 8 },
   optional: { fontSize: 11, fontWeight: "500", letterSpacing: 0 },
   starsRow: { flexDirection: "row", gap: 4, marginBottom: 24 },
   star: { fontSize: 44, lineHeight: 48 },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15, height: 140, textAlignVertical: "top" },
+  input: { borderWidth: 1, borderRadius: 24, padding: 14, fontSize: 15, height: 140, textAlignVertical: "top", backgroundColor: "#FFFFFF" },
   charCount: { fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 16 },
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
-  btn: { padding: 14, borderRadius: 12, alignItems: "center", marginTop: 8 },
+  btn: { padding: 14, borderRadius: 99, alignItems: "center", marginTop: 8 },
   btnGhost: { backgroundColor: "transparent", borderWidth: 1, marginTop: 12 },
 })

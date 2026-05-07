@@ -1,20 +1,20 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, gradients, useTheme } from "../../src/lib/theme"
-import { NeuCard, NeuInset } from "../../src/components/neu"
+import { colors, fonts, useTheme } from "../../src/lib/theme"
+import { NeuCard } from "../../src/components/neu"
 
 const TX_ICONS: Record<string, string> = {
-  PARTNER_PURCHASE: "🏪",
-  RECEIPT_SCAN: "📷",
-  CHECKIN_PHOTO: "📍",
-  REWARD_REDEEMED: "🎁",
-  REFERRAL: "🤝",
-  GIFT_RECEIVED: "💝",
-  GIFT_SENT: "🎁",
-  CHALLENGE_COMPLETE: "🏆",
-  BONUS: "✨",
+  PARTNER_PURCHASE: "P",
+  RECEIPT_SCAN: "⌁",
+  CHECKIN_PHOTO: "⌖",
+  REWARD_REDEEMED: "□",
+  REFERRAL: "+",
+  GIFT_RECEIVED: "□",
+  GIFT_SENT: "□",
+  CHALLENGE_COMPLETE: "✓",
+  BONUS: "✦",
 }
 
 export default function EarnScreen() {
@@ -30,52 +30,58 @@ export default function EarnScreen() {
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-        {t("earnPoints", "Earn Points")}
-      </Text>
-      <Text style={[s.subtitle, { color: theme.textSecondary }]}>
-        {t("partnersBeatScans", "Partners give up to 6× more than scanning")}
-      </Text>
+      <View style={s.topRow}>
+        <View>
+          <Text style={[s.kicker, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>EARN</Text>
+          <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+            {t("earnPoints", "Earn Points")}
+          </Text>
+        </View>
+        <View style={s.balanceBubble}>
+          <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
+          <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
+        </View>
+      </View>
 
-      {/* Balance pill */}
-      <NeuInset style={s.balance}>
-        <Text style={[s.balanceLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-          {t("balance", "Balance").toUpperCase()}
+      <View style={s.hero}>
+        <View style={s.heroOrb} />
+        <View style={s.heroHead}>
+          <View style={s.blackLogo}><Text style={s.blackLogoText}>P</Text></View>
+          <View style={s.blackPill}><Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }]}>{t("activePlan")}</Text></View>
+        </View>
+        <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }]}>{t("earnMoreFromEveryVisit")}</Text>
+        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }]}>
+          {t("partnersBeatScans", "Partners give up to 6× more than scanning")}
         </Text>
-        <Text style={[s.balanceValue, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-          {total.toLocaleString()} pts
-        </Text>
-      </NeuInset>
+      </View>
 
-      {/* Earn methods */}
-      <View style={{ gap: 12, marginBottom: 28 }}>
+      <View style={s.methods}>
         <EarnMethod
-          gradient={gradients.pink}
-          icon="📷"
+          tone="cyan"
+          icon="⌁"
           title={t("scanReceipt", "Scan Receipt")}
           sub={t("scanReceiptSub", "1pt / 500 RSD · any venue")}
           note={t("worksEverywhere", "Works everywhere")}
           onPress={() => router.push("/scan")}
         />
         <EarnMethod
-          gradient={gradients.blue}
-          icon="📍"
+          tone="black"
+          icon="⌖"
           title={t("checkinPhoto", "Check-in Photo")}
           sub={t("checkinPhotoSub", "5 pts · with geolocation")}
           note={t("plusStreakBonus", "+ Streak bonus")}
           onPress={() => router.push("/checkin")}
         />
         <EarnMethod
-          gradient={gradients.mint}
-          icon="👟"
+          tone="white"
+          icon="◦"
           title={t("stepCounter", "Step Counter")}
-          sub={t("stepCounterSub", "+1.1–1.3× multiplier")}
+          sub={t("stepCounterSub", "+1.1-1.3× multiplier")}
           note={t("connectHealth", "Connect Health")}
           onPress={() => router.push("/steps")}
         />
       </View>
 
-      {/* Recent activity */}
       <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
         {t("recentActivity", "Recent Activity")}
       </Text>
@@ -86,7 +92,7 @@ export default function EarnScreen() {
           </Text>
         </NeuCard>
       ) : (
-        <NeuCard style={{ padding: 0 }}>
+        <NeuCard style={s.activityCard}>
           {txs.map((tx, i) => {
             const isEarn = tx.pointsEarned > 0
             return (
@@ -94,11 +100,11 @@ export default function EarnScreen() {
                 key={tx.id}
                 style={[
                   s.txRow,
-                  i < txs.length - 1 && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 },
+                  i < txs.length - 1 && { borderBottomColor: "rgba(5,6,10,0.07)", borderBottomWidth: 1 },
                 ]}
               >
-                <View style={[s.txIcon, theme.shadowRaisedSm, { backgroundColor: theme.bg }]}>
-                  <Text style={{ fontSize: 16 }}>{TX_ICONS[tx.type] ?? "·"}</Text>
+                <View style={s.txIcon}>
+                  <Text style={[s.txIconText, { fontFamily: fonts.bodyBold }]}>{TX_ICONS[tx.type] ?? "·"}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.txTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>
@@ -112,7 +118,7 @@ export default function EarnScreen() {
                 <Text
                   style={[
                     s.txValue,
-                    { color: isEarn ? "#5FEFC0" : "#FF85D2", fontFamily: fonts.displayHeavy },
+                    { color: isEarn ? colors.ink : "#D96AA7", fontFamily: fonts.displayHeavy },
                   ]}
                 >
                   {isEarn ? "+" : ""}{tx.pointsEarned}
@@ -127,58 +133,67 @@ export default function EarnScreen() {
 }
 
 function EarnMethod({
-  gradient, icon, title, sub, note, onPress,
+  tone, icon, title, sub, note, onPress,
 }: {
-  gradient: readonly [string, string, ...string[]]
-  icon: string; title: string; sub: string; note: string; onPress: () => void
+  tone: "cyan" | "black" | "white"
+  icon: string
+  title: string
+  sub: string
+  note: string
+  onPress: () => void
 }) {
+  const dark = tone === "black"
+  const bg = tone === "cyan" ? colors.cyan : dark ? colors.ink : "#FFFFFF"
+  const fg = dark ? "#FFFFFF" : colors.ink
   return (
-    <NeuCard
-      gradient={gradient}
-      onPress={onPress}
-      style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 14 }}
-    >
-      <View style={s.methodIcon}>
-        <Text style={{ fontSize: 24 }}>{icon}</Text>
+    <Pressable onPress={onPress} style={[s.methodCard, { backgroundColor: bg }]}>
+      <View style={[s.methodIcon, { backgroundColor: dark ? "#FFFFFF" : "#000" }]}>
+        <Text style={[s.methodIconText, { color: dark ? colors.ink : "#FFFFFF" }]}>{icon}</Text>
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[s.methodTitle, { fontFamily: fonts.bodyBold }]}>{title}</Text>
-        <Text style={s.methodSub}>{sub}</Text>
+        <Text style={[s.methodTitle, { color: fg, fontFamily: fonts.displayHeavy }]}>{title}</Text>
+        <Text style={[s.methodSub, { color: dark ? "rgba(255,255,255,0.62)" : "#6B7280" }]}>{sub}</Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>
-        <Text style={[s.methodNote, { fontFamily: fonts.bodyBold }]}>{note}</Text>
-        <Text style={s.methodArrow}>→</Text>
+        <Text style={[s.methodNote, { color: dark ? "rgba(255,255,255,0.72)" : colors.ink, fontFamily: fonts.bodyBold }]}>{note}</Text>
+        <Text style={[s.methodArrow, { color: fg }]}>↗</Text>
       </View>
-    </NeuCard>
+    </Pressable>
   )
 }
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-
-  title: { fontSize: 24, marginBottom: 4 },
-  subtitle: { fontSize: 13, marginBottom: 20 },
-
-  balance: { padding: 16, marginBottom: 20, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  balanceLabel: { fontSize: 11, letterSpacing: 1 },
-  balanceValue: { fontSize: 22 },
-
-  methodIcon: {
-    width: 48, height: 48, borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    alignItems: "center", justifyContent: "center",
-  },
-  methodTitle: { color: "#FFF", fontSize: 16, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  methodSub: { color: "rgba(255,255,255,0.78)", fontSize: 12, marginTop: 2 },
-  methodNote: { color: "rgba(255,255,255,0.85)", fontSize: 11 },
-  methodArrow: { color: "rgba(255,255,255,0.6)", fontSize: 18 },
-
-  sectionTitle: { fontSize: 18, marginBottom: 12 },
-
+  content: { padding: 18, paddingBottom: 34 },
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
+  kicker: { fontSize: 11, letterSpacing: 1.8 },
+  title: { fontSize: 34, lineHeight: 38, letterSpacing: 0 },
+  balanceBubble: { width: 86, height: 86, borderRadius: 43, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  balanceValue: { color: colors.ink, fontSize: 25, lineHeight: 27 },
+  balanceLabel: { color: "#7A808E", fontSize: 11 },
+  hero: { backgroundColor: colors.ink, borderRadius: 32, padding: 18, minHeight: 214, marginBottom: 12, overflow: "hidden" },
+  heroOrb: { position: "absolute", right: -52, top: -42, width: 170, height: 170, borderRadius: 85, borderWidth: 1, borderColor: "rgba(167,232,238,0.32)" },
+  heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 34 },
+  blackLogo: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
+  blackLogoText: { color: "#FFFFFF", fontWeight: "900" },
+  blackPill: { backgroundColor: "#000", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
+  blackPillText: { color: "#FFFFFF", fontSize: 12 },
+  heroTitle: { color: "#FFFFFF", fontSize: 31, lineHeight: 34, width: 250 },
+  heroSub: { color: "rgba(255,255,255,0.62)", fontSize: 13, marginTop: 10 },
+  methods: { gap: 10, marginBottom: 24 },
+  methodCard: { borderRadius: 28, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
+  methodIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  methodIconText: { fontSize: 18, fontWeight: "900" },
+  methodTitle: { fontSize: 19, lineHeight: 22 },
+  methodSub: { fontSize: 12, marginTop: 3 },
+  methodNote: { fontSize: 10, maxWidth: 82, textAlign: "right" },
+  methodArrow: { fontSize: 22, marginTop: 4 },
+  sectionTitle: { fontSize: 25, marginBottom: 12 },
+  activityCard: { padding: 0 },
   txRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  txIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  txTitle: { fontSize: 13 },
+  txIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cyan, alignItems: "center", justifyContent: "center" },
+  txIconText: { color: colors.ink, fontSize: 14 },
+  txTitle: { fontSize: 14 },
   txDate: { fontSize: 11, marginTop: 1 },
-  txValue: { fontSize: 15 },
+  txValue: { fontSize: 17 },
 })

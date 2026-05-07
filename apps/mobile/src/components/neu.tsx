@@ -15,10 +15,10 @@ type GradientTuple = readonly [string, string, ...string[]]
 type NeuCardProps = {
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
-  onPress?: () => void
-  gradient?: GradientTuple
-  small?: boolean
-  disabled?: boolean
+  onPress?: (() => void) | undefined
+  gradient?: GradientTuple | undefined
+  small?: boolean | undefined
+  disabled?: boolean | undefined
 }
 
 export function NeuCard({ children, style, onPress, gradient, small, disabled }: NeuCardProps) {
@@ -30,11 +30,15 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
   // We lift it onto a wrapping View so it doesn't fight with the gradient's own shadow.
   const wrapperStyle: ViewStyle = {
     borderRadius: r,
-    backgroundColor: gradient ? "transparent" : theme.bg,
+    backgroundColor: gradient ? "transparent" : theme.surface,
     borderTopWidth: 1,
     borderLeftWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.85)",
-    borderLeftColor: "rgba(255,255,255,0.7)",
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.9)",
+    borderLeftColor: "rgba(255,255,255,0.85)",
+    borderRightColor: "rgba(5,6,10,0.04)",
+    borderBottomColor: "rgba(5,6,10,0.05)",
     ...shadow,
   }
 
@@ -48,7 +52,7 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
       {children}
     </LinearGradient>
   ) : (
-    <View style={[{ borderRadius: r, backgroundColor: theme.bg, overflow: "hidden" }, style]}>
+    <View style={[{ borderRadius: r, backgroundColor: theme.surface, overflow: "hidden" }, style]}>
       {children}
     </View>
   )

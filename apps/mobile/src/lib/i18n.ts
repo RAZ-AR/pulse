@@ -2,6 +2,7 @@ import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
 import { getLocales } from "expo-localization"
 import * as SecureStore from "expo-secure-store"
+import { Platform } from "react-native"
 import type { SupportedLocale } from "@pulse/shared"
 
 import enCommon from "@pulse/i18n/locales/en/common.json"
@@ -38,6 +39,13 @@ function detectLocale(): SupportedLocale {
 
 export async function loadStoredLocale(): Promise<SupportedLocale> {
   try {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(LOCALE_KEY)
+      if (stored && (SUPPORTED as string[]).includes(stored)) {
+        return stored as SupportedLocale
+      }
+      return detectLocale()
+    }
     const stored = await SecureStore.getItemAsync(LOCALE_KEY)
     if (stored && (SUPPORTED as string[]).includes(stored)) {
       return stored as SupportedLocale
@@ -47,7 +55,11 @@ export async function loadStoredLocale(): Promise<SupportedLocale> {
 }
 
 export async function setLocale(locale: SupportedLocale): Promise<void> {
-  await SecureStore.setItemAsync(LOCALE_KEY, locale)
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    window.localStorage.setItem(LOCALE_KEY, locale)
+  } else {
+    await SecureStore.setItemAsync(LOCALE_KEY, locale)
+  }
   await i18n.changeLanguage(locale)
 }
 

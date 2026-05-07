@@ -6,9 +6,13 @@ node_modules
 .next
 out
 
+# Expo
+.expo
+
 # Build outputs
 dist
 .turbo
+*.tsbuildinfo
 
 # Environment
 .env
@@ -40,3 +44,6 @@ coverage
 
 # Vercel
 .vercel
+
+# Supabase local state
+supabase/.temp

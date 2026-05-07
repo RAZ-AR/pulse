@@ -1,10 +1,10 @@
 {
   "title": "Награды",
   "redeem": "Получить",
-  "redeemFor": "Получить за {points} баллов",
+  "redeemFor": "Получить за {{points}} баллов",
   "redeemSuccess": "Награда получена!",
   "redeemSuccessDescription": "Покажи этот код кассиру",
-  "codeExpiresIn": "Код действует {hours}ч",
+  "codeExpiresIn": "Код истекает через {{hours}} ч",
   "outOfStock": "Закончилось",
   "notEnoughPoints": "Недостаточно баллов",
   "cooldown": "Приветственные баллы на перезарядке",
@@ -12,5 +12,18 @@
   "noRewards": "В этом заведении пока нет наград",
   "pointsCost": "{points} баллов",
   "history": "История получения наград",
-  "noHistory": "Ещё нет полученных наград"
+  "noHistory": "Ещё нет полученных наград",
+  "subtitle": "Обменивайте баллы на реальные бонусы",
+  "all": "Все",
+  "welcomeOnly": "Welcome ≤100",
+  "noRewardsAvailable": "Наград пока нет",
+  "use": "Взять",
+  "pts": "баллы",
+  "left": "осталось {{count}}",
+  "pointsCostLabel": "Стоимость в баллах",
+  "yourBalance": "Ваш баланс",
+  "redeemFailed": "Не удалось получить награду",
+  "stockLeft": "осталось {{count}}",
+  "redeeming": "Получаем...",
+  "unavailable": "Недоступно"
 }

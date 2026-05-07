@@ -3,6 +3,7 @@ import { httpBatchLink } from "@trpc/client"
 import superjson from "superjson"
 import Constants from "expo-constants"
 import * as SecureStore from "expo-secure-store"
+import { Platform } from "react-native"
 import type { AppRouter } from "@pulse/trpc/server"
 
 export const trpc = createTRPCReact<AppRouter>()
@@ -10,6 +11,9 @@ export const trpc = createTRPCReact<AppRouter>()
 const TOKEN_KEY = "pulse.session.token"
 
 export async function getSessionToken(): Promise<string | null> {
+  if (Platform.OS === "web") {
+    return globalThis.localStorage?.getItem(TOKEN_KEY) ?? null
+  }
   try {
     return await SecureStore.getItemAsync(TOKEN_KEY)
   } catch {
@@ -18,6 +22,14 @@ export async function getSessionToken(): Promise<string | null> {
 }
 
 export async function setSessionToken(token: string | null): Promise<void> {
+  if (Platform.OS === "web") {
+    if (token === null) {
+      globalThis.localStorage?.removeItem(TOKEN_KEY)
+    } else {
+      globalThis.localStorage?.setItem(TOKEN_KEY, token)
+    }
+    return
+  }
   if (token === null) {
     await SecureStore.deleteItemAsync(TOKEN_KEY)
   } else {

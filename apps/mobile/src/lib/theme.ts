@@ -1,10 +1,8 @@
 /**
- * PULSE design system — neumorphic unicorn.
+ * PULSE design system — editorial health-fintech reference.
  *
- * Soft lavender base, deep indigo text, pastel rainbow gradients,
- * raised + inset shadows, Space Grotesk display.
- *
- * Tokens mirror the design handoff (pulse-screens-v3.jsx).
+ * Cool white surfaces, black pill controls, cyan plan cards, large
+ * grotesk typography, and soft floating shadows.
  */
 
 export type Theme = {
@@ -32,82 +30,85 @@ export type ShadowStyle = {
 
 // ── Brand gradients (multi-stop arrays for expo-linear-gradient) ──
 export const gradients = {
-  // Full unicorn rainbow
-  rainbow: ["#FFB3E6", "#B8A9FF", "#89D4FF", "#9DFFDB"] as const,
-  rainbow2: ["#FF9BE2", "#C4AAFF", "#7DCFFF"] as const,
-  rainbow3: ["#FFDBA4", "#FFB3E6", "#B8A9FF", "#89D4FF"] as const,
-  rainbow4: ["#A8F0E0", "#89D4FF", "#B8A9FF"] as const,
-  // Single-hue accents
-  pink: ["#FFB3E6", "#FF85D2"] as const,
-  blue: ["#89D4FF", "#6BB8F5"] as const,
-  mint: ["#9DFFDB", "#5FEFC0"] as const,
-  gold: ["#FFDBA4", "#FFB347"] as const,
-  // Earn-card variant (pink → blue)
-  pinkBlue: ["#FFB3E6", "#B8A9FF", "#89D4FF"] as const,
-  // Profile / sponsored
-  violet: ["#D8A9FF", "#B8A9FF"] as const,
+  aqua: ["#A7E8EE", "#84DCE4"] as const,
+  ice: ["#F3F7FF", "#E6EDF8"] as const,
+  black: ["#05060A", "#12141D"] as const,
+  graphite: ["#2D303B", "#151821"] as const,
+  pearl: ["#FFFFFF", "#EEF3FA"] as const,
+  lime: ["#D9F875", "#BFF04C"] as const,
+  blush: ["#F7D6EA", "#DDE6FF"] as const,
+  rainbow: ["#A7E8EE", "#EAF1FF"] as const,
+  rainbow2: ["#05060A", "#202331"] as const,
+  rainbow3: ["#F3F7FF", "#DDE6FF"] as const,
+  rainbow4: ["#A7E8EE", "#F6F8FF"] as const,
+  pink: ["#F7D6EA", "#E8D8FF"] as const,
+  blue: ["#A7E8EE", "#8BD5E0"] as const,
+  mint: ["#D9F875", "#BFF04C"] as const,
+  gold: ["#F8E8B0", "#F3CD64"] as const,
+  pinkBlue: ["#F7D6EA", "#A7E8EE"] as const,
+  violet: ["#DDE6FF", "#C9C6FF"] as const,
 }
 
 // Shorthands the design uses heavily
 export const colors = {
-  // Brand accents (legacy from old theme — kept for back-compat)
-  pink: "#FFB3E6",
-  sky: "#89D4FF",
-  mint: "#9DFFDB",
-  // Strong versions for icons / badges
-  pinkSolid: "#FF85D2",
-  skySolid: "#6BB8F5",
-  mintSolid: "#5FEFC0",
-  // Status bar / dynamic island accent
-  indigoDark: "#2D2B55",
+  pink: "#F7D6EA",
+  sky: "#A7E8EE",
+  mint: "#D9F875",
+  pinkSolid: "#D96AA7",
+  skySolid: "#73D0DA",
+  mintSolid: "#BFF04C",
+  indigoDark: "#05060A",
+  ink: "#05060A",
+  panel: "#EAF0FA",
+  cyan: "#A7E8EE",
 }
 
 // ── Radius scale ─────────────────────────────────────────────
 export const radius = {
-  xs: 10,
-  sm: 14,
-  md: 22,
+  xs: 12,
+  sm: 18,
+  md: 30,
   pill: 99,
 }
 
 // ── Single light theme (no dark variant for v1) ──────────────
 const lightTheme: Theme = {
-  bg: "#EEEDF8",
-  bgLight: "#F5F4FF",
-  surface: "#EEEDF8",
-  text: "#2D2B55",
-  textSecondary: "#9896B8",
-  textMuted: "#C4C3D8",
-  border: "rgba(163,160,200,0.18)",
+  bg: "#EEF3FB",
+  bgLight: "#F7FAFF",
+  surface: "#F7FAFF",
+  text: "#05060A",
+  textSecondary: "#606575",
+  textMuted: "#A7ADBA",
+  border: "rgba(5,6,10,0.08)",
 
   shadowRaised: {
-    shadowColor: "#A3A0C8",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowColor: "#8290A7",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 10,
   },
   shadowRaisedSm: {
-    shadowColor: "#A3A0C8",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowColor: "#8290A7",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
     elevation: 4,
   },
   shadowInset: {
     // RN doesn't support inset — caller layers a translucent gradient overlay instead.
     // This recipe just dampens the raised look on input fields.
-    shadowColor: "#A3A0C8",
+    shadowColor: "#8290A7",
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.18,
     shadowRadius: 3,
     elevation: 0,
   },
   shadowGlow: {
-    shadowColor: "#B4A0FF",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
+    shadowColor: "#65C9D6",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.24,
+    shadowRadius: 30,
     elevation: 6,
   },
 }

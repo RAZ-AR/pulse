@@ -3,15 +3,15 @@ import { useTranslation } from "react-i18next"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
+import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
 import { NeuCard } from "../../src/components/neu"
 
 const TYPE_ICON: Record<string, string> = {
-  SPEND_AMOUNT: "💸",
-  VISIT_N_VENUES: "📍",
-  WALK_STEPS: "👟",
-  COMBO: "🎯",
-  STREAK: "🔥",
+  SPEND_AMOUNT: "□",
+  VISIT_N_VENUES: "⌖",
+  WALK_STEPS: "◦",
+  COMBO: "✦",
+  STREAK: "✓",
 }
 
 function daysLeft(end: Date | string): number {
@@ -65,7 +65,7 @@ export default function ChallengeDetailScreen() {
   const total = target.threshold ?? target.count ?? target.days ?? 1
   const pct = uc?.isCompleted ? 100 : uc ? Math.min(100, (uc.progress / total) * 100) : 0
   const isJoined = !!uc
-  const heroGrad = uc?.isCompleted ? gradients.mint : gradients.rainbow2
+  const heroGrad = uc?.isCompleted ? gradients.aqua : gradients.black
 
   return (
     <>
@@ -79,7 +79,7 @@ export default function ChallengeDetailScreen() {
         {/* Hero */}
         <NeuCard gradient={heroGrad} style={s.hero}>
           <View style={s.heroBlob} />
-          <Text style={s.heroIcon}>{TYPE_ICON[c.type] ?? "🎯"}</Text>
+          <Text style={s.heroIcon}>{TYPE_ICON[c.type] ?? "✦"}</Text>
           <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{c.title}</Text>
           <Text style={[s.heroReward, { fontFamily: fonts.displayHeavy }]}>+{c.pointsReward} pts</Text>
         </NeuCard>
@@ -105,13 +105,13 @@ export default function ChallengeDetailScreen() {
               </Text>
               {uc.isCompleted ? (
                 <Text style={[s.completedTag, { color: "#5FEFC0", fontFamily: fonts.bodyBold }]}>
-                  ✓ {t("completed", "Completed")}
+                  {t("completed", "Completed")}
                 </Text>
               ) : null}
             </View>
             <View style={s.progressTrack}>
               <LinearGradient
-                colors={(uc.isCompleted ? gradients.mint : gradients.rainbow) as unknown as [string, string, ...string[]]}
+                colors={(uc.isCompleted ? gradients.aqua : gradients.black) as unknown as [string, string, ...string[]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[s.progressFill, { width: `${pct}%` }]}
@@ -130,17 +130,17 @@ export default function ChallengeDetailScreen() {
         {/* Action */}
         {!isJoined ? (
           <NeuCard
-            gradient={gradients.rainbow}
+            gradient={gradients.black}
             onPress={() => join.mutate({ challengeId: c.id })}
             disabled={join.isPending}
             style={{ padding: 16, alignItems: "center" }}
           >
             <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
-              {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "🚀 Join challenge")}
+              {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "Join challenge")}
             </Text>
           </NeuCard>
         ) : uc?.isCompleted ? (
-          <NeuCard gradient={gradients.mint} style={{ padding: 18, alignItems: "center" }}>
+          <NeuCard gradient={gradients.black} style={{ padding: 18, alignItems: "center", borderRadius: 30 }}>
             <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>✓ {t("rewardClaimed", "Reward claimed")}</Text>
             <Text style={s.completedSub}>+{c.pointsReward} pts {t("addedToBalance", "added to your balance")}</Text>
           </NeuCard>
@@ -180,13 +180,13 @@ function Stat({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
+  content: { padding: 18, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  hero: { padding: 24, alignItems: "center", marginBottom: 16, overflow: "hidden" },
-  heroBlob: { position: "absolute", top: -30, right: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: "rgba(255,255,255,0.12)" },
-  heroIcon: { fontSize: 48, marginBottom: 8 },
-  heroTitle: { color: "#FFF", fontSize: 24, textAlign: "center", textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  hero: { padding: 22, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
+  heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
+  heroIcon: { color: "#FFF", fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 8 },
+  heroTitle: { color: "#FFF", fontSize: 28, lineHeight: 31, textAlign: "center" },
   heroReward: { color: "#FFF", fontSize: 28, marginTop: 12 },
 
   card: { padding: 16, marginBottom: 12 },
@@ -195,7 +195,7 @@ const s = StyleSheet.create({
 
   progressBig: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 },
   progressNumber: { fontSize: 28 },
-  completedTag: { fontSize: 13 },
+  completedTag: { fontSize: 13, color: colors.ink },
   progressTrack: { height: 8, backgroundColor: "rgba(163,160,200,0.2)", borderRadius: 4, overflow: "hidden" },
   progressFill: { height: "100%", borderRadius: 4 },
 
@@ -205,7 +205,7 @@ const s = StyleSheet.create({
   statValue: { fontSize: 18 },
   statValueSmall: { fontSize: 12 },
 
-  cta: { color: "#FFF", fontSize: 16, textShadowColor: "rgba(0,0,0,0.15)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  cta: { color: "#FFF", fontSize: 16 },
   completedSub: { color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 4 },
-  encourageCard: { padding: 16, borderRadius: 12, alignItems: "center", marginTop: 4 },
+  encourageCard: { padding: 16, borderRadius: 99, alignItems: "center", marginTop: 4 },
 })

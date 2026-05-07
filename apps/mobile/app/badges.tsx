@@ -7,7 +7,7 @@ import { colors, useTheme } from "../src/lib/theme"
 const RARITY_COLORS: Record<string, string> = {
   COMMON: "#9CA3AF",
   RARE: colors.sky,
-  EPIC: colors.pink,
+  EPIC: colors.ink,
   LEGENDARY: "#F59E0B",
 }
 
@@ -33,7 +33,7 @@ export default function BadgesScreen() {
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Progress hero */}
-        <View style={[s.hero, { backgroundColor: colors.pink }]}>
+        <View style={[s.hero, { backgroundColor: colors.ink }]}>
           <Text style={s.heroLabel}>{t("badgesUnlocked", "BADGES UNLOCKED")}</Text>
           <Text style={s.heroValue}>{unlockedCount} <Text style={s.heroDenom}>/ {totalCount}</Text></Text>
           {totalCount > 0 ? (
@@ -81,15 +81,15 @@ export default function BadgesScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-  hero: { borderRadius: 16, padding: 20, alignItems: "center", marginBottom: 20 },
+  content: { padding: 18, paddingBottom: 40 },
+  hero: { borderRadius: 32, padding: 20, alignItems: "center", marginBottom: 20, overflow: "hidden" },
   heroLabel: { color: "#FFF", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },
   heroValue: { color: "#FFF", fontSize: 44, fontWeight: "800", marginTop: 4 },
   heroDenom: { fontSize: 24, fontWeight: "700", opacity: 0.7 },
   progressTrack: { width: "100%", height: 6, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, marginTop: 12, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: "#FFF", borderRadius: 3 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  card: { width: "31.5%", padding: 12, borderRadius: 12, borderWidth: 1, alignItems: "center", minHeight: 130 },
+  card: { width: "31.5%", padding: 12, borderRadius: 24, borderWidth: 1, alignItems: "center", minHeight: 130 },
   icon: { fontSize: 36, marginBottom: 6 },
   iconLocked: { opacity: 0.6 },
   name: { fontSize: 12, fontWeight: "700", textAlign: "center" },

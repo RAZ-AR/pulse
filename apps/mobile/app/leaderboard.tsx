@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Stack, useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../src/lib/trpc"
-import { fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
+import { colors, fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
 import { NeuCard, GradPill } from "../src/components/neu"
 
 const CATEGORIES = ["ALL", "CAFE", "RESTAURANT", "RETAIL", "SERVICE"] as const
@@ -111,7 +111,7 @@ export default function LeaderboardScreen() {
                             {v.name}
                           </Text>
                           {v.subscriptionTier === "FEATURED" ? (
-                            <GradPill label="★ FEATURED" gradient={gradients.pink} />
+                            <GradPill label="★ FEATURED" gradient={gradients.gold} />
                           ) : null}
                         </View>
                         <Text style={[s.sub, { color: theme.textSecondary }]} numberOfLines={1}>
@@ -153,7 +153,7 @@ export default function LeaderboardScreen() {
 
             {/* My rank banner */}
             {myRank.data?.cityRank ? (
-              <NeuCard gradient={gradients.rainbow} style={s.myRankBanner}>
+              <NeuCard gradient={gradients.black} style={s.myRankBanner}>
                 <View style={s.myRankBannerBlob} />
                 <View>
                   <Text style={[s.myRankLabel, { fontFamily: fonts.bodyBold }]}>
@@ -196,10 +196,10 @@ export default function LeaderboardScreen() {
                             <Text style={[s.name, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
                               {entry.name}
                             </Text>
-                            {isMe ? <GradPill label="you" gradient={gradients.blue} /> : null}
+                            {isMe ? <GradPill label="you" gradient={gradients.aqua} /> : null}
                           </View>
                           <Text style={[s.sub, { color: theme.textSecondary }]}>
-                            🔥 {entry.currentStreak}d streak
+                            {entry.currentStreak}d streak
                           </Text>
                         </View>
                         <View style={{ alignItems: "flex-end" }}>
@@ -261,7 +261,7 @@ function Chip({ label, active, onPress, theme }: { label: string; active: boolea
     return (
       <Pressable onPress={onPress}>
         <LinearGradient
-          colors={gradients.rainbow as unknown as [string, string, ...string[]]}
+          colors={gradients.black as unknown as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[s.chip, theme.shadowGlow]}
@@ -272,29 +272,26 @@ function Chip({ label, active, onPress, theme }: { label: string; active: boolea
     )
   }
   return (
-    <Pressable onPress={onPress} style={[s.chip, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
-      <Text style={[s.chipText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{label}</Text>
+    <Pressable onPress={onPress} style={[s.chip, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+      <Text style={[s.chipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>{label}</Text>
     </Pressable>
   )
 }
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  mainTabs: { flexDirection: "row", paddingHorizontal: 20, paddingVertical: 4, gap: 24 },
+  mainTabs: { flexDirection: "row", paddingHorizontal: 18, paddingVertical: 4, gap: 20 },
   mainTab: { paddingVertical: 12, position: "relative" },
   mainTabLabel: { fontSize: 15 },
-  mainTabIndicator: {
-    position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2,
-    backgroundColor: "#FFB3E6",
-  },
+  mainTabIndicator: { position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: "#000" },
   filters: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   scopeRow: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
   chipText: { fontSize: 12 },
-  chipActive: { color: "#FFF", fontSize: 12, textShadowColor: "rgba(0,0,0,0.1)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  chipActive: { color: "#FFF", fontSize: 12 },
 
-  myRankBanner: { marginHorizontal: 16, marginBottom: 4, padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", overflow: "hidden" },
-  myRankBannerBlob: { position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(255,255,255,0.1)" },
+  myRankBanner: { marginHorizontal: 16, marginBottom: 4, padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", overflow: "hidden", borderRadius: 30 },
+  myRankBannerBlob: { position: "absolute", top: -28, right: -28, width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: "rgba(167,232,238,0.25)" },
   myRankLabel: { color: "rgba(255,255,255,0.75)", fontSize: 10, letterSpacing: 1 },
   myRankValue: { color: "#FFF", fontSize: 28 },
   myRankPts: { color: "#FFF", fontSize: 20, fontWeight: "800" },
@@ -303,7 +300,7 @@ const s = StyleSheet.create({
   list: { padding: 16, paddingBottom: 40 },
   row: { flexDirection: "row", alignItems: "center", padding: 14 },
 
-  rankBox: { width: 32, height: 32, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  rankBox: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   rankText: { fontSize: 13 },
 
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
@@ -312,5 +309,5 @@ const s = StyleSheet.create({
 
   rate: { fontSize: 16 },
   rateUnit: { fontSize: 10 },
-  boost: { fontSize: 10, color: "#FF85D2", marginTop: 2 },
+  boost: { fontSize: 10, color: colors.ink, marginTop: 2 },
 })
