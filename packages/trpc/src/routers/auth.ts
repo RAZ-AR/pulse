@@ -22,6 +22,7 @@ export const authRouter = router({
       z.object({
         email: z.string().email().toLowerCase().trim(),
         name: z.string().min(1).max(100).trim().optional(),
+        homeCity: z.string().max(100).trim().optional(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
         referralCode: z.string().length(6).toUpperCase().trim().optional(),
       })
@@ -57,6 +58,7 @@ export const authRouter = router({
                 email: input.email,
                 emailVerified: new Date(),
                 ...(input.name ? { name: input.name } : {}),
+                ...(input.homeCity ? { homeCity: input.homeCity } : {}),
                 ...(input.language ? { language: input.language } : {}),
                 referralCode: generateReferralCode(),
                 welcomePoints: WELCOME_BONUS_AMOUNT,

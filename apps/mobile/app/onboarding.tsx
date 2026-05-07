@@ -8,6 +8,7 @@ import { useAuth } from "../src/store/auth"
 import { setLocale } from "../src/lib/i18n"
 import { fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
+import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import type { SupportedLocale } from "@pulse/shared"
 
 type Step = 0 | 1 | 2
@@ -21,6 +22,7 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState<Step>(0)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
+  const [homeCity, setHomeCity] = useState(DEFAULT_CITY.name)
   const [referralCode, setReferralCode] = useState("")
   const [error, setError] = useState("")
 
@@ -55,6 +57,7 @@ export default function OnboardingScreen() {
       const result = await signInMutation.mutateAsync({
         email,
         name: trimmedName,
+        homeCity,
         language: lng,
         ...(code.length === 6 ? { referralCode: code } : {}),
       })
@@ -85,6 +88,8 @@ export default function OnboardingScreen() {
           <Step2
             name={name}
             setName={setName}
+            homeCity={homeCity}
+            setHomeCity={setHomeCity}
             referralCode={referralCode}
             setReferralCode={setReferralCode}
             error={error}
@@ -229,9 +234,10 @@ function Step1({
 
 // ── Step 2: name + referral code ────────────────────────────
 function Step2({
-  name, setName, referralCode, setReferralCode, error, isPending, onBack, onSubmit,
+  name, setName, homeCity, setHomeCity, referralCode, setReferralCode, error, isPending, onBack, onSubmit,
 }: {
   name: string; setName: (v: string) => void
+  homeCity: string; setHomeCity: (v: "Belgrade" | "Novi Sad") => void
   referralCode: string; setReferralCode: (v: string) => void
   error: string; isPending: boolean
   onBack: () => void; onSubmit: () => void
@@ -266,6 +272,26 @@ function Step2({
           style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
         />
       </NeuInset>
+
+      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+        {t("homeCity", "Home city").toUpperCase()}
+      </Text>
+      <View style={s.cityRow}>
+        {CITY_OPTIONS.map((city) => {
+          const active = homeCity === city.name
+          return (
+            <Pressable
+              key={city.name}
+              onPress={() => setHomeCity(city.name)}
+              style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
+            >
+              <Text style={[s.cityChipText, { color: active ? "#FFFFFF" : theme.text, fontFamily: fonts.bodyBold }]}>
+                {city.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
 
       <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
         {t("referralCode", "Referral code").toUpperCase()} <Text style={s.optional}>· {t("optional", "optional")}</Text>
@@ -324,6 +350,11 @@ const s = StyleSheet.create({
   langArrow: { fontSize: 18 },
 
   input: { padding: 14, fontSize: 15 },
+  cityRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
+  cityChip: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center" },
+  cityChipActive: { backgroundColor: "#F7B8D5" },
+  cityChipIdle: { backgroundColor: "#FFFFFF" },
+  cityChipText: { fontSize: 13 },
 
   bonusIcon: { color: "#FFFFFF", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
   bonusTitle: { color: "#FFF", fontSize: 25, lineHeight: 28, textAlign: "center" },

@@ -24,6 +24,7 @@ function AuthGate() {
       .mutateAsync({
         email: "demo@pulse.app",
         name: "Demo User",
+        homeCity: "Belgrade",
         language: "EN",
       })
       .then(async (result) => {

@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
 import { LavaLampSurface } from "../../src/components/neu"
+import { DEFAULT_VENUE_FILTER, nextCity, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 type RewardItem = {
   id: string
@@ -30,12 +32,20 @@ export default function HomeScreen() {
   const router = useRouter()
   const { t } = useTranslation(["common", "venue"])
 
+  const [activeFilterKey, setActiveFilterKey] = useState("all")
   const me = trpc.user.me.useQuery()
+  const utils = trpc.useUtils()
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => utils.user.me.invalidate(),
+  })
   const rewards = trpc.reward.list.useQuery({ limit: 8 })
+  const selectedCity = resolveCity(me.data?.homeCity)
+  const activeFilter = VENUE_FILTERS.find((filter) => filter.key === activeFilterKey) ?? DEFAULT_VENUE_FILTER
   const nearby = trpc.venue.nearby.useQuery({
-    lat: 44.7866,
-    lng: 20.4489,
-    radiusKm: 50,
+    lat: selectedCity.lat,
+    lng: selectedCity.lng,
+    radiusKm: selectedCity.radiusKm,
+    ...(activeFilter.category ? { category: activeFilter.category } : {}),
     limit: 8,
   })
   const challenges = trpc.challenge.listMine.useQuery()
@@ -54,6 +64,12 @@ export default function HomeScreen() {
           <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
+          <Pressable
+            onPress={() => updateProfile.mutate({ homeCity: nextCity(me.data?.homeCity).name })}
+            style={s.cityPill}
+          >
+            <Text style={[s.cityPillText, { fontFamily: fonts.bodyBold }]}>⌖ {selectedCity.label}</Text>
+          </Pressable>
         </View>
         <CircleButton label="◦" onPress={() => router.push("/profile")} />
       </View>
@@ -121,7 +137,33 @@ export default function HomeScreen() {
       </ScrollView>
 
       <SectionHeader title={t("venuesNearby")} action={t("nav.map")} onPress={() => router.push("/map")} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRail}>
+        {VENUE_FILTERS.map((filter) => (
+          <Pressable
+            key={filter.key}
+            onPress={() => setActiveFilterKey(filter.key)}
+            style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
+          >
+            <Text style={[s.filterChipText, { color: filter.key === activeFilterKey ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+              {filter.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
       <View style={s.venueList}>
+        {nearby.isLoading ? (
+          <>
+            <VenueSkeleton />
+            <VenueSkeleton />
+          </>
+        ) : null}
+        {!nearby.isLoading && nearby.data?.length === 0 ? (
+          <View style={s.emptyVenues}>
+            <Text style={[s.emptyVenuesText, { fontFamily: fonts.bodyBold }]}>
+              {selectedCity.label}: {t("venue:noVenuesYet", "No venues yet")}
+            </Text>
+          </View>
+        ) : null}
         {(nearby.data ?? []).slice(0, 5).map((venue) => {
           const offer = rewardItems.find((reward) => reward.venue.id === venue.id)
           return (
@@ -350,6 +392,22 @@ function VenueCard({
   )
 }
 
+function VenueSkeleton() {
+  return (
+    <View style={s.venueSkeleton}>
+      <View style={s.skeletonLogo} />
+      <View style={s.skeletonMain}>
+        <View style={s.skeletonLineWide} />
+        <View style={s.skeletonLine} />
+        <View style={s.skeletonChips}>
+          <View style={s.skeletonChip} />
+          <View style={s.skeletonChip} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 34 },
@@ -357,6 +415,8 @@ const s = StyleSheet.create({
   helloBlock: { flex: 1 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
+  cityPill: { alignSelf: "flex-start", marginTop: 6, backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 11, paddingVertical: 6 },
+  cityPillText: { color: colors.ink, fontSize: 11 },
   circleButton: {
     width: 48,
     height: 48,
@@ -419,6 +479,11 @@ const s = StyleSheet.create({
   sectionTitle: { color: colors.ink, fontSize: 25, letterSpacing: 0 },
   sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
   sectionButtonText: { color: colors.ink, fontSize: 11 },
+  filterRail: { gap: 8, paddingBottom: 12 },
+  filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
+  filterChipActive: { backgroundColor: colors.lavaBase },
+  filterChipIdle: { backgroundColor: "#FFFFFF" },
+  filterChipText: { fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
   offerPressable: { width: 176 },
   offerCard: { minHeight: 174, borderRadius: 30, padding: 14, overflow: "hidden" },
@@ -437,6 +502,15 @@ const s = StyleSheet.create({
   offerLinkText: { fontSize: 12 },
 
   venueList: { gap: 12 },
+  emptyVenues: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 16, alignItems: "center" },
+  emptyVenuesText: { color: "#8E95A3", fontSize: 12 },
+  venueSkeleton: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12, flexDirection: "row", gap: 12 },
+  skeletonLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "#EEF3FB" },
+  skeletonMain: { flex: 1, justifyContent: "center", gap: 8 },
+  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "#EEF3FB", width: "72%" },
+  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "#F4F7FC", width: "54%" },
+  skeletonChips: { flexDirection: "row", gap: 6 },
+  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "#EEF3FB" },
   venueCard: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12, flexDirection: "row", gap: 12 },
   venueLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "#EAF0FA", alignItems: "center", justifyContent: "center" },
   venueLogoText: { color: colors.ink, fontSize: 22 },

@@ -8,6 +8,7 @@ import { NeuCard, NeuInset } from "../../src/components/neu"
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
 import { setLocale } from "../../src/lib/i18n"
+import { CITY_OPTIONS } from "../../src/lib/venues"
 import type { SupportedLocale } from "@pulse/shared"
 
 const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
@@ -226,6 +227,22 @@ export default function ProfileScreen() {
           <>
             <Field label={t("name", "Name")} value={name} onChangeText={setName} theme={theme} />
             <Field label={t("homeCity", "Home city")} value={homeCity} onChangeText={setHomeCity} theme={theme} />
+            <View style={s.cityRow}>
+              {CITY_OPTIONS.map((city) => {
+                const active = homeCity === city.name
+                return (
+                  <Pressable
+                    key={city.name}
+                    onPress={() => setHomeCity(city.name)}
+                    style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
+                  >
+                    <Text style={[s.cityChipText, { color: active ? "#FFFFFF" : theme.text, fontFamily: fonts.bodyBold }]}>
+                      {city.label}
+                    </Text>
+                  </Pressable>
+                )
+              })}
+            </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Btn label={t("common:cancel", "Cancel")} variant="ghost" onPress={() => setEditing(false)} />
               <Btn
@@ -399,6 +416,12 @@ const s = StyleSheet.create({
   refsCount: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "700", marginTop: 12 },
 
   shortcutTitle: { fontSize: 15 },
+
+  cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
+  cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },
+  cityChipActive: { backgroundColor: colors.lavaBase },
+  cityChipIdle: { backgroundColor: "#FFFFFF" },
+  cityChipText: { fontSize: 12 },
 
   langRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
   langChip: { paddingVertical: 12, borderRadius: 99, alignItems: "center" },

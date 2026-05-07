@@ -82,6 +82,7 @@ export const venueRouter = router({
         lat: z.number().min(-90).max(90),
         lng: z.number().min(-180).max(180),
         radiusKm: z.number().min(0.1).max(50).default(1),
+        category: VenueCategoryEnum.optional(),
         isPartner: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(30),
       })
@@ -94,6 +95,7 @@ export const venueRouter = router({
         where: {
           lat: { gte: box.minLat, lte: box.maxLat },
           lng: { gte: box.minLng, lte: box.maxLng },
+          ...(input.category ? { category: input.category } : {}),
           ...(input.isPartner !== undefined ? { isPartner: input.isPartner } : {}),
         },
         select: {

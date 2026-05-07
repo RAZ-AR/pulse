@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import * as Location from "expo-location"
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from "react-native-maps"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
+import { DEFAULT_VENUE_FILTER, nextCity, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 // Belgrade as default center (until we get user location)
 const DEFAULT_REGION: Region = {
@@ -20,9 +21,26 @@ export default function MapScreen() {
   const { t } = useTranslation("venue")
   const router = useRouter()
 
+  const [activeFilterKey, setActiveFilterKey] = useState("all")
   const [region, setRegion] = useState<Region>(DEFAULT_REGION)
   const [hasLocation, setHasLocation] = useState(false)
   const [denied, setDenied] = useState(false)
+  const me = trpc.user.me.useQuery()
+  const utils = trpc.useUtils()
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => utils.user.me.invalidate(),
+  })
+  const selectedCity = resolveCity(me.data?.homeCity)
+  const activeFilter = VENUE_FILTERS.find((filter) => filter.key === activeFilterKey) ?? DEFAULT_VENUE_FILTER
+
+  useEffect(() => {
+    if (hasLocation) return
+    setRegion((current) => ({
+      ...current,
+      latitude: selectedCity.lat,
+      longitude: selectedCity.lng,
+    }))
+  }, [hasLocation, selectedCity.lat, selectedCity.lng])
 
   // Request location once on mount
   useEffect(() => {
@@ -58,6 +76,7 @@ export default function MapScreen() {
       lat: region.latitude,
       lng: region.longitude,
       radiusKm,
+      ...(activeFilter.category ? { category: activeFilter.category } : {}),
       limit: 50,
     },
     { enabled: hasLocation || true }, // also load with default region
@@ -105,6 +124,29 @@ export default function MapScreen() {
         </Text>
       </View>
 
+      <Pressable
+        onPress={() => updateProfile.mutate({ homeCity: nextCity(me.data?.homeCity).name })}
+        style={[s.cityBadge, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}
+      >
+        <Text style={{ color: theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
+          ⌖ {selectedCity.label}
+        </Text>
+      </Pressable>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filtersWrap} contentContainerStyle={s.filters}>
+        {VENUE_FILTERS.map((filter) => (
+          <Pressable
+            key={filter.key}
+            onPress={() => setActiveFilterKey(filter.key)}
+            style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
+          >
+            <Text style={[s.filterText, { color: filter.key === activeFilterKey ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+              {filter.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       {/* Denied state */}
       {denied ? (
         <View style={[s.deniedCard, { backgroundColor: theme.bg }, theme.shadowRaised]}>
@@ -112,7 +154,7 @@ export default function MapScreen() {
             {t("locationDenied", "Location access denied")}
           </Text>
           <Text style={[s.deniedText, { color: theme.textSecondary }]}>
-            {t("locationDeniedDesc", "Showing venues in Belgrade. Enable location in Settings to find venues near you.")}
+            {t("locationDeniedDesc", `Showing venues in ${selectedCity.label}. Enable location in Settings to find venues near you.`)}
           </Text>
           <Pressable
             onPress={() => setDenied(false)}
@@ -131,6 +173,13 @@ const s = StyleSheet.create({
   map: { ...StyleSheet.absoluteFillObject },
   loading: { position: "absolute", top: 16, alignSelf: "center", padding: 10, backgroundColor: "rgba(255,255,255,0.8)", borderRadius: 20 },
   badge: { position: "absolute", top: 16, right: 16, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
+  cityBadge: { position: "absolute", top: 16, left: 16, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
+  filtersWrap: { position: "absolute", left: 16, right: 16, bottom: 26 },
+  filters: { gap: 8, paddingRight: 32 },
+  filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
+  filterChipActive: { backgroundColor: colors.lavaBase },
+  filterChipIdle: { backgroundColor: "#FFFFFF" },
+  filterText: { fontSize: 11 },
   deniedCard: { position: "absolute", bottom: 24, left: 16, right: 16, padding: 18, borderRadius: 22 },
   deniedTitle: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
   deniedText: { fontSize: 12, lineHeight: 16, marginBottom: 12 },

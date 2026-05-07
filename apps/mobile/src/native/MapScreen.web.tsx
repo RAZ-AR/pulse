@@ -1,19 +1,30 @@
+import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { colors, fonts, useTheme } from "../lib/theme"
 import { LavaLampSurface } from "../components/neu"
+import { DEFAULT_VENUE_FILTER, nextCity, resolveCity, VENUE_FILTERS } from "../lib/venues"
 
 export default function MapWebScreen() {
   const theme = useTheme()
   const { t } = useTranslation("venue")
   const router = useRouter()
 
+  const [activeFilterKey, setActiveFilterKey] = useState("all")
+  const me = trpc.user.me.useQuery()
+  const utils = trpc.useUtils()
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => utils.user.me.invalidate(),
+  })
+  const selectedCity = resolveCity(me.data?.homeCity)
+  const activeFilter = VENUE_FILTERS.find((filter) => filter.key === activeFilterKey) ?? DEFAULT_VENUE_FILTER
   const venues = trpc.venue.nearby.useQuery({
-    lat: 44.7866,
-    lng: 20.4489,
-    radiusKm: 50,
+    lat: selectedCity.lat,
+    lng: selectedCity.lng,
+    radiusKm: selectedCity.radiusKm,
+    ...(activeFilter.category ? { category: activeFilter.category } : {}),
     limit: 50,
   })
 
@@ -29,12 +40,29 @@ export default function MapWebScreen() {
             {t("map", "Map")}
           </Text>
         </View>
-        <View style={s.locationPill}>
+        <Pressable
+          onPress={() => updateProfile.mutate({ homeCity: nextCity(me.data?.homeCity).name })}
+          style={s.locationPill}
+        >
           <Text style={[s.locationText, { fontFamily: fonts.bodyBold }]}>
-            {t("belgrade")}
+            {selectedCity.label}
           </Text>
-        </View>
+        </Pressable>
       </LavaLampSurface>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
+        {VENUE_FILTERS.map((filter) => (
+          <Pressable
+            key={filter.key}
+            onPress={() => setActiveFilterKey(filter.key)}
+            style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
+          >
+            <Text style={[s.filterText, { color: filter.key === activeFilterKey ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+              {filter.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <View style={s.list}>
         {(venues.data ?? []).map((venue) => (
@@ -127,6 +155,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   locationText: { color: "#FFFFFF", fontSize: 12 },
+  filters: { gap: 8, paddingBottom: 14 },
+  filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
+  filterChipActive: { backgroundColor: colors.lavaBase },
+  filterChipIdle: { backgroundColor: "#FFFFFF" },
+  filterText: { fontSize: 11 },
   list: { gap: 12 },
   card: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12 },
   row: { flexDirection: "row", gap: 12 },
