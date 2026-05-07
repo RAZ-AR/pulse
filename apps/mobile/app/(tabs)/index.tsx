@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
@@ -60,8 +61,8 @@ export default function HomeScreen() {
       <View style={s.topBar}>
         <CircleButton label="+" onPress={() => router.push("/earn")} />
         <View style={s.helloBlock}>
-          <Text style={[s.kicker, { color: "rgba(255,255,255,0.58)", fontFamily: fonts.bodyBold }]}>PULSE</Text>
-          <Text style={[s.hello, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>
+          <Text style={[s.kicker, { color: theme.textMuted, fontFamily: fonts.bodyBold }]}>PULSE</Text>
+          <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
           <View style={s.citySwitch}>
@@ -71,9 +72,9 @@ export default function HomeScreen() {
                 <Pressable
                   key={city.name}
                   onPress={() => updateProfile.mutate({ homeCity: city.name })}
-                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdleDark]}
+                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdle]}
                 >
-                  <Text style={[s.cityPillText, { color: active ? "#FFFFFF" : "rgba(255,255,255,0.72)", fontFamily: fonts.bodyBold }]}>
+                  <Text style={[s.cityPillText, { color: active ? "#7A8EA3" : theme.textMuted, fontFamily: fonts.bodyBold }]}>
                     ⌖ {city.label}
                   </Text>
                 </Pressable>
@@ -87,6 +88,10 @@ export default function HomeScreen() {
       <View style={[s.dashboard, theme.shadowRaised]}>
         <View style={s.dashboardGlowTop} />
         <View style={s.dashboardGlowBottom} />
+        <View style={s.softOrb}>
+          <LavaLampSurface intensity="glass" style={s.softOrbGlow} />
+          <View style={s.softOrbCore} />
+        </View>
 
         <View style={s.profileRow}>
           <LavaLampSurface style={s.profileAvatar}>
@@ -99,9 +104,9 @@ export default function HomeScreen() {
               {me.data?.name ?? "Demo User"}
             </Text>
             <View style={s.profileStats}>
-              <Text style={s.profileStat}>▣ {fmt(total)}</Text>
+              <Text style={s.profileStat}>RGB {fmt(total)}</Text>
               <Text style={s.profileStat}>◌ {activeChallenges.length}</Text>
-              <Text style={s.profileStat}>☆ {welcomeDays}d</Text>
+              <Text style={s.profileStat}>✦ {welcomeDays}d</Text>
             </View>
           </View>
           <View style={s.profileIcon}>
@@ -120,12 +125,32 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <LinearGradient
+          colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.rgbPanel}
+        >
+          <View style={s.rgbPanelHead}>
+            <Text style={[s.rgbTiny, { fontFamily: fonts.bodyBold }]}>B</Text>
+            <Text style={[s.rgbTiny, { fontFamily: fonts.bodyBold }]}>G</Text>
+            <Text style={[s.rgbTiny, { fontFamily: fonts.bodyBold }]}>R</Text>
+            <Text style={[s.rgbLabel, { fontFamily: fonts.bodyBold }]}>RGB</Text>
+          </View>
+          <SoftRgbSliders />
+        </LinearGradient>
+
         <View style={s.dashboardSectionHead}>
-          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy }]}>Popular rewards</Text>
-          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold }]}>See all ›</Text>
+          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy }]}>Soft GUI</Text>
+          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold }]}>editcolor ›</Text>
         </View>
 
-        <View style={s.rewardProgressCard}>
+        <LinearGradient
+          colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.rewardProgressCard}
+        >
           <View style={s.rewardProgressTop}>
             <View>
               <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy }]}>Scan, visit, redeem</Text>
@@ -144,7 +169,7 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </LinearGradient>
 
         <Pressable onPress={() => router.push("/rewards")} style={s.blueRewardPill}>
           <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy }]}>Special offers</Text>
@@ -210,7 +235,7 @@ export default function HomeScreen() {
             onPress={() => setActiveFilterKey(filter.key)}
             style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
           >
-            <Text style={[s.filterChipText, { color: filter.key === activeFilterKey ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.filterChipText, { color: filter.key === activeFilterKey ? "#7A8EA3" : colors.ink, fontFamily: fonts.bodyBold }]}>
               {filter.label}
             </Text>
           </Pressable>
@@ -294,7 +319,7 @@ function ActionPill({ label, icon, onPress, dark }: { label: string; icon: strin
       <View style={[s.actionIcon, dark ? s.actionIconDark : s.actionIconLight]}>
         <Text style={[s.actionIconText, { color: dark ? colors.lavaPink : "#FFFFFF" }]}>{icon}</Text>
       </View>
-      <Text style={[s.actionLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>
+      <Text style={[s.actionLabel, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
         {label}
       </Text>
     </Pressable>
@@ -377,20 +402,20 @@ function OfferCardContent({
     <>
       <View style={s.offerTop}>
         <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
-        <Text style={[s.offerLogoText, { color: "#FFFFFF" }]}>✦</Text>
+        <Text style={[s.offerLogoText, { color: "#91A1B4" }]}>✦</Text>
         </View>
-        <Text style={[s.offerPoints, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>
+        <Text style={[s.offerPoints, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>
           {points} {pointsLabel}
         </Text>
       </View>
-      <Text style={[s.offerTitle, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
+      <Text style={[s.offerTitle, { color: "#6E7D8E", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
         {title}
       </Text>
-      <Text style={[s.offerVenue, { color: "rgba(255,255,255,0.68)", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+      <Text style={[s.offerVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
         {venue}
       </Text>
       <View style={s.offerLink}>
-        <Text style={[s.offerLinkText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
+        <Text style={[s.offerLinkText, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
       </View>
     </>
   )
@@ -473,89 +498,204 @@ function VenueSkeleton() {
   )
 }
 
+function SoftRgbSliders() {
+  return (
+    <View style={s.rgbSliders}>
+      {[
+        ["#A9B9FF", "#85F5F2", "#CDA9FF"],
+        ["#F199E3", "#F1D09E", "#9FEED3"],
+        ["#85F5F2", "#CDA9FF", "#9FEED3"],
+      ].map((gradient, index) => (
+        <View key={gradient.join("-")} style={s.rgbSliderShell}>
+          <LinearGradient
+            colors={gradient as [string, string, string]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={s.rgbSliderFill}
+          />
+          <View style={[s.rgbSliderKnob, index === 0 ? s.rgbSliderKnobTop : index === 1 ? s.rgbSliderKnobMid : s.rgbSliderKnobLow]}>
+            <Text style={s.rgbSliderKnobText}>+</Text>
+          </View>
+        </View>
+      ))}
+      <View style={s.softSparkle} />
+      <View style={[s.softSparkle, s.softSparkleLow]} />
+    </View>
+  )
+}
+
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 34 },
-  topBar: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12, backgroundColor: "#0A0B0F", borderRadius: 30, padding: 12, overflow: "hidden" },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+    backgroundColor: "#F9FBFF",
+    borderRadius: 34,
+    padding: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.8)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 3,
+  },
   helloBlock: { flex: 1 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
   citySwitch: { flexDirection: "row", gap: 7, marginTop: 6 },
   cityPill: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  cityPillActive: { backgroundColor: colors.lavaBase },
-  cityPillIdle: { backgroundColor: "#FFFFFF" },
-  cityPillIdleDark: { backgroundColor: "rgba(255,255,255,0.10)" },
+  cityPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.32, shadowRadius: 6, elevation: 2 },
+  cityPillIdle: { backgroundColor: "rgba(225,230,239,0.68)" },
   cityPillText: { fontSize: 10 },
   circleButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "#F9FBFF",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.8)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.34,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  circleButtonText: { color: "#FFFFFF", fontSize: 25, lineHeight: 27 },
+  circleButtonText: { color: "#91A1B4", fontSize: 25, lineHeight: 27 },
 
-  dashboard: { borderRadius: 34, padding: 16, marginBottom: 12, overflow: "hidden", backgroundColor: "#0A0B0F" },
+  dashboard: {
+    borderRadius: 50,
+    padding: 18,
+    marginBottom: 14,
+    overflow: "hidden",
+    backgroundColor: "#F9FBFF",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.88)",
+  },
   dashboardGlowTop: {
     position: "absolute",
-    top: -92,
-    left: 18,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: "rgba(255,154,34,0.22)",
+    top: -70,
+    left: -34,
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: "rgba(235,254,255,0.54)",
   },
   dashboardGlowBottom: {
     position: "absolute",
-    right: -56,
-    bottom: 100,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(122,221,243,0.16)",
+    right: -76,
+    bottom: 112,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: "rgba(236,255,235,0.46)",
+  },
+  softOrb: { alignSelf: "center", width: 210, height: 210, borderRadius: 105, marginTop: 4, marginBottom: 18, alignItems: "center", justifyContent: "center" },
+  softOrbGlow: { ...StyleSheet.absoluteFillObject, borderRadius: 105, opacity: 0.74 },
+  softOrbCore: {
+    width: 154,
+    height: 154,
+    borderRadius: 77,
+    backgroundColor: "rgba(249,251,255,0.82)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 9, height: 9 },
+    shadowOpacity: 0.42,
+    shadowRadius: 18,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.86)",
   },
   profileRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
-  profileAvatar: { width: 70, height: 70, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  profileAvatarText: { color: "#FFFFFF", fontSize: 28 },
+  profileAvatar: { width: 70, height: 70, borderRadius: 24, alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.34, shadowRadius: 12, elevation: 3 },
+  profileAvatarText: { color: "#91A1B4", fontSize: 28 },
   profileMain: { flex: 1 },
-  profileName: { color: "#FFFFFF", fontSize: 26, lineHeight: 28, letterSpacing: 0 },
+  profileName: { color: "#6E7D8E", fontSize: 26, lineHeight: 28, letterSpacing: 0 },
   profileStats: { flexDirection: "row", gap: 14, marginTop: 8 },
-  profileStat: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "700" },
-  profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.10)", alignItems: "center", justifyContent: "center" },
-  profileIconText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
-  levelSplit: { flexDirection: "row", borderRadius: 25, overflow: "hidden", marginBottom: 16 },
+  profileStat: { color: "#91A1B4", fontSize: 11, fontWeight: "700" },
+  profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
+  profileIconText: { color: "#91A1B4", fontSize: 16, fontWeight: "900" },
+  levelSplit: { flexDirection: "row", borderRadius: 28, overflow: "hidden", marginBottom: 16, backgroundColor: "#F9FBFF", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3 },
   levelPaneLight: { flex: 1, minHeight: 104, backgroundColor: "#FFFFFF", padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
-  levelPaneBlue: { flex: 1, minHeight: 104, backgroundColor: colors.lavaBlue, padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
-  levelValueDark: { color: "#1F242B", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
-  levelValueLight: { color: "#FFFFFF", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
-  levelLabelDark: { color: "#1F242B", fontSize: 13, lineHeight: 14 },
-  levelLabelLight: { color: "#FFFFFF", fontSize: 13, lineHeight: 14 },
+  levelPaneBlue: { flex: 1, minHeight: 104, backgroundColor: "rgba(235,254,255,0.82)", padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
+  levelValueDark: { color: "#6E7D8E", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
+  levelValueLight: { color: "#7FAFC2", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
+  levelLabelDark: { color: "#6E7D8E", fontSize: 13, lineHeight: 14 },
+  levelLabelLight: { color: "#7FAFC2", fontSize: 13, lineHeight: 14 },
   dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
-  dashboardSectionTitle: { color: "#FFFFFF", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
-  dashboardSectionLink: { color: "rgba(255,255,255,0.72)", fontSize: 11 },
-  rewardProgressCard: { backgroundColor: colors.lavaBase, borderRadius: 25, padding: 12, minHeight: 184, overflow: "hidden" },
+  dashboardSectionTitle: { color: "#6E7D8E", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
+  dashboardSectionLink: { color: "#91A1B4", fontSize: 11 },
+  rgbPanel: {
+    borderRadius: 40,
+    padding: 18,
+    minHeight: 210,
+    marginBottom: 18,
+    overflow: "hidden",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 9, height: 9 },
+    shadowOpacity: 0.38,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  rgbPanelHead: { flexDirection: "row", alignItems: "center", gap: 38, marginBottom: 12, paddingHorizontal: 18 },
+  rgbTiny: { color: "#B0D4E3", fontSize: 13 },
+  rgbLabel: { color: "#B0D4E3", fontSize: 13, marginLeft: "auto" },
+  rgbSliders: { minHeight: 148, flexDirection: "row", gap: 28, alignItems: "center", paddingLeft: 28 },
+  rgbSliderShell: {
+    width: 22,
+    height: 132,
+    borderRadius: 13,
+    backgroundColor: "rgba(255,255,255,0.72)",
+    padding: 4,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.42,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  rgbSliderFill: { flex: 1, borderRadius: 10 },
+  rgbSliderKnob: { position: "absolute", left: 1, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.44)", alignItems: "center", justifyContent: "center" },
+  rgbSliderKnobTop: { top: 16 },
+  rgbSliderKnobMid: { top: 64 },
+  rgbSliderKnobLow: { bottom: 16 },
+  rgbSliderKnobText: { color: "#8FB4C6", fontSize: 13, fontWeight: "800" },
+  softSparkle: { position: "absolute", right: 20, top: 30, width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.82)", shadowColor: "#A3B1C6", shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.34, shadowRadius: 8, elevation: 2 },
+  softSparkleLow: { right: 36, top: 94, width: 30, height: 30, opacity: 0.9 },
+  rewardProgressCard: {
+    borderRadius: 40,
+    padding: 14,
+    minHeight: 184,
+    overflow: "hidden",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 0.32,
+    shadowRadius: 14,
+    elevation: 4,
+  },
   rewardProgressTop: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  rewardProgressTitle: { color: "#FFFFFF", fontSize: 19, lineHeight: 22, letterSpacing: 0 },
-  rewardProgressSub: { color: "rgba(30,16,12,0.74)", fontSize: 11, marginTop: 5, maxWidth: 190 },
-  rewardProgressButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(0,0,0,0.18)", alignItems: "center", justifyContent: "center" },
-  rewardProgressButtonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
-  rewardProgressLabel: { color: "#FFFFFF", fontSize: 12, marginTop: 12 },
+  rewardProgressTitle: { color: "#6E7D8E", fontSize: 19, lineHeight: 22, letterSpacing: 0 },
+  rewardProgressSub: { color: "#91A1B4", fontSize: 11, marginTop: 5, maxWidth: 190 },
+  rewardProgressButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
+  rewardProgressButtonText: { color: "#91A1B4", fontSize: 18, fontWeight: "900" },
+  rewardProgressLabel: { color: "#91A1B4", fontSize: 12, marginTop: 12 },
   levelBlocks: { flexDirection: "row", gap: 7, marginTop: 8 },
-  levelBlock: { flex: 1, minHeight: 82, borderRadius: 12, backgroundColor: "rgba(123,22,8,0.48)", padding: 7, justifyContent: "space-between" },
-  levelBlockFuture: { backgroundColor: "rgba(255,255,255,0.20)" },
-  levelCheck: { color: "#FFFFFF", fontSize: 14, fontWeight: "900", minHeight: 18 },
-  levelBlockText: { color: "#FFFFFF", fontSize: 12, textAlign: "center" },
-  blueRewardPill: { marginTop: 12, minHeight: 68, borderRadius: 22, backgroundColor: colors.lavaBlue, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  blueRewardText: { color: "#FFFFFF", fontSize: 20, letterSpacing: 0 },
-  blueRewardIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.16)", alignItems: "center", justifyContent: "center" },
-  blueRewardIconText: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
-  quickStatsPanel: { flexDirection: "row", gap: 0, marginBottom: 12, backgroundColor: "#FFFFFF", borderRadius: 24, overflow: "hidden" },
+  levelBlock: { flex: 1, minHeight: 82, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.64)", padding: 7, justifyContent: "space-between", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 1 },
+  levelBlockFuture: { backgroundColor: "rgba(225,230,239,0.42)" },
+  levelCheck: { color: "#91A1B4", fontSize: 14, fontWeight: "900", minHeight: 18 },
+  levelBlockText: { color: "#91A1B4", fontSize: 12, textAlign: "center" },
+  blueRewardPill: { marginTop: 12, minHeight: 68, borderRadius: 28, backgroundColor: "#F9FBFF", padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.32, shadowRadius: 12, elevation: 3 },
+  blueRewardText: { color: "#6E7D8E", fontSize: 20, letterSpacing: 0 },
+  blueRewardIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(235,254,255,0.82)", alignItems: "center", justifyContent: "center" },
+  blueRewardIconText: { color: "#91A1B4", fontSize: 18, fontWeight: "900" },
+  quickStatsPanel: { flexDirection: "row", gap: 0, marginBottom: 12, backgroundColor: "#F9FBFF", borderRadius: 28, overflow: "hidden", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 3 },
   quickStat: { flex: 1, minHeight: 82, justifyContent: "center", alignItems: "center" },
-  quickStatValue: { color: "#1F242B", fontSize: 30, lineHeight: 32, letterSpacing: 0 },
-  quickStatLabel: { color: "#626875", fontSize: 9, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.4, textAlign: "center" },
+  quickStatValue: { color: "#6E7D8E", fontSize: 30, lineHeight: 32, letterSpacing: 0 },
+  quickStatLabel: { color: "#91A1B4", fontSize: 9, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.4, textAlign: "center" },
 
   metrics: { flexDirection: "row", gap: 10, marginBottom: 12 },
   metricCard: { flex: 1, borderRadius: 24, padding: 13, minHeight: 82, justifyContent: "center" },
@@ -563,74 +703,74 @@ const s = StyleSheet.create({
   metricValue: { fontSize: 26, lineHeight: 28, letterSpacing: 0 },
   metricLabel: { fontSize: 9, marginTop: 5, letterSpacing: 0.8 },
   modeTabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  modeTab: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center", justifyContent: "center" },
+  modeTab: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.28, shadowRadius: 8, elevation: 2 },
   modeTabLight: { backgroundColor: "#FFFFFF" },
-  modeTabBlue: { backgroundColor: colors.lavaBlue },
-  modeTabRed: { backgroundColor: colors.lavaBase },
-  modeTabTextLight: { color: "#1F242B", fontSize: 12 },
-  modeTabTextDark: { color: "#FFFFFF", fontSize: 12 },
+  modeTabBlue: { backgroundColor: "rgba(235,254,255,0.82)" },
+  modeTabRed: { backgroundColor: "rgba(255,244,254,0.82)" },
+  modeTabTextLight: { color: "#6E7D8E", fontSize: 12 },
+  modeTabTextDark: { color: "#7FAFC2", fontSize: 12 },
   actionRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  actionPill: { flex: 1, borderRadius: 18, padding: 7, flexDirection: "row", alignItems: "center", gap: 10, overflow: "hidden", minHeight: 58 },
-  actionPillDark: { backgroundColor: colors.lavaBase },
-  actionPillLight: { backgroundColor: "#0A0B0F" },
+  actionPill: { flex: 1, borderRadius: 28, padding: 9, flexDirection: "row", alignItems: "center", gap: 10, overflow: "hidden", minHeight: 60, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 3 },
+  actionPillDark: { backgroundColor: "#F9FBFF" },
+  actionPillLight: { backgroundColor: "#F9FBFF" },
   actionIcon: { width: 35, height: 35, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  actionIconDark: { backgroundColor: "#FFFFFF" },
-  actionIconLight: { backgroundColor: colors.lavaPink },
+  actionIconDark: { backgroundColor: "rgba(235,254,255,0.88)" },
+  actionIconLight: { backgroundColor: "rgba(255,244,254,0.88)" },
   actionIconText: { fontSize: 16, fontWeight: "900" },
   actionLabel: { fontSize: 13 },
 
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { color: "#101217", fontSize: 25, letterSpacing: 0 },
-  sectionButton: { backgroundColor: "#101217", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  sectionButtonText: { color: "#FFFFFF", fontSize: 11 },
+  sectionTitle: { color: "#6E7D8E", fontSize: 25, letterSpacing: 0 },
+  sectionButton: { backgroundColor: "#F9FBFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  sectionButtonText: { color: "#91A1B4", fontSize: 11 },
   filterRail: { gap: 8, paddingBottom: 12 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: colors.lavaBase },
-  filterChipIdle: { backgroundColor: "rgba(16,18,23,0.10)" },
+  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 1 },
+  filterChipIdle: { backgroundColor: "rgba(249,251,255,0.52)" },
   filterChipText: { fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
   offerPressable: { width: 176 },
-  offerCard: { minHeight: 174, borderRadius: 24, padding: 14, overflow: "hidden" },
-  offerCardFeatured: { backgroundColor: colors.lavaBase },
-  offerCardBlue: { backgroundColor: colors.lavaBlue },
+  offerCard: { minHeight: 174, borderRadius: 34, padding: 14, overflow: "hidden", shadowColor: "#A3B1C6", shadowOffset: { width: 8, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 3 },
+  offerCardFeatured: { backgroundColor: "rgba(255,244,254,0.92)" },
+  offerCardBlue: { backgroundColor: "rgba(235,254,255,0.92)" },
   offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   offerLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  offerLogoDark: { backgroundColor: "rgba(0,0,0,0.18)" },
-  offerLogoLight: { backgroundColor: "rgba(0,0,0,0.18)" },
+  offerLogoDark: { backgroundColor: "rgba(255,255,255,0.72)" },
+  offerLogoLight: { backgroundColor: "rgba(255,255,255,0.72)" },
   offerLogoText: { fontSize: 17, fontWeight: "900" },
-  offerPoints: { backgroundColor: "rgba(0,0,0,0.18)", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
+  offerPoints: { backgroundColor: "rgba(255,255,255,0.60)", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
   offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
   offerVenue: { fontSize: 12, marginTop: 8 },
-  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(0,0,0,0.18)" },
+  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.58)" },
   offerLinkLight: { backgroundColor: "rgba(255,255,255,0.72)" },
   offerLinkDark: { backgroundColor: "rgba(255,255,255,0.14)" },
   offerLinkText: { fontSize: 12 },
 
   venueList: { gap: 12 },
-  emptyVenues: { backgroundColor: "#101217", borderRadius: 24, padding: 16, alignItems: "center" },
-  emptyVenuesText: { color: "rgba(255,255,255,0.68)", fontSize: 12 },
-  venueSkeleton: { backgroundColor: "#101217", borderRadius: 24, padding: 12, flexDirection: "row", gap: 12 },
-  skeletonLogo: { width: 58, height: 58, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.12)" },
+  emptyVenues: { backgroundColor: "#F9FBFF", borderRadius: 28, padding: 16, alignItems: "center" },
+  emptyVenuesText: { color: "#91A1B4", fontSize: 12 },
+  venueSkeleton: { backgroundColor: "#F9FBFF", borderRadius: 28, padding: 12, flexDirection: "row", gap: 12 },
+  skeletonLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(225,230,239,0.72)" },
   skeletonMain: { flex: 1, justifyContent: "center", gap: 8 },
-  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.12)", width: "72%" },
-  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.08)", width: "54%" },
+  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "rgba(225,230,239,0.72)", width: "72%" },
+  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "rgba(225,230,239,0.48)", width: "54%" },
   skeletonChips: { flexDirection: "row", gap: 6 },
-  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.12)" },
-  venueCard: { backgroundColor: "#101217", borderRadius: 24, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden" },
-  venueLogo: { width: 58, height: 58, borderRadius: 20, backgroundColor: colors.lavaBase, alignItems: "center", justifyContent: "center" },
-  venueLogoText: { color: "#FFFFFF", fontSize: 22 },
+  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "rgba(225,230,239,0.64)" },
+  venueCard: { backgroundColor: "#F9FBFF", borderRadius: 28, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
+  venueLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(235,254,255,0.84)", alignItems: "center", justifyContent: "center" },
+  venueLogoText: { color: "#7FAFC2", fontSize: 22 },
   venueMain: { flex: 1 },
   venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  venueName: { color: "#FFFFFF", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
-  venueArrow: { color: "#FFFFFF", fontSize: 22 },
-  venueMeta: { color: "rgba(255,255,255,0.56)", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
-  venueAddress: { color: "rgba(255,255,255,0.48)", fontSize: 12, marginTop: 2 },
+  venueName: { color: "#6E7D8E", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
+  venueArrow: { color: "#91A1B4", fontSize: 22 },
+  venueMeta: { color: "#91A1B4", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
+  venueAddress: { color: "#A3B1C6", fontSize: 12, marginTop: 2 },
   venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
   venueChipDark: { backgroundColor: colors.lavaBase, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  venueChipDarkText: { color: "#FFFFFF", fontSize: 10 },
-  venueChipLight: { backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  venueChipLightText: { color: "#FFFFFF", fontSize: 10 },
-  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
-  specialDot: { color: colors.lavaSalmon, fontSize: 10 },
-  specialText: { color: "#FFFFFF", fontSize: 12, flex: 1 },
+  venueChipDarkText: { color: "#7A8EA3", fontSize: 10 },
+  venueChipLight: { backgroundColor: "rgba(225,230,239,0.58)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipLightText: { color: "#91A1B4", fontSize: 10 },
+  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
+  specialDot: { color: "#9FEED3", fontSize: 10 },
+  specialText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
 })
