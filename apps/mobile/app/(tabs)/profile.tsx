@@ -29,6 +29,8 @@ export default function ProfileScreen() {
   const stats = trpc.user.getStats.useQuery()
   const myBadges = trpc.badge.mine.useQuery()
   const myReferrals = trpc.user.getReferrals.useQuery()
+  const friends = trpc.social.friends.useQuery()
+  const redemptions = trpc.user.myRedemptions.useQuery({ limit: 3 })
 
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
@@ -93,61 +95,112 @@ export default function ProfileScreen() {
   const initial = (u.name ?? u.email ?? "?")[0]?.toUpperCase() ?? "?"
   const currentLng = (i18n.language as SupportedLocale) ?? "en"
   const badges = myBadges.data ?? []
+  const totalPoints = u.totalPoints
+  const nextMilestone = Math.max(500, Math.ceil((totalPoints + 1) / 500) * 500)
+  const progressPct = Math.min(100, Math.round((totalPoints / nextMilestone) * 100))
+  const memberSince = new Date(u.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+  const welcomeDaysLeft = u.welcomeExpiresAt
+    ? Math.max(0, Math.ceil((new Date(u.welcomeExpiresAt).getTime() - Date.now()) / 86_400_000))
+    : null
+  const referralsCount = myReferrals.data?.length ?? 0
+  const friendsCount = friends.data?.length ?? 0
+  const recentRedemptions = redemptions.data?.redemptions ?? []
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      {/* Hero */}
-      <NeuCard gradient={gradients.black} style={[s.hero, { borderRadius: 50 }]}>
+      <View style={s.screenHead}>
+        <View>
+          <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>PULSE ID</Text>
+          <Text style={[s.screenTitle, { fontFamily: fonts.displayHeavy }]}>
+            {t("personalCabinet", "Personal cabinet")}
+          </Text>
+        </View>
+        <Pressable onPress={startEditing} style={[s.headButton, theme.shadowRaisedSm]}>
+          <Text style={[s.headButtonText, { fontFamily: fonts.bodyBold }]}>✎</Text>
+        </Pressable>
+      </View>
+
+      <NeuCard gradient={gradients.black} style={s.hero}>
         <View style={s.heroBlob} />
-        <View style={s.heroRow}>
-          <View style={s.heroAvatar}>
-            <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[s.heroName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
-              {u.name ?? u.email}
-            </Text>
-            {u.homeCity ? (
-              <Text style={s.heroCity}>⌖ {u.homeCity}</Text>
-            ) : null}
-            <View style={s.refBadge}>
-              <Text style={[s.refBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
+        <View style={s.heroTop}>
+          <View style={s.heroRow}>
+            <View style={s.heroAvatar}>
+              <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
             </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.heroName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
+                {u.name ?? u.email}
+              </Text>
+              <Text style={s.heroMail} numberOfLines={1}>{u.email}</Text>
+              {u.homeCity ? <Text style={s.heroCity}>⌖ {u.homeCity}</Text> : null}
+            </View>
+          </View>
+          <View style={s.refBadge}>
+            <Text style={[s.refBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
+          </View>
+        </View>
+
+        <View style={s.balancePanel}>
+          <View>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>
+              {t("availableBalance", "Available balance").toUpperCase()}
+            </Text>
+            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{totalPoints.toLocaleString()}</Text>
+            <Text style={s.balanceSub}>pts</Text>
+          </View>
+          <View style={s.balanceSplit}>
+            <MiniBalance label={t("earned", "Earned")} value={u.earnedPoints} />
+            <MiniBalance label={t("welcome", "Welcome")} value={u.welcomePoints} />
+          </View>
+        </View>
+
+        <View style={s.levelBlock}>
+          <View style={s.levelHead}>
+            <Text style={[s.levelText, { fontFamily: fonts.bodyBold }]}>
+              {totalPoints.toLocaleString()} / {nextMilestone.toLocaleString()}
+            </Text>
+            <Text style={[s.levelText, { fontFamily: fonts.bodyBold }]}>{progressPct}%</Text>
+          </View>
+          <View style={s.levelTrack}>
+            <View style={[s.levelFill, { width: `${progressPct}%` }]} />
           </View>
         </View>
       </NeuCard>
 
-      {/* Stats */}
-      <View style={s.statsRow}>
-        <StatTile
-          gradient={gradients.aqua}
-          label={t("totalPts", "Total pts")}
-          value={u.totalEarnedLifetime.toLocaleString()}
-        />
-        <StatTile
-          gradient={gradients.aqua}
-          label={t("streak", "Streak")}
-          value={`${u.currentStreak}d`}
-        />
-        <StatTile
-          gradient={gradients.pearl}
-          label={t("best", "Best")}
-          value={`${u.longestStreak}d`}
-        />
+      <View style={s.quickGrid}>
+        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} onPress={() => router.push("/checkin")} />
+        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} onPress={() => router.push("/scan")} />
+        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} onPress={() => router.push("/gift")} />
+        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} onPress={() => router.push("/friends")} />
       </View>
 
-      {/* Lifetime stats */}
+      <SectionTitle title={t("activity", "Activity")} action={t("leaderboard", "Leaderboard")} onPress={() => router.push("/leaderboard")} />
+      <View style={s.statsRow}>
+        <StatTile label={t("lifetime", "Lifetime")} value={u.totalEarnedLifetime.toLocaleString()} />
+        <StatTile label={t("streak", "Streak")} value={`${u.currentStreak}d`} />
+        <StatTile label={t("steps", "Steps")} value={u.stepsToday.toLocaleString()} />
+      </View>
+
       {stats.data ? (
-        <NeuCard style={{ marginBottom: 20, padding: 0 }}>
+        <NeuCard style={s.infoCard}>
           <Row label={t("venuesVisited", "Venues visited")} value={`${stats.data.uniqueVenuesVisited}`} theme={theme} last={false} />
-          <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${stats.data.rewardsRedeemed}`} theme={theme} last={true} />
+          <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${stats.data.rewardsRedeemed}`} theme={theme} last={false} />
+          <Row label={t("spentPoints", "Spent points")} value={`${stats.data.spentPoints.toLocaleString()} pts`} theme={theme} last={true} />
         </NeuCard>
       ) : null}
 
-      {/* Badges */}
-      <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-        {t("badges", "Badges")}
-      </Text>
+      <SectionTitle title={t("account", "Account")} action={t("editProfile", "Edit")} onPress={startEditing} />
+      <View style={s.accountGrid}>
+        <AccountTile label={t("homeCity", "Home city")} value={u.homeCity ?? "—"} />
+        <AccountTile label={t("language", "Language")} value={currentLng.toUpperCase()} />
+        <AccountTile label={t("memberSince", "Member since")} value={memberSince} />
+        <AccountTile
+          label={t("welcomeLeft", "Welcome left")}
+          value={welcomeDaysLeft === null ? "—" : `${welcomeDaysLeft}d`}
+        />
+      </View>
+
+      <SectionTitle title={t("badges", "Badges")} action={t("all", "All")} onPress={() => router.push("/badges")} />
       <Pressable onPress={() => router.push("/badges")}>
         {badges.length === 0 ? (
           <NeuCard style={{ padding: 20, alignItems: "center", marginBottom: 20 }}>
@@ -173,7 +226,7 @@ export default function ProfileScreen() {
         )}
       </Pressable>
 
-      {/* Referral */}
+      <SectionTitle title={t("network", "Network")} action={t("details", "Details")} onPress={() => router.push("/referrals")} />
       <NeuCard gradient={gradients.black} style={s.referralCard}>
         <Text style={s.referralLabel}>
           {t("referralCode", "Referral code").toUpperCase()}
@@ -198,30 +251,32 @@ export default function ProfileScreen() {
           onPress={() => router.push("/referrals")}
           style={s.refsCount}
         >
-          {t("referralsCount", "{{count}} referred", { count: myReferrals.data?.length ?? 0 })} →
+          {t("referralsCount", "{{count}} referred", { count: referralsCount })} · {friendsCount} {t("friends", "friends")} →
         </Text>
       </NeuCard>
 
-      {/* Friends shortcut */}
-      <NeuCard
-        onPress={() => router.push("/friends")}
-        style={{ padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}
-      >
-        <View>
-          <Text style={[s.shortcutTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>
-            {t("friends", "Friends")}
-          </Text>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-            {t("seeFriendsActivity", "See what your friends are up to")}
-          </Text>
-        </View>
-        <Text style={{ color: theme.textSecondary, fontSize: 18 }}>→</Text>
+      <SectionTitle title={t("recentRewards", "Recent rewards")} action={t("rewards", "Rewards")} onPress={() => router.push("/rewards")} />
+      <NeuCard style={s.infoCard}>
+        {recentRedemptions.length === 0 ? (
+          <View style={s.emptyHistory}>
+            <Text style={[s.emptyHistoryText, { color: theme.textSecondary }]}>
+              {t("noRewardHistory", "Redeemed rewards will appear here")}
+            </Text>
+          </View>
+        ) : (
+          recentRedemptions.map((redemption, index) => (
+            <Row
+              key={redemption.id}
+              label={redemption.reward.title}
+              value={`${redemption.reward.pointsCost} pts`}
+              theme={theme}
+              last={index === recentRedemptions.length - 1}
+            />
+          ))
+        )}
       </NeuCard>
 
-      {/* Edit profile */}
-      <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-        {t("editProfile", "Edit profile")}
-      </Text>
+      <SectionTitle title={t("settings", "Settings")} />
       <NeuCard style={{ padding: 14, marginBottom: 20 }}>
         {editing ? (
           <>
@@ -302,14 +357,59 @@ export default function ProfileScreen() {
 
 // ── helpers ───────────────────────────────────────────────────
 
-function StatTile({
-  gradient, label, value,
-}: { gradient: readonly [string, string, ...string[]]; label: string; value: string }) {
+function MiniBalance({ label, value }: { label: string; value: number }) {
   return (
-    <NeuCard gradient={gradient} style={s.statTile} small>
+    <View style={s.miniBalance}>
+      <Text style={[s.miniBalanceValue, { fontFamily: fonts.displayHeavy }]}>{value.toLocaleString()}</Text>
+      <Text style={[s.miniBalanceLabel, { fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
+    </View>
+  )
+}
+
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <NeuCard gradient={gradients.black} style={s.statTile} small>
       <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{value}</Text>
       <Text style={s.statLabel}>{label.toUpperCase()}</Text>
     </NeuCard>
+  )
+}
+
+function QuickAction({
+  icon, label, sub, onPress,
+}: { icon: string; label: string; sub: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={s.quickPressable}>
+      <NeuCard style={s.quickCard} small>
+        <View style={s.quickIcon}>
+          <Text style={[s.quickIconText, { fontFamily: fonts.displayHeavy }]}>{icon}</Text>
+        </View>
+        <Text style={[s.quickLabel, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
+        <Text style={s.quickSub} numberOfLines={1}>{sub}</Text>
+      </NeuCard>
+    </Pressable>
+  )
+}
+
+function AccountTile({ label, value }: { label: string; value: string }) {
+  return (
+    <NeuCard style={s.accountTile} small>
+      <Text style={[s.accountLabel, { fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
+      <Text style={[s.accountValue, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{value}</Text>
+    </NeuCard>
+  )
+}
+
+function SectionTitle({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
+  return (
+    <View style={s.sectionHead}>
+      <Text style={[s.h2, { fontFamily: fonts.displayHeavy }]}>{title}</Text>
+      {action && onPress ? (
+        <Pressable onPress={onPress} style={s.sectionAction}>
+          <Text style={[s.sectionActionText, { fontFamily: fonts.bodyBold }]}>{action}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   )
 }
 
@@ -376,8 +476,15 @@ const s = StyleSheet.create({
   content: { padding: 18, paddingBottom: 34 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  hero: { padding: 18, marginBottom: 14, overflow: "hidden" },
+  screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },
+  screenTitle: { color: colors.ink, fontSize: 34, lineHeight: 38, letterSpacing: 0 },
+  headButton: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center" },
+  headButtonText: { color: colors.ink, fontSize: 18 },
+
+  hero: { padding: 18, marginBottom: 14, overflow: "hidden", borderRadius: 50 },
   heroBlob: { position: "absolute", top: -48, right: -44, width: 160, height: 160, borderRadius: 80, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
+  heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 16 },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 16 },
   heroAvatar: {
     width: 70, height: 70, borderRadius: 28,
@@ -387,18 +494,49 @@ const s = StyleSheet.create({
   },
   heroAvatarText: { color: colors.ink, fontSize: 28 },
   heroName: { color: colors.ink, fontSize: 25, lineHeight: 29 },
+  heroMail: { color: "#A3B1C6", fontSize: 12, marginTop: 1 },
   heroCity: { color: "#91A1B4", fontSize: 13, marginTop: 2 },
-  refBadge: { marginTop: 10, alignSelf: "flex-start", backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
+  refBadge: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.66)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
   refBadgeText: { color: colors.ink, fontSize: 11, letterSpacing: 1.5 },
 
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  balancePanel: { borderRadius: 34, backgroundColor: "rgba(255,255,255,0.50)", padding: 16, flexDirection: "row", justifyContent: "space-between", gap: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
+  balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
+  balanceValue: { color: colors.ink, fontSize: 48, lineHeight: 52, marginTop: 2 },
+  balanceSub: { color: "#91A1B4", fontSize: 13 },
+  balanceSplit: { width: 104, gap: 8 },
+  miniBalance: { backgroundColor: "rgba(255,255,255,0.46)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 9 },
+  miniBalanceValue: { color: colors.ink, fontSize: 18, lineHeight: 20 },
+  miniBalanceLabel: { color: "#91A1B4", fontSize: 8, letterSpacing: 0.8, marginTop: 2 },
+  levelBlock: { marginTop: 14 },
+  levelHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 7 },
+  levelText: { color: "#91A1B4", fontSize: 11 },
+  levelTrack: { height: 9, borderRadius: 8, backgroundColor: "rgba(163,177,198,0.16)", overflow: "hidden" },
+  levelFill: { height: "100%", borderRadius: 8, backgroundColor: "rgba(133,245,242,0.92)" },
+
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 22 },
+  quickPressable: { width: "48.5%" },
+  quickCard: { padding: 14, minHeight: 112, borderRadius: 30 },
+  quickIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(235,254,255,0.88)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  quickIconText: { color: "#7FAFC2", fontSize: 20 },
+  quickLabel: { color: colors.ink, fontSize: 15 },
+  quickSub: { color: "#91A1B4", fontSize: 11, marginTop: 2 },
+
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
   statTile: { flex: 1, padding: 14, minHeight: 86 },
   statValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
   statLabel: { color: "#91A1B4", fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
 
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
 
-  h2: { fontSize: 25, marginBottom: 12 },
+  sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  h2: { color: colors.ink, fontSize: 25 },
+  sectionAction: { backgroundColor: "#F9FBFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 1 },
+  sectionActionText: { color: "#91A1B4", fontSize: 11 },
+  infoCard: { marginBottom: 20, padding: 0, borderRadius: 32 },
+  accountGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  accountTile: { width: "48.5%", padding: 14, minHeight: 84, borderRadius: 28 },
+  accountLabel: { color: "#91A1B4", fontSize: 9, letterSpacing: 0.8 },
+  accountValue: { color: colors.ink, fontSize: 17, marginTop: 8 },
 
   badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   badgeCard: { width: "31%", padding: 12, alignItems: "center", minHeight: 104 },
@@ -414,8 +552,8 @@ const s = StyleSheet.create({
   referralBtnInner: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
   referralBtnText: { color: colors.ink, fontSize: 13 },
   refsCount: { color: colors.ink, fontSize: 12, fontWeight: "700", marginTop: 12 },
-
-  shortcutTitle: { fontSize: 15 },
+  emptyHistory: { padding: 18, alignItems: "center" },
+  emptyHistoryText: { fontSize: 13, textAlign: "center" },
 
   cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },
