@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { colors, fonts, useTheme } from "../lib/theme"
+import { LavaLampSurface } from "../components/neu"
 
 export default function MapWebScreen() {
   const theme = useTheme()
@@ -21,7 +22,7 @@ export default function MapWebScreen() {
       style={[s.scroll, { backgroundColor: theme.bg }]}
       contentContainerStyle={s.content}
     >
-      <View style={s.hero}>
+      <LavaLampSurface style={s.hero}>
         <View>
           <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>NEARBY</Text>
           <Text style={[s.title, { fontFamily: fonts.displayHeavy }]}>
@@ -33,7 +34,7 @@ export default function MapWebScreen() {
             {t("belgrade")}
           </Text>
         </View>
-      </View>
+      </LavaLampSurface>
 
       <View style={s.list}>
         {(venues.data ?? []).map((venue) => (
@@ -104,7 +105,6 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 34 },
   hero: {
-    backgroundColor: colors.ink,
     borderRadius: 32,
     padding: 18,
     minHeight: 164,
@@ -121,7 +121,7 @@ const s = StyleSheet.create({
   title: { color: "#FFFFFF", fontSize: 38, lineHeight: 42 },
   locationPill: {
     height: 40,
-    backgroundColor: "#000",
+    backgroundColor: "rgba(255,255,255,0.28)",
     borderRadius: 99,
     paddingHorizontal: 16,
     justifyContent: "center",
@@ -156,7 +156,7 @@ const s = StyleSheet.create({
   address: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
   chips: { flexDirection: "row", gap: 6, marginTop: 10, flexWrap: "wrap" },
   darkChip: {
-    backgroundColor: "#000",
+    backgroundColor: colors.lavaBase,
     borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 6,

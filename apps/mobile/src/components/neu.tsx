@@ -6,9 +6,10 @@
  * - NeuInset: a darker bg + subtle top/left dim for "pressed" feel.
  * - Gradient cards: LinearGradient + softer purple glow.
  */
-import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from "react-native"
+import { Animated, Easing, Pressable, StyleProp, StyleSheet, View, ViewStyle } from "react-native"
+import { useEffect, useRef } from "react"
 import { LinearGradient } from "expo-linear-gradient"
-import { radius, useTheme } from "../lib/theme"
+import { gradients, radius, useTheme } from "../lib/theme"
 
 type GradientTuple = readonly [string, string, ...string[]]
 
@@ -116,6 +117,102 @@ export function GradPill({ label, gradient, style }: GradPillProps) {
   )
 }
 
+type LavaLampSurfaceProps = {
+  children?: React.ReactNode
+  style?: StyleProp<ViewStyle>
+  contentStyle?: StyleProp<ViewStyle>
+  intensity?: "solid" | "glass"
+}
+
+export function LavaLampSurface({
+  children,
+  style,
+  contentStyle,
+  intensity = "solid",
+}: LavaLampSurfaceProps) {
+  const spin = useRef(new Animated.Value(0)).current
+  const drift = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    const loops = [
+      Animated.loop(
+        Animated.timing(spin, {
+          toValue: 1,
+          duration: 12000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(drift, {
+            toValue: 1,
+            duration: 7000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(drift, {
+            toValue: 0,
+            duration: 7000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ]
+    loops.forEach((loop) => loop.start())
+    return () => loops.forEach((loop) => loop.stop())
+  }, [drift, spin])
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  })
+  const moveA = drift.interpolate({ inputRange: [0, 1], outputRange: [-28, 32] })
+  const moveB = drift.interpolate({ inputRange: [0, 1], outputRange: [24, -34] })
+  const colors =
+    intensity === "glass"
+      ? gradients.lavaGlass
+      : gradients.lava
+
+  return (
+    <View style={[s.lavaRoot, style]}>
+      <LinearGradient
+        colors={colors as unknown as [string, string, ...string[]]}
+        start={{ x: 0, y: 0.15 }}
+        end={{ x: 1, y: 0.9 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          s.lavaBlob,
+          s.lavaBlobPink,
+          { transform: [{ translateX: moveA }, { translateY: moveB }, { rotate }] },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          s.lavaBlob,
+          s.lavaBlobBlue,
+          { transform: [{ translateX: moveB }, { translateY: moveA }, { rotate }] },
+        ]}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          s.lavaBlob,
+          s.lavaBlobLime,
+          { transform: [{ translateX: moveA }, { translateY: moveA }] },
+        ]}
+      />
+      <View pointerEvents="none" style={s.lavaSheen} />
+      <View style={contentStyle}>{children}</View>
+    </View>
+  )
+}
+
 import { Text } from "react-native"
 function PillLabel({ label }: { label: string }) {
   return (
@@ -142,5 +239,35 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 99,
     alignSelf: "flex-start",
+  },
+  lavaRoot: {
+    overflow: "hidden",
+    backgroundColor: "#FF8AAE",
+  },
+  lavaBlob: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.42,
+  },
+  lavaBlobPink: {
+    left: -60,
+    top: -70,
+    backgroundColor: "#FF4FA3",
+  },
+  lavaBlobBlue: {
+    right: -62,
+    top: -28,
+    backgroundColor: "#54E5F2",
+  },
+  lavaBlobLime: {
+    right: 18,
+    bottom: -92,
+    backgroundColor: "#C9F65D",
+  },
+  lavaSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.18)",
   },
 })

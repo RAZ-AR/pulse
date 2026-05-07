@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { trpc } from "../src/lib/trpc"
 import { colors, useTheme } from "../src/lib/theme"
+import { LavaLampSurface } from "../src/components/neu"
 
 const RARITY_COLORS: Record<string, string> = {
   COMMON: "#9CA3AF",
@@ -33,7 +34,7 @@ export default function BadgesScreen() {
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Progress hero */}
-        <View style={[s.hero, { backgroundColor: colors.ink }]}>
+        <LavaLampSurface style={s.hero}>
           <Text style={s.heroLabel}>{t("badgesUnlocked", "BADGES UNLOCKED")}</Text>
           <Text style={s.heroValue}>{unlockedCount} <Text style={s.heroDenom}>/ {totalCount}</Text></Text>
           {totalCount > 0 ? (
@@ -41,7 +42,7 @@ export default function BadgesScreen() {
               <View style={[s.progressFill, { width: `${(unlockedCount / totalCount) * 100}%` }]} />
             </View>
           ) : null}
-        </View>
+        </LavaLampSurface>
 
         {/* Grid */}
         <View style={s.grid}>

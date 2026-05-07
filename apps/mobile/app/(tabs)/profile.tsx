@@ -364,9 +364,9 @@ const s = StyleSheet.create({
   heroRow: { flexDirection: "row", alignItems: "center", gap: 16 },
   heroAvatar: {
     width: 70, height: 70, borderRadius: 28,
-    backgroundColor: "#000",
+    backgroundColor: colors.lavaPink,
     alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: "#343844",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.46)",
   },
   heroAvatarText: { color: "#FFF", fontSize: 28 },
   heroName: { color: "#FFF", fontSize: 25, lineHeight: 29 },

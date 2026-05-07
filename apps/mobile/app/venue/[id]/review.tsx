@@ -109,7 +109,7 @@ export default function VenueReviewScreen() {
           <Pressable
             onPress={submit}
             disabled={upsert.isPending}
-            style={[s.btn, { backgroundColor: theme.text, opacity: upsert.isPending ? 0.5 : 1 }]}
+            style={[s.btn, { backgroundColor: colors.lavaBase, opacity: upsert.isPending ? 0.5 : 1 }]}
           >
             {upsert.isPending ? (
               <ActivityIndicator color={theme.bg} />

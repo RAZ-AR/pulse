@@ -203,7 +203,7 @@ function Empty({
       <Text style={[s.emptyTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{title}</Text>
       <Text style={[s.emptyDesc, { color: theme.textSecondary }]}>{desc}</Text>
       {action ? (
-        <Pressable onPress={onAction} style={[s.emptyBtn, { backgroundColor: theme.text }]}>
+        <Pressable onPress={onAction} style={[s.emptyBtn, { backgroundColor: colors.lavaBase }]}>
           <Text style={{ color: theme.bg, fontFamily: fonts.bodyBold, fontSize: 13 }}>{action}</Text>
         </Pressable>
       ) : null}
@@ -216,7 +216,7 @@ const s = StyleSheet.create({
   tabs: { flexDirection: "row", paddingHorizontal: 18, paddingVertical: 6, gap: 12 },
   tab: { paddingVertical: 12, position: "relative" },
   tabLabel: { fontSize: 15 },
-  tabIndicator: { position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: "#000" },
+  tabIndicator: { position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: colors.lavaPink },
   list: { padding: 18, gap: 12, paddingBottom: 40 },
   emptyIcon: { color: colors.ink, fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 12 },
   emptyTitle: { fontSize: 24, marginBottom: 6 },
@@ -228,7 +228,7 @@ const ss = StyleSheet.create({
   card: { padding: 18, overflow: "hidden", borderRadius: 30 },
   cardBlob: { position: "absolute", top: -30, right: -30, width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: "rgba(167,232,238,0.25)" },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
+  icon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
   iconText: { color: "#FFFFFF", fontSize: 20, fontWeight: "900" },
   title: { color: "#FFF", fontSize: 16 },
   desc: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },

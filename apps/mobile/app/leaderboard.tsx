@@ -283,7 +283,7 @@ const s = StyleSheet.create({
   mainTabs: { flexDirection: "row", paddingHorizontal: 18, paddingVertical: 4, gap: 20 },
   mainTab: { paddingVertical: 12, position: "relative" },
   mainTabLabel: { fontSize: 15 },
-  mainTabIndicator: { position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: "#000" },
+  mainTabIndicator: { position: "absolute", bottom: -1, left: 0, right: 0, height: 3, borderRadius: 2, backgroundColor: colors.lavaPink },
   filters: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   scopeRow: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },

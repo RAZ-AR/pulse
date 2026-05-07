@@ -116,7 +116,7 @@ export default function MapScreen() {
           </Text>
           <Pressable
             onPress={() => setDenied(false)}
-            style={[s.dismissBtn, { backgroundColor: theme.text }]}
+            style={[s.dismissBtn, { backgroundColor: colors.lavaBase }]}
           >
             <Text style={{ color: theme.bg, fontFamily: fonts.bodyBold }}>{t("common:done", "OK")}</Text>
           </Pressable>

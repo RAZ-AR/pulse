@@ -182,7 +182,7 @@ function CameraPhase({
         <Text style={[s.dialogText, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "PULSE needs your camera to scan receipts.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: theme.text }]}>
+        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: colors.lavaBase }]}>
           <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </View>
@@ -240,7 +240,7 @@ function ConfirmPhase({
       <Field label={t("date", "Date (YYYY-MM-DD)")} value={ocr.date} onChangeText={(v) => onChange({ ...ocr, date: v })} theme={theme} />
       <Field label={t("receiptNumber", "Receipt # (optional)")} value={ocr.receiptNumber} onChangeText={(v) => onChange({ ...ocr, receiptNumber: v })} theme={theme} />
 
-      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: theme.text, marginTop: 12 }]}>
+      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: colors.lavaBase, marginTop: 12 }]}>
         <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
       </Pressable>
     </ScrollView>
@@ -265,7 +265,7 @@ function DonePhase({
       ) : (
         <Text style={[s.donePoints, { color: colors.mint }]}>+{pointsEarned} pts</Text>
       )}
-      <Pressable onPress={onClose} style={[s.btn, { backgroundColor: theme.text, marginTop: 24 }]}>
+      <Pressable onPress={onClose} style={[s.btn, { backgroundColor: colors.lavaBase, marginTop: 24 }]}>
         <Text style={{ color: theme.bg, fontWeight: "700" }}>{t("done", "Done")}</Text>
       </Pressable>
     </View>

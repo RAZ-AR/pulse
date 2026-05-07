@@ -1,10 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useRouter } from "expo-router"
-import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, useTheme } from "../../src/lib/theme"
-import { NeuCard } from "../../src/components/neu"
+import { colors, fonts, useTheme } from "../../src/lib/theme"
+import { LavaLampSurface } from "../../src/components/neu"
 
 type RewardItem = {
   id: string
@@ -59,12 +58,7 @@ export default function HomeScreen() {
         <CircleButton label="◦" onPress={() => router.push("/profile")} />
       </View>
 
-      <LinearGradient
-        colors={gradients.black as unknown as [string, string, ...string[]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[s.dashboard, theme.shadowRaised]}
-      >
+      <LavaLampSurface style={[s.dashboard, theme.shadowRaised]}>
         <View style={s.dashboardGrid} />
         <View style={s.dashboardHead}>
           <View style={s.blackLogo}>
@@ -97,7 +91,7 @@ export default function HomeScreen() {
           <Text style={[s.dragText, { fontFamily: fonts.bodyBold }]}>{t("scanVisitRedeem")}</Text>
           <Text style={s.dragChevron}>›››</Text>
         </View>
-      </LinearGradient>
+      </LavaLampSurface>
 
       <View style={s.metrics}>
         <MetricCard value={`${me.data?.currentStreak ?? 0}d`} label={t("streakLabel")} tone="cyan" />
@@ -161,23 +155,36 @@ function CircleButton({ label, onPress }: { label: string; onPress: () => void }
 }
 
 function MetricCard({ value, label, tone }: { value: string; label: string; tone: "cyan" | "white" | "black" }) {
-  const bg = tone === "cyan" ? colors.cyan : tone === "black" ? colors.ink : "#FFFFFF"
+  const bg = tone === "cyan" ? colors.cyan : tone === "black" ? colors.lavaBase : "#FFFFFF"
   const fg = tone === "black" ? "#FFFFFF" : colors.ink
-  return (
-    <View style={[s.metricCard, { backgroundColor: bg }]}>
+  const content = (
+    <>
       <Text style={[s.metricValue, { color: fg, fontFamily: fonts.displayHeavy }]}>{value}</Text>
-      <Text style={[s.metricLabel, { color: tone === "black" ? "rgba(255,255,255,0.62)" : "#7A808E", fontFamily: fonts.bodyBold }]}>
+      <Text style={[s.metricLabel, { color: tone === "black" ? "rgba(255,255,255,0.82)" : "#7A808E", fontFamily: fonts.bodyBold }]}>
         {label.toUpperCase()}
       </Text>
-    </View>
+    </>
+  )
+
+  if (tone === "black") {
+    return (
+      <LavaLampSurface style={s.metricCard} contentStyle={s.metricCardContent}>
+        {content}
+      </LavaLampSurface>
+    )
+  }
+
+  return (
+    <View style={[s.metricCard, { backgroundColor: bg }]}>{content}</View>
   )
 }
 
 function ActionPill({ label, icon, onPress, dark }: { label: string; icon: string; onPress: () => void; dark?: boolean }) {
   return (
     <Pressable onPress={onPress} style={[s.actionPill, dark ? s.actionPillDark : s.actionPillLight]}>
+      {dark ? <LavaLampSurface style={StyleSheet.absoluteFill} /> : null}
       <View style={[s.actionIcon, dark ? s.actionIconDark : s.actionIconLight]}>
-        <Text style={[s.actionIconText, { color: dark ? colors.ink : "#FFFFFF" }]}>{icon}</Text>
+        <Text style={[s.actionIconText, { color: dark ? colors.lavaPink : "#FFFFFF" }]}>{icon}</Text>
       </View>
       <Text style={[s.actionLabel, { color: dark ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
         {label}
@@ -215,7 +222,51 @@ function OfferCard({
   onPress: () => void
 }) {
   return (
-    <Pressable onPress={onPress} style={[s.offerCard, featured ? s.offerCardFeatured : s.offerCardBase]}>
+    <Pressable onPress={onPress} style={s.offerPressable}>
+      {featured ? (
+        <View style={[s.offerCard, s.offerCardFeatured]}>
+          <OfferCardContent
+            title={title}
+            venue={venue}
+            points={points}
+            pointsLabel={pointsLabel}
+            openLabel={openLabel}
+            featured={featured}
+          />
+        </View>
+      ) : (
+        <LavaLampSurface style={s.offerCard}>
+          <OfferCardContent
+            title={title}
+            venue={venue}
+            points={points}
+            pointsLabel={pointsLabel}
+            openLabel={openLabel}
+            featured={featured}
+          />
+        </LavaLampSurface>
+      )}
+    </Pressable>
+  )
+}
+
+function OfferCardContent({
+  title,
+  venue,
+  points,
+  pointsLabel,
+  openLabel,
+  featured,
+}: {
+  title: string
+  venue: string
+  points: number
+  pointsLabel: string
+  openLabel: string
+  featured: boolean
+}) {
+  return (
+    <>
       <View style={s.offerTop}>
         <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
           <Text style={[s.offerLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
@@ -233,7 +284,7 @@ function OfferCard({
       <View style={[s.offerLink, featured ? s.offerLinkLight : s.offerLinkDark]}>
         <Text style={[s.offerLinkText, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
       </View>
-    </Pressable>
+    </>
   )
 }
 
@@ -330,9 +381,9 @@ const s = StyleSheet.create({
     borderColor: "rgba(167,232,238,0.28)",
   },
   dashboardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  blackLogo: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#343844" },
+  blackLogo: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.46)" },
   blackLogoText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
-  blackPill: { backgroundColor: "#000", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
+  blackPill: { backgroundColor: "rgba(255,255,255,0.28)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
   blackPillText: { color: "#FFFFFF", fontSize: 13 },
   dashboardTitle: { color: "#FFFFFF", fontSize: 28, lineHeight: 30, width: 220, letterSpacing: 0 },
   balanceRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 8 },
@@ -344,22 +395,23 @@ const s = StyleSheet.create({
   coverageLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
   coverageText: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "700" },
   dragAction: { marginTop: 13, backgroundColor: "#FFFFFF", borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10 },
-  checkDot: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#000", alignItems: "center", justifyContent: "center" },
+  checkDot: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center" },
   checkText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
   dragText: { color: colors.ink, fontSize: 14, flex: 1 },
   dragChevron: { color: "#A7ADBA", fontSize: 19, marginRight: 8 },
 
   metrics: { flexDirection: "row", gap: 10, marginBottom: 12 },
   metricCard: { flex: 1, borderRadius: 24, padding: 13, minHeight: 82, justifyContent: "center" },
+  metricCardContent: { flex: 1, justifyContent: "center" },
   metricValue: { fontSize: 26, lineHeight: 28, letterSpacing: 0 },
   metricLabel: { fontSize: 9, marginTop: 5, letterSpacing: 0.8 },
   actionRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  actionPill: { flex: 1, borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10 },
-  actionPillDark: { backgroundColor: "#000" },
+  actionPill: { flex: 1, borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10, overflow: "hidden" },
+  actionPillDark: { backgroundColor: colors.lavaBase },
   actionPillLight: { backgroundColor: "#FFFFFF" },
   actionIcon: { width: 35, height: 35, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   actionIconDark: { backgroundColor: "#FFFFFF" },
-  actionIconLight: { backgroundColor: "#000" },
+  actionIconLight: { backgroundColor: colors.lavaPink },
   actionIconText: { fontSize: 16, fontWeight: "900" },
   actionLabel: { fontSize: 13 },
 
@@ -368,15 +420,15 @@ const s = StyleSheet.create({
   sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
   sectionButtonText: { color: colors.ink, fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
-  offerCard: { width: 176, minHeight: 174, borderRadius: 30, padding: 14, overflow: "hidden" },
+  offerPressable: { width: 176 },
+  offerCard: { minHeight: 174, borderRadius: 30, padding: 14, overflow: "hidden" },
   offerCardFeatured: { backgroundColor: colors.cyan },
-  offerCardBase: { backgroundColor: colors.ink },
   offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   offerLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  offerLogoDark: { backgroundColor: "#000" },
+  offerLogoDark: { backgroundColor: colors.lavaPink },
   offerLogoLight: { backgroundColor: "#FFFFFF" },
   offerLogoText: { fontSize: 17, fontWeight: "900" },
-  offerPoints: { backgroundColor: "#000", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
+  offerPoints: { backgroundColor: "rgba(255,255,255,0.28)", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
   offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
   offerVenue: { fontSize: 12, marginTop: 8 },
   offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9 },
@@ -395,7 +447,7 @@ const s = StyleSheet.create({
   venueMeta: { color: "#6B7280", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
   venueAddress: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
   venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
-  venueChipDark: { backgroundColor: "#000", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipDark: { backgroundColor: colors.lavaBase, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   venueChipDarkText: { color: "#FFFFFF", fontSize: 10 },
   venueChipLight: { backgroundColor: "#EEF3FB", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   venueChipLightText: { color: colors.ink, fontSize: 10 },
