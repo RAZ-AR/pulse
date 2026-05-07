@@ -138,7 +138,7 @@ export function LavaLampSurface({
       Animated.loop(
         Animated.timing(spin, {
           toValue: 1,
-          duration: 12000,
+          duration: 22000,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -147,13 +147,13 @@ export function LavaLampSurface({
         Animated.sequence([
           Animated.timing(drift, {
             toValue: 1,
-            duration: 7000,
+            duration: 11000,
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
           Animated.timing(drift, {
             toValue: 0,
-            duration: 7000,
+            duration: 11000,
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
           }),
@@ -168,8 +168,8 @@ export function LavaLampSurface({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   })
-  const moveA = drift.interpolate({ inputRange: [0, 1], outputRange: [-28, 32] })
-  const moveB = drift.interpolate({ inputRange: [0, 1], outputRange: [24, -34] })
+  const moveA = drift.interpolate({ inputRange: [0, 1], outputRange: [-18, 20] })
+  const moveB = drift.interpolate({ inputRange: [0, 1], outputRange: [16, -22] })
   const colors =
     intensity === "glass"
       ? gradients.lavaGlass
@@ -207,6 +207,15 @@ export function LavaLampSurface({
           { transform: [{ translateX: moveA }, { translateY: moveA }] },
         ]}
       />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          s.lavaBlob,
+          s.lavaBlobSalmon,
+          { transform: [{ translateX: moveB }, { translateY: moveB }, { rotate }] },
+        ]}
+      />
+      <View pointerEvents="none" style={s.lavaFrost} />
       <View pointerEvents="none" style={s.lavaSheen} />
       <View style={contentStyle}>{children}</View>
     </View>
@@ -242,32 +251,43 @@ const s = StyleSheet.create({
   },
   lavaRoot: {
     overflow: "hidden",
-    backgroundColor: "#FF8AAE",
+    backgroundColor: "#B9F2EC",
   },
   lavaBlob: {
     position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    opacity: 0.42,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    opacity: 0.28,
   },
   lavaBlobPink: {
-    left: -60,
-    top: -70,
-    backgroundColor: "#FF4FA3",
+    left: -74,
+    top: -88,
+    backgroundColor: "#FF8EC9",
   },
   lavaBlobBlue: {
-    right: -62,
-    top: -28,
-    backgroundColor: "#54E5F2",
+    right: -82,
+    top: -54,
+    backgroundColor: "#4ABDF4",
   },
   lavaBlobLime: {
-    right: 18,
-    bottom: -92,
-    backgroundColor: "#C9F65D",
+    right: 12,
+    bottom: -116,
+    backgroundColor: "#BFF064",
+  },
+  lavaBlobSalmon: {
+    left: -42,
+    bottom: -118,
+    backgroundColor: "#FFB078",
+  },
+  lavaFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.28)",
   },
   lavaSheen: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.46)",
+    backgroundColor: "rgba(255,255,255,0.10)",
   },
 })
