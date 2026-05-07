@@ -84,45 +84,89 @@ export default function HomeScreen() {
         <CircleButton label="◦" onPress={() => router.push("/profile")} />
       </View>
 
-      <LavaLampSurface style={[s.dashboard, theme.shadowRaised]}>
-        <View style={s.dashboardGrid} />
-        <View style={s.dashboardHead}>
-          <View style={s.blackLogo}>
-            <Text style={s.blackLogoText}>P</Text>
+      <View style={[s.dashboard, theme.shadowRaised]}>
+        <View style={s.dashboardGlowTop} />
+        <View style={s.dashboardGlowBottom} />
+
+        <View style={s.profileRow}>
+          <LavaLampSurface style={s.profileAvatar}>
+            <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy }]}>
+              {initials(me.data?.name)}
+            </Text>
+          </LavaLampSurface>
+          <View style={s.profileMain}>
+            <Text style={[s.profileName, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
+              {me.data?.name ?? "Demo User"}
+            </Text>
+            <View style={s.profileStats}>
+              <Text style={s.profileStat}>▣ {fmt(total)}</Text>
+              <Text style={s.profileStat}>◌ {activeChallenges.length}</Text>
+              <Text style={s.profileStat}>☆ {welcomeDays}d</Text>
+            </View>
           </View>
-          <View style={s.blackPill}>
-            <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }]}>{t("dashboard")}</Text>
+          <View style={s.profileIcon}>
+            <Text style={s.profileIconText}>⌘</Text>
           </View>
         </View>
 
-        <Text style={[s.dashboardTitle, { fontFamily: fonts.displayHeavy }]}>{t("loyaltyPlan")}</Text>
-        <View style={s.balanceRow}>
-          <Text style={[s.balance, { fontFamily: fonts.displayHeavy }]}>{fmt(total)}</Text>
-          <Text style={[s.balanceUnit, { fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
-        </View>
-
-        <View style={s.coverageTrack}>
-          <View style={[s.coverageFill, { width: `${Math.min(100, total / 50)}%` }]} />
-          <View style={s.coverageCut} />
-        </View>
-        <View style={s.coverageLabels}>
-          <Text style={s.coverageText}>{t("earnedShort", { count: me.data?.earnedPoints ?? 0 })}</Text>
-          <Text style={s.coverageText}>{t("welcomeShort", { count: me.data?.welcomePoints ?? 0 })}</Text>
-        </View>
-
-        <View style={s.dragAction}>
-          <View style={s.checkDot}>
-            <Text style={s.checkText}>✓</Text>
+        <View style={s.levelSplit}>
+          <View style={s.levelPaneLight}>
+            <Text style={[s.levelValueDark, { fontFamily: fonts.displayHeavy }]}>{fmt(me.data?.earnedPoints ?? 0)}</Text>
+            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold }]}>Earned{"\n"}Points</Text>
           </View>
-          <Text style={[s.dragText, { fontFamily: fonts.bodyBold }]}>{t("scanVisitRedeem")}</Text>
-          <Text style={s.dragChevron}>›››</Text>
+          <View style={s.levelPaneBlue}>
+            <Text style={[s.levelValueLight, { fontFamily: fonts.displayHeavy }]}>{fmt(me.data?.welcomePoints ?? 0)}</Text>
+            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold }]}>Welcome{"\n"}Points</Text>
+          </View>
         </View>
-      </LavaLampSurface>
 
-      <View style={s.metrics}>
-        <MetricCard value={`${me.data?.currentStreak ?? 0}d`} label={t("streakLabel")} tone="cyan" />
-        <MetricCard value={`${welcomeDays}d`} label={t("welcomeLeft")} tone="white" />
-        <MetricCard value={`${activeChallenges.length}`} label={t("quests")} tone="black" />
+        <View style={s.dashboardSectionHead}>
+          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy }]}>Popular rewards</Text>
+          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold }]}>See all ›</Text>
+        </View>
+
+        <View style={s.rewardProgressCard}>
+          <View style={s.rewardProgressTop}>
+            <View>
+              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy }]}>Scan, visit, redeem</Text>
+              <Text style={s.rewardProgressSub}>Choose your level and get started today.</Text>
+            </View>
+            <View style={s.rewardProgressButton}>
+              <Text style={s.rewardProgressButtonText}>⌃</Text>
+            </View>
+          </View>
+          <Text style={[s.rewardProgressLabel, { fontFamily: fonts.bodyBold }]}>Levels:</Text>
+          <View style={s.levelBlocks}>
+            {["01", "02", "03", "04", "05", "06"].map((level, index) => (
+              <View key={level} style={[s.levelBlock, index > 3 && s.levelBlockFuture]}>
+                <Text style={s.levelCheck}>{index < 4 ? "✓" : ""}</Text>
+                <Text style={[s.levelBlockText, { fontFamily: fonts.bodyBold }]}>{level}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <Pressable onPress={() => router.push("/rewards")} style={s.blueRewardPill}>
+          <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy }]}>Special offers</Text>
+          <View style={s.blueRewardIcon}>
+            <Text style={s.blueRewardIconText}>⌄</Text>
+          </View>
+        </Pressable>
+      </View>
+
+      <View style={s.quickStatsPanel}>
+        <View style={s.quickStat}>
+          <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${me.data?.currentStreak ?? 0}d`}</Text>
+          <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("streakLabel")}</Text>
+        </View>
+        <View style={s.quickStat}>
+          <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${welcomeDays}d`}</Text>
+          <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("welcomeLeft")}</Text>
+        </View>
+        <View style={s.quickStat}>
+          <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{activeChallenges.length}</Text>
+          <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("quests")}</Text>
+        </View>
       </View>
 
       <View style={s.actionRow}>
@@ -442,36 +486,64 @@ const s = StyleSheet.create({
   },
   circleButtonText: { color: colors.ink, fontSize: 25, lineHeight: 27 },
 
-  dashboard: { borderRadius: 32, padding: 16, marginBottom: 12, overflow: "hidden" },
-  dashboardGrid: {
+  dashboard: { borderRadius: 34, padding: 16, marginBottom: 12, overflow: "hidden", backgroundColor: "#0A0B0F" },
+  dashboardGlowTop: {
     position: "absolute",
-    top: -70,
-    right: -60,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 1,
-    borderColor: "rgba(167,232,238,0.28)",
+    top: -92,
+    left: 18,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: "rgba(255,154,34,0.22)",
   },
-  dashboardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  blackLogo: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.46)" },
-  blackLogoText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
-  blackPill: { backgroundColor: "rgba(255,255,255,0.28)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
-  blackPillText: { color: "#FFFFFF", fontSize: 13 },
-  dashboardTitle: { color: "#FFFFFF", fontSize: 28, lineHeight: 30, width: 220, letterSpacing: 0 },
-  balanceRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 8 },
-  balance: { color: "#FFFFFF", fontSize: 64, lineHeight: 66, letterSpacing: 0 },
-  balanceUnit: { color: "rgba(255,255,255,0.62)", fontSize: 15, marginBottom: 9 },
-  coverageTrack: { height: 28, borderRadius: 14, backgroundColor: "#303440", overflow: "hidden", marginTop: 10 },
-  coverageFill: { height: "100%", backgroundColor: "#EAF0FA" },
-  coverageCut: { position: "absolute", right: 0, top: 0, bottom: 0, width: 62, backgroundColor: "rgba(255,255,255,0.08)" },
-  coverageLabels: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  coverageText: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "700" },
-  dragAction: { marginTop: 13, backgroundColor: "#FFFFFF", borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10 },
-  checkDot: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.lavaPink, alignItems: "center", justifyContent: "center" },
-  checkText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
-  dragText: { color: colors.ink, fontSize: 14, flex: 1 },
-  dragChevron: { color: "#A7ADBA", fontSize: 19, marginRight: 8 },
+  dashboardGlowBottom: {
+    position: "absolute",
+    right: -56,
+    bottom: 100,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(122,221,243,0.16)",
+  },
+  profileRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  profileAvatar: { width: 70, height: 70, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  profileAvatarText: { color: "#FFFFFF", fontSize: 28 },
+  profileMain: { flex: 1 },
+  profileName: { color: "#FFFFFF", fontSize: 26, lineHeight: 28, letterSpacing: 0 },
+  profileStats: { flexDirection: "row", gap: 14, marginTop: 8 },
+  profileStat: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "700" },
+  profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.10)", alignItems: "center", justifyContent: "center" },
+  profileIconText: { color: "#FFFFFF", fontSize: 16, fontWeight: "900" },
+  levelSplit: { flexDirection: "row", borderRadius: 25, overflow: "hidden", marginBottom: 16 },
+  levelPaneLight: { flex: 1, minHeight: 104, backgroundColor: "#FFFFFF", padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
+  levelPaneBlue: { flex: 1, minHeight: 104, backgroundColor: colors.lavaBlue, padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
+  levelValueDark: { color: "#1F242B", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
+  levelValueLight: { color: "#FFFFFF", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
+  levelLabelDark: { color: "#1F242B", fontSize: 13, lineHeight: 14 },
+  levelLabelLight: { color: "#FFFFFF", fontSize: 13, lineHeight: 14 },
+  dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
+  dashboardSectionTitle: { color: "#FFFFFF", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
+  dashboardSectionLink: { color: "rgba(255,255,255,0.72)", fontSize: 11 },
+  rewardProgressCard: { backgroundColor: colors.lavaBase, borderRadius: 25, padding: 12, minHeight: 184, overflow: "hidden" },
+  rewardProgressTop: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  rewardProgressTitle: { color: "#FFFFFF", fontSize: 19, lineHeight: 22, letterSpacing: 0 },
+  rewardProgressSub: { color: "rgba(30,16,12,0.74)", fontSize: 11, marginTop: 5, maxWidth: 190 },
+  rewardProgressButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(0,0,0,0.18)", alignItems: "center", justifyContent: "center" },
+  rewardProgressButtonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
+  rewardProgressLabel: { color: "#FFFFFF", fontSize: 12, marginTop: 12 },
+  levelBlocks: { flexDirection: "row", gap: 7, marginTop: 8 },
+  levelBlock: { flex: 1, minHeight: 82, borderRadius: 12, backgroundColor: "rgba(123,22,8,0.48)", padding: 7, justifyContent: "space-between" },
+  levelBlockFuture: { backgroundColor: "rgba(255,255,255,0.20)" },
+  levelCheck: { color: "#FFFFFF", fontSize: 14, fontWeight: "900", minHeight: 18 },
+  levelBlockText: { color: "#FFFFFF", fontSize: 12, textAlign: "center" },
+  blueRewardPill: { marginTop: 12, minHeight: 68, borderRadius: 22, backgroundColor: colors.lavaBlue, padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  blueRewardText: { color: "#FFFFFF", fontSize: 20, letterSpacing: 0 },
+  blueRewardIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.16)", alignItems: "center", justifyContent: "center" },
+  blueRewardIconText: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
+  quickStatsPanel: { flexDirection: "row", gap: 0, marginBottom: 12, backgroundColor: "#FFFFFF", borderRadius: 24, overflow: "hidden" },
+  quickStat: { flex: 1, minHeight: 82, justifyContent: "center", alignItems: "center" },
+  quickStatValue: { color: "#1F242B", fontSize: 30, lineHeight: 32, letterSpacing: 0 },
+  quickStatLabel: { color: "#626875", fontSize: 9, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.4, textAlign: "center" },
 
   metrics: { flexDirection: "row", gap: 10, marginBottom: 12 },
   metricCard: { flex: 1, borderRadius: 24, padding: 13, minHeight: 82, justifyContent: "center" },

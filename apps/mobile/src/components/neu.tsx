@@ -251,43 +251,43 @@ const s = StyleSheet.create({
   },
   lavaRoot: {
     overflow: "hidden",
-    backgroundColor: "#B9F2EC",
+    backgroundColor: "#F3EFEA",
   },
   lavaBlob: {
     position: "absolute",
     width: 260,
     height: 260,
     borderRadius: 130,
-    opacity: 0.28,
+    opacity: 0.32,
   },
   lavaBlobPink: {
     left: -74,
     top: -88,
-    backgroundColor: "#FF8EC9",
+    backgroundColor: "#FF5B5F",
   },
   lavaBlobBlue: {
     right: -82,
     top: -54,
-    backgroundColor: "#4ABDF4",
+    backgroundColor: "#7ADDF3",
   },
   lavaBlobLime: {
     right: 12,
     bottom: -116,
-    backgroundColor: "#BFF064",
+    backgroundColor: "#DDEDD9",
   },
   lavaBlobSalmon: {
     left: -42,
     bottom: -118,
-    backgroundColor: "#FFB078",
+    backgroundColor: "#FF9A22",
   },
   lavaFrost: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(243,239,234,0.22)",
   },
   lavaSheen: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.46)",
-    backgroundColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.36)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 })
