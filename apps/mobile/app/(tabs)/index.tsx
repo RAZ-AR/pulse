@@ -60,8 +60,8 @@ export default function HomeScreen() {
       <View style={s.topBar}>
         <CircleButton label="+" onPress={() => router.push("/earn")} />
         <View style={s.helloBlock}>
-          <Text style={[s.kicker, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>PULSE</Text>
-          <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+          <Text style={[s.kicker, { color: "rgba(255,255,255,0.58)", fontFamily: fonts.bodyBold }]}>PULSE</Text>
+          <Text style={[s.hello, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
           <View style={s.citySwitch}>
@@ -71,9 +71,9 @@ export default function HomeScreen() {
                 <Pressable
                   key={city.name}
                   onPress={() => updateProfile.mutate({ homeCity: city.name })}
-                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdle]}
+                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdleDark]}
                 >
-                  <Text style={[s.cityPillText, { color: active ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+                  <Text style={[s.cityPillText, { color: active ? "#FFFFFF" : "rgba(255,255,255,0.72)", fontFamily: fonts.bodyBold }]}>
                     ⌖ {city.label}
                   </Text>
                 </Pressable>
@@ -167,6 +167,18 @@ export default function HomeScreen() {
           <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{activeChallenges.length}</Text>
           <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("quests")}</Text>
         </View>
+      </View>
+
+      <View style={s.modeTabs}>
+        <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabLight]}>
+          <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold }]}>Goals</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabBlue]}>
+          <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Rewards</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push("/profile")} style={[s.modeTab, s.modeTabRed]}>
+          <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Support</Text>
+        </Pressable>
       </View>
 
       <View style={s.actionRow}>
@@ -282,7 +294,7 @@ function ActionPill({ label, icon, onPress, dark }: { label: string; icon: strin
       <View style={[s.actionIcon, dark ? s.actionIconDark : s.actionIconLight]}>
         <Text style={[s.actionIconText, { color: dark ? colors.lavaPink : "#FFFFFF" }]}>{icon}</Text>
       </View>
-      <Text style={[s.actionLabel, { color: dark ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+      <Text style={[s.actionLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>
         {label}
       </Text>
     </Pressable>
@@ -331,7 +343,7 @@ function OfferCard({
           />
         </View>
       ) : (
-        <LavaLampSurface style={s.offerCard}>
+        <View style={[s.offerCard, s.offerCardBlue]}>
           <OfferCardContent
             title={title}
             venue={venue}
@@ -340,7 +352,7 @@ function OfferCard({
             openLabel={openLabel}
             featured={featured}
           />
-        </LavaLampSurface>
+        </View>
       )}
     </Pressable>
   )
@@ -365,20 +377,20 @@ function OfferCardContent({
     <>
       <View style={s.offerTop}>
         <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
-          <Text style={[s.offerLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
+        <Text style={[s.offerLogoText, { color: "#FFFFFF" }]}>✦</Text>
         </View>
-        <Text style={[s.offerPoints, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.bodyBold }]}>
+        <Text style={[s.offerPoints, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>
           {points} {pointsLabel}
         </Text>
       </View>
-      <Text style={[s.offerTitle, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
+      <Text style={[s.offerTitle, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
         {title}
       </Text>
-      <Text style={[s.offerVenue, { color: featured ? "#5A606C" : "rgba(255,255,255,0.62)", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+      <Text style={[s.offerVenue, { color: "rgba(255,255,255,0.68)", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
         {venue}
       </Text>
-      <View style={[s.offerLink, featured ? s.offerLinkLight : s.offerLinkDark]}>
-        <Text style={[s.offerLinkText, { color: featured ? colors.ink : "#FFFFFF", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
+      <View style={s.offerLink}>
+        <Text style={[s.offerLinkText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
       </View>
     </>
   )
@@ -409,9 +421,8 @@ function VenueCard({
   menuLabel: string
   routeLabel: string
 }) {
-  const theme = useTheme()
   return (
-    <Pressable onPress={onPress} style={[s.venueCard, theme.shadowRaisedSm]}>
+    <Pressable onPress={onPress} style={s.venueCard}>
       <View style={s.venueLogo}>
         <Text style={[s.venueLogoText, { fontFamily: fonts.displayHeavy }]}>{logo}</Text>
       </View>
@@ -465,7 +476,7 @@ function VenueSkeleton() {
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 34 },
-  topBar: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
+  topBar: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12, backgroundColor: "#0A0B0F", borderRadius: 30, padding: 12, overflow: "hidden" },
   helloBlock: { flex: 1 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
@@ -473,18 +484,19 @@ const s = StyleSheet.create({
   cityPill: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   cityPillActive: { backgroundColor: colors.lavaBase },
   cityPillIdle: { backgroundColor: "#FFFFFF" },
+  cityPillIdleDark: { backgroundColor: "rgba(255,255,255,0.10)" },
   cityPillText: { fontSize: 10 },
   circleButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(5,6,10,0.06)",
+    borderColor: "rgba(255,255,255,0.10)",
   },
-  circleButtonText: { color: colors.ink, fontSize: 25, lineHeight: 27 },
+  circleButtonText: { color: "#FFFFFF", fontSize: 25, lineHeight: 27 },
 
   dashboard: { borderRadius: 34, padding: 16, marginBottom: 12, overflow: "hidden", backgroundColor: "#0A0B0F" },
   dashboardGlowTop: {
@@ -550,10 +562,17 @@ const s = StyleSheet.create({
   metricCardContent: { flex: 1, justifyContent: "center" },
   metricValue: { fontSize: 26, lineHeight: 28, letterSpacing: 0 },
   metricLabel: { fontSize: 9, marginTop: 5, letterSpacing: 0.8 },
+  modeTabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  modeTab: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center", justifyContent: "center" },
+  modeTabLight: { backgroundColor: "#FFFFFF" },
+  modeTabBlue: { backgroundColor: colors.lavaBlue },
+  modeTabRed: { backgroundColor: colors.lavaBase },
+  modeTabTextLight: { color: "#1F242B", fontSize: 12 },
+  modeTabTextDark: { color: "#FFFFFF", fontSize: 12 },
   actionRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  actionPill: { flex: 1, borderRadius: 99, padding: 7, flexDirection: "row", alignItems: "center", gap: 10, overflow: "hidden" },
+  actionPill: { flex: 1, borderRadius: 18, padding: 7, flexDirection: "row", alignItems: "center", gap: 10, overflow: "hidden", minHeight: 58 },
   actionPillDark: { backgroundColor: colors.lavaBase },
-  actionPillLight: { backgroundColor: "#FFFFFF" },
+  actionPillLight: { backgroundColor: "#0A0B0F" },
   actionIcon: { width: 35, height: 35, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   actionIconDark: { backgroundColor: "#FFFFFF" },
   actionIconLight: { backgroundColor: colors.lavaPink },
@@ -561,56 +580,57 @@ const s = StyleSheet.create({
   actionLabel: { fontSize: 13 },
 
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { color: colors.ink, fontSize: 25, letterSpacing: 0 },
-  sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  sectionButtonText: { color: colors.ink, fontSize: 11 },
+  sectionTitle: { color: "#101217", fontSize: 25, letterSpacing: 0 },
+  sectionButton: { backgroundColor: "#101217", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
+  sectionButtonText: { color: "#FFFFFF", fontSize: 11 },
   filterRail: { gap: 8, paddingBottom: 12 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
   filterChipActive: { backgroundColor: colors.lavaBase },
-  filterChipIdle: { backgroundColor: "#FFFFFF" },
+  filterChipIdle: { backgroundColor: "rgba(16,18,23,0.10)" },
   filterChipText: { fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
   offerPressable: { width: 176 },
-  offerCard: { minHeight: 174, borderRadius: 30, padding: 14, overflow: "hidden" },
-  offerCardFeatured: { backgroundColor: colors.cyan },
+  offerCard: { minHeight: 174, borderRadius: 24, padding: 14, overflow: "hidden" },
+  offerCardFeatured: { backgroundColor: colors.lavaBase },
+  offerCardBlue: { backgroundColor: colors.lavaBlue },
   offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   offerLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  offerLogoDark: { backgroundColor: colors.lavaPink },
-  offerLogoLight: { backgroundColor: "#FFFFFF" },
+  offerLogoDark: { backgroundColor: "rgba(0,0,0,0.18)" },
+  offerLogoLight: { backgroundColor: "rgba(0,0,0,0.18)" },
   offerLogoText: { fontSize: 17, fontWeight: "900" },
-  offerPoints: { backgroundColor: "rgba(255,255,255,0.28)", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
+  offerPoints: { backgroundColor: "rgba(0,0,0,0.18)", color: "#FFFFFF", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
   offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
   offerVenue: { fontSize: 12, marginTop: 8 },
-  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9 },
+  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(0,0,0,0.18)" },
   offerLinkLight: { backgroundColor: "rgba(255,255,255,0.72)" },
   offerLinkDark: { backgroundColor: "rgba(255,255,255,0.14)" },
   offerLinkText: { fontSize: 12 },
 
   venueList: { gap: 12 },
-  emptyVenues: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 16, alignItems: "center" },
-  emptyVenuesText: { color: "#8E95A3", fontSize: 12 },
-  venueSkeleton: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12, flexDirection: "row", gap: 12 },
-  skeletonLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "#EEF3FB" },
+  emptyVenues: { backgroundColor: "#101217", borderRadius: 24, padding: 16, alignItems: "center" },
+  emptyVenuesText: { color: "rgba(255,255,255,0.68)", fontSize: 12 },
+  venueSkeleton: { backgroundColor: "#101217", borderRadius: 24, padding: 12, flexDirection: "row", gap: 12 },
+  skeletonLogo: { width: 58, height: 58, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.12)" },
   skeletonMain: { flex: 1, justifyContent: "center", gap: 8 },
-  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "#EEF3FB", width: "72%" },
-  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "#F4F7FC", width: "54%" },
+  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.12)", width: "72%" },
+  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.08)", width: "54%" },
   skeletonChips: { flexDirection: "row", gap: 6 },
-  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "#EEF3FB" },
-  venueCard: { backgroundColor: "#FFFFFF", borderRadius: 30, padding: 12, flexDirection: "row", gap: 12 },
-  venueLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "#EAF0FA", alignItems: "center", justifyContent: "center" },
-  venueLogoText: { color: colors.ink, fontSize: 22 },
+  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.12)" },
+  venueCard: { backgroundColor: "#101217", borderRadius: 24, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden" },
+  venueLogo: { width: 58, height: 58, borderRadius: 20, backgroundColor: colors.lavaBase, alignItems: "center", justifyContent: "center" },
+  venueLogoText: { color: "#FFFFFF", fontSize: 22 },
   venueMain: { flex: 1 },
   venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  venueName: { color: colors.ink, fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
-  venueArrow: { color: colors.ink, fontSize: 22 },
-  venueMeta: { color: "#6B7280", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
-  venueAddress: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
+  venueName: { color: "#FFFFFF", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
+  venueArrow: { color: "#FFFFFF", fontSize: 22 },
+  venueMeta: { color: "rgba(255,255,255,0.56)", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
+  venueAddress: { color: "rgba(255,255,255,0.48)", fontSize: 12, marginTop: 2 },
   venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
   venueChipDark: { backgroundColor: colors.lavaBase, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   venueChipDarkText: { color: "#FFFFFF", fontSize: 10 },
-  venueChipLight: { backgroundColor: "#EEF3FB", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  venueChipLightText: { color: colors.ink, fontSize: 10 },
-  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "#F3F7FF", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
-  specialDot: { color: colors.skySolid, fontSize: 10 },
-  specialText: { color: colors.ink, fontSize: 12, flex: 1 },
+  venueChipLight: { backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipLightText: { color: "#FFFFFF", fontSize: 10 },
+  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
+  specialDot: { color: colors.lavaSalmon, fontSize: 10 },
+  specialText: { color: "#FFFFFF", fontSize: 12, flex: 1 },
 })
