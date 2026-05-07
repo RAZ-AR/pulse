@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
 import { LavaLampSurface } from "../../src/components/neu"
-import { DEFAULT_VENUE_FILTER, nextCity, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
+import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 type RewardItem = {
   id: string
@@ -64,12 +64,22 @@ export default function HomeScreen() {
           <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
-          <Pressable
-            onPress={() => updateProfile.mutate({ homeCity: nextCity(me.data?.homeCity).name })}
-            style={s.cityPill}
-          >
-            <Text style={[s.cityPillText, { fontFamily: fonts.bodyBold }]}>⌖ {selectedCity.label}</Text>
-          </Pressable>
+          <View style={s.citySwitch}>
+            {CITY_OPTIONS.map((city) => {
+              const active = selectedCity.name === city.name
+              return (
+                <Pressable
+                  key={city.name}
+                  onPress={() => updateProfile.mutate({ homeCity: city.name })}
+                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdle]}
+                >
+                  <Text style={[s.cityPillText, { color: active ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+                    ⌖ {city.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
         </View>
         <CircleButton label="◦" onPress={() => router.push("/profile")} />
       </View>
@@ -415,8 +425,11 @@ const s = StyleSheet.create({
   helloBlock: { flex: 1 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
-  cityPill: { alignSelf: "flex-start", marginTop: 6, backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 11, paddingVertical: 6 },
-  cityPillText: { color: colors.ink, fontSize: 11 },
+  citySwitch: { flexDirection: "row", gap: 7, marginTop: 6 },
+  cityPill: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  cityPillActive: { backgroundColor: colors.lavaBase },
+  cityPillIdle: { backgroundColor: "#FFFFFF" },
+  cityPillText: { fontSize: 10 },
   circleButton: {
     width: 48,
     height: 48,

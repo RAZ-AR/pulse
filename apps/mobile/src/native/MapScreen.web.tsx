@@ -5,7 +5,7 @@ import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { colors, fonts, useTheme } from "../lib/theme"
 import { LavaLampSurface } from "../components/neu"
-import { DEFAULT_VENUE_FILTER, nextCity, resolveCity, VENUE_FILTERS } from "../lib/venues"
+import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, resolveCity, VENUE_FILTERS } from "../lib/venues"
 
 export default function MapWebScreen() {
   const theme = useTheme()
@@ -40,14 +40,22 @@ export default function MapWebScreen() {
             {t("map", "Map")}
           </Text>
         </View>
-        <Pressable
-          onPress={() => updateProfile.mutate({ homeCity: nextCity(me.data?.homeCity).name })}
-          style={s.locationPill}
-        >
-          <Text style={[s.locationText, { fontFamily: fonts.bodyBold }]}>
-            {selectedCity.label}
-          </Text>
-        </Pressable>
+        <View style={s.citySwitch}>
+          {CITY_OPTIONS.map((city) => {
+            const active = selectedCity.name === city.name
+            return (
+              <Pressable
+                key={city.name}
+                onPress={() => updateProfile.mutate({ homeCity: city.name })}
+                style={[s.locationPill, active ? s.locationPillActive : s.locationPillIdle]}
+              >
+                <Text style={[s.locationText, { color: active ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>
+                  {city.label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
       </LavaLampSurface>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
@@ -147,14 +155,11 @@ const s = StyleSheet.create({
     letterSpacing: 1.8,
   },
   title: { color: "#FFFFFF", fontSize: 38, lineHeight: 42 },
-  locationPill: {
-    height: 40,
-    backgroundColor: "rgba(255,255,255,0.28)",
-    borderRadius: 99,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-  },
-  locationText: { color: "#FFFFFF", fontSize: 12 },
+  citySwitch: { gap: 8, alignItems: "flex-end" },
+  locationPill: { minHeight: 38, borderRadius: 99, paddingHorizontal: 14, justifyContent: "center" },
+  locationPillActive: { backgroundColor: "rgba(255,255,255,0.32)" },
+  locationPillIdle: { backgroundColor: "rgba(255,255,255,0.82)" },
+  locationText: { fontSize: 12 },
   filters: { gap: 8, paddingBottom: 14 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
   filterChipActive: { backgroundColor: colors.lavaBase },

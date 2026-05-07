@@ -6,7 +6,7 @@ import * as Location from "expo-location"
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from "react-native-maps"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { DEFAULT_VENUE_FILTER, nextCity, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
+import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 // Belgrade as default center (until we get user location)
 const DEFAULT_REGION: Region = {
@@ -124,14 +124,22 @@ export default function MapScreen() {
         </Text>
       </View>
 
-      <Pressable
-        onPress={() => updateProfile.mutate({ homeCity: nextCity(me.data?.homeCity).name })}
-        style={[s.cityBadge, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}
-      >
-        <Text style={{ color: theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
-          ⌖ {selectedCity.label}
-        </Text>
-      </Pressable>
+      <View style={s.cityBadges}>
+        {CITY_OPTIONS.map((city) => {
+          const active = selectedCity.name === city.name
+          return (
+            <Pressable
+              key={city.name}
+              onPress={() => updateProfile.mutate({ homeCity: city.name })}
+              style={[s.cityBadge, active ? s.cityBadgeActive : { backgroundColor: theme.bg }, theme.shadowRaisedSm]}
+            >
+              <Text style={{ color: active ? "#FFFFFF" : theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
+                ⌖ {city.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filtersWrap} contentContainerStyle={s.filters}>
         {VENUE_FILTERS.map((filter) => (
@@ -173,7 +181,9 @@ const s = StyleSheet.create({
   map: { ...StyleSheet.absoluteFillObject },
   loading: { position: "absolute", top: 16, alignSelf: "center", padding: 10, backgroundColor: "rgba(255,255,255,0.8)", borderRadius: 20 },
   badge: { position: "absolute", top: 16, right: 16, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
-  cityBadge: { position: "absolute", top: 16, left: 16, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
+  cityBadges: { position: "absolute", top: 16, left: 16, gap: 8 },
+  cityBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
+  cityBadgeActive: { backgroundColor: colors.lavaBase },
   filtersWrap: { position: "absolute", left: 16, right: 16, bottom: 26 },
   filters: { gap: 8, paddingRight: 32 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
