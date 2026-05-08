@@ -39,6 +39,18 @@ function initials(name: string | null | undefined) {
   return (name ?? "P").slice(0, 1).toUpperCase()
 }
 
+function userTier(points: number) {
+  if (points <= 1000) return { name: "Росток", icon: "🌱", next: 1000, start: 0, colors: ["#ECFFEB", "#9FEED3", "#F9FBFF"] as const }
+  if (points <= 3000) return { name: "Цветок", icon: "🌸", next: 3000, start: 1001, colors: ["#FFF4FE", "#F199E3", "#F9FBFF"] as const }
+  if (points <= 5000) return { name: "Гранат", icon: "🍎", next: 5000, start: 3001, colors: ["#FFF4FE", "#FF8B8B", "#F9FBFF"] as const }
+  if (points <= 7000) return { name: "Рубин", icon: "♦", next: 7000, start: 5001, colors: ["#F9FBFF", "#F199E3", "#9DCCFF"] as const }
+  return { name: "Бриллиант", icon: "💎", next: 10000, start: 7001, colors: ["#EBFEFF", "#9DCCFF", "#FFFFFF"] as const }
+}
+
+function tierProgress(points: number, start: number, next: number) {
+  return Math.max(0.08, Math.min(1, (points - start) / Math.max(1, next - start)))
+}
+
 export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
@@ -66,6 +78,12 @@ export default function HomeScreen() {
   const visibleNearby = nearby.data?.length ? nearby.data : getDemoVenues(selectedCity.name, activeFilter)
   const activeChallenges = (challenges.data ?? []).filter((uc) => !uc.isCompleted)
   const total = me.data ? me.data.earnedPoints + me.data.welcomePoints : 0
+  const lifetimePoints = Math.max(me.data?.totalEarnedLifetime ?? 0, total + (me.data?.spentPoints ?? 0))
+  const tier = userTier(lifetimePoints)
+  const progress = tierProgress(lifetimePoints, tier.start, tier.next)
+  const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
+  const weeklySpent = me.data?.weeklySpentPoints ?? 10
+  const todayAvailable = Math.max(0, 100 - (weeklyEarned % 100))
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
 
   return (
@@ -100,10 +118,7 @@ export default function HomeScreen() {
       <View style={[s.dashboard, theme.shadowRaised]}>
         <View style={s.dashboardGlowTop} />
         <View style={s.dashboardGlowBottom} />
-        <View style={s.softOrb}>
-          <LavaLampSurface intensity="glass" style={s.softOrbGlow} />
-          <View style={s.softOrbCore} />
-        </View>
+        <ProgressOrb points={lifetimePoints} tier={tier} progress={progress} />
 
         <View style={s.profileRow}>
           <LavaLampSurface style={s.profileAvatar}>
@@ -113,12 +128,10 @@ export default function HomeScreen() {
           </LavaLampSurface>
           <View style={s.profileMain}>
             <Text style={[s.profileName, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
-              {me.data?.name ?? "Demo User"}
+              {fmt(total)} pts
             </Text>
             <View style={s.profileStats}>
-              <Text style={s.profileStat}>RGB {fmt(total)}</Text>
-              <Text style={s.profileStat}>◌ {activeChallenges.length}</Text>
-              <Text style={s.profileStat}>✦ {welcomeDays}d</Text>
+              <Text style={s.profileStat}>active balance</Text>
             </View>
           </View>
           <View style={s.profileIcon}>
@@ -128,33 +141,27 @@ export default function HomeScreen() {
 
         <View style={s.levelSplit}>
           <View style={s.levelPaneLight}>
-            <Text style={[s.levelValueDark, { fontFamily: fonts.displayHeavy }]}>{fmt(me.data?.earnedPoints ?? 0)}</Text>
-            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold }]}>Earned{"\n"}Points</Text>
+            <Text style={[s.levelValueDark, s.weekGain, { fontFamily: fonts.displayHeavy }]}>+{fmt(weeklyEarned)}</Text>
+            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold }]}>earned{"\n"}this week</Text>
           </View>
           <View style={s.levelPaneBlue}>
-            <Text style={[s.levelValueLight, { fontFamily: fonts.displayHeavy }]}>{fmt(me.data?.welcomePoints ?? 0)}</Text>
-            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold }]}>Welcome{"\n"}Points</Text>
+            <Text style={[s.levelValueLight, s.weekSpend, { fontFamily: fonts.displayHeavy }]}>-{fmt(weeklySpent)}</Text>
+            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold }]}>spent{"\n"}this week</Text>
           </View>
         </View>
 
-        <LinearGradient
-          colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={s.rgbPanel}
-        >
-          <View style={s.rgbPanelHead}>
-            <Text style={[s.rgbTiny, { fontFamily: fonts.bodyBold }]}>B</Text>
-            <Text style={[s.rgbTiny, { fontFamily: fonts.bodyBold }]}>G</Text>
-            <Text style={[s.rgbTiny, { fontFamily: fonts.bodyBold }]}>R</Text>
-            <Text style={[s.rgbLabel, { fontFamily: fonts.bodyBold }]}>RGB</Text>
-          </View>
-          <SoftRgbSliders />
-        </LinearGradient>
+        <BalancePanel
+          total={lifetimePoints}
+          available={total}
+          today={todayAvailable}
+          onToday={() => router.push("/earn")}
+          onHistory={() => router.push("/earn")}
+          onShare={() => router.push("/gift")}
+        />
 
         <View style={s.dashboardSectionHead}>
-          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy }]}>Soft GUI</Text>
-          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold }]}>editcolor ›</Text>
+          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy }]}>Daily plan</Text>
+          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold }]}>earn more ›</Text>
         </View>
 
         <LinearGradient
@@ -521,6 +528,86 @@ function VenueSkeleton() {
   )
 }
 
+function ProgressOrb({
+  points,
+  tier,
+  progress,
+}: {
+  points: number
+  tier: ReturnType<typeof userTier>
+  progress: number
+}) {
+  return (
+    <View style={s.progressOrbWrap}>
+      <LavaLampSurface intensity="glass" style={s.progressOrbGlow} />
+      <View style={s.progressOrb}>
+        <LinearGradient
+          colors={tier.colors}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
+          style={[s.progressOrbFill, { height: `${Math.round(progress * 100)}%` }]}
+        />
+        <View style={s.progressOrbShine} />
+        <View style={s.tierBadge}>
+          <Text style={s.tierIcon}>{tier.icon}</Text>
+          <Text style={[s.tierName, { fontFamily: fonts.displayHeavy }]}>{tier.name}</Text>
+          <Text style={[s.tierPoints, { fontFamily: fonts.bodyBold }]}>{fmt(points)} pts</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function BalancePanel({
+  total,
+  available,
+  today,
+  onToday,
+  onHistory,
+  onShare,
+}: {
+  total: number
+  available: number
+  today: number
+  onToday: () => void
+  onHistory: () => void
+  onShare: () => void
+}) {
+  return (
+    <LinearGradient
+      colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={s.balancePanel}
+    >
+      <Pressable onPress={onShare} style={s.balanceShare}>
+        <Text style={s.balanceIcon}>↗</Text>
+      </Pressable>
+      <View style={s.balanceGrid}>
+        <BalanceTile value={fmt(total)} label="total points" />
+        <BalanceTile value={fmt(available)} label="available" />
+        <Pressable onPress={onToday} style={[s.balanceTile, s.balanceTileWide]}>
+          <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy }]}>+{fmt(today)}</Text>
+          <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold }]}>can get today</Text>
+          <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold }]}>open tasks</Text>
+        </Pressable>
+      </View>
+      <Pressable onPress={onHistory} style={s.balanceHistory}>
+        <Text style={s.balanceIcon}>◷</Text>
+      </Pressable>
+    </LinearGradient>
+  )
+}
+
+function BalanceTile({ value, label }: { value: string; label: string }) {
+  return (
+    <View style={s.balanceTile}>
+      <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy }]}>{value}</Text>
+      <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold }]}>{label}</Text>
+    </View>
+  )
+}
+
 function SoftRgbSliders() {
   return (
     <View style={s.rgbSliders}>
@@ -634,6 +721,30 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.86)",
   },
+  progressOrbWrap: { alignSelf: "center", width: 232, height: 232, borderRadius: 116, marginTop: 4, marginBottom: 18, alignItems: "center", justifyContent: "center" },
+  progressOrbGlow: { ...StyleSheet.absoluteFillObject, borderRadius: 116, opacity: 0.78 },
+  progressOrb: {
+    width: 168,
+    height: 168,
+    borderRadius: 84,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(249,251,255,0.82)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 9, height: 9 },
+    shadowOpacity: 0.42,
+    shadowRadius: 18,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+  },
+  progressOrbFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 84, opacity: 0.92 },
+  progressOrbShine: { position: "absolute", top: 18, left: 22, width: 58, height: 36, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.38)" },
+  tierBadge: { width: 116, height: 116, borderRadius: 58, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
+  tierIcon: { fontSize: 35, lineHeight: 42, textShadowColor: "rgba(110,125,142,0.24)", textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 8 },
+  tierName: { color: "#6E7D8E", fontSize: 16, lineHeight: 19, marginTop: 2, letterSpacing: 0 },
+  tierPoints: { color: "#91A1B4", fontSize: 11, marginTop: 3 },
   profileRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
   profileAvatar: { width: 70, height: 70, borderRadius: 24, alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.34, shadowRadius: 12, elevation: 3 },
   profileAvatarText: { color: "#91A1B4", fontSize: 28 },
@@ -648,6 +759,8 @@ const s = StyleSheet.create({
   levelPaneBlue: { flex: 1, minHeight: 104, backgroundColor: "rgba(235,254,255,0.82)", padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
   levelValueDark: { color: "#6E7D8E", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
   levelValueLight: { color: "#7FAFC2", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
+  weekGain: { color: "#67C887", fontSize: 42, lineHeight: 46 },
+  weekSpend: { color: "#91A1B4", fontSize: 42, lineHeight: 46 },
   levelLabelDark: { color: "#6E7D8E", fontSize: 13, lineHeight: 14 },
   levelLabelLight: { color: "#7FAFC2", fontSize: 13, lineHeight: 14 },
   dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
@@ -665,6 +778,40 @@ const s = StyleSheet.create({
     shadowRadius: 16,
     elevation: 4,
   },
+  balancePanel: {
+    borderRadius: 40,
+    padding: 16,
+    minHeight: 210,
+    marginBottom: 18,
+    overflow: "hidden",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 9, height: 9 },
+    shadowOpacity: 0.38,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  balanceGrid: { flexDirection: "row", gap: 10, minHeight: 148, alignItems: "stretch", paddingTop: 24, paddingRight: 42 },
+  balanceTile: {
+    flex: 1,
+    minHeight: 126,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.62)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.28,
+    shadowRadius: 9,
+    elevation: 2,
+  },
+  balanceTileWide: { flex: 2, backgroundColor: "rgba(255,255,255,0.76)" },
+  balanceTileValue: { color: "#6E7D8E", fontSize: 25, lineHeight: 29, letterSpacing: 0, textAlign: "center" },
+  balanceTileLabel: { color: "#91A1B4", fontSize: 10, lineHeight: 12, marginTop: 7, textTransform: "uppercase", textAlign: "center" },
+  balanceTileHint: { color: "#7FAFC2", fontSize: 11, marginTop: 12 },
+  balanceShare: { position: "absolute", top: 14, right: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.7)", alignItems: "center", justifyContent: "center", zIndex: 2 },
+  balanceHistory: { position: "absolute", right: 16, bottom: 16, width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.78)", alignItems: "center", justifyContent: "center" },
+  balanceIcon: { color: "#91A1B4", fontSize: 21, fontWeight: "900" },
   rgbPanelHead: { flexDirection: "row", alignItems: "center", gap: 38, marginBottom: 12, paddingHorizontal: 18 },
   rgbTiny: { color: "#B0D4E3", fontSize: 13 },
   rgbLabel: { color: "#B0D4E3", fontSize: 13, marginLeft: "auto" },

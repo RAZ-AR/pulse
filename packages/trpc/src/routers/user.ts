@@ -5,6 +5,13 @@ import { REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
 
 export const userRouter = router({
   me: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date()
+    const weekStart = new Date(now)
+    const day = weekStart.getDay()
+    const diffToMonday = day === 0 ? 6 : day - 1
+    weekStart.setDate(weekStart.getDate() - diffToMonday)
+    weekStart.setHours(0, 0, 0, 0)
+
     const user = await ctx.db.user.findUnique({
       where: { id: ctx.userId },
       select: {
@@ -33,10 +40,32 @@ export const userRouter = router({
     })
     if (!user) throw new TRPCError({ code: "NOT_FOUND" })
 
+    const weeklyTxs = await ctx.db.transaction.findMany({
+      where: {
+        userId: ctx.userId,
+        createdAt: { gte: weekStart },
+      },
+      select: {
+        type: true,
+        pointsEarned: true,
+        pointsFromEarned: true,
+        pointsFromWelcome: true,
+      },
+    })
+
+    const weeklyEarnedPoints = weeklyTxs
+      .filter((tx) => !["REWARD_REDEEMED", "GIFT_SENT"].includes(tx.type))
+      .reduce((sum, tx) => sum + tx.pointsEarned, 0)
+    const weeklySpentPoints = weeklyTxs
+      .filter((tx) => ["REWARD_REDEEMED", "GIFT_SENT"].includes(tx.type))
+      .reduce((sum, tx) => sum + tx.pointsFromEarned + tx.pointsFromWelcome + tx.pointsEarned, 0)
+
     return {
       ...user,
       // Compute total on the fly — never store as separate column
       totalPoints: user.earnedPoints + user.welcomePoints,
+      weeklyEarnedPoints,
+      weeklySpentPoints,
     }
   }),
 
