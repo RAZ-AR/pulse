@@ -54,12 +54,13 @@ export default function OnboardingScreen() {
     try {
       const lng = (i18n.language as SupportedLocale).toUpperCase() as "EN" | "RU" | "SR"
       const code = referralCode.trim().toUpperCase()
+      const validReferralCode = /^[A-Z0-9]{6}$/.test(code) ? code : undefined
       const result = await signInMutation.mutateAsync({
         email,
         name: trimmedName,
         homeCity,
         language: lng,
-        ...(code.length === 6 ? { referralCode: code } : {}),
+        ...(validReferralCode ? { referralCode: validReferralCode } : {}),
       })
       await signIn(result.token)
       router.replace("/(tabs)")
@@ -299,7 +300,7 @@ function Step2({
       <NeuInset style={{ marginBottom: 12 }}>
         <TextInput
           value={referralCode}
-          onChangeText={(v) => setReferralCode(v.toUpperCase())}
+          onChangeText={(v) => setReferralCode(v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
           placeholder="ABC123"
           placeholderTextColor={theme.textMuted}
           autoCapitalize="characters"
@@ -310,7 +311,9 @@ function Step2({
       </NeuInset>
       {referralCode.length === 6 ? (
         <Text style={s.bonusHint}>+50 {t("referralBonus", "bonus points for joining with a referral")}</Text>
-      ) : null}
+      ) : (
+        <Text style={s.skipHint}>{t("referralSkipHint", "You can leave this empty and continue.")}</Text>
+      )}
 
       {error ? <Text style={s.err}>{error}</Text> : null}
 
@@ -360,6 +363,7 @@ const s = StyleSheet.create({
   bonusTitle: { color: colors.ink, fontSize: 25, lineHeight: 28, textAlign: "center" },
   bonusSub: { color: "#91A1B4", fontSize: 12, marginTop: 6 },
   bonusHint: { color: colors.ink, fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  skipHint: { color: "#91A1B4", fontSize: 12, fontWeight: "700", marginBottom: 8 },
 
   bigTitle: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 13, lineHeight: 18 },

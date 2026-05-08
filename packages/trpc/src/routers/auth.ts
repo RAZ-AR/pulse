@@ -10,6 +10,12 @@ import {
 } from "@pulse/shared"
 import { checkAndAwardBadges } from "../services/badges"
 
+const OptionalReferralCode = z.preprocess((value) => {
+  if (typeof value !== "string") return value
+  const code = value.trim().toUpperCase()
+  return code.length === 6 ? code : undefined
+}, z.string().length(6).optional())
+
 /**
  * Mobile auth router.
  *
@@ -24,7 +30,7 @@ export const authRouter = router({
         name: z.string().min(1).max(100).trim().optional(),
         homeCity: z.string().max(100).trim().optional(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
-        referralCode: z.string().length(6).toUpperCase().trim().optional(),
+        referralCode: OptionalReferralCode,
       })
     )
     .mutation(async ({ ctx, input }) => {

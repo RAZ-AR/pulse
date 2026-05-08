@@ -3,6 +3,12 @@ import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, publicProcedure, merchantProcedure } from "../trpc"
 import { REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
 
+const OptionalReferralCode = z.preprocess((value) => {
+  if (typeof value !== "string") return value
+  const code = value.trim().toUpperCase()
+  return code.length === 6 ? code : undefined
+}, z.string().length(6).optional())
+
 export const userRouter = router({
   me: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date()
@@ -75,7 +81,7 @@ export const userRouter = router({
       z.object({
         name: z.string().min(1).max(100).trim(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
-        referralCode: z.string().length(6).toUpperCase().optional(),
+        referralCode: OptionalReferralCode,
         deviceFingerprint: z.string().max(256).optional(),
       })
     )
