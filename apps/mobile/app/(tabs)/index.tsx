@@ -155,7 +155,7 @@ export default function HomeScreen() {
           available={total}
           today={todayAvailable}
           onToday={() => router.push("/earn")}
-          onHistory={() => router.push("/earn")}
+          onHistory={() => router.push("/points-history")}
           onShare={() => router.push("/gift")}
         />
 
