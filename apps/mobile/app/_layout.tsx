@@ -43,7 +43,9 @@ function AuthGate() {
         await signIn(result.token)
         router.replace("/(tabs)")
       })
-      .catch(() => {})
+      .catch(() => {
+        router.replace("/onboarding")
+      })
   }, [demoMode, hydrated, token, demoSignIn, signIn, router, navState?.key])
 
   useEffect(() => {

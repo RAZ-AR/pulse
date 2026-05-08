@@ -13,6 +13,18 @@ import type { SupportedLocale } from "@pulse/shared"
 
 type Step = 0 | 1 | 2
 
+function cleanReferralCode(value: string) {
+  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6)
+}
+
+function friendlyAuthError(message: string, fallback: string) {
+  const lower = message.toLowerCase()
+  if (lower.includes("network") || lower.includes("fetch")) return fallback
+  if (lower.includes("email")) return "Enter a valid email address"
+  if (lower.includes("referral")) return "Referral code was ignored. You can continue without it."
+  return message
+}
+
 export default function OnboardingScreen() {
   const theme = useTheme()
   const { t, i18n } = useTranslation("auth")
@@ -53,7 +65,7 @@ export default function OnboardingScreen() {
     }
     try {
       const lng = (i18n.language as SupportedLocale).toUpperCase() as "EN" | "RU" | "SR"
-      const code = referralCode.trim().toUpperCase()
+      const code = cleanReferralCode(referralCode)
       const validReferralCode = /^[A-Z0-9]{6}$/.test(code) ? code : undefined
       const result = await signInMutation.mutateAsync({
         email,
@@ -65,7 +77,8 @@ export default function OnboardingScreen() {
       await signIn(result.token)
       router.replace("/(tabs)")
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      const message = e instanceof Error ? e.message : String(e)
+      setError(friendlyAuthError(message, t("errors.network", "Could not connect. Check the API and try again.")))
     }
   }
 
@@ -245,6 +258,20 @@ function Step2({
 }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
+  const referralQuery = trpc.user.validateReferralCode.useQuery(
+    { code: referralCode },
+    { enabled: referralCode.length === 6, retry: false },
+  )
+  const referralState =
+    referralCode.length === 0
+      ? "empty"
+      : referralCode.length < 6
+        ? "partial"
+        : referralQuery.isLoading
+          ? "loading"
+          : referralQuery.data?.valid
+            ? "valid"
+            : "invalid"
 
   return (
     <View style={s.step}>
@@ -300,7 +327,7 @@ function Step2({
       <NeuInset style={{ marginBottom: 12 }}>
         <TextInput
           value={referralCode}
-          onChangeText={(v) => setReferralCode(v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase())}
+          onChangeText={(v) => setReferralCode(cleanReferralCode(v))}
           placeholder="ABC123"
           placeholderTextColor={theme.textMuted}
           autoCapitalize="characters"
@@ -309,11 +336,7 @@ function Step2({
           style={[s.input, { color: theme.text, letterSpacing: 4, fontFamily: fonts.bodyBold }]}
         />
       </NeuInset>
-      {referralCode.length === 6 ? (
-        <Text style={s.bonusHint}>+50 {t("referralBonus", "bonus points for joining with a referral")}</Text>
-      ) : (
-        <Text style={s.skipHint}>{t("referralSkipHint", "You can leave this empty and continue.")}</Text>
-      )}
+      <ReferralHint state={referralState} name={referralQuery.data?.referrerName} />
 
       {error ? <Text style={s.err}>{error}</Text> : null}
 
@@ -326,6 +349,21 @@ function Step2({
       </NeuCard>
     </View>
   )
+}
+
+function ReferralHint({ state, name }: { state: "empty" | "partial" | "loading" | "valid" | "invalid"; name?: string | null | undefined }) {
+  const { t } = useTranslation("auth")
+  if (state === "valid") {
+    return (
+      <Text style={s.bonusHint}>
+        +50 {t("referralBonus", "bonus points for joining with a referral")}{name ? ` · ${name}` : ""}
+      </Text>
+    )
+  }
+  if (state === "loading") return <Text style={s.skipHint}>{t("checkingReferral", "Checking referral code...")}</Text>
+  if (state === "partial") return <Text style={s.skipHint}>{t("referralPartialHint", "Enter 6 characters, or leave it empty.")}</Text>
+  if (state === "invalid") return <Text style={s.skipHint}>{t("referralInvalidHint", "Code not found. It is optional, so you can still continue.")}</Text>
+  return <Text style={s.skipHint}>{t("referralSkipHint", "You can leave this empty and continue.")}</Text>
 }
 
 const s = StyleSheet.create({
