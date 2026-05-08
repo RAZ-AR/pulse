@@ -10,7 +10,8 @@
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
-    "db:import:venues": "tsx src/import-venues.ts"
+    "db:import:venues": "tsx src/import-venues.ts",
+    "db:fetch:google-venues": "tsx src/fetch-google-venues.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
