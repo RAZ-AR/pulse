@@ -4,6 +4,37 @@ import { router, protectedProcedure } from "../trpc"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT } from "@pulse/shared"
 
 export const socialRouter = router({
+  giftStatus: protectedProcedure.query(async ({ ctx }) => {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const [sender, giftedToday] = await Promise.all([
+      ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: { earnedPoints: true },
+      }),
+      ctx.db.transaction.aggregate({
+        where: {
+          userId: ctx.userId,
+          type: "GIFT_SENT",
+          createdAt: { gte: todayStart },
+        },
+        _sum: { pointsEarned: true },
+      }),
+    ])
+
+    if (!sender) throw new TRPCError({ code: "NOT_FOUND" })
+
+    const sentToday = giftedToday._sum.pointsEarned ?? 0
+    return {
+      earnedPoints: sender.earnedPoints,
+      sentToday,
+      remainingDailyLimit: Math.max(0, GIFT_DAILY_LIMIT - sentToday),
+      minAmount: GIFT_MIN_AMOUNT,
+      dailyLimit: GIFT_DAILY_LIMIT,
+    }
+  }),
+
   /**
    * Transfer earnedPoints from sender to receiver.
    * Limits: min 50 pts/gift, 500 pts/day total outgoing.
