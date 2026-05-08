@@ -18,19 +18,59 @@ const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = 
   LEGENDARY: gradients.black,
 }
 
+const DEMO_PROFILE = {
+  id: "demo",
+  email: "demo@pulse.app",
+  name: "Demo User",
+  avatarUrl: null,
+  homeCity: "Belgrade",
+  language: "EN",
+  earnedPoints: 1240,
+  welcomePoints: 300,
+  welcomeExpiresAt: new Date(Date.now() + 21 * 86_400_000),
+  lastWelcomeUsedAt: null,
+  totalEarnedLifetime: 3840,
+  spentPoints: 910,
+  currentStreak: 7,
+  longestStreak: 18,
+  lastCheckinAt: null,
+  stepsToday: 8420,
+  stepsTotal: 128400,
+  referralCode: "PULSE1",
+  referredById: null,
+  onboardingDone: true,
+  createdAt: new Date("2026-01-15T00:00:00.000Z"),
+  totalPoints: 1540,
+}
+
+const DEMO_BADGES = [
+  { id: "demo-badge-1", code: "FIRST_SCAN", name: "First scan", description: "Scan your first receipt", iconUrl: "✓", rarity: "COMMON", unlockedAt: new Date() },
+  { id: "demo-badge-2", code: "WEEK_STREAK", name: "7 day streak", description: "Keep visiting for a week", iconUrl: "✦", rarity: "RARE", unlockedAt: new Date() },
+  { id: "demo-badge-3", code: "CITY_EXPLORER", name: "Explorer", description: "Visit multiple venues", iconUrl: "⌖", rarity: "EPIC", unlockedAt: new Date() },
+]
+
+const DEMO_REDEMPTIONS = [
+  { id: "demo-redemption-1", reward: { title: "Free coffee upgrade", pointsCost: 250 } },
+  { id: "demo-redemption-2", reward: { title: "Dessert discount", pointsCost: 420 } },
+]
+
 export default function ProfileScreen() {
   const theme = useTheme()
   const router = useRouter()
   const { t, i18n } = useTranslation("profile")
+  const token = useAuth((s) => s.token)
   const signOut = useAuth((s) => s.signOut)
   const utils = trpc.useUtils()
+  const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
+  const hasToken = Boolean(token)
+  const showDemoProfile = demoMode || !hasToken
 
-  const profile = trpc.user.me.useQuery()
-  const stats = trpc.user.getStats.useQuery()
-  const myBadges = trpc.badge.mine.useQuery()
-  const myReferrals = trpc.user.getReferrals.useQuery()
-  const friends = trpc.social.friends.useQuery()
-  const redemptions = trpc.user.myRedemptions.useQuery({ limit: 3 })
+  const profile = trpc.user.me.useQuery(undefined, { enabled: hasToken })
+  const stats = trpc.user.getStats.useQuery(undefined, { enabled: hasToken })
+  const myBadges = trpc.badge.mine.useQuery(undefined, { enabled: hasToken })
+  const myReferrals = trpc.user.getReferrals.useQuery(undefined, { enabled: hasToken })
+  const friends = trpc.social.friends.useQuery(undefined, { enabled: hasToken })
+  const redemptions = trpc.user.myRedemptions.useQuery({ limit: 3 }, { enabled: hasToken })
 
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
@@ -76,14 +116,15 @@ export default function ProfileScreen() {
     } catch { /* cancelled */ }
   }
 
-  if (profile.isLoading) {
+  if (hasToken && profile.isLoading) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
         <ActivityIndicator color={theme.text} />
       </View>
     )
   }
-  const u = profile.data
+  const useDemoProfile = showDemoProfile || profile.isError
+  const u = profile.data ?? (useDemoProfile ? DEMO_PROFILE : null)
   if (!u) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
@@ -94,7 +135,7 @@ export default function ProfileScreen() {
 
   const initial = (u.name ?? u.email ?? "?")[0]?.toUpperCase() ?? "?"
   const currentLng = (i18n.language as SupportedLocale) ?? "en"
-  const badges = myBadges.data ?? []
+  const badges = myBadges.data ?? (useDemoProfile ? DEMO_BADGES : [])
   const totalPoints = u.totalPoints
   const nextMilestone = Math.max(500, Math.ceil((totalPoints + 1) / 500) * 500)
   const progressPct = Math.min(100, Math.round((totalPoints / nextMilestone) * 100))
@@ -102,9 +143,21 @@ export default function ProfileScreen() {
   const welcomeDaysLeft = u.welcomeExpiresAt
     ? Math.max(0, Math.ceil((new Date(u.welcomeExpiresAt).getTime() - Date.now()) / 86_400_000))
     : null
-  const referralsCount = myReferrals.data?.length ?? 0
-  const friendsCount = friends.data?.length ?? 0
-  const recentRedemptions = redemptions.data?.redemptions ?? []
+  const referralsCount = myReferrals.data?.length ?? (useDemoProfile ? 3 : 0)
+  const friendsCount = friends.data?.length ?? (useDemoProfile ? 4 : 0)
+  const recentRedemptions = redemptions.data?.redemptions ?? (useDemoProfile ? DEMO_REDEMPTIONS : [])
+  const lifetimeStats = stats.data ?? (useDemoProfile
+    ? {
+        totalEarnedLifetime: DEMO_PROFILE.totalEarnedLifetime,
+        spentPoints: DEMO_PROFILE.spentPoints,
+        currentStreak: DEMO_PROFILE.currentStreak,
+        longestStreak: DEMO_PROFILE.longestStreak,
+        referralCode: DEMO_PROFILE.referralCode,
+        transactionCount: 24,
+        uniqueVenuesVisited: 8,
+        rewardsRedeemed: 2,
+      }
+    : null)
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
@@ -181,11 +234,11 @@ export default function ProfileScreen() {
         <StatTile label={t("steps", "Steps")} value={u.stepsToday.toLocaleString()} />
       </View>
 
-      {stats.data ? (
+      {lifetimeStats ? (
         <NeuCard style={s.infoCard}>
-          <Row label={t("venuesVisited", "Venues visited")} value={`${stats.data.uniqueVenuesVisited}`} theme={theme} last={false} />
-          <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${stats.data.rewardsRedeemed}`} theme={theme} last={false} />
-          <Row label={t("spentPoints", "Spent points")} value={`${stats.data.spentPoints.toLocaleString()} pts`} theme={theme} last={true} />
+          <Row label={t("venuesVisited", "Venues visited")} value={`${lifetimeStats.uniqueVenuesVisited}`} theme={theme} last={false} />
+          <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${lifetimeStats.rewardsRedeemed}`} theme={theme} last={false} />
+          <Row label={t("spentPoints", "Spent points")} value={`${lifetimeStats.spentPoints.toLocaleString()} pts`} theme={theme} last={true} />
         </NeuCard>
       ) : null}
 
