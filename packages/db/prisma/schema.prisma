@@ -267,7 +267,7 @@ model Venue {
   @@index([city, category])
   @@index([lat, lng])
   @@index([isPartner])
-  @@index([sourceProvider, sourcePlaceId])
+  @@unique([sourceProvider, sourcePlaceId])
 }
 
 // ============================================================

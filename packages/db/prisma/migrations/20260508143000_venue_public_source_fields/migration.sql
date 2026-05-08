@@ -10,4 +10,4 @@ ADD COLUMN "instagram" TEXT,
 ADD COLUMN "openingHoursText" TEXT,
 ADD COLUMN "specialOffers" JSONB;
 
-CREATE INDEX "Venue_sourceProvider_sourcePlaceId_idx" ON "Venue"("sourceProvider", "sourcePlaceId");
+CREATE UNIQUE INDEX "Venue_sourceProvider_sourcePlaceId_key" ON "Venue"("sourceProvider", "sourcePlaceId");

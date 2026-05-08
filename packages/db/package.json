@@ -9,7 +9,8 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-    "db:seed": "tsx src/seed.ts"
+    "db:seed": "tsx src/seed.ts",
+    "db:import:venues": "tsx src/import-venues.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

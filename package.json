@@ -13,6 +13,7 @@
     "db:migrate:prod": "pnpm --filter @pulse/db db:migrate:prod",
     "db:studio": "pnpm --filter @pulse/db db:studio",
     "db:seed": "pnpm --filter @pulse/db db:seed",
+    "db:import:venues": "pnpm --filter @pulse/db db:import:venues",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore"
   },
   "devDependencies": {
