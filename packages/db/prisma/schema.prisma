@@ -241,6 +241,17 @@ model Venue {
   yandexRating  Float?
   woltRating    Float?
 
+  // Public source/import metadata
+  sourceProvider   String?
+  sourcePlaceId    String?
+  sourceUrl        String?
+  sourceUpdatedAt  DateTime?
+  phone            String?
+  website          String?
+  instagram        String?
+  openingHoursText String?
+  specialOffers    Json?
+
   // Relations
   ownerId    String?
   owner      Merchant?   @relation(fields: [ownerId], references: [id])
@@ -256,6 +267,7 @@ model Venue {
   @@index([city, category])
   @@index([lat, lng])
   @@index([isPartner])
+  @@index([sourceProvider, sourcePlaceId])
 }
 
 // ============================================================

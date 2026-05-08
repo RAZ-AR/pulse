@@ -26,6 +26,10 @@ type DetailVenue = {
   maxDiscountPercent: number
   googleRating: number | null
   googleReviews: number | null
+  sourceProvider?: string | null
+  sourcePlaceId?: string | null
+  sourceUrl?: string | null
+  sourceUpdatedAt?: Date | string | null
   rewards?: {
     id: string
     title: string
@@ -36,8 +40,9 @@ type DetailVenue = {
   website?: string | null
   instagram?: string | null
   openingHours?: string | null
+  openingHoursText?: string | null
   sourceLabel?: string
-  specialOffers?: string[]
+  specialOffers?: string[] | unknown
 }
 
 function isDemoVenue(venue: DetailVenue) {
@@ -46,7 +51,9 @@ function isDemoVenue(venue: DetailVenue) {
 
 function venueOffers(venue: DetailVenue) {
   const offers: string[] = []
-  if (venue.specialOffers?.length) offers.push(...venue.specialOffers)
+  if (Array.isArray(venue.specialOffers)) {
+    offers.push(...venue.specialOffers.filter((offer): offer is string => typeof offer === "string" && offer.trim().length > 0))
+  }
   if (venue.enableDiscount && venue.maxDiscountPercent > 0) offers.push(`-${venue.maxDiscountPercent}% welcome discount`)
   if (venue.isPartner && venue.pointsPerCurrency) offers.push("Partner points on every purchase")
   return Array.from(new Set(offers)).slice(0, 4)
@@ -57,8 +64,16 @@ function contactRows(venue: DetailVenue) {
     venue.phone ? { label: "Phone", value: venue.phone, url: `tel:${venue.phone.replace(/\s/g, "")}` } : null,
     venue.website ? { label: "Website", value: venue.website.replace(/^https?:\/\//, ""), url: venue.website } : null,
     venue.instagram ? { label: "Instagram", value: venue.instagram.replace(/^https?:\/\/instagram\.com\//, "@"), url: venue.instagram } : null,
+    venue.openingHoursText ? { label: "Hours", value: venue.openingHoursText } : null,
     venue.openingHours ? { label: "Hours", value: venue.openingHours } : null,
   ].filter(Boolean) as { label: string; value: string; url?: string }[]
+}
+
+function sourceLabel(venue: DetailVenue) {
+  if (venue.sourceLabel) return venue.sourceLabel
+  if (venue.sourceProvider === "google_maps") return "Google Maps public profile"
+  if (venue.sourceProvider) return `${venue.sourceProvider} public profile`
+  return "PULSE partner profile"
 }
 
 export default function VenueDetailScreen() {
@@ -95,7 +110,7 @@ export default function VenueDetailScreen() {
   const rewards = v.rewards ?? []
   const offers = venueOffers(v)
   const contacts = contactRows(v)
-  const sourceLabel = isDemoVenue(v) ? (v.sourceLabel ?? "Google Maps public profile") : "PULSE partner profile"
+  const importSourceLabel = sourceLabel(v)
 
   return (
     <>
@@ -160,7 +175,7 @@ export default function VenueDetailScreen() {
               <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
                 {t("specialOffers", "Special offers").toUpperCase()}
               </Text>
-              <Text style={[s.sourceText, { color: theme.textSecondary }]}>{sourceLabel}</Text>
+              <Text style={[s.sourceText, { color: theme.textSecondary }]}>{importSourceLabel}</Text>
             </View>
             <View style={{ gap: 8 }}>
               {offers.map((offer) => (

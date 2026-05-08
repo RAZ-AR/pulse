@@ -4,6 +4,41 @@ import { boundingBox, haversineMeters } from "@pulse/shared"
 
 const VenueCategoryEnum = z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "OTHER"])
 
+const venuePublicSelect = {
+  id: true,
+  name: true,
+  category: true,
+  city: true,
+  country: true,
+  address: true,
+  lat: true,
+  lng: true,
+  photos: true,
+  description: true,
+  workingHours: true,
+  isPartner: true,
+  pointsPerCurrency: true,
+  currency: true,
+  boostMultiplier: true,
+  boostUntil: true,
+  subscriptionTier: true,
+  enableDiscount: true,
+  maxDiscountPercent: true,
+  googleRating: true,
+  googleReviews: true,
+  yandexRating: true,
+  woltRating: true,
+  sourceProvider: true,
+  sourcePlaceId: true,
+  sourceUrl: true,
+  sourceUpdatedAt: true,
+  phone: true,
+  website: true,
+  instagram: true,
+  openingHoursText: true,
+  specialOffers: true,
+} as const
+
 export const venueRouter = router({
   list: publicProcedure
     .input(
@@ -25,13 +60,7 @@ export const venueRouter = router({
         take: input.limit + 1,
         ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
         orderBy: [{ isPartner: "desc" }, { pointsPerCurrency: "desc" }, { name: "asc" }],
-        select: {
-          id: true, name: true, category: true, city: true, country: true,
-          address: true, lat: true, lng: true, photos: true,
-          isPartner: true, pointsPerCurrency: true, currency: true,
-          boostMultiplier: true, boostUntil: true,
-          subscriptionTier: true,
-        },
+        select: venuePublicSelect,
       })
 
       let nextCursor: string | undefined
@@ -69,10 +98,7 @@ export const venueRouter = router({
           ...(input.city ? { city: { equals: input.city, mode: "insensitive" } } : {}),
         },
         take: input.limit,
-        select: {
-          id: true, name: true, category: true, city: true, address: true,
-          isPartner: true, pointsPerCurrency: true, currency: true, photos: true,
-        },
+        select: venuePublicSelect,
       })
     }),
 
@@ -98,15 +124,7 @@ export const venueRouter = router({
           ...(input.category ? { category: input.category } : {}),
           ...(input.isPartner !== undefined ? { isPartner: input.isPartner } : {}),
         },
-        select: {
-          id: true, name: true, category: true, city: true, address: true,
-          lat: true, lng: true, photos: true, description: true,
-          isPartner: true, pointsPerCurrency: true, currency: true,
-          boostMultiplier: true, boostUntil: true,
-          subscriptionTier: true,
-          enableDiscount: true, maxDiscountPercent: true,
-          googleRating: true, googleReviews: true,
-        },
+        select: venuePublicSelect,
       })
 
       // Step 2: precise Haversine filter + sort by distance
@@ -147,13 +165,7 @@ export const venueRouter = router({
           { pointsPerCurrency: "desc" },
         ],
         take: input.limit,
-        select: {
-          id: true, name: true, category: true, city: true, address: true,
-          lat: true, lng: true, photos: true,
-          pointsPerCurrency: true, currency: true,
-          boostMultiplier: true, boostUntil: true,
-          subscriptionTier: true,
-        },
+        select: venuePublicSelect,
       })
 
       // Annotate with effective rate (applying active boosts), then reorder so
