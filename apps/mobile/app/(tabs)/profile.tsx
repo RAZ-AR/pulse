@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
@@ -64,13 +64,14 @@ export default function ProfileScreen() {
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
   const hasToken = Boolean(token)
   const showDemoProfile = demoMode || !hasToken
+  const queryEnabled = hasToken && !demoMode
 
-  const profile = trpc.user.me.useQuery(undefined, { enabled: hasToken })
-  const stats = trpc.user.getStats.useQuery(undefined, { enabled: hasToken })
-  const myBadges = trpc.badge.mine.useQuery(undefined, { enabled: hasToken })
-  const myReferrals = trpc.user.getReferrals.useQuery(undefined, { enabled: hasToken })
-  const friends = trpc.social.friends.useQuery(undefined, { enabled: hasToken })
-  const redemptions = trpc.user.myRedemptions.useQuery({ limit: 3 }, { enabled: hasToken })
+  const profile = trpc.user.me.useQuery(undefined, { enabled: queryEnabled })
+  const stats = trpc.user.getStats.useQuery(undefined, { enabled: queryEnabled })
+  const myBadges = trpc.badge.mine.useQuery(undefined, { enabled: queryEnabled })
+  const myReferrals = trpc.user.getReferrals.useQuery(undefined, { enabled: queryEnabled })
+  const friends = trpc.social.friends.useQuery(undefined, { enabled: queryEnabled })
+  const redemptions = trpc.user.myRedemptions.useQuery({ limit: 3 }, { enabled: queryEnabled })
 
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
@@ -84,8 +85,9 @@ export default function ProfileScreen() {
   const [homeCity, setHomeCity] = useState("")
 
   function startEditing() {
-    setName(profile.data?.name ?? "")
-    setHomeCity(profile.data?.homeCity ?? "")
+    const current = profile.data ?? (showDemoProfile ? DEMO_PROFILE : null)
+    setName(current?.name ?? "")
+    setHomeCity(current?.homeCity ?? "")
     setEditing(true)
   }
 
@@ -116,14 +118,7 @@ export default function ProfileScreen() {
     } catch { /* cancelled */ }
   }
 
-  if (hasToken && profile.isLoading) {
-    return (
-      <View style={[s.center, { backgroundColor: theme.bg }]}>
-        <ActivityIndicator color={theme.text} />
-      </View>
-    )
-  }
-  const useDemoProfile = showDemoProfile || profile.isError
+  const useDemoProfile = showDemoProfile || profile.isError || profile.isLoading
   const u = profile.data ?? (useDemoProfile ? DEMO_PROFILE : null)
   if (!u) {
     return (
