@@ -12,10 +12,22 @@ function AuthGate() {
   const segments = useSegments()
   const { token, hydrated } = useAuth()
   const signIn = useAuth((s) => s.signIn)
+  const signOut = useAuth((s) => s.signOut)
   const navState = useRootNavigationState()
   const demoAttempted = useRef(false)
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
+  const sessionProbe = trpc.user.me.useQuery(undefined, {
+    enabled: demoMode && hydrated && Boolean(token),
+    retry: false,
+    staleTime: 0,
+  })
+
+  useEffect(() => {
+    if (!demoMode || !hydrated || !token || !sessionProbe.isError) return
+    demoAttempted.current = false
+    signOut().catch(() => {})
+  }, [demoMode, hydrated, token, sessionProbe.isError, signOut])
 
   useEffect(() => {
     if (!demoMode || !hydrated || !navState?.key || token || demoAttempted.current) return
