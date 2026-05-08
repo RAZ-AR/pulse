@@ -6,8 +6,10 @@ type ImportVenue = {
   sourceProvider?: string
   sourcePlaceId?: string
   existingVenueId?: string
+  sourceUrl?: string
   name?: string
   category?: string
+  description?: string
   address?: string
   city?: string
   country?: string
@@ -22,7 +24,10 @@ type ImportVenue = {
   specialOffers?: string[]
   isPartner?: boolean
   pointsPerCurrency?: number
+  currency?: string
+  enableDiscount?: boolean
   maxDiscountPercent?: number
+  subscriptionTier?: string
 }
 
 type ServerPreviewRow = {
@@ -122,6 +127,9 @@ export default function VenueImportsPage() {
   const [serverPreview, setServerPreview] = useState<ServerPreview | null>(null)
   const [serverError, setServerError] = useState("")
   const [isPreviewing, setIsPreviewing] = useState(false)
+  const [applyConfirmation, setApplyConfirmation] = useState("")
+  const [applyMessage, setApplyMessage] = useState("")
+  const [isApplying, setIsApplying] = useState(false)
   const parsed = useMemo(() => parseImportJson(json), [json])
   const localRows = useMemo(() => {
     return parsed.venues
@@ -157,10 +165,13 @@ export default function VenueImportsPage() {
   const updateCount = rows.filter((row) => row.action === "update").length
   const invalidCount = rows.filter((row) => row.errors.length > 0).length
   const previewMode = serverPreview ? "DB preview" : "Local validation"
+  const canApply = Boolean(serverPreview) && invalidCount === 0 && rows.length > 0 && applyConfirmation === "APPLY"
 
   async function runServerPreview() {
     setServerError("")
     setServerPreview(null)
+    setApplyMessage("")
+    setApplyConfirmation("")
     if (parsed.error) {
       setServerError(parsed.error)
       return
@@ -181,6 +192,31 @@ export default function VenueImportsPage() {
       setServerError(error instanceof Error ? error.message : "Preview failed")
     } finally {
       setIsPreviewing(false)
+    }
+  }
+
+  async function applyImport() {
+    setServerError("")
+    setApplyMessage("")
+    if (!canApply) return
+    setIsApplying(true)
+    try {
+      const response = await fetch("/api/venue-imports/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ venues: parsed.venues, city: cityFilter, confirmation: applyConfirmation }),
+      })
+      const result = (await response.json()) as ServerPreview | { error?: string }
+      if (!response.ok || !isServerPreview(result)) {
+        throw new Error("error" in result && result.error ? result.error : "Apply failed")
+      }
+      setServerPreview(result)
+      setApplyMessage(`Applied ${result.summary.total} venues · ${result.summary.create} created · ${result.summary.update} updated`)
+      setApplyConfirmation("")
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "Apply failed")
+    } finally {
+      setIsApplying(false)
     }
   }
 
@@ -206,6 +242,8 @@ export default function VenueImportsPage() {
               setJson(SAMPLE)
               setServerPreview(null)
               setServerError("")
+              setApplyMessage("")
+              setApplyConfirmation("")
             }}
             className="px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB]"
           >
@@ -229,6 +267,8 @@ export default function VenueImportsPage() {
                 setCityFilter(event.target.value)
                 setServerPreview(null)
                 setServerError("")
+                setApplyMessage("")
+                setApplyConfirmation("")
               }}
               className="px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm"
             >
@@ -243,6 +283,8 @@ export default function VenueImportsPage() {
               setJson(event.target.value)
               setServerPreview(null)
               setServerError("")
+              setApplyMessage("")
+              setApplyConfirmation("")
             }}
             spellCheck={false}
             className="w-full min-h-[520px] font-mono text-xs leading-5 px-3 py-3 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1115]"
@@ -255,6 +297,7 @@ export default function VenueImportsPage() {
             </p>
           )}
           {serverError ? <p className="mt-2 text-sm text-red-600">{serverError}</p> : null}
+          {applyMessage ? <p className="mt-2 text-sm text-[#059669]">{applyMessage}</p> : null}
         </section>
 
         <aside className="space-y-6">
@@ -263,6 +306,31 @@ export default function VenueImportsPage() {
             <Command label="Fetch Belgrade" value={'GOOGLE_PLACES_API_KEY=... pnpm db:fetch:google-venues -- --query="coffee Belgrade" --city=Belgrade'} />
             <Command label="Dry run" value="pnpm db:import:venues -- --file=src/data/google-belgrade.json --json" />
             <Command label="Apply after review" value="pnpm db:import:venues -- --file=src/data/google-belgrade.json --apply" />
+          </section>
+
+          <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
+            <h2 className="text-base font-semibold text-[#0F1115] mb-2">Apply import</h2>
+            <p className="text-xs text-[#6B7280] mb-4">
+              Run DB preview first. Type <code className="text-[#0F1115]">APPLY</code> to create or update these venues.
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <Metric label="Create" value={createCount} />
+              <Metric label="Update" value={updateCount} />
+              <Metric label="Invalid" value={invalidCount} tone={invalidCount > 0 ? "danger" : "default"} />
+            </div>
+            <input
+              value={applyConfirmation}
+              onChange={(event) => setApplyConfirmation(event.target.value)}
+              placeholder="Type APPLY"
+              className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm mb-3"
+            />
+            <button
+              onClick={applyImport}
+              disabled={!canApply || isApplying}
+              className="w-full px-4 py-2 bg-[#EF4444] text-white text-sm font-semibold rounded-xl hover:bg-[#DC2626] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isApplying ? "Applying..." : "Apply import"}
+            </button>
           </section>
 
           <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
@@ -328,5 +396,14 @@ function Badge({ children }: { children: React.ReactNode }) {
     <span className="rounded-full bg-[#F9FAFB] border border-[#E5E7EB] px-2 py-1 text-[#6B7280]">
       {children}
     </span>
+  )
+}
+
+function Metric({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "danger" }) {
+  return (
+    <div className={tone === "danger" ? "rounded-lg bg-red-50 px-3 py-2" : "rounded-lg bg-[#F9FAFB] px-3 py-2"}>
+      <p className={tone === "danger" ? "text-lg font-bold text-red-600" : "text-lg font-bold text-[#0F1115]"}>{value}</p>
+      <p className="text-[10px] uppercase tracking-wide text-[#6B7280]">{label}</p>
+    </div>
   )
 }
