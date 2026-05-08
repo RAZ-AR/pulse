@@ -40,11 +40,11 @@ function initials(name: string | null | undefined) {
 }
 
 function userTier(points: number) {
-  if (points <= 1000) return { name: "Росток", icon: "🌱", next: 1000, start: 0, colors: ["#ECFFEB", "#9FEED3", "#F9FBFF"] as const }
-  if (points <= 3000) return { name: "Цветок", icon: "🌸", next: 3000, start: 1001, colors: ["#FFF4FE", "#F199E3", "#F9FBFF"] as const }
-  if (points <= 5000) return { name: "Гранат", icon: "🍎", next: 5000, start: 3001, colors: ["#FFF4FE", "#FF8B8B", "#F9FBFF"] as const }
-  if (points <= 7000) return { name: "Рубин", icon: "♦", next: 7000, start: 5001, colors: ["#F9FBFF", "#F199E3", "#9DCCFF"] as const }
-  return { name: "Бриллиант", icon: "💎", next: 10000, start: 7001, colors: ["#EBFEFF", "#9DCCFF", "#FFFFFF"] as const }
+  if (points <= 1000) return { name: "Росток", kind: "sprout", next: 1000, start: 0, colors: ["#ECFFEB", "#9FEED3", "#F9FBFF"] as const }
+  if (points <= 3000) return { name: "Цветок", kind: "flower", next: 3000, start: 1001, colors: ["#FFF4FE", "#F199E3", "#F9FBFF"] as const }
+  if (points <= 5000) return { name: "Гранат", kind: "pomegranate", next: 5000, start: 3001, colors: ["#FFF4FE", "#FF8B8B", "#F9FBFF"] as const }
+  if (points <= 7000) return { name: "Рубин", kind: "ruby", next: 7000, start: 5001, colors: ["#F9FBFF", "#F199E3", "#9DCCFF"] as const }
+  return { name: "Бриллиант", kind: "diamond", next: 10000, start: 7001, colors: ["#EBFEFF", "#9DCCFF", "#FFFFFF"] as const }
 }
 
 function tierProgress(points: number, start: number, next: number) {
@@ -549,11 +549,76 @@ function ProgressOrb({
         />
         <View style={s.progressOrbShine} />
         <View style={s.tierBadge}>
-          <Text style={s.tierIcon}>{tier.icon}</Text>
+          <TierMark kind={tier.kind} />
           <Text style={[s.tierName, { fontFamily: fonts.displayHeavy }]}>{tier.name}</Text>
           <Text style={[s.tierPoints, { fontFamily: fonts.bodyBold }]}>{fmt(points)} pts</Text>
         </View>
       </View>
+    </View>
+  )
+}
+
+function TierMark({ kind }: { kind: ReturnType<typeof userTier>["kind"] }) {
+  if (kind === "sprout") {
+    return (
+      <View style={s.tierMark}>
+        <LinearGradient colors={["#CFF8D8", "#67C887"]} style={s.sproutStem} />
+        <LinearGradient colors={["#ECFFEB", "#8EE9B2"]} style={[s.sproutLeaf, s.sproutLeafLeft]} />
+        <LinearGradient colors={["#EBFEFF", "#74D8B0"]} style={[s.sproutLeaf, s.sproutLeafRight]} />
+        <View style={s.markGloss} />
+      </View>
+    )
+  }
+
+  if (kind === "flower") {
+    const petals = [
+      { left: 0, top: -16 },
+      { left: 15, top: -5 },
+      { left: 9, top: 14 },
+      { left: -9, top: 14 },
+      { left: -15, top: -5 },
+    ]
+    return (
+      <View style={s.tierMark}>
+        {petals.map((petal, index) => (
+          <LinearGradient
+            key={`${petal.left}-${petal.top}`}
+            colors={index % 2 ? ["#F9FBFF", "#F199E3"] : ["#FFF4FE", "#D9E1FF"]}
+            style={[s.flowerPetal, { transform: [{ translateX: petal.left }, { translateY: petal.top }, { rotate: `${index * 32}deg` }] }]}
+          />
+        ))}
+        <LinearGradient colors={["#FFF6C7", "#F3CD64"]} style={s.flowerCenter} />
+      </View>
+    )
+  }
+
+  if (kind === "pomegranate") {
+    return (
+      <View style={s.tierMark}>
+        <LinearGradient colors={["#FFF4FE", "#FF7070", "#D96AA7"]} style={s.pomegranateBody} />
+        <LinearGradient colors={["#ECFFEB", "#9FEED3"]} style={s.pomegranateCrown} />
+        <View style={s.pomegranateSeedA} />
+        <View style={s.pomegranateSeedB} />
+        <View style={s.markGloss} />
+      </View>
+    )
+  }
+
+  if (kind === "ruby") {
+    return (
+      <View style={s.tierMark}>
+        <LinearGradient colors={["#FFF4FE", "#F199E3", "#9DCCFF"]} style={s.gemTop} />
+        <LinearGradient colors={["#F199E3", "#A971FF"]} style={s.gemBody} />
+        <View style={s.gemFacet} />
+      </View>
+    )
+  }
+
+  return (
+    <View style={s.tierMark}>
+      <LinearGradient colors={["#FFFFFF", "#BEEBFF", "#9DCCFF"]} style={s.diamondTop} />
+      <LinearGradient colors={["#EBFEFF", "#9DCCFF", "#F9FBFF"]} style={s.diamondBody} />
+      <View style={s.diamondFacet} />
     </View>
   )
 }
@@ -742,7 +807,24 @@ const s = StyleSheet.create({
   progressOrbFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 84, opacity: 0.92 },
   progressOrbShine: { position: "absolute", top: 18, left: 22, width: 58, height: 36, borderRadius: 29, backgroundColor: "rgba(255,255,255,0.38)" },
   tierBadge: { width: 116, height: 116, borderRadius: 58, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
-  tierIcon: { fontSize: 35, lineHeight: 42, textShadowColor: "rgba(110,125,142,0.24)", textShadowOffset: { width: 0, height: 4 }, textShadowRadius: 8 },
+  tierMark: { width: 54, height: 48, alignItems: "center", justifyContent: "center", marginBottom: 2 },
+  sproutStem: { position: "absolute", bottom: 7, width: 9, height: 28, borderRadius: 8, shadowColor: "#67C887", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 8 },
+  sproutLeaf: { position: "absolute", width: 29, height: 20, borderRadius: 18, top: 10, shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.24, shadowRadius: 7 },
+  sproutLeafLeft: { left: 6, transform: [{ rotate: "-28deg" }] },
+  sproutLeafRight: { right: 5, transform: [{ rotate: "28deg" }] },
+  markGloss: { position: "absolute", top: 9, left: 15, width: 18, height: 9, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.58)" },
+  flowerPetal: { position: "absolute", left: 17, top: 16, width: 22, height: 28, borderRadius: 16, shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.2, shadowRadius: 7 },
+  flowerCenter: { width: 20, height: 20, borderRadius: 10, shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6 },
+  pomegranateBody: { width: 42, height: 40, borderRadius: 22, shadowColor: "#D96AA7", shadowOffset: { width: 4, height: 6 }, shadowOpacity: 0.28, shadowRadius: 9 },
+  pomegranateCrown: { position: "absolute", top: 3, width: 24, height: 14, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
+  pomegranateSeedA: { position: "absolute", left: 20, top: 24, width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.62)" },
+  pomegranateSeedB: { position: "absolute", right: 16, top: 29, width: 5, height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.46)" },
+  gemTop: { position: "absolute", top: 8, width: 39, height: 17, borderRadius: 7, transform: [{ rotate: "45deg" }], shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.22, shadowRadius: 8 },
+  gemBody: { position: "absolute", top: 18, width: 36, height: 36, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#F199E3", shadowOffset: { width: 4, height: 6 }, shadowOpacity: 0.25, shadowRadius: 9 },
+  gemFacet: { position: "absolute", top: 18, width: 18, height: 18, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.32)", transform: [{ rotate: "45deg" }] },
+  diamondTop: { position: "absolute", top: 7, width: 42, height: 18, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#9DCCFF", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.26, shadowRadius: 9 },
+  diamondBody: { position: "absolute", top: 18, width: 39, height: 39, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#9DCCFF", shadowOffset: { width: 5, height: 7 }, shadowOpacity: 0.3, shadowRadius: 10 },
+  diamondFacet: { position: "absolute", top: 18, width: 18, height: 18, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.56)", transform: [{ rotate: "45deg" }] },
   tierName: { color: "#6E7D8E", fontSize: 16, lineHeight: 19, marginTop: 2, letterSpacing: 0 },
   tierPoints: { color: "#91A1B4", fontSize: 11, marginTop: 3 },
   profileRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
