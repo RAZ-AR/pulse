@@ -221,10 +221,10 @@ export default function ProfileScreen() {
       </NeuCard>
 
       <View style={s.quickGrid}>
-        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} onPress={() => router.push("/checkin")} />
-        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} onPress={() => router.push("/scan")} />
-        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} onPress={() => router.push("/gift")} />
-        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} onPress={() => router.push("/friends")} />
+        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} tone="mint" onPress={() => router.push("/checkin")} />
+        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} tone="blue" onPress={() => router.push("/scan")} />
+        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} tone="pink" onPress={() => router.push("/gift")} />
+        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} tone="white" onPress={() => router.push("/friends")} />
       </View>
 
       <SectionTitle title={t("activity", "Activity")} action={t("leaderboard", "Leaderboard")} onPress={() => router.push("/leaderboard")} />
@@ -429,12 +429,18 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 function QuickAction({
-  icon, label, sub, onPress,
-}: { icon: string; label: string; sub: string; onPress: () => void }) {
+  icon, label, sub, tone, onPress,
+}: { icon: string; label: string; sub: string; tone: "mint" | "blue" | "pink" | "white"; onPress: () => void }) {
+  const toneStyle =
+    tone === "mint" ? s.quickIconMint :
+    tone === "blue" ? s.quickIconBlue :
+    tone === "pink" ? s.quickIconPink :
+    s.quickIconWhite
+
   return (
     <Pressable onPress={onPress} style={s.quickPressable}>
       <NeuCard style={s.quickCard} small>
-        <View style={s.quickIcon}>
+        <View style={[s.quickIcon, toneStyle]}>
           <Text style={[s.quickIconText, { fontFamily: fonts.displayHeavy }]}>{icon}</Text>
         </View>
         <Text style={[s.quickLabel, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
@@ -526,80 +532,84 @@ function Btn({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 34 },
+  content: { width: "100%", maxWidth: 620, alignSelf: "center", padding: 16, paddingBottom: 116 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },
-  screenTitle: { color: colors.ink, fontSize: 34, lineHeight: 38, letterSpacing: 0 },
-  headButton: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center" },
+  screenTitle: { color: colors.ink, fontSize: 30, lineHeight: 33, letterSpacing: 0 },
+  headButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center" },
   headButtonText: { color: colors.ink, fontSize: 18 },
 
-  hero: { padding: 18, marginBottom: 14, overflow: "hidden", borderRadius: 50 },
-  heroBlob: { position: "absolute", top: -48, right: -44, width: 160, height: 160, borderRadius: 80, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 16 },
-  heroRow: { flexDirection: "row", alignItems: "center", gap: 16 },
+  hero: { padding: 14, marginBottom: 12, overflow: "hidden", borderRadius: 42 },
+  heroBlob: { position: "absolute", top: -54, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.24)" },
+  heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12 },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   heroAvatar: {
-    width: 70, height: 70, borderRadius: 28,
+    width: 58, height: 58, borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.72)",
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.46)",
   },
-  heroAvatarText: { color: colors.ink, fontSize: 28 },
-  heroName: { color: colors.ink, fontSize: 25, lineHeight: 29 },
+  heroAvatarText: { color: colors.ink, fontSize: 24 },
+  heroName: { color: colors.ink, fontSize: 22, lineHeight: 25 },
   heroMail: { color: "#A3B1C6", fontSize: 12, marginTop: 1 },
-  heroCity: { color: "#91A1B4", fontSize: 13, marginTop: 2 },
-  refBadge: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.66)", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
+  heroCity: { color: "#91A1B4", fontSize: 12, marginTop: 1 },
+  refBadge: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.66)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   refBadgeText: { color: colors.ink, fontSize: 11, letterSpacing: 1.5 },
 
-  balancePanel: { borderRadius: 34, backgroundColor: "rgba(255,255,255,0.50)", padding: 16, flexDirection: "row", justifyContent: "space-between", gap: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
+  balancePanel: { borderRadius: 30, backgroundColor: "rgba(255,255,255,0.54)", padding: 14, flexDirection: "row", justifyContent: "space-between", gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
   balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
-  balanceValue: { color: colors.ink, fontSize: 48, lineHeight: 52, marginTop: 2 },
-  balanceSub: { color: "#91A1B4", fontSize: 13 },
-  balanceSplit: { width: 104, gap: 8 },
-  miniBalance: { backgroundColor: "rgba(255,255,255,0.46)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 9 },
-  miniBalanceValue: { color: colors.ink, fontSize: 18, lineHeight: 20 },
+  balanceValue: { color: colors.ink, fontSize: 42, lineHeight: 45, marginTop: 2 },
+  balanceSub: { color: "#91A1B4", fontSize: 12 },
+  balanceSplit: { width: 96, gap: 7 },
+  miniBalance: { backgroundColor: "rgba(255,255,255,0.50)", borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8 },
+  miniBalanceValue: { color: colors.ink, fontSize: 16, lineHeight: 18 },
   miniBalanceLabel: { color: "#91A1B4", fontSize: 8, letterSpacing: 0.8, marginTop: 2 },
-  levelBlock: { marginTop: 14 },
+  levelBlock: { marginTop: 12 },
   levelHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 7 },
   levelText: { color: "#91A1B4", fontSize: 11 },
   levelTrack: { height: 9, borderRadius: 8, backgroundColor: "rgba(163,177,198,0.16)", overflow: "hidden" },
   levelFill: { height: "100%", borderRadius: 8, backgroundColor: "rgba(133,245,242,0.92)" },
 
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 22 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
   quickPressable: { width: "48.5%" },
-  quickCard: { padding: 14, minHeight: 112, borderRadius: 30 },
-  quickIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(235,254,255,0.88)", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  quickCard: { padding: 12, minHeight: 92, borderRadius: 26 },
+  quickIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  quickIconMint: { backgroundColor: "rgba(236,255,235,0.92)" },
+  quickIconBlue: { backgroundColor: "rgba(235,254,255,0.92)" },
+  quickIconPink: { backgroundColor: "rgba(255,244,254,0.92)" },
+  quickIconWhite: { backgroundColor: "rgba(255,255,255,0.80)" },
   quickIconText: { color: "#7FAFC2", fontSize: 20 },
-  quickLabel: { color: colors.ink, fontSize: 15 },
+  quickLabel: { color: colors.ink, fontSize: 14 },
   quickSub: { color: "#91A1B4", fontSize: 11, marginTop: 2 },
 
-  statsRow: { flexDirection: "row", gap: 10, marginBottom: 14 },
-  statTile: { flex: 1, padding: 14, minHeight: 86 },
-  statValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
+  statsRow: { flexDirection: "row", gap: 9, marginBottom: 12 },
+  statTile: { flex: 1, padding: 12, minHeight: 72, borderRadius: 24 },
+  statValue: { color: colors.ink, fontSize: 21, lineHeight: 23 },
   statLabel: { color: "#91A1B4", fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
 
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
 
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  h2: { color: colors.ink, fontSize: 25 },
+  h2: { color: colors.ink, fontSize: 23 },
   sectionAction: { backgroundColor: "#F9FBFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 1 },
   sectionActionText: { color: "#91A1B4", fontSize: 11 },
-  infoCard: { marginBottom: 20, padding: 0, borderRadius: 32 },
-  accountGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+  infoCard: { marginBottom: 18, padding: 0, borderRadius: 28 },
+  accountGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
   accountTile: { width: "48.5%", padding: 14, minHeight: 84, borderRadius: 28 },
   accountLabel: { color: "#91A1B4", fontSize: 9, letterSpacing: 0.8 },
   accountValue: { color: colors.ink, fontSize: 17, marginTop: 8 },
 
-  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
-  badgeCard: { width: "31%", padding: 12, alignItems: "center", minHeight: 104 },
-  badgeIcon: { fontSize: 26, marginBottom: 6 },
+  badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
+  badgeCard: { width: "31.4%", padding: 11, alignItems: "center", minHeight: 96, borderRadius: 24 },
+  badgeIcon: { fontSize: 24, marginBottom: 5 },
   badgeName: { color: colors.ink, fontSize: 12 },
   badgeRarity: { color: "#91A1B4", fontSize: 9, marginTop: 2, letterSpacing: 0.5, fontWeight: "700" },
 
-  referralCard: { padding: 20, marginBottom: 16, alignItems: "center" },
+  referralCard: { padding: 17, marginBottom: 16, alignItems: "center", borderRadius: 32 },
   referralLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5, fontWeight: "700", marginBottom: 8 },
-  referralCode: { color: colors.ink, fontSize: 28, letterSpacing: 5 },
+  referralCode: { color: colors.ink, fontSize: 25, letterSpacing: 4 },
   referralHint: { color: "#91A1B4", fontSize: 11, marginTop: 8, textAlign: "center" },
   referralBtns: { flexDirection: "row", gap: 10, marginTop: 14 },
   referralBtnInner: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
