@@ -197,6 +197,7 @@ model Merchant {
   phone        String?
   passwordHash String
   venues       Venue[]
+  importLogs   VenueImportLog[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -268,6 +269,27 @@ model Venue {
   @@index([lat, lng])
   @@index([isPartner])
   @@unique([sourceProvider, sourcePlaceId])
+}
+
+// ============================================================
+// Venue import logs (merchant dashboard)
+// ============================================================
+
+model VenueImportLog {
+  id          String   @id @default(cuid())
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  city        String?
+  source      String   @default("google_maps")
+  total       Int
+  created     Int
+  updated     Int
+  invalid     Int
+  items       Json
+  createdAt   DateTime @default(now())
+
+  @@index([merchantId, createdAt])
+  @@index([city])
 }
 
 // ============================================================

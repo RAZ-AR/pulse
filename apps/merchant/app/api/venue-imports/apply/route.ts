@@ -12,7 +12,8 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   const session = await merchantAuth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const merchantId = (session as { merchant?: { id: string } } | null)?.merchant?.id
+  if (!merchantId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = (await request.json()) as { venues?: unknown; city?: unknown; confirmation?: unknown }
   if (body.confirmation !== "APPLY") {
@@ -69,8 +70,22 @@ export async function POST(request: Request) {
     })
   }
 
+  const summary = summarizeImportRows(appliedRows)
+  await db.venueImportLog.create({
+    data: {
+      merchantId,
+      city: cityFilter ?? null,
+      source: "google_maps",
+      total: summary.total,
+      created: summary.create,
+      updated: summary.update,
+      invalid: summary.invalid,
+      items: appliedRows,
+    },
+  })
+
   return NextResponse.json({
     rows: appliedRows,
-    summary: summarizeImportRows(appliedRows),
+    summary,
   })
 }

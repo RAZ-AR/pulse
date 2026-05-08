@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 type ImportVenue = {
   sourceProvider?: string
@@ -46,6 +46,17 @@ type ServerPreview = {
     update: number
     invalid: number
   }
+}
+
+type ImportLog = {
+  id: string
+  city: string | null
+  source: string
+  total: number
+  created: number
+  updated: number
+  invalid: number
+  createdAt: string
 }
 
 type PreviewRow = {
@@ -130,6 +141,7 @@ export default function VenueImportsPage() {
   const [applyConfirmation, setApplyConfirmation] = useState("")
   const [applyMessage, setApplyMessage] = useState("")
   const [isApplying, setIsApplying] = useState(false)
+  const [logs, setLogs] = useState<ImportLog[]>([])
   const parsed = useMemo(() => parseImportJson(json), [json])
   const localRows = useMemo(() => {
     return parsed.venues
@@ -166,6 +178,20 @@ export default function VenueImportsPage() {
   const invalidCount = rows.filter((row) => row.errors.length > 0).length
   const previewMode = serverPreview ? "DB preview" : "Local validation"
   const canApply = Boolean(serverPreview) && invalidCount === 0 && rows.length > 0 && applyConfirmation === "APPLY"
+
+  useEffect(() => {
+    void loadImportLogs()
+  }, [])
+
+  async function loadImportLogs() {
+    try {
+      const response = await fetch("/api/venue-imports/logs")
+      const result = (await response.json()) as { logs?: ImportLog[] }
+      setLogs(Array.isArray(result.logs) ? result.logs : [])
+    } catch {
+      setLogs([])
+    }
+  }
 
   async function runServerPreview() {
     setServerError("")
@@ -213,6 +239,7 @@ export default function VenueImportsPage() {
       setServerPreview(result)
       setApplyMessage(`Applied ${result.summary.total} venues · ${result.summary.create} created · ${result.summary.update} updated`)
       setApplyConfirmation("")
+      await loadImportLogs()
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Apply failed")
     } finally {
@@ -306,6 +333,43 @@ export default function VenueImportsPage() {
             <Command label="Fetch Belgrade" value={'GOOGLE_PLACES_API_KEY=... pnpm db:fetch:google-venues -- --query="coffee Belgrade" --city=Belgrade'} />
             <Command label="Dry run" value="pnpm db:import:venues -- --file=src/data/google-belgrade.json --json" />
             <Command label="Apply after review" value="pnpm db:import:venues -- --file=src/data/google-belgrade.json --apply" />
+          </section>
+
+          <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-base font-semibold text-[#0F1115]">Import history</h2>
+              <button
+                onClick={loadImportLogs}
+                className="px-3 py-1.5 border border-[#D1D5DB] text-[#374151] text-xs font-medium rounded-lg hover:bg-[#F9FAFB]"
+              >
+                Refresh
+              </button>
+            </div>
+            {logs.length === 0 ? (
+              <p className="text-sm text-[#9CA3AF]">No applied imports yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {logs.map((log) => (
+                  <div key={log.id} className="rounded-xl border border-[#E5E7EB] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[#0F1115]">{log.city ?? "All cities"}</p>
+                        <p className="text-xs text-[#6B7280]">{new Date(log.createdAt).toLocaleString()}</p>
+                      </div>
+                      <span className="rounded-full bg-[#F9FAFB] px-2 py-1 text-xs font-medium text-[#6B7280]">
+                        {log.source}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      <Metric label="Total" value={log.total} />
+                      <Metric label="New" value={log.created} />
+                      <Metric label="Upd" value={log.updated} />
+                      <Metric label="Bad" value={log.invalid} tone={log.invalid > 0 ? "danger" : "default"} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
