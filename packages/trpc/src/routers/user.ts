@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, publicProcedure, merchantProcedure } from "../trpc"
-import { REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
+import { CHECKIN_POINTS, RECEIPT_DAILY_LIMIT, SCAN_POINTS_PER_CURRENCY, REFERRAL_SIGNUP_POINTS, stepMultiplier } from "@pulse/shared"
 
 const OptionalReferralCode = z.preprocess((value) => {
   if (typeof value !== "string") return value
@@ -17,6 +17,8 @@ export const userRouter = router({
     const diffToMonday = day === 0 ? 6 : day - 1
     weekStart.setDate(weekStart.getDate() - diffToMonday)
     weekStart.setHours(0, 0, 0, 0)
+    const todayStart = new Date(now)
+    todayStart.setHours(0, 0, 0, 0)
 
     const user = await ctx.db.user.findUnique({
       where: { id: ctx.userId },
@@ -53,6 +55,7 @@ export const userRouter = router({
       },
       select: {
         type: true,
+        createdAt: true,
         pointsEarned: true,
         pointsFromEarned: true,
         pointsFromWelcome: true,
@@ -65,6 +68,13 @@ export const userRouter = router({
     const weeklySpentPoints = weeklyTxs
       .filter((tx) => ["REWARD_REDEEMED", "GIFT_SENT"].includes(tx.type))
       .reduce((sum, tx) => sum + tx.pointsFromEarned + tx.pointsFromWelcome + tx.pointsEarned, 0)
+    const todayReceiptScans = weeklyTxs.filter((tx) => tx.type === "RECEIPT_SCAN" && tx.createdAt >= todayStart).length
+    const receiptSlotsLeft = Math.max(0, RECEIPT_DAILY_LIMIT - todayReceiptScans)
+    const nextReceiptEstimate = receiptSlotsLeft > 0
+      ? Math.max(1, Math.floor(2500 * SCAN_POINTS_PER_CURRENCY * stepMultiplier(user.stepsToday)))
+      : 0
+    const checkedInToday = user.lastCheckinAt ? user.lastCheckinAt >= todayStart : false
+    const todayPotentialPoints = nextReceiptEstimate + (checkedInToday ? 0 : CHECKIN_POINTS)
 
     return {
       ...user,
@@ -72,6 +82,7 @@ export const userRouter = router({
       totalPoints: user.earnedPoints + user.welcomePoints,
       weeklyEarnedPoints,
       weeklySpentPoints,
+      todayPotentialPoints,
     }
   }),
 

@@ -83,7 +83,8 @@ export default function HomeScreen() {
   const progress = tierProgress(lifetimePoints, tier.start, tier.next)
   const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
   const weeklySpent = me.data?.weeklySpentPoints ?? 10
-  const todayAvailable = Math.max(0, 100 - (weeklyEarned % 100))
+  const activeChallengeRewards = activeChallenges.reduce((sum, uc) => sum + uc.challenge.pointsReward, 0)
+  const todayAvailable = (me.data?.todayPotentialPoints ?? 0) + activeChallengeRewards
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
 
   return (
