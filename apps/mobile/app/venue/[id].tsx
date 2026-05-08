@@ -1,11 +1,65 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
 import { NeuCard, GradPill } from "../../src/components/neu"
+import { DEMO_VENUES } from "../../src/lib/venues"
 
 const REWARD_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
+
+type DetailVenue = {
+  id: string
+  name: string
+  category: string
+  description: string | null
+  address: string
+  city: string
+  country: string
+  isPartner: boolean
+  pointsPerCurrency: number | null
+  currency: string | null
+  boostUntil: Date | string | null
+  boostMultiplier: number | null
+  subscriptionTier: string | null
+  enableDiscount: boolean
+  maxDiscountPercent: number
+  googleRating: number | null
+  googleReviews: number | null
+  rewards?: {
+    id: string
+    title: string
+    description: string | null
+    pointsCost: number
+  }[]
+  phone?: string | null
+  website?: string | null
+  instagram?: string | null
+  openingHours?: string | null
+  sourceLabel?: string
+  specialOffers?: string[]
+}
+
+function isDemoVenue(venue: DetailVenue) {
+  return venue.id.startsWith("demo_")
+}
+
+function venueOffers(venue: DetailVenue) {
+  const offers: string[] = []
+  if (venue.specialOffers?.length) offers.push(...venue.specialOffers)
+  if (venue.enableDiscount && venue.maxDiscountPercent > 0) offers.push(`-${venue.maxDiscountPercent}% welcome discount`)
+  if (venue.isPartner && venue.pointsPerCurrency) offers.push("Partner points on every purchase")
+  return Array.from(new Set(offers)).slice(0, 4)
+}
+
+function contactRows(venue: DetailVenue) {
+  return [
+    venue.phone ? { label: "Phone", value: venue.phone, url: `tel:${venue.phone.replace(/\s/g, "")}` } : null,
+    venue.website ? { label: "Website", value: venue.website.replace(/^https?:\/\//, ""), url: venue.website } : null,
+    venue.instagram ? { label: "Instagram", value: venue.instagram.replace(/^https?:\/\/instagram\.com\//, "@"), url: venue.instagram } : null,
+    venue.openingHours ? { label: "Hours", value: venue.openingHours } : null,
+  ].filter(Boolean) as { label: string; value: string; url?: string }[]
+}
 
 export default function VenueDetailScreen() {
   const theme = useTheme()
@@ -15,8 +69,9 @@ export default function VenueDetailScreen() {
 
   const venue = trpc.venue.detail.useQuery({ id })
   const reviews = trpc.review.listByVenue.useQuery({ venueId: id, limit: 10 })
+  const demoVenue = DEMO_VENUES.find((item) => item.id === id)
 
-  if (venue.isLoading) {
+  if (venue.isLoading && !demoVenue) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
         <Text style={{ color: theme.textSecondary }}>{t("common:loading", "Loading…")}</Text>
@@ -24,7 +79,7 @@ export default function VenueDetailScreen() {
     )
   }
 
-  const v = venue.data
+  const v = (venue.data ?? demoVenue) as DetailVenue | undefined
   if (!v) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
@@ -37,6 +92,10 @@ export default function VenueDetailScreen() {
   const effectiveRate = v.pointsPerCurrency
     ? v.pointsPerCurrency * (boostActive ? (v.boostMultiplier ?? 1) : 1)
     : null
+  const rewards = v.rewards ?? []
+  const offers = venueOffers(v)
+  const contacts = contactRows(v)
+  const sourceLabel = isDemoVenue(v) ? (v.sourceLabel ?? "Google Maps public profile") : "PULSE partner profile"
 
   return (
     <>
@@ -56,6 +115,11 @@ export default function VenueDetailScreen() {
             <Text style={[s.subtle, { color: theme.textSecondary }]}>
               {v.category.toLowerCase()} · {v.city}
             </Text>
+            {v.googleRating ? (
+              <Text style={[s.rating, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+                Google {v.googleRating.toFixed(1)} · {v.googleReviews ?? 0} reviews
+              </Text>
+            ) : null}
             {v.address ? (
               <Text style={[s.subtle, { color: theme.textSecondary, marginTop: 2 }]}>{v.address}</Text>
             ) : null}
@@ -90,6 +154,48 @@ export default function VenueDetailScreen() {
           </NeuCard>
         )}
 
+        {offers.length > 0 ? (
+          <NeuCard style={{ padding: 16, marginBottom: 16 }}>
+            <View style={s.sectionTop}>
+              <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+                {t("specialOffers", "Special offers").toUpperCase()}
+              </Text>
+              <Text style={[s.sourceText, { color: theme.textSecondary }]}>{sourceLabel}</Text>
+            </View>
+            <View style={{ gap: 8 }}>
+              {offers.map((offer) => (
+                <View key={offer} style={s.offerRow}>
+                  <Text style={s.offerDot}>●</Text>
+                  <Text style={[s.offerText, { fontFamily: fonts.bodyBold }]}>{offer}</Text>
+                </View>
+              ))}
+            </View>
+          </NeuCard>
+        ) : null}
+
+        {contacts.length > 0 ? (
+          <NeuCard style={{ padding: 16, marginBottom: 16 }}>
+            <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+              {t("contacts", "Contacts").toUpperCase()}
+            </Text>
+            <View style={{ gap: 10 }}>
+              {contacts.map((row) => (
+                <Pressable
+                  key={row.label}
+                  disabled={!row.url}
+                  onPress={() => row.url ? Linking.openURL(row.url) : undefined}
+                  style={s.contactRow}
+                >
+                  <Text style={[s.contactLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{row.label}</Text>
+                  <Text style={[s.contactValue, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                    {row.value}{row.url ? " ↗" : ""}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </NeuCard>
+        ) : null}
+
         {/* Description */}
         {v.description ? (
           <NeuCard style={{ padding: 16, marginBottom: 16 }}>
@@ -101,13 +207,13 @@ export default function VenueDetailScreen() {
         ) : null}
 
         {/* Rewards */}
-        {v.rewards.length > 0 ? (
+        {rewards.length > 0 ? (
           <>
             <Text style={[s.heading, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
               {t("availableRewards", "Available rewards")}
             </Text>
             <View style={{ gap: 10, marginBottom: 24 }}>
-              {v.rewards.map((r, i) => {
+              {rewards.map((r, i) => {
                 const grad = REWARD_GRADS[i % REWARD_GRADS.length]!
                 return (
                   <NeuCard
@@ -188,6 +294,7 @@ const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 18 },
   name: { fontSize: 34, lineHeight: 38 },
   subtle: { fontSize: 13, marginTop: 4 },
+  rating: { fontSize: 12, marginTop: 5 },
 
   rateCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
@@ -198,7 +305,15 @@ const s = StyleSheet.create({
   boostText: { color: colors.ink, fontSize: 11 },
 
   sectionLabel: { fontSize: 11, letterSpacing: 1, marginBottom: 8 },
+  sectionTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8 },
+  sourceText: { fontSize: 10, flexShrink: 1, textAlign: "right" },
   body: { fontSize: 14, lineHeight: 20 },
+  offerRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 9 },
+  offerDot: { color: "#9FEED3", fontSize: 10 },
+  offerText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
+  contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottomWidth: 1, borderBottomColor: "rgba(163,160,200,0.14)", paddingVertical: 8 },
+  contactLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6 },
+  contactValue: { fontSize: 13, flex: 1, textAlign: "right" },
 
   heading: { fontSize: 25, marginBottom: 12 },
 

@@ -36,6 +36,12 @@ export type DemoVenue = {
   googleRating: number | null
   googleReviews: number | null
   distanceMeters: number
+  phone: string | null
+  website: string | null
+  instagram: string | null
+  openingHours: string | null
+  sourceLabel: string
+  specialOffers: string[]
 }
 
 export const DEFAULT_CITY: CityOption = { name: "Belgrade", label: "Belgrade", lat: 44.8125, lng: 20.4612, radiusKm: 12 }
@@ -82,6 +88,12 @@ export const DEMO_VENUES: DemoVenue[] = [
     googleRating: 4.7,
     googleReviews: 428,
     distanceMeters: 820,
+    phone: "+381 11 412 8820",
+    website: "https://cafewillow.example",
+    instagram: "https://instagram.com/cafewillow.bg",
+    openingHours: "Mon-Sun 08:00-22:00",
+    sourceLabel: "Google Maps public profile",
+    specialOffers: ["-30% welcome dessert", "Double points before 11:00", "Free pastry after 6 visits"],
   },
   {
     id: "demo_bg_jan",
@@ -105,6 +117,12 @@ export const DEMO_VENUES: DemoVenue[] = [
     googleRating: 4.8,
     googleReviews: 312,
     distanceMeters: 640,
+    phone: "+381 11 328 4410",
+    website: "https://janbelgrade.example",
+    instagram: "https://instagram.com/jan.belgrade",
+    openingHours: "Mon-Sat 12:00-23:00",
+    sourceLabel: "Google Maps public profile",
+    specialOffers: ["-50% starter set", "Weekend tasting bonus", "Partner points on every bill"],
   },
   {
     id: "demo_bg_torii",
@@ -128,6 +146,12 @@ export const DEMO_VENUES: DemoVenue[] = [
     googleRating: 4.5,
     googleReviews: 219,
     distanceMeters: 980,
+    phone: "+381 11 262 7718",
+    website: "https://toriisushi.example",
+    instagram: "https://instagram.com/toriisushi.bg",
+    openingHours: "Tue-Sun 12:00-22:30",
+    sourceLabel: "Google Maps public profile",
+    specialOffers: ["Lunch combo rewards", "Sushi set challenge", "Check-in bonus planned"],
   },
   {
     id: "demo_bg_luma",
@@ -151,6 +175,12 @@ export const DEMO_VENUES: DemoVenue[] = [
     googleRating: 4.6,
     googleReviews: 144,
     distanceMeters: 1900,
+    phone: "+381 64 220 1144",
+    website: "https://lumabeauty.example",
+    instagram: "https://instagram.com/lumabeauty.bg",
+    openingHours: "Mon-Fri 10:00-20:00",
+    sourceLabel: "Google Maps public profile",
+    specialOffers: ["-20% first appointment", "Referral beauty perk", "Double points on weekdays"],
   },
   {
     id: "demo_ns_mood",
@@ -174,6 +204,12 @@ export const DEMO_VENUES: DemoVenue[] = [
     googleRating: 4.7,
     googleReviews: 188,
     distanceMeters: 720,
+    phone: "+381 21 555 814",
+    website: "https://moodcoffee.example",
+    instagram: "https://instagram.com/moodcoffee.ns",
+    openingHours: "Mon-Sun 07:30-21:00",
+    sourceLabel: "Google Maps public profile",
+    specialOffers: ["-25% welcome coffee", "Morning double points", "Free refill reward"],
   },
   {
     id: "demo_ns_sakura",
@@ -197,6 +233,12 @@ export const DEMO_VENUES: DemoVenue[] = [
     googleRating: 4.4,
     googleReviews: 96,
     distanceMeters: 1040,
+    phone: "+381 21 447 902",
+    website: "https://sakuranovisad.example",
+    instagram: "https://instagram.com/sakura.novisad",
+    openingHours: "Tue-Sun 12:00-23:00",
+    sourceLabel: "Google Maps public profile",
+    specialOffers: ["Weekend sushi bonus", "Bowl reward planned", "Partner onboarding candidate"],
   },
 ]
 
