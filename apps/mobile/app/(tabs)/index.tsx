@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
 import { LavaLampSurface } from "../../src/components/neu"
-import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
+import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 type RewardItem = {
   id: string
@@ -22,6 +22,17 @@ function fmt(n: number) {
 function daysLeft(d: Date | string | null | undefined): number {
   if (!d) return 0
   return Math.max(0, Math.round((new Date(d).getTime() - Date.now()) / 86_400_000))
+}
+
+function distanceLabel(meters: number | null | undefined) {
+  if (meters === null || meters === undefined) return "Nearby"
+  if (meters < 1000) return `${Math.round(meters)}m`
+  return `${(meters / 1000).toFixed(1)}km`
+}
+
+function ratingLabel(rating: number | null | undefined, reviews: number | null | undefined) {
+  if (!rating) return "Google soon"
+  return `Google ${rating.toFixed(1)} · ${reviews ?? 0}`
 }
 
 function initials(name: string | null | undefined) {
@@ -52,6 +63,7 @@ export default function HomeScreen() {
   const challenges = trpc.challenge.listMine.useQuery()
 
   const rewardItems = (rewards.data?.rewards ?? []) as RewardItem[]
+  const visibleNearby = nearby.data?.length ? nearby.data : getDemoVenues(selectedCity.name, activeFilter)
   const activeChallenges = (challenges.data ?? []).filter((uc) => !uc.isCompleted)
   const total = me.data ? me.data.earnedPoints + me.data.welcomePoints : 0
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
@@ -248,14 +260,14 @@ export default function HomeScreen() {
             <VenueSkeleton />
           </>
         ) : null}
-        {!nearby.isLoading && nearby.data?.length === 0 ? (
+        {!nearby.isLoading && visibleNearby.length === 0 ? (
           <View style={s.emptyVenues}>
             <Text style={[s.emptyVenuesText, { fontFamily: fonts.bodyBold }]}>
               {selectedCity.label}: {t("venue:noVenuesYet", "No venues yet")}
             </Text>
           </View>
         ) : null}
-        {(nearby.data ?? []).slice(0, 5).map((venue) => {
+        {visibleNearby.slice(0, 5).map((venue) => {
           const offer = rewardItems.find((reward) => reward.venue.id === venue.id)
           return (
             <VenueCard
@@ -267,10 +279,12 @@ export default function HomeScreen() {
               rate={venue.pointsPerCurrency ?? null}
               offer={offer?.title ?? t("partnerPoints")}
               logo={initials(venue.name)}
+              distance={venue.distanceMeters}
+              rating={venue.googleRating}
+              reviews={venue.googleReviews}
+              discount={venue.enableDiscount ? venue.maxDiscountPercent : null}
               onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
               receiptScanLabel={t("receiptScan")}
-              menuLabel={t("menu")}
-              routeLabel={t("route")}
             />
           )
         })}
@@ -429,10 +443,12 @@ function VenueCard({
   rate,
   offer,
   logo,
+  distance,
+  rating,
+  reviews,
+  discount,
   onPress,
   receiptScanLabel,
-  menuLabel,
-  routeLabel,
 }: {
   name: string
   category: string
@@ -441,10 +457,12 @@ function VenueCard({
   rate: number | null
   offer: string
   logo: string
+  distance: number
+  rating: number | null
+  reviews: number | null
+  discount: number | null
   onPress: () => void
   receiptScanLabel: string
-  menuLabel: string
-  routeLabel: string
 }) {
   return (
     <Pressable onPress={onPress} style={s.venueCard}>
@@ -467,11 +485,16 @@ function VenueCard({
             </Text>
           </View>
           <View style={s.venueChipLight}>
-            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{menuLabel}</Text>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{distanceLabel(distance)}</Text>
           </View>
           <View style={s.venueChipLight}>
-            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{routeLabel}</Text>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{ratingLabel(rating, reviews)}</Text>
           </View>
+          {discount ? (
+            <View style={s.venueChipMint}>
+              <Text style={[s.venueChipMintText, { fontFamily: fonts.bodyBold }]}>-{discount}%</Text>
+            </View>
+          ) : null}
         </View>
         <View style={s.specialLine}>
           <Text style={s.specialDot}>●</Text>
@@ -770,6 +793,8 @@ const s = StyleSheet.create({
   venueChipDarkText: { color: "#7A8EA3", fontSize: 10 },
   venueChipLight: { backgroundColor: "rgba(225,230,239,0.58)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   venueChipLightText: { color: "#91A1B4", fontSize: 10 },
+  venueChipMint: { backgroundColor: "rgba(236,255,235,0.82)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  venueChipMintText: { color: "#7A8EA3", fontSize: 10 },
   specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
   specialDot: { color: "#9FEED3", fontSize: 10 },
   specialText: { color: "#7FAFC2", fontSize: 12, flex: 1 },

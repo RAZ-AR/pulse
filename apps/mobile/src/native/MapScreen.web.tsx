@@ -1,11 +1,22 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { colors, fonts, useTheme } from "../lib/theme"
 import { LavaLampSurface } from "../components/neu"
-import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, resolveCity, VENUE_FILTERS } from "../lib/venues"
+import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../lib/venues"
+
+function ratingLabel(rating: number | null | undefined, reviews: number | null | undefined) {
+  if (!rating) return "Google rating soon"
+  return `Google ${rating.toFixed(1)} (${reviews ?? 0})`
+}
+
+function distanceLabel(meters: number) {
+  if (meters < 1000) return `${Math.round(meters)}m`
+  return `${(meters / 1000).toFixed(1)}km`
+}
 
 export default function MapWebScreen() {
   const theme = useTheme()
@@ -27,6 +38,13 @@ export default function MapWebScreen() {
     ...(activeFilter.category ? { category: activeFilter.category } : {}),
     limit: 50,
   })
+  const demoVenues = getDemoVenues(selectedCity.name, activeFilter)
+  const visibleVenues = venues.data?.length ? venues.data : demoVenues
+  const partnerCount = visibleVenues.filter((venue) => venue.isPartner).length
+  const bestRate = visibleVenues.reduce<number | null>((best, venue) => {
+    if (!venue.pointsPerCurrency) return best
+    return best === null ? venue.pointsPerCurrency : Math.max(best, venue.pointsPerCurrency)
+  }, null)
 
   return (
     <ScrollView
@@ -58,6 +76,53 @@ export default function MapWebScreen() {
         </View>
       </LavaLampSurface>
 
+      <View style={[s.mapPanel, theme.shadowRaised]}>
+        <LinearGradient
+          colors={["rgba(235,254,255,0.96)", "rgba(255,244,254,0.82)", "rgba(236,255,235,0.86)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={s.mapBubbleTop} />
+        <View style={s.mapBubbleBottom} />
+        <View style={s.mapGrid}>
+          {visibleVenues.slice(0, 9).map((venue, index) => (
+            <Pressable
+              key={venue.id}
+              onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
+              style={[
+                s.pin,
+                {
+                  left: `${12 + ((index * 29) % 72)}%`,
+                  top: `${18 + ((index * 19) % 62)}%`,
+                },
+                index === 0 && s.pinFeatured,
+              ]}
+            >
+              <Text style={[s.pinText, { fontFamily: fonts.displayHeavy }]}>
+                {venue.name.slice(0, 1).toUpperCase()}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={s.mapStats}>
+          <View style={s.mapStat}>
+            <Text style={[s.mapStatValue, { fontFamily: fonts.displayHeavy }]}>{visibleVenues.length}</Text>
+            <Text style={[s.mapStatLabel, { fontFamily: fonts.bodyBold }]}>venues</Text>
+          </View>
+          <View style={s.mapStat}>
+            <Text style={[s.mapStatValue, { fontFamily: fonts.displayHeavy }]}>{partnerCount}</Text>
+            <Text style={[s.mapStatLabel, { fontFamily: fonts.bodyBold }]}>partners</Text>
+          </View>
+          <View style={s.mapStat}>
+            <Text style={[s.mapStatValue, { fontFamily: fonts.displayHeavy }]}>
+              {bestRate ? bestRate.toFixed(3) : "—"}
+            </Text>
+            <Text style={[s.mapStatLabel, { fontFamily: fonts.bodyBold }]}>best pts</Text>
+          </View>
+        </View>
+      </View>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
         {VENUE_FILTERS.map((filter) => (
           <Pressable
@@ -73,7 +138,7 @@ export default function MapWebScreen() {
       </ScrollView>
 
       <View style={s.list}>
-        {(venues.data ?? []).map((venue) => (
+        {visibleVenues.map((venue) => (
           <Pressable
             key={venue.id}
             style={s.card}
@@ -104,6 +169,9 @@ export default function MapWebScreen() {
                 <Text style={s.address} numberOfLines={1}>
                   {venue.address}
                 </Text>
+                <Text style={s.description} numberOfLines={2}>
+                  {venue.description ?? "Contacts, website and Instagram will appear after source import."}
+                </Text>
                 <View style={s.chips}>
                   <View style={s.darkChip}>
                     <Text style={[s.darkChipText, { fontFamily: fonts.bodyBold }]}>
@@ -114,7 +182,24 @@ export default function MapWebScreen() {
                   </View>
                   <View style={s.lightChip}>
                     <Text style={[s.lightChipText, { fontFamily: fonts.bodyBold }]}>
-                      {Math.round(venue.distanceMeters)}m
+                      {distanceLabel(venue.distanceMeters)}
+                    </Text>
+                  </View>
+                  <View style={s.lightChip}>
+                    <Text style={[s.lightChipText, { fontFamily: fonts.bodyBold }]}>
+                      {ratingLabel(venue.googleRating, venue.googleReviews)}
+                    </Text>
+                  </View>
+                  {venue.enableDiscount ? (
+                    <View style={s.discountChip}>
+                      <Text style={[s.discountChipText, { fontFamily: fonts.bodyBold }]}>
+                        up to {venue.maxDiscountPercent}% off
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View style={s.sourceChip}>
+                    <Text style={[s.sourceChipText, { fontFamily: fonts.bodyBold }]}>
+                      open sources ready
                     </Text>
                   </View>
                 </View>
@@ -166,6 +251,81 @@ const s = StyleSheet.create({
   filterChipIdle: { backgroundColor: "rgba(249,251,255,0.62)" },
   filterText: { fontSize: 11 },
   list: { gap: 12 },
+  mapPanel: {
+    minHeight: 270,
+    borderRadius: 40,
+    marginBottom: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.84)",
+    backgroundColor: "#F9FBFF",
+  },
+  mapBubbleTop: {
+    position: "absolute",
+    top: -70,
+    right: -34,
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: "rgba(255,255,255,0.44)",
+  },
+  mapBubbleBottom: {
+    position: "absolute",
+    bottom: 58,
+    left: -44,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(249,251,255,0.34)",
+  },
+  mapGrid: {
+    flex: 1,
+    margin: 16,
+    borderRadius: 30,
+    backgroundColor: "rgba(249,251,255,0.34)",
+    overflow: "hidden",
+  },
+  pin: {
+    position: "absolute",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.78)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.34,
+    shadowRadius: 9,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.88)",
+  },
+  pinFeatured: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(255,244,254,0.92)",
+  },
+  pinText: { color: colors.ink, fontSize: 16 },
+  mapStats: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
+    flexDirection: "row",
+    gap: 8,
+  },
+  mapStat: {
+    flex: 1,
+    minHeight: 64,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.70)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mapStatValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
+  mapStatLabel: { color: "#91A1B4", fontSize: 9, textTransform: "uppercase", marginTop: 4 },
   card: { backgroundColor: "#F9FBFF", borderRadius: 34, padding: 12, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
   row: { flexDirection: "row", gap: 12 },
   logo: {
@@ -192,6 +352,7 @@ const s = StyleSheet.create({
     letterSpacing: 0.8,
   },
   address: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
+  description: { color: "#91A1B4", fontSize: 12, lineHeight: 16, marginTop: 8 },
   chips: { flexDirection: "row", gap: 6, marginTop: 10, flexWrap: "wrap" },
   darkChip: {
     backgroundColor: "rgba(255,244,254,0.92)",
@@ -207,5 +368,19 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   lightChipText: { color: colors.ink, fontSize: 10 },
+  discountChip: {
+    backgroundColor: "rgba(236,255,235,0.88)",
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  discountChipText: { color: colors.ink, fontSize: 10 },
+  sourceChip: {
+    backgroundColor: "rgba(235,254,255,0.88)",
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  sourceChipText: { color: colors.ink, fontSize: 10 },
   empty: { textAlign: "center", marginTop: 24 },
 })

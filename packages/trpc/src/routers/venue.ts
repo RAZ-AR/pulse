@@ -100,10 +100,12 @@ export const venueRouter = router({
         },
         select: {
           id: true, name: true, category: true, city: true, address: true,
-          lat: true, lng: true, photos: true,
+          lat: true, lng: true, photos: true, description: true,
           isPartner: true, pointsPerCurrency: true, currency: true,
           boostMultiplier: true, boostUntil: true,
           subscriptionTier: true,
+          enableDiscount: true, maxDiscountPercent: true,
+          googleRating: true, googleReviews: true,
         },
       })
 
