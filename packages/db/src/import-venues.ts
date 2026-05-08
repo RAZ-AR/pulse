@@ -37,10 +37,12 @@ type ImportVenue = {
 function parseArgs() {
   const args = process.argv.slice(2)
   const apply = args.includes("--apply")
+  const json = args.includes("--json")
   const fileFlag = args.find((arg) => arg.startsWith("--file="))
   const cityFlag = args.find((arg) => arg.startsWith("--city="))
   return {
     apply,
+    json,
     file: resolve(process.cwd(), fileFlag?.slice("--file=".length) ?? "src/data/public-venues.sample.json"),
     city: cityFlag?.slice("--city=".length),
   }
@@ -134,7 +136,7 @@ function toVenueData(venue: ImportVenue): Prisma.VenueCreateInput {
 }
 
 async function main() {
-  const { apply, file, city } = parseArgs()
+  const { apply, json, file, city } = parseArgs()
   const raw = JSON.parse(await readFile(file, "utf8")) as unknown
   if (!Array.isArray(raw)) throw new Error("import file must be a JSON array")
 
@@ -142,8 +144,35 @@ async function main() {
     .map(normalizeVenue)
     .filter((venue) => !city || venue.city.toLowerCase() === city.toLowerCase())
 
-  console.log(`${apply ? "Applying" : "Previewing"} ${venues.length} venue imports from ${file}`)
-  if (city) console.log(`City filter: ${city}`)
+  const summary: {
+    mode: "apply" | "preview"
+    file: string
+    city?: string
+    total: number
+    create: number
+    update: number
+    items: {
+      action: "create" | "update"
+      city: string
+      name: string
+      sourceProvider: string
+      sourcePlaceId: string
+      existingId: string | null
+    }[]
+  } = {
+    mode: apply ? "apply" : "preview",
+    file,
+    ...(city ? { city } : {}),
+    total: venues.length,
+    create: 0,
+    update: 0,
+    items: [],
+  }
+
+  if (!json) {
+    console.log(`${apply ? "Applying" : "Previewing"} ${venues.length} venue imports from ${file}`)
+    if (city) console.log(`City filter: ${city}`)
+  }
 
   for (const venue of venues) {
     const data = toVenueData(venue)
@@ -163,7 +192,16 @@ async function main() {
     })
 
     const action = existing ? "update" : "create"
-    console.log(`${action.toUpperCase()} ${venue.city}: ${venue.name} (${venue.sourceProvider}:${venue.sourcePlaceId})`)
+    summary[action] += 1
+    summary.items.push({
+      action,
+      city: venue.city,
+      name: venue.name,
+      sourceProvider: venue.sourceProvider,
+      sourcePlaceId: venue.sourcePlaceId,
+      existingId: existing?.id ?? null,
+    })
+    if (!json) console.log(`${action.toUpperCase()} ${venue.city}: ${venue.name} (${venue.sourceProvider}:${venue.sourcePlaceId})`)
 
     if (!apply) continue
 
@@ -174,7 +212,11 @@ async function main() {
     }
   }
 
-  if (!apply) console.log("Dry run only. Re-run with --apply to write changes.")
+  if (json) {
+    console.log(JSON.stringify(summary, null, 2))
+  } else if (!apply) {
+    console.log("Dry run only. Re-run with --apply to write changes.")
+  }
 }
 
 main()
