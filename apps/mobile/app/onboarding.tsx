@@ -24,12 +24,6 @@ function friendlyAuthError(message: string, fallback: string) {
   return message
 }
 
-function isTelegramMode() {
-  if (typeof window === "undefined") return false
-  // @ts-expect-error – injected by Telegram WebView before page scripts run
-  return Boolean(window.Telegram?.WebApp)
-}
-
 // ── Telegram onboarding (2 steps: welcome → city) ────────────
 function TelegramOnboarding() {
   const theme = useTheme()
@@ -226,8 +220,15 @@ function TgStep1({
 // ── Email onboarding ──────────────────────────────────────────
 export default function OnboardingScreen() {
   const theme = useTheme()
+  // useState lazy initializer runs at mount (window always defined in browser SPA).
+  // Avoids false-negative when Expo pre-renders with undefined window.
+  const [isTg] = useState(() => {
+    if (typeof window === "undefined") return false
+    // @ts-expect-error – injected by Telegram WebView
+    return Boolean(window.Telegram?.WebApp)
+  })
 
-  if (isTelegramMode()) return <TelegramOnboarding />
+  if (isTg) return <TelegramOnboarding />
 
   return <EmailOnboarding theme={theme} />
 }
