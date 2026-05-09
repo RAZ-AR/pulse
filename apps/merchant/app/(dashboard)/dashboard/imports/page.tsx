@@ -59,6 +59,16 @@ type ImportLog = {
   createdAt: string
 }
 
+type GoogleFetchResult = {
+  venues: ImportVenue[]
+  summary: {
+    total: number
+    query: string
+    city: string
+    country: string
+  }
+}
+
 type PreviewRow = {
   venue: ImportVenue
   index: number
@@ -142,6 +152,12 @@ export default function VenueImportsPage() {
   const [applyMessage, setApplyMessage] = useState("")
   const [isApplying, setIsApplying] = useState(false)
   const [logs, setLogs] = useState<ImportLog[]>([])
+  const [fetchQuery, setFetchQuery] = useState("coffee Belgrade")
+  const [fetchCity, setFetchCity] = useState("Belgrade")
+  const [fetchCountry, setFetchCountry] = useState("Serbia")
+  const [fetchLimit, setFetchLimit] = useState(10)
+  const [isFetchingGoogle, setIsFetchingGoogle] = useState(false)
+  const [fetchMessage, setFetchMessage] = useState("")
   const parsed = useMemo(() => parseImportJson(json), [json])
   const localRows = useMemo(() => {
     return parsed.venues
@@ -218,6 +234,38 @@ export default function VenueImportsPage() {
       setServerError(error instanceof Error ? error.message : "Preview failed")
     } finally {
       setIsPreviewing(false)
+    }
+  }
+
+  async function fetchGooglePlaces() {
+    setServerError("")
+    setFetchMessage("")
+    setApplyMessage("")
+    setApplyConfirmation("")
+    setIsFetchingGoogle(true)
+    try {
+      const response = await fetch("/api/venue-imports/fetch-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: fetchQuery,
+          city: fetchCity,
+          country: fetchCountry,
+          limit: fetchLimit,
+        }),
+      })
+      const result = (await response.json()) as GoogleFetchResult | { error?: string }
+      if (!response.ok || !("venues" in result)) {
+        throw new Error("error" in result && result.error ? result.error : "Google fetch failed")
+      }
+      setJson(JSON.stringify(result.venues, null, 2))
+      setCityFilter(result.summary.city)
+      setServerPreview(null)
+      setFetchMessage(`Fetched ${result.summary.total} venues for ${result.summary.query}`)
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "Google fetch failed")
+    } finally {
+      setIsFetchingGoogle(false)
     }
   }
 
@@ -328,6 +376,54 @@ export default function VenueImportsPage() {
         </section>
 
         <aside className="space-y-6">
+          <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
+            <h2 className="text-base font-semibold text-[#0F1115] mb-2">Fetch from Google</h2>
+            <p className="text-xs text-[#6B7280] mb-4">
+              Uses the server-side Google Places key and fills the JSON preview.
+            </p>
+            <label className="block text-xs font-semibold text-[#6B7280] mb-1">Query</label>
+            <input
+              value={fetchQuery}
+              onChange={(event) => setFetchQuery(event.target.value)}
+              className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm mb-3"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[#6B7280] mb-1">City</label>
+                <input
+                  value={fetchCity}
+                  onChange={(event) => setFetchCity(event.target.value)}
+                  className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#6B7280] mb-1">Country</label>
+                <input
+                  value={fetchCountry}
+                  onChange={(event) => setFetchCountry(event.target.value)}
+                  className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm"
+                />
+              </div>
+            </div>
+            <label className="block text-xs font-semibold text-[#6B7280] mt-3 mb-1">Limit</label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={fetchLimit}
+              onChange={(event) => setFetchLimit(Number(event.target.value))}
+              className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm mb-3"
+            />
+            <button
+              onClick={fetchGooglePlaces}
+              disabled={isFetchingGoogle}
+              className="w-full px-4 py-2 bg-[#0F1115] text-white text-sm font-semibold rounded-xl hover:bg-[#1F2937] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isFetchingGoogle ? "Fetching..." : "Fetch Google venues"}
+            </button>
+            {fetchMessage ? <p className="mt-2 text-sm text-[#059669]">{fetchMessage}</p> : null}
+          </section>
+
           <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
             <h2 className="text-base font-semibold text-[#0F1115] mb-4">Runbook</h2>
             <Command label="Fetch Belgrade" value={'GOOGLE_PLACES_API_KEY=... pnpm db:fetch:google-venues -- --query="coffee Belgrade" --city=Belgrade'} />
