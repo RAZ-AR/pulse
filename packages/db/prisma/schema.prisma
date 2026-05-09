@@ -123,6 +123,9 @@ model User {
   stepsToday Int @default(0)
   stepsTotal Int @default(0)
 
+  // Push notifications (Expo push token)
+  pushToken String?
+
   // Anti-fraud
   deviceFingerprint String?
   isEmailVerified   Boolean @default(false)

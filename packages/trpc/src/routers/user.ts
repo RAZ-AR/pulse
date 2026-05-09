@@ -355,4 +355,14 @@ export const userRouter = router({
       })
       return { valid: !!user, referrerName: user?.name ?? null }
     }),
+
+  registerPushToken: protectedProcedure
+    .input(z.object({ token: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.user.update({
+        where: { id: ctx.userId },
+        data: { pushToken: input.token },
+      })
+      return { ok: true }
+    }),
 })

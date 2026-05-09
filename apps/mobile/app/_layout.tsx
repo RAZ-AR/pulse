@@ -6,6 +6,13 @@ import { SafeAreaProvider } from "react-native-safe-area-context"
 import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
 import { trpc } from "../src/lib/trpc"
+import { usePushToken } from "../src/lib/usePushToken"
+
+function PushRegistrar() {
+  const me = trpc.user.me.useQuery()
+  usePushToken(me.data?.id)
+  return null
+}
 
 function AuthGate() {
   const router = useRouter()
@@ -69,6 +76,7 @@ export default function RootLayout() {
         <Providers>
           <StatusBar style="auto" />
           <AuthGate />
+          <PushRegistrar />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />

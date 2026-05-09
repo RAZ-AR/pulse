@@ -438,4 +438,27 @@ export const merchantRouter = router({
       if (transactions.length > input.limit) nextCursor = transactions.pop()!.id
       return { transactions, nextCursor }
     }),
+
+  checkins: merchantProcedure
+    .input(
+      z.object({
+        venueId: z.string(),
+        limit: z.number().default(50),
+        cursor: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const checkins = await ctx.db.checkin.findMany({
+        where: { venueId: input.venueId, venue: { ownerId: ctx.merchantId } },
+        take: input.limit + 1,
+        ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      })
+      let nextCursor: string | undefined
+      if (checkins.length > input.limit) nextCursor = checkins.pop()!.id
+      return { checkins, nextCursor }
+    }),
 })

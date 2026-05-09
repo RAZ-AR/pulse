@@ -1,9 +1,9 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure } from "../trpc"
-import { verifyCheckinPhoto } from "../services/checkin-verify"
 import { trackVisit, trackStreak } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
+import { sendPushToUser } from "../services/push"
 import {
   haversineMeters,
   CHECKIN_POINTS,
@@ -67,26 +67,10 @@ export const checkinRouter = router({
         })
       }
 
-      // 5. AI photo verification
-      let verification: { isValid: boolean; confidence: number; reason: string }
-      try {
-        verification = await verifyCheckinPhoto(input.photoUrl)
-      } catch {
-        verification = { isValid: true, confidence: 0.5, reason: "verification_error" }
-      }
-
-      // Hard reject only on high-confidence fake
-      if (!verification.isValid && verification.confidence > 0.85) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Photo does not appear to be taken at a physical venue.",
-        })
-      }
-
-      // 6. Points + streak
+      // 5. Points + streak
       const user = await ctx.db.user.findUnique({
         where: { id: ctx.userId },
-        select: { currentStreak: true, longestStreak: true, lastCheckinAt: true },
+        select: { currentStreak: true, longestStreak: true, lastCheckinAt: true, pushToken: true },
       })
       if (!user) throw new TRPCError({ code: "NOT_FOUND" })
 
@@ -103,7 +87,6 @@ export const checkinRouter = router({
             lat: input.lat,
             lng: input.lng,
             distanceFromVenue: distanceMeters,
-            aiVerification: verification,
             status: "VERIFIED",
             pointsEarned: totalPoints,
           },
@@ -153,6 +136,15 @@ export const checkinRouter = router({
 
         return { checkin, updatedUser, newBadges }
       })
+
+      // Push notification (best-effort, after tx)
+      if (result.newBadges.length > 0) {
+        void sendPushToUser(user.pushToken, "New badge!", `You earned: ${result.newBadges.join(", ")}`)
+      } else if (streak.milestoneBonus > 0) {
+        void sendPushToUser(user.pushToken, `${streak.currentStreak}-day streak!`, `+${streak.milestoneBonus} bonus points`)
+      } else {
+        void sendPushToUser(user.pushToken, "Checked in!", `+${totalPoints} pts at ${venue.name}`)
+      }
 
       return {
         checkinId: result.checkin.id,

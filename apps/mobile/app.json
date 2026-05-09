@@ -38,6 +38,14 @@
         {
           "cameraPermission": "Allow PULSE to use the camera to scan receipts and check in at venues."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0F1115",
+          "sounds": []
+        }
       ]
     ],
     "experiments": {
