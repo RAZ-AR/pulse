@@ -47,6 +47,16 @@ function AuthGate() {
     signOut().catch(() => {})
   }, [demoMode, telegramMode, hydrated, token, sessionProbe.isError, signOut])
 
+  // Telegram: if user already has token but hasn't finished onboarding, send to /onboarding
+  useEffect(() => {
+    if (!telegramMode || !hydrated || !navState?.key || !token) return
+    if (!sessionProbe.data) return
+    const onboardingRoute = segments[0] === "onboarding"
+    if (!sessionProbe.data.onboardingDone && !onboardingRoute) {
+      router.replace("/onboarding")
+    }
+  }, [telegramMode, hydrated, navState?.key, token, sessionProbe.data, segments, router])
+
   // Telegram auto-login
   useEffect(() => {
     if (!telegramMode || !hydrated || !navState?.key || token || tgAttempted.current) return
