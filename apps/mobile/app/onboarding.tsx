@@ -66,6 +66,21 @@ function TelegramOnboarding() {
     )
   }
 
+  // No valid session (e.g. Telegram initData was empty — rare edge case).
+  // Show a friendly prompt to open from Telegram instead of a broken UI.
+  if (me.isError) {
+    return (
+      <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
+        <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy, textAlign: "center" }]}>
+          {t("openFromTelegram", "Open via Telegram")}
+        </Text>
+        <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center", marginTop: 12 }]}>
+          {t("openFromTelegramDesc", "Please open PULSE through the Telegram bot to sign in.")}
+        </Text>
+      </View>
+    )
+  }
+
   return (
     <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">

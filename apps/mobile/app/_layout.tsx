@@ -68,9 +68,15 @@ function AuthGate() {
   // Telegram auto-login
   useEffect(() => {
     if (!telegramMode || !hydrated || !navState?.key || token || tgAttempted.current) return
+    // initData can be empty string in some Telegram launch contexts (keyboard button, session restore).
+    // Guard here so we don't pass null to the server validator.
+    if (!telegramInitData) {
+      router.replace("/onboarding")
+      return
+    }
     tgAttempted.current = true
     tgSignIn
-      .mutateAsync({ initData: telegramInitData! })
+      .mutateAsync({ initData: telegramInitData })
       .then(async (result) => {
         await signIn(result.token)
         router.replace(result.user.onboardingDone ? "/(tabs)" : "/onboarding")
