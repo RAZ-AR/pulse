@@ -74,9 +74,12 @@ type PreviewRow = {
   index: number
   errors: string[]
   action: "create" | "update"
+  isDuplicate?: boolean
   existingId?: string | null
   existingName?: string | null
 }
+
+type PreviewFilter = "all" | "create" | "update" | "invalid" | "duplicates"
 
 const GOOGLE_PRESETS = [
   { label: "Belgrade cafes", query: "cafes Belgrade", city: "Belgrade" },
@@ -173,17 +176,35 @@ export default function VenueImportsPage() {
   const [fetchLimit, setFetchLimit] = useState(10)
   const [isFetchingGoogle, setIsFetchingGoogle] = useState(false)
   const [fetchMessage, setFetchMessage] = useState("")
+  const [previewSearch, setPreviewSearch] = useState("")
+  const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all")
   const parsed = useMemo(() => parseImportJson(json), [json])
+  const duplicateSourceIds = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const venue of parsed.venues) {
+      if (!venue.sourceProvider || !venue.sourcePlaceId) continue
+      const key = `${venue.sourceProvider}:${venue.sourcePlaceId}`
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    return new Set(Array.from(counts.entries()).filter(([, count]) => count > 1).map(([key]) => key))
+  }, [parsed.venues])
   const localRows = useMemo(() => {
     return parsed.venues
-      .map((venue, index): PreviewRow => ({
-        venue,
-        index,
-        errors: validationErrors(venue),
-        action: venue.existingVenueId ? "update" : "create",
-      }))
+      .map((venue, index): PreviewRow => {
+        const duplicateKey = venue.sourceProvider && venue.sourcePlaceId
+          ? `${venue.sourceProvider}:${venue.sourcePlaceId}`
+          : ""
+        const isDuplicate = duplicateKey ? duplicateSourceIds.has(duplicateKey) : false
+        return {
+          venue,
+          index,
+          errors: isDuplicate ? [...validationErrors(venue), "duplicate sourcePlaceId in JSON"] : validationErrors(venue),
+          action: venue.existingVenueId ? "update" : "create",
+          isDuplicate,
+        }
+      })
       .filter((row) => cityFilter === "All" || row.venue.city === cityFilter)
-  }, [cityFilter, parsed.venues])
+  }, [cityFilter, duplicateSourceIds, parsed.venues])
   const serverRowsByIndex = useMemo(() => {
     return new Map(serverPreview?.rows.map((row) => [row.index, row]) ?? [])
   }, [serverPreview])
@@ -207,6 +228,30 @@ export default function VenueImportsPage() {
   const createCount = rows.filter((row) => row.action === "create").length
   const updateCount = rows.filter((row) => row.action === "update").length
   const invalidCount = rows.filter((row) => row.errors.length > 0).length
+  const duplicateCount = rows.filter((row) => row.isDuplicate).length
+  const filteredRows = useMemo(() => {
+    const needle = previewSearch.trim().toLowerCase()
+    return rows.filter((row) => {
+      const matchesFilter =
+        previewFilter === "all" ||
+        (previewFilter === "invalid" && row.errors.length > 0) ||
+        (previewFilter === "duplicates" && row.isDuplicate) ||
+        (previewFilter === "create" && row.action === "create" && row.errors.length === 0) ||
+        (previewFilter === "update" && row.action === "update" && row.errors.length === 0)
+      if (!matchesFilter) return false
+      if (!needle) return true
+      return [
+        row.venue.name,
+        row.venue.address,
+        row.venue.city,
+        row.venue.category,
+        row.venue.sourceProvider,
+        row.venue.sourcePlaceId,
+        row.existingId,
+        row.existingName,
+      ].some((value) => value?.toLowerCase().includes(needle))
+    })
+  }, [previewFilter, previewSearch, rows])
   const previewMode = serverPreview ? "DB preview" : "Local validation"
   const canApply = Boolean(serverPreview) && invalidCount === 0 && rows.length > 0 && applyConfirmation === "APPLY"
 
@@ -342,6 +387,8 @@ export default function VenueImportsPage() {
               setServerError("")
               setApplyMessage("")
               setApplyConfirmation("")
+              setPreviewSearch("")
+              setPreviewFilter("all")
             }}
             className="px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB]"
           >
@@ -367,6 +414,7 @@ export default function VenueImportsPage() {
                 setServerError("")
                 setApplyMessage("")
                 setApplyConfirmation("")
+                setPreviewFilter("all")
               }}
               className="px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm"
             >
@@ -383,6 +431,8 @@ export default function VenueImportsPage() {
               setServerError("")
               setApplyMessage("")
               setApplyConfirmation("")
+              setPreviewSearch("")
+              setPreviewFilter("all")
             }}
             spellCheck={false}
             className="w-full min-h-[520px] font-mono text-xs leading-5 px-3 py-3 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1115]"
@@ -392,6 +442,7 @@ export default function VenueImportsPage() {
           ) : (
             <p className="mt-3 text-sm text-[#6B7280]">
               {previewMode}: {rows.length} venues · {createCount} create · {updateCount} update · {invalidCount} invalid
+              {duplicateCount > 0 ? ` · ${duplicateCount} duplicates` : ""}
             </p>
           )}
           {serverError ? <p className="mt-2 text-sm text-red-600">{serverError}</p> : null}
@@ -510,10 +561,11 @@ export default function VenueImportsPage() {
             <p className="text-xs text-[#6B7280] mb-4">
               Run DB preview first. Type <code className="text-[#0F1115]">APPLY</code> to create or update these venues.
             </p>
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-4 gap-2 mb-4">
               <Metric label="Create" value={createCount} />
               <Metric label="Update" value={updateCount} />
               <Metric label="Invalid" value={invalidCount} tone={invalidCount > 0 ? "danger" : "default"} />
+              <Metric label="Dupes" value={duplicateCount} tone={duplicateCount > 0 ? "danger" : "default"} />
             </div>
             <input
               value={applyConfirmation}
@@ -531,14 +583,32 @@ export default function VenueImportsPage() {
           </section>
 
           <section className="bg-white rounded-xl border border-[#E5E7EB] p-6">
-            <h2 className="text-base font-semibold text-[#0F1115] mb-4">Preview</h2>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-base font-semibold text-[#0F1115]">Preview</h2>
+              <span className="text-xs text-[#6B7280]">{filteredRows.length} shown</span>
+            </div>
+            <input
+              value={previewSearch}
+              onChange={(event) => setPreviewSearch(event.target.value)}
+              placeholder="Search name, address, source id"
+              className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm mb-3"
+            />
+            <div className="flex flex-wrap gap-2 mb-4">
+              <FilterButton active={previewFilter === "all"} onClick={() => setPreviewFilter("all")}>All</FilterButton>
+              <FilterButton active={previewFilter === "create"} onClick={() => setPreviewFilter("create")}>Create</FilterButton>
+              <FilterButton active={previewFilter === "update"} onClick={() => setPreviewFilter("update")}>Update</FilterButton>
+              <FilterButton active={previewFilter === "invalid"} onClick={() => setPreviewFilter("invalid")}>Invalid</FilterButton>
+              <FilterButton active={previewFilter === "duplicates"} onClick={() => setPreviewFilter("duplicates")}>Dupes</FilterButton>
+            </div>
             {parsed.error ? (
               <p className="text-sm text-[#9CA3AF]">Fix JSON to preview rows.</p>
             ) : rows.length === 0 ? (
               <p className="text-sm text-[#9CA3AF]">No venues match this filter.</p>
+            ) : filteredRows.length === 0 ? (
+              <p className="text-sm text-[#9CA3AF]">No rows match the preview filters.</p>
             ) : (
               <div className="space-y-3 max-h-[560px] overflow-auto pr-1">
-                {rows.map(({ venue, index, errors, action, existingId, existingName }) => (
+                {filteredRows.map(({ venue, index, errors, action, existingId, existingName, isDuplicate }) => (
                   <div key={`${venue.sourceProvider}-${venue.sourcePlaceId}-${index}`} className="border border-[#E5E7EB] rounded-xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -551,15 +621,17 @@ export default function VenueImportsPage() {
                         ) : null}
                       </div>
                       <span className={action === "update" ? "rounded-full bg-[#EFF6FF] px-2 py-1 text-xs font-semibold text-[#2563EB]" : "rounded-full bg-[#ECFDF5] px-2 py-1 text-xs font-semibold text-[#059669]"}>
-                        {action}
+                        {errors.length > 0 ? "invalid" : action}
                       </span>
                     </div>
                     <p className="text-xs text-[#6B7280] mt-2">{venue.address}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <Badge>#{index + 1}</Badge>
                       {venue.googleRating ? <Badge>Google {venue.googleRating} · {venue.googleReviews ?? 0}</Badge> : null}
                       {venue.website ? <Badge>site</Badge> : null}
                       {venue.instagram ? <Badge>Instagram</Badge> : null}
                       {venue.specialOffers?.length ? <Badge>{venue.specialOffers.length} offers</Badge> : null}
+                      {isDuplicate ? <Badge>duplicate</Badge> : null}
                     </div>
                     {errors.length > 0 ? (
                       <ul className="mt-3 list-disc pl-4 text-xs text-red-600 space-y-1">
@@ -593,6 +665,19 @@ function Badge({ children }: { children: React.ReactNode }) {
     <span className="rounded-full bg-[#F9FAFB] border border-[#E5E7EB] px-2 py-1 text-[#6B7280]">
       {children}
     </span>
+  )
+}
+
+function FilterButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={active
+        ? "rounded-full bg-[#0F1115] px-3 py-1.5 text-xs font-semibold text-white"
+        : "rounded-full border border-[#D1D5DB] px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#F9FAFB]"}
+    >
+      {children}
+    </button>
   )
 }
 

@@ -200,11 +200,22 @@ export function toVenueData(venue: NormalizedImportVenue) {
 
 export async function previewVenueImports(db: PrismaClient, venues: ImportVenue[], cityFilter?: string) {
   const rows: ImportPreviewRow[] = []
+  const sourceCounts = new Map<string, number>()
+  for (const venue of venues) {
+    if (cityFilter && venue.city !== cityFilter) continue
+    if (!venue.sourceProvider || !venue.sourcePlaceId) continue
+    const key = `${venue.sourceProvider}:${venue.sourcePlaceId}`
+    sourceCounts.set(key, (sourceCounts.get(key) ?? 0) + 1)
+  }
 
   for (const [index, venue] of venues.entries()) {
     if (cityFilter && venue.city !== cityFilter) continue
 
     const errors = validationErrors(venue)
+    const sourceKey = venue.sourceProvider && venue.sourcePlaceId ? `${venue.sourceProvider}:${venue.sourcePlaceId}` : ""
+    if (sourceKey && (sourceCounts.get(sourceKey) ?? 0) > 1) {
+      errors.push("duplicate sourcePlaceId in JSON")
+    }
     if (errors.length > 0) {
       rows.push({ index, action: "invalid", existingId: null, existingName: null, errors })
       continue
