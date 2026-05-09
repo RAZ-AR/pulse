@@ -52,7 +52,11 @@ export const authRouter = router({
 
       const telegramId = String(tgUser.id)
       const syntheticEmail = `tg_${telegramId}@pulse.app`
-      const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ")
+      const name = tgUser.username ?? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ")
+
+      const tgLang = (params.get("user") ? (JSON.parse(params.get("user")!) as { language_code?: string }).language_code : undefined) ?? "en"
+      const langMap: Record<string, "EN" | "RU" | "SR"> = { ru: "RU", sr: "SR", en: "EN" }
+      const language = langMap[tgLang.toLowerCase()] ?? "EN"
 
       type AuthUser = { id: string; email: string; onboardingDone: boolean; name: string | null; language: "EN" | "RU" | "SR" }
 
@@ -74,6 +78,7 @@ export const authRouter = router({
                 email: syntheticEmail,
                 emailVerified: new Date(),
                 name,
+                language,
                 referralCode: generateReferralCode(),
                 welcomePoints: WELCOME_BONUS_AMOUNT,
                 welcomeExpiresAt: expiresAt,
@@ -97,6 +102,7 @@ export const authRouter = router({
       const token = await signMobileToken({ userId: user.id, email: user.email })
       return {
         token,
+        isNewUser: !user.onboardingDone,
         user: { id: user.id, email: user.email, name: user.name, language: user.language, onboardingDone: user.onboardingDone },
       }
     }),

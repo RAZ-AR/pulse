@@ -55,7 +55,7 @@ function AuthGate() {
       .mutateAsync({ initData: telegramInitData! })
       .then(async (result) => {
         await signIn(result.token)
-        router.replace("/(tabs)")
+        router.replace(result.user.onboardingDone ? "/(tabs)" : "/onboarding")
       })
       .catch(() => {
         router.replace("/onboarding")

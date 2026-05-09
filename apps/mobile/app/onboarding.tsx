@@ -21,12 +21,218 @@ function friendlyAuthError(message: string, fallback: string) {
   const lower = message.toLowerCase()
   if (lower.includes("network") || lower.includes("fetch")) return fallback
   if (lower.includes("email")) return "Enter a valid email address"
-  if (lower.includes("referral")) return "Referral code was ignored. You can continue without it."
   return message
 }
 
+function isTelegramMode() {
+  if (typeof window === "undefined") return false
+  // @ts-expect-error – injected by Telegram WebView
+  return Boolean(window.Telegram?.WebApp?.initData)
+}
+
+// ── Telegram onboarding (2 steps: welcome → city) ────────────
+function TelegramOnboarding() {
+  const theme = useTheme()
+  const { t, i18n } = useTranslation("auth")
+  const router = useRouter()
+  const utils = trpc.useUtils()
+
+  const me = trpc.user.me.useQuery()
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => utils.user.me.invalidate(),
+  })
+
+  const [step, setStep] = useState<0 | 1>(0)
+  const [homeCity, setHomeCity] = useState(DEFAULT_CITY.name)
+  const [displayName, setDisplayName] = useState("")
+  const currentLng = (i18n.language ?? "en") as SupportedLocale
+
+  const userName = me.data?.name ?? ""
+
+  async function changeLanguage(lng: SupportedLocale) {
+    await setLocale(lng)
+    updateProfile.mutate({ language: lng.toUpperCase() as "EN" | "RU" | "SR" })
+  }
+
+  async function finish() {
+    const nameToSave = displayName.trim() || userName
+    await updateProfile.mutateAsync({
+      homeCity,
+      onboardingDone: true,
+      ...(nameToSave && nameToSave !== userName ? { name: nameToSave } : {}),
+    })
+    router.replace("/(tabs)")
+  }
+
+  if (me.isLoading) {
+    return (
+      <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" }]}>
+        <ActivityIndicator color={theme.text} />
+      </View>
+    )
+  }
+
+  return (
+    <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        {step === 0 ? (
+          <TgStep0
+            name={userName}
+            displayName={displayName}
+            setDisplayName={setDisplayName}
+            currentLng={currentLng}
+            onChangeLang={changeLanguage}
+            onContinue={() => setStep(1)}
+          />
+        ) : (
+          <TgStep1
+            homeCity={homeCity}
+            setHomeCity={setHomeCity}
+            isPending={updateProfile.isPending}
+            onBack={() => setStep(0)}
+            onFinish={finish}
+          />
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  )
+}
+
+function TgStep0({
+  name, displayName, setDisplayName, currentLng, onChangeLang, onContinue,
+}: {
+  name: string
+  displayName: string
+  setDisplayName: (v: string) => void
+  currentLng: SupportedLocale
+  onChangeLang: (lng: SupportedLocale) => void
+  onContinue: () => void
+}) {
+  const theme = useTheme()
+  const { t } = useTranslation("auth")
+  const shownName = displayName || name || "friend"
+
+  return (
+    <View style={s.step}>
+      <NeuCard gradient={gradients.black} style={{ padding: 28, marginBottom: 24, alignItems: "center", borderRadius: 36 }}>
+        <Text style={[s.logoChar, { fontSize: 42, marginBottom: 16 }]}>P</Text>
+        <Text style={[s.bonusTitle, { fontFamily: fonts.displayHeavy, fontSize: 22, marginBottom: 8 }]}>
+          {t("tgWelcome", "Hi, {{name}}! 👋", { name: shownName })}
+        </Text>
+        <Text style={s.bonusSub}>{t("tgBonus", "500 welcome points are already yours.")}</Text>
+        <View style={{ marginTop: 18, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 24, paddingHorizontal: 22, paddingVertical: 10 }}>
+          <Text style={[s.bonusTitle, { fontFamily: fonts.displayHeavy, fontSize: 34, textAlign: "center" }]}>+500</Text>
+          <Text style={[s.bonusSub, { textAlign: "center" }]}>pts · {t("validDays", "valid 90 days")}</Text>
+        </View>
+      </NeuCard>
+
+      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+        {t("yourNickname", "Your nickname").toUpperCase()}
+      </Text>
+      <NeuInset style={{ marginBottom: 18 }}>
+        <TextInput
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder={name}
+          placeholderTextColor={theme.textMuted}
+          autoCapitalize="none"
+          style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
+        />
+      </NeuInset>
+
+      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+        {t("chooseLanguage", "Language").toUpperCase()}
+      </Text>
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 24 }}>
+        {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => {
+          const active = currentLng === lng
+          return active ? (
+            <Pressable key={lng} onPress={() => onChangeLang(lng)} style={{ flex: 1 }}>
+              <LinearGradient
+                colors={gradients.black as unknown as [string, string, ...string[]]}
+                style={[s.langChip, { borderRadius: 99 }]}
+              >
+                <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold }]}>{lng.toUpperCase()}</Text>
+              </LinearGradient>
+            </Pressable>
+          ) : (
+            <Pressable key={lng} onPress={() => onChangeLang(lng)} style={[s.langChip, { flex: 1, backgroundColor: theme.bg, borderRadius: 99 }]}>
+              <Text style={[s.langChipText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{lng.toUpperCase()}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
+      <NeuCard gradient={gradients.black} onPress={onContinue} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
+        <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("continue", "Continue →")}</Text>
+      </NeuCard>
+    </View>
+  )
+}
+
+function TgStep1({
+  homeCity, setHomeCity, isPending, onBack, onFinish,
+}: {
+  homeCity: string
+  setHomeCity: (v: "Belgrade" | "Novi Sad") => void
+  isPending: boolean
+  onBack: () => void
+  onFinish: () => void
+}) {
+  const theme = useTheme()
+  const { t } = useTranslation("auth")
+
+  return (
+    <View style={s.step}>
+      <Pressable onPress={onBack} style={s.backBtn}>
+        <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>← {t("back", "Back")}</Text>
+      </Pressable>
+
+      <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+        {t("pickYourCity", "Pick your city")}
+      </Text>
+      <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 28 }]}>
+        {t("cityDesc", "We'll show you venues and partners nearby.")}
+      </Text>
+
+      <View style={s.cityRow}>
+        {CITY_OPTIONS.map((city) => {
+          const active = homeCity === city.name
+          return (
+            <Pressable
+              key={city.name}
+              onPress={() => setHomeCity(city.name)}
+              style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
+            >
+              <Text style={[s.cityChipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
+                {city.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
+      <View style={{ flex: 1, minHeight: 24 }} />
+
+      <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
+        {isPending ? <ActivityIndicator color={colors.ink} /> : (
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Let's go!")}</Text>
+        )}
+      </NeuCard>
+    </View>
+  )
+}
+
+// ── Email onboarding ──────────────────────────────────────────
 export default function OnboardingScreen() {
   const theme = useTheme()
+
+  if (isTelegramMode()) return <TelegramOnboarding />
+
+  return <EmailOnboarding theme={theme} />
+}
+
+function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
   const { t, i18n } = useTranslation("auth")
   const router = useRouter()
   const signIn = useAuth((s) => s.signIn)
@@ -34,8 +240,7 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState<Step>(0)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
-  const [homeCity, setHomeCity] = useState(DEFAULT_CITY.name)
-  const [referralCode, setReferralCode] = useState("")
+  const [homeCity, setHomeCity] = useState<"Belgrade" | "Novi Sad">(DEFAULT_CITY.name)
   const [error, setError] = useState("")
 
   const signInMutation = trpc.auth.signInWithEmail.useMutation()
@@ -65,14 +270,11 @@ export default function OnboardingScreen() {
     }
     try {
       const lng = (i18n.language as SupportedLocale).toUpperCase() as "EN" | "RU" | "SR"
-      const code = cleanReferralCode(referralCode)
-      const validReferralCode = /^[A-Z0-9]{6}$/.test(code) ? code : undefined
       const result = await signInMutation.mutateAsync({
         email,
         name: trimmedName,
         homeCity,
         language: lng,
-        ...(validReferralCode ? { referralCode: validReferralCode } : {}),
       })
       await signIn(result.token)
       router.replace("/(tabs)")
@@ -104,14 +306,13 @@ export default function OnboardingScreen() {
             setName={setName}
             homeCity={homeCity}
             setHomeCity={setHomeCity}
-            referralCode={referralCode}
-            setReferralCode={setReferralCode}
             error={error}
             isPending={signInMutation.isPending}
             onBack={() => setStep(1)}
             onSubmit={submit}
           />
         ) : null}
+
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -246,32 +447,17 @@ function Step1({
   )
 }
 
-// ── Step 2: name + referral code ────────────────────────────
+// ── Step 2: name + city ───────────────────────────────────────
 function Step2({
-  name, setName, homeCity, setHomeCity, referralCode, setReferralCode, error, isPending, onBack, onSubmit,
+  name, setName, homeCity, setHomeCity, error, isPending, onBack, onSubmit,
 }: {
   name: string; setName: (v: string) => void
   homeCity: string; setHomeCity: (v: "Belgrade" | "Novi Sad") => void
-  referralCode: string; setReferralCode: (v: string) => void
   error: string; isPending: boolean
   onBack: () => void; onSubmit: () => void
 }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
-  const referralQuery = trpc.user.validateReferralCode.useQuery(
-    { code: referralCode },
-    { enabled: referralCode.length === 6, retry: false },
-  )
-  const referralState =
-    referralCode.length === 0
-      ? "empty"
-      : referralCode.length < 6
-        ? "partial"
-        : referralQuery.isLoading
-          ? "loading"
-          : referralQuery.data?.valid
-            ? "valid"
-            : "invalid"
 
   return (
     <View style={s.step}>
@@ -321,23 +507,6 @@ function Step2({
         })}
       </View>
 
-      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-        {t("referralCode", "Referral code").toUpperCase()} <Text style={s.optional}>· {t("optional", "optional")}</Text>
-      </Text>
-      <NeuInset style={{ marginBottom: 12 }}>
-        <TextInput
-          value={referralCode}
-          onChangeText={(v) => setReferralCode(cleanReferralCode(v))}
-          placeholder="ABC123"
-          placeholderTextColor={theme.textMuted}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          maxLength={6}
-          style={[s.input, { color: theme.text, letterSpacing: 4, fontFamily: fonts.bodyBold }]}
-        />
-      </NeuInset>
-      <ReferralHint state={referralState} name={referralQuery.data?.referrerName} />
-
       {error ? <Text style={s.err}>{error}</Text> : null}
 
       <View style={{ flex: 1, minHeight: 24 }} />
@@ -349,21 +518,6 @@ function Step2({
       </NeuCard>
     </View>
   )
-}
-
-function ReferralHint({ state, name }: { state: "empty" | "partial" | "loading" | "valid" | "invalid"; name?: string | null | undefined }) {
-  const { t } = useTranslation("auth")
-  if (state === "valid") {
-    return (
-      <Text style={s.bonusHint}>
-        +50 {t("referralBonus", "bonus points for joining with a referral")}{name ? ` · ${name}` : ""}
-      </Text>
-    )
-  }
-  if (state === "loading") return <Text style={s.skipHint}>{t("checkingReferral", "Checking referral code...")}</Text>
-  if (state === "partial") return <Text style={s.skipHint}>{t("referralPartialHint", "Enter 6 characters, or leave it empty.")}</Text>
-  if (state === "invalid") return <Text style={s.skipHint}>{t("referralInvalidHint", "Code not found. It is optional, so you can still continue.")}</Text>
-  return <Text style={s.skipHint}>{t("referralSkipHint", "You can leave this empty and continue.")}</Text>
 }
 
 const s = StyleSheet.create({
@@ -412,4 +566,8 @@ const s = StyleSheet.create({
   backText: { fontSize: 13 },
 
   cta: { color: colors.ink, fontSize: 16 },
+
+  langChip: { paddingVertical: 12, alignItems: "center" as const },
+  langChipText: { fontSize: 13 },
+  langChipActive: { color: colors.ink, fontSize: 13 },
 })

@@ -159,10 +159,11 @@ export const userRouter = router({
         homeCity: z.string().max(100).trim().optional(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
         avatarUrl: z.string().url().optional(),
+        onboardingDone: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { name, homeCity, language, avatarUrl } = input
+      const { name, homeCity, language, avatarUrl, onboardingDone } = input
       return ctx.db.user.update({
         where: { id: ctx.userId },
         data: {
@@ -170,6 +171,7 @@ export const userRouter = router({
           ...(homeCity !== undefined ? { homeCity } : {}),
           ...(language !== undefined ? { language } : {}),
           ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+          ...(onboardingDone !== undefined ? { onboardingDone } : {}),
         },
         select: { id: true, name: true, homeCity: true, language: true, avatarUrl: true },
       })
