@@ -26,8 +26,8 @@ function friendlyAuthError(message: string, fallback: string) {
 
 function isTelegramMode() {
   if (typeof window === "undefined") return false
-  // @ts-expect-error – injected by Telegram WebView
-  return Boolean(window.Telegram?.WebApp?.initData)
+  // @ts-expect-error – injected by Telegram WebView before page scripts run
+  return Boolean(window.Telegram?.WebApp)
 }
 
 // ── Telegram onboarding (2 steps: welcome → city) ────────────

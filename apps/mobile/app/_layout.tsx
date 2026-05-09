@@ -14,10 +14,18 @@ function PushRegistrar() {
   return null
 }
 
+function isTelegramWebApp(): boolean {
+  if (typeof window === "undefined") return false
+  // @ts-expect-error – injected by Telegram WebView
+  return Boolean(window.Telegram?.WebApp)
+}
+
 function getTelegramInitData(): string | null {
   if (typeof window === "undefined") return null
   // @ts-expect-error – Telegram injects this into the WebView
-  return window.Telegram?.WebApp?.initData || null
+  // initData may be empty string in some launch contexts (e.g. keyboard button)
+  const d = window.Telegram?.WebApp?.initData
+  return typeof d === "string" && d.length > 0 ? d : null
 }
 
 function AuthGate() {
@@ -33,7 +41,7 @@ function AuthGate() {
   const tgSignIn = trpc.auth.signInWithTelegram.useMutation()
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
   const telegramInitData = getTelegramInitData()
-  const telegramMode = Boolean(telegramInitData)
+  const telegramMode = isTelegramWebApp() // true if running inside Telegram, even with empty initData
   const sessionProbe = trpc.user.me.useQuery(undefined, {
     enabled: (demoMode || telegramMode) && hydrated && Boolean(token),
     retry: false,
