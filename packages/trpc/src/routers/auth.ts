@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { createHmac } from "crypto"
 import { TRPCError } from "@trpc/server"
 import { router, publicProcedure } from "../trpc"
 import { signMobileToken } from "@pulse/auth/mobile-jwt"
@@ -23,6 +24,83 @@ const OptionalReferralCode = z.preprocess((value) => {
  * v2 (later): replace with magic link request + verify flow using Resend.
  */
 export const authRouter = router({
+  signInWithTelegram: publicProcedure
+    .input(z.object({ initData: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN
+      if (!botToken) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Telegram not configured" })
+
+      // Verify HMAC-SHA256 signature
+      const params = new URLSearchParams(input.initData)
+      const hash = params.get("hash")
+      if (!hash) throw new TRPCError({ code: "UNAUTHORIZED", message: "Missing hash" })
+      params.delete("hash")
+
+      const dataCheckString = Array.from(params.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${v}`)
+        .join("\n")
+
+      const secretKey = createHmac("sha256", "WebAppData").update(botToken).digest()
+      const expectedHash = createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
+
+      if (expectedHash !== hash) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid initData" })
+
+      const userRaw = params.get("user")
+      if (!userRaw) throw new TRPCError({ code: "BAD_REQUEST", message: "No user in initData" })
+      const tgUser = JSON.parse(userRaw) as { id: number; first_name: string; last_name?: string; username?: string }
+
+      const telegramId = String(tgUser.id)
+      const syntheticEmail = `tg_${telegramId}@pulse.app`
+      const name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ")
+
+      type AuthUser = { id: string; email: string; onboardingDone: boolean; name: string | null; language: "EN" | "RU" | "SR" }
+
+      let user: AuthUser | null = await ctx.db.user.findUnique({
+        where: { telegramId },
+        select: { id: true, email: true, onboardingDone: true, name: true, language: true },
+      })
+
+      if (!user) {
+        const expiresAt = new Date()
+        expiresAt.setDate(expiresAt.getDate() + WELCOME_EXPIRY_DAYS)
+
+        let created: AuthUser | null = null
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            created = await ctx.db.user.create({
+              data: {
+                telegramId,
+                email: syntheticEmail,
+                emailVerified: new Date(),
+                name,
+                referralCode: generateReferralCode(),
+                welcomePoints: WELCOME_BONUS_AMOUNT,
+                welcomeExpiresAt: expiresAt,
+              },
+              select: { id: true, email: true, onboardingDone: true, name: true, language: true },
+            })
+            break
+          } catch (e: unknown) {
+            const isUniqueErr = e instanceof Error && e.message.includes("referralCode")
+            if (!isUniqueErr) throw e
+          }
+        }
+        if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" })
+        user = created
+
+        await ctx.db.$transaction(async (tx) => {
+          await checkAndAwardBadges(tx, created!.id)
+        })
+      }
+
+      const token = await signMobileToken({ userId: user.id, email: user.email })
+      return {
+        token,
+        user: { id: user.id, email: user.email, name: user.name, language: user.language, onboardingDone: user.onboardingDone },
+      }
+    }),
+
   signInWithEmail: publicProcedure
     .input(
       z.object({

@@ -126,6 +126,9 @@ model User {
   // Push notifications (Expo push token)
   pushToken String?
 
+  // Telegram Mini App
+  telegramId String? @unique
+
   // Anti-fraud
   deviceFingerprint String?
   isEmailVerified   Boolean @default(false)

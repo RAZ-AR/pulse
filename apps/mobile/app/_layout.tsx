@@ -14,6 +14,12 @@ function PushRegistrar() {
   return null
 }
 
+function getTelegramInitData(): string | null {
+  if (typeof window === "undefined") return null
+  // @ts-expect-error – Telegram injects this into the WebView
+  return window.Telegram?.WebApp?.initData || null
+}
+
 function AuthGate() {
   const router = useRouter()
   const segments = useSegments()
@@ -22,22 +28,43 @@ function AuthGate() {
   const signOut = useAuth((s) => s.signOut)
   const navState = useRootNavigationState()
   const demoAttempted = useRef(false)
+  const tgAttempted = useRef(false)
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
+  const tgSignIn = trpc.auth.signInWithTelegram.useMutation()
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
+  const telegramInitData = getTelegramInitData()
+  const telegramMode = Boolean(telegramInitData)
   const sessionProbe = trpc.user.me.useQuery(undefined, {
-    enabled: demoMode && hydrated && Boolean(token),
+    enabled: (demoMode || telegramMode) && hydrated && Boolean(token),
     retry: false,
     staleTime: 0,
   })
 
   useEffect(() => {
-    if (!demoMode || !hydrated || !token || !sessionProbe.isError) return
+    if (!(demoMode || telegramMode) || !hydrated || !token || !sessionProbe.isError) return
     demoAttempted.current = false
+    tgAttempted.current = false
     signOut().catch(() => {})
-  }, [demoMode, hydrated, token, sessionProbe.isError, signOut])
+  }, [demoMode, telegramMode, hydrated, token, sessionProbe.isError, signOut])
 
+  // Telegram auto-login
   useEffect(() => {
-    if (!demoMode || !hydrated || !navState?.key || token || demoAttempted.current) return
+    if (!telegramMode || !hydrated || !navState?.key || token || tgAttempted.current) return
+    tgAttempted.current = true
+    tgSignIn
+      .mutateAsync({ initData: telegramInitData! })
+      .then(async (result) => {
+        await signIn(result.token)
+        router.replace("/(tabs)")
+      })
+      .catch(() => {
+        router.replace("/onboarding")
+      })
+  }, [telegramMode, hydrated, token, tgSignIn, telegramInitData, signIn, router, navState?.key])
+
+  // Demo auto-login
+  useEffect(() => {
+    if (!demoMode || telegramMode || !hydrated || !navState?.key || token || demoAttempted.current) return
     demoAttempted.current = true
     demoSignIn
       .mutateAsync({
@@ -53,18 +80,18 @@ function AuthGate() {
       .catch(() => {
         router.replace("/onboarding")
       })
-  }, [demoMode, hydrated, token, demoSignIn, signIn, router, navState?.key])
+  }, [demoMode, telegramMode, hydrated, token, demoSignIn, signIn, router, navState?.key])
 
   useEffect(() => {
     if (!hydrated || !navState?.key) return
-    if (demoMode && !token) return
+    if ((demoMode || telegramMode) && !token) return
     const onAuthRoute = segments[0] === "onboarding"
     if (!token && !onAuthRoute) {
       router.replace("/onboarding")
     } else if (token && onAuthRoute) {
       router.replace("/(tabs)")
     }
-  }, [demoMode, hydrated, token, segments, router, navState?.key])
+  }, [demoMode, telegramMode, hydrated, token, segments, router, navState?.key])
 
   return null
 }
