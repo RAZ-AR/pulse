@@ -78,6 +78,21 @@ type PreviewRow = {
   existingName?: string | null
 }
 
+const GOOGLE_PRESETS = [
+  { label: "Belgrade cafes", query: "cafes Belgrade", city: "Belgrade" },
+  { label: "Belgrade coffee", query: "coffee shop Belgrade", city: "Belgrade" },
+  { label: "Belgrade restaurants", query: "restaurants Belgrade", city: "Belgrade" },
+  { label: "Belgrade Japanese", query: "Japanese restaurant Belgrade", city: "Belgrade" },
+  { label: "Belgrade bakeries", query: "bakery Belgrade", city: "Belgrade" },
+  { label: "Belgrade bars", query: "bar Belgrade", city: "Belgrade" },
+  { label: "Novi Sad cafes", query: "cafes Novi Sad", city: "Novi Sad" },
+  { label: "Novi Sad coffee", query: "coffee shop Novi Sad", city: "Novi Sad" },
+  { label: "Novi Sad restaurants", query: "restaurants Novi Sad", city: "Novi Sad" },
+  { label: "Novi Sad Japanese", query: "Japanese restaurant Novi Sad", city: "Novi Sad" },
+  { label: "Novi Sad bakeries", query: "bakery Novi Sad", city: "Novi Sad" },
+  { label: "Novi Sad bars", query: "bar Novi Sad", city: "Novi Sad" },
+] as const
+
 const SAMPLE = `[
   {
     "sourceProvider": "google_maps",
@@ -269,6 +284,14 @@ export default function VenueImportsPage() {
     }
   }
 
+  function selectGooglePreset(preset: (typeof GOOGLE_PRESETS)[number]) {
+    setFetchQuery(preset.query)
+    setFetchCity(preset.city)
+    setFetchCountry("Serbia")
+    setFetchMessage("")
+    setServerError("")
+  }
+
   async function applyImport() {
     setServerError("")
     setApplyMessage("")
@@ -381,6 +404,20 @@ export default function VenueImportsPage() {
             <p className="text-xs text-[#6B7280] mb-4">
               Uses the server-side Google Places key and fills the JSON preview.
             </p>
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-[#6B7280] mb-2">Quick presets</p>
+              <div className="flex flex-wrap gap-2">
+                {GOOGLE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => selectGooglePreset(preset)}
+                    className="rounded-full border border-[#D1D5DB] px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#F9FAFB]"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <label className="block text-xs font-semibold text-[#6B7280] mb-1">Query</label>
             <input
               value={fetchQuery}
