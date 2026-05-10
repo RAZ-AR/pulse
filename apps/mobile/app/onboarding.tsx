@@ -348,34 +348,34 @@ export default function OnboardingScreen() {
 
   if (isTg) return <TelegramOnboarding />
 
-  // ── DEBUG: show if any Telegram signal found but detection still failed ──
-  // Remove this panel once detection is confirmed working.
-  const urlHasTgHint = typeof window !== "undefined" && (
-    (window.location?.search ?? "").toLowerCase().includes("tg") ||
-    (window.location?.hash ?? "").toLowerCase().includes("tg") ||
-    (navigator?.userAgent ?? "").includes("Telegram")
-  )
-  if (urlHasTgHint && !debugDismissed) {
+  // ── DEBUG: ALWAYS show diagnostic panel when detection fails ──
+  // This is temporary — once detection is fixed, remove this panel.
+  if (!debugDismissed) {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: "#0d0d0d" }} contentContainerStyle={{ padding: 20, paddingTop: 60 }}>
-        <Text style={{ color: "#85F5F2", fontSize: 16, fontWeight: "bold", marginBottom: 16 }}>
-          🔍 TG DETECT DEBUG
+        <Text style={{ color: "#85F5F2", fontSize: 18, fontWeight: "bold", marginBottom: 4 }}>
+          🔍 PULSE — TG DETECT DEBUG
+        </Text>
+        <Text style={{ color: "#888", fontSize: 11, marginBottom: 16 }}>
+          build: {new Date().toISOString().slice(0, 16)} · screenshot this & send
         </Text>
         {Object.entries(debugInfo).map(([k, v]) => (
-          <View key={k} style={{ marginBottom: 8 }}>
-            <Text style={{ color: "#888", fontSize: 11 }}>{k}</Text>
-            <Text style={{ color: "#fff", fontSize: 12, fontFamily: "monospace" }}>{v}</Text>
+          <View key={k} style={{ marginBottom: 10, padding: 8, backgroundColor: "#1a1a1a", borderRadius: 6 }}>
+            <Text style={{ color: "#85F5F2", fontSize: 11, fontWeight: "bold" }}>{k}</Text>
+            <Text selectable style={{ color: "#fff", fontSize: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", marginTop: 2 }}>
+              {v || "(empty)"}
+            </Text>
           </View>
         ))}
         <Pressable
           onPress={() => setIsTg(true)}
-          style={{ marginTop: 24, backgroundColor: "#85F5F2", borderRadius: 12, padding: 14, alignItems: "center" }}
+          style={{ marginTop: 16, backgroundColor: "#85F5F2", borderRadius: 12, padding: 14, alignItems: "center" }}
         >
           <Text style={{ color: "#000", fontWeight: "bold" }}>Force Telegram mode →</Text>
         </Pressable>
         <Pressable
           onPress={() => setDebugDismissed(true)}
-          style={{ marginTop: 12, borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#444" }}
+          style={{ marginTop: 10, borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#444" }}
         >
           <Text style={{ color: "#888" }}>Continue with Email →</Text>
         </Pressable>
