@@ -233,15 +233,19 @@ function TgStep1({
 }
 
 // ── Email onboarding ──────────────────────────────────────────
+function detectTelegramWebApp(): boolean {
+  if (typeof window === "undefined") return false
+  // @ts-expect-error – injected by Telegram WebView
+  if (window.Telegram?.WebApp) return true
+  // Fallback: Telegram always appends tgWebAppData/tgWebAppVersion to the hash.
+  const hash = window.location?.hash ?? ""
+  return hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")
+}
+
 export default function OnboardingScreen() {
   const theme = useTheme()
   // useState lazy initializer runs at mount (window always defined in browser SPA).
-  // Avoids false-negative when Expo pre-renders with undefined window.
-  const [isTg] = useState(() => {
-    if (typeof window === "undefined") return false
-    // @ts-expect-error – injected by Telegram WebView
-    return Boolean(window.Telegram?.WebApp)
-  })
+  const [isTg] = useState(detectTelegramWebApp)
 
   if (isTg) return <TelegramOnboarding />
 

@@ -17,15 +17,24 @@ function PushRegistrar() {
 function isTelegramWebApp(): boolean {
   if (typeof window === "undefined") return false
   // @ts-expect-error – injected by Telegram WebView
-  return Boolean(window.Telegram?.WebApp)
+  if (window.Telegram?.WebApp) return true
+  // Telegram always appends tgWebAppData/tgWebAppVersion to the URL hash —
+  // reliable even if the SDK script hasn't loaded yet.
+  const hash = window.location?.hash ?? ""
+  return hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")
 }
 
 function getTelegramInitData(): string | null {
   if (typeof window === "undefined") return null
   // @ts-expect-error – Telegram injects this into the WebView
-  // initData may be empty string in some launch contexts (e.g. keyboard button)
   const d = window.Telegram?.WebApp?.initData
-  return typeof d === "string" && d.length > 0 ? d : null
+  if (typeof d === "string" && d.length > 0) return d
+  // Fallback: parse initData from URL hash (Telegram appends it as #tgWebAppData=...)
+  const hash = window.location?.hash ?? ""
+  if (!hash) return null
+  const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash)
+  const tgData = params.get("tgWebAppData")
+  return tgData && tgData.length > 0 ? decodeURIComponent(tgData) : null
 }
 
 function AuthGate() {
