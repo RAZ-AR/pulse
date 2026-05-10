@@ -281,25 +281,50 @@ function TgStep1({
 }
 
 // ── Email onboarding ──────────────────────────────────────────
+function getTgDebugInfo(): Record<string, string> {
+  if (typeof window === "undefined") return { env: "SSR" }
+  const info: Record<string, string> = {}
+  // @ts-expect-error
+  info.hasTelegramWebApp = String(Boolean(window.Telegram?.WebApp))
+  // @ts-expect-error
+  info.hasTelegramProxy = String(Boolean(window.TelegramWebviewProxy))
+  // @ts-expect-error
+  info.initDataLen = String(window.Telegram?.WebApp?.initData?.length ?? 0)
+  info.hash = window.location?.hash?.slice(0, 120) || "(empty)"
+  info.search = window.location?.search?.slice(0, 120) || "(empty)"
+  info.href = window.location?.href?.slice(0, 120) || "(empty)"
+  info.ua = (navigator?.userAgent ?? "").slice(0, 120)
+  return info
+}
+
 function detectTelegramWebApp(): boolean {
   if (typeof window === "undefined") return false
   // @ts-expect-error
   if (window.Telegram?.WebApp) return true
   // @ts-expect-error – lower-level proxy on older Telegram iOS/Android
   if (window.TelegramWebviewProxy) return true
+  // User-Agent check — Telegram's WebView includes "Telegram" in UA
+  const ua = navigator?.userAgent ?? ""
+  if (ua.includes("Telegram")) return true
   const hash = window.location?.hash ?? ""
   if (hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")) return true
   const search = window.location?.search ?? ""
-  return search.includes("tgWebAppData") || search.includes("tgWebAppStartParam")
+  // tgWebAppVersion & tgWebAppPlatform are ALWAYS present in Telegram Mini App URL params
+  return (
+    search.includes("tgWebAppData") ||
+    search.includes("tgWebAppStartParam") ||
+    search.includes("tgWebAppVersion") ||
+    search.includes("tgWebAppPlatform")
+  )
 }
 
 export default function OnboardingScreen() {
   const theme = useTheme()
 
-  // null = still detecting (max 800 ms wait)
-  // Telegram natively injects window.Telegram.WebApp before scripts, but some
-  // versions do it slightly async — we poll briefly before falling back to email.
+  // null = still detecting (max 2 s wait)
   const [isTg, setIsTg] = useState<boolean | null>(null)
+  const [debugInfo, setDebugInfo] = useState<Record<string, string>>({})
+  const [debugDismissed, setDebugDismissed] = useState(false)
 
   useEffect(() => {
     if (detectTelegramWebApp()) { setIsTg(true); return }
@@ -307,17 +332,56 @@ export default function OnboardingScreen() {
     const id = setInterval(() => {
       attempts++
       if (detectTelegramWebApp()) { setIsTg(true); clearInterval(id); return }
-      if (attempts >= 20) { setIsTg(false); clearInterval(id) } // 2 second wait
+      if (attempts >= 20) {
+        setDebugInfo(getTgDebugInfo())
+        setIsTg(false)
+        clearInterval(id)
+      }
     }, 100)
     return () => clearInterval(id)
   }, [])
 
-  // Dark screen while detecting environment (≤ 800 ms)
+  // Dark screen while detecting environment (≤ 2 s)
   if (isTg === null) {
     return <View style={{ flex: 1, backgroundColor: "#0d0d0d" }} />
   }
 
   if (isTg) return <TelegramOnboarding />
+
+  // ── DEBUG: show if any Telegram signal found but detection still failed ──
+  // Remove this panel once detection is confirmed working.
+  const urlHasTgHint = typeof window !== "undefined" && (
+    (window.location?.search ?? "").toLowerCase().includes("tg") ||
+    (window.location?.hash ?? "").toLowerCase().includes("tg") ||
+    (navigator?.userAgent ?? "").includes("Telegram")
+  )
+  if (urlHasTgHint && !debugDismissed) {
+    return (
+      <ScrollView style={{ flex: 1, backgroundColor: "#0d0d0d" }} contentContainerStyle={{ padding: 20, paddingTop: 60 }}>
+        <Text style={{ color: "#85F5F2", fontSize: 16, fontWeight: "bold", marginBottom: 16 }}>
+          🔍 TG DETECT DEBUG
+        </Text>
+        {Object.entries(debugInfo).map(([k, v]) => (
+          <View key={k} style={{ marginBottom: 8 }}>
+            <Text style={{ color: "#888", fontSize: 11 }}>{k}</Text>
+            <Text style={{ color: "#fff", fontSize: 12, fontFamily: "monospace" }}>{v}</Text>
+          </View>
+        ))}
+        <Pressable
+          onPress={() => setIsTg(true)}
+          style={{ marginTop: 24, backgroundColor: "#85F5F2", borderRadius: 12, padding: 14, alignItems: "center" }}
+        >
+          <Text style={{ color: "#000", fontWeight: "bold" }}>Force Telegram mode →</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setDebugDismissed(true)}
+          style={{ marginTop: 12, borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#444" }}
+        >
+          <Text style={{ color: "#888" }}>Continue with Email →</Text>
+        </Pressable>
+      </ScrollView>
+    )
+  }
 
   return <EmailOnboarding theme={theme} />
 }
