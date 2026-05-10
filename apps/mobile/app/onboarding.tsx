@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { useState, useEffect, useRef } from "react"
+import { Animated, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
@@ -43,6 +43,17 @@ function TelegramOnboarding() {
 
   const userName = me.data?.name ?? ""
 
+  // Sync i18n with the language Telegram sent us (language_code in initData).
+  // This fires once when me.data loads, ensuring the UI is in the user's language
+  // even before they visit profile settings.
+  useEffect(() => {
+    if (!me.data?.language) return
+    const lang = me.data.language.toLowerCase() as SupportedLocale
+    if (i18n.language !== lang) {
+      setLocale(lang).catch(() => {})
+    }
+  }, [me.data?.language]) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function changeLanguage(lng: SupportedLocale) {
     await setLocale(lng)
     updateProfile.mutate({ language: lng.toUpperCase() as "EN" | "RU" | "SR" })
@@ -67,7 +78,6 @@ function TelegramOnboarding() {
   }
 
   // No valid session (e.g. Telegram initData was empty — rare edge case).
-  // Show a friendly prompt to open from Telegram instead of a broken UI.
   if (me.isError) {
     return (
       <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
@@ -81,27 +91,30 @@ function TelegramOnboarding() {
     )
   }
 
+  // Step 0 is a fullscreen animation — no ScrollView wrapper, manages its own layout
+  if (step === 0) {
+    return (
+      <TgStep0
+        name={userName}
+        displayName={displayName}
+        setDisplayName={setDisplayName}
+        currentLng={currentLng}
+        onChangeLang={changeLanguage}
+        onContinue={() => setStep(1)}
+      />
+    )
+  }
+
   return (
     <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        {step === 0 ? (
-          <TgStep0
-            name={userName}
-            displayName={displayName}
-            setDisplayName={setDisplayName}
-            currentLng={currentLng}
-            onChangeLang={changeLanguage}
-            onContinue={() => setStep(1)}
-          />
-        ) : (
-          <TgStep1
-            homeCity={homeCity}
-            setHomeCity={setHomeCity}
-            isPending={updateProfile.isPending}
-            onBack={() => setStep(0)}
-            onFinish={finish}
-          />
-        )}
+        <TgStep1
+          homeCity={homeCity}
+          setHomeCity={setHomeCity}
+          isPending={updateProfile.isPending}
+          onBack={() => setStep(0)}
+          onFinish={finish}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -121,61 +134,96 @@ function TgStep0({
   const { t } = useTranslation("auth")
   const shownName = displayName || name || "friend"
 
+  // Entrance animations
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(40)).current
+  const badgeScale = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 550, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start(() => {
+      Animated.spring(badgeScale, { toValue: 1, friction: 5, tension: 55, useNativeDriver: true }).start()
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
-    <View style={s.step}>
-      <NeuCard gradient={gradients.black} style={{ padding: 28, marginBottom: 24, alignItems: "center", borderRadius: 36 }}>
-        <Text style={[s.logoChar, { fontSize: 42, marginBottom: 16 }]}>P</Text>
-        <Text style={[s.bonusTitle, { fontFamily: fonts.displayHeavy, fontSize: 22, marginBottom: 8 }]}>
-          {t("tgWelcome", "Hi, {{name}}! 👋", { name: shownName })}
-        </Text>
-        <Text style={s.bonusSub}>{t("tgBonus", "500 welcome points are already yours.")}</Text>
-        <View style={{ marginTop: 18, backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 24, paddingHorizontal: 22, paddingVertical: 10 }}>
-          <Text style={[s.bonusTitle, { fontFamily: fonts.displayHeavy, fontSize: 34, textAlign: "center" }]}>+500</Text>
-          <Text style={[s.bonusSub, { textAlign: "center" }]}>pts · {t("validDays", "valid 90 days")}</Text>
-        </View>
-      </NeuCard>
+    <KeyboardAvoidingView style={s.tgFullScreen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      {/* Full-screen gradient — same dark palette as the app */}
+      <LinearGradient
+        colors={gradients.black as unknown as [string, string, ...string[]]}
+        style={StyleSheet.absoluteFill}
+      />
 
-      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-        {t("yourNickname", "Your nickname").toUpperCase()}
-      </Text>
-      <NeuInset style={{ marginBottom: 18 }}>
-        <TextInput
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder={name}
-          placeholderTextColor={theme.textMuted}
-          autoCapitalize="none"
-          style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
-        />
-      </NeuInset>
-
-      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-        {t("chooseLanguage", "Language").toUpperCase()}
-      </Text>
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 24 }}>
+      {/* ── Language switcher in header ─────────────────────── */}
+      <View style={s.tgLangHeader}>
         {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => {
           const active = currentLng === lng
-          return active ? (
-            <Pressable key={lng} onPress={() => onChangeLang(lng)} style={{ flex: 1 }}>
-              <LinearGradient
-                colors={gradients.black as unknown as [string, string, ...string[]]}
-                style={[s.langChip, { borderRadius: 99 }]}
-              >
-                <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold }]}>{lng.toUpperCase()}</Text>
-              </LinearGradient>
-            </Pressable>
-          ) : (
-            <Pressable key={lng} onPress={() => onChangeLang(lng)} style={[s.langChip, { flex: 1, backgroundColor: theme.bg, borderRadius: 99 }]}>
-              <Text style={[s.langChipText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{lng.toUpperCase()}</Text>
+          return (
+            <Pressable
+              key={lng}
+              onPress={() => onChangeLang(lng)}
+              style={[s.tgLangChip, active && s.tgLangChipActive]}
+            >
+              <Text style={[s.tgLangText, active && s.tgLangTextActive, { fontFamily: fonts.bodyBold }]}>
+                {lng.toUpperCase()}
+              </Text>
             </Pressable>
           )
         })}
       </View>
 
-      <NeuCard gradient={gradients.black} onPress={onContinue} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
-        <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("continue", "Continue →")}</Text>
-      </NeuCard>
-    </View>
+      {/* ── Animated welcome section ─────────────────────────── */}
+      <Animated.View style={[s.tgWelcomeBody, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        {/* Logo orb */}
+        <View style={s.tgLogoOrb}>
+          <Text style={s.tgLogoChar}>P</Text>
+        </View>
+
+        {/* Greeting */}
+        <Text style={[s.tgHello, { fontFamily: fonts.displayHeavy }]}>
+          {t("tgWelcome", "Hi, {{name}}! 👋", { name: shownName })}
+        </Text>
+        <Text style={[s.tgTagline, { fontFamily: fonts.body }]}>
+          {t("tgBonus", "500 welcome points are already yours.")}
+        </Text>
+
+        {/* +500 badge — springs in after welcome text */}
+        <Animated.View style={[s.tgBonusBadge, { transform: [{ scale: badgeScale }] }]}>
+          <Text style={[s.tgBonusPoints, { fontFamily: fonts.displayHeavy }]}>+500</Text>
+          <Text style={[s.tgBonusSub, { fontFamily: fonts.body }]}>
+            pts · {t("validDays", "valid 90 days")}
+          </Text>
+        </Animated.View>
+      </Animated.View>
+
+      {/* ── Bottom sheet: nickname + continue ────────────────── */}
+      <View style={s.tgBottomSheet}>
+        <Text style={[s.label, { color: "rgba(255,255,255,0.55)", fontFamily: fonts.bodyBold }]}>
+          {t("yourNickname", "Your nickname").toUpperCase()}
+        </Text>
+        <View style={s.tgInput}>
+          <TextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={name || "friend"}
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            autoCapitalize="none"
+            style={[s.input, { color: "#fff", fontFamily: fonts.body }]}
+          />
+        </View>
+        <Text style={[s.tgNicknameHint, { fontFamily: fonts.body }]}>
+          {t("nicknameHint", "You can change this later in your profile")}
+        </Text>
+
+        <Pressable onPress={onContinue} style={s.tgContinueBtn}>
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
+            {t("continue", "Continue →")}
+          </Text>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -273,11 +321,16 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
   function continueFromEmail() {
     setError("")
     const e = email.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+    if (e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
       setError(t("errors.invalidEmail", "Enter a valid email address"))
       return
     }
     setEmail(e)
+    setStep(2)
+  }
+
+  function skipEmail() {
+    setEmail("") // will be filled by backend as guest_xxx@pulse.app
     setStep(2)
   }
 
@@ -291,7 +344,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
     try {
       const lng = (i18n.language as SupportedLocale).toUpperCase() as "EN" | "RU" | "SR"
       const result = await signInMutation.mutateAsync({
-        email,
+        ...(email ? { email } : {}), // omit email if skipped → backend generates guest account
         name: trimmedName,
         homeCity,
         language: lng,
@@ -318,6 +371,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
             error={error}
             onBack={() => setStep(0)}
             onContinue={continueFromEmail}
+            onSkip={skipEmail}
           />
         ) : null}
         {step === 2 ? (
@@ -422,8 +476,8 @@ function LangButton({ code, label, onPress }: { code: string; label: string; onP
 
 // ── Step 1: email + welcome bonus reveal ───────────────────
 function Step1({
-  email, setEmail, error, onBack, onContinue,
-}: { email: string; setEmail: (v: string) => void; error: string; onBack: () => void; onContinue: () => void }) {
+  email, setEmail, error, onBack, onContinue, onSkip,
+}: { email: string; setEmail: (v: string) => void; error: string; onBack: () => void; onContinue: () => void; onSkip: () => void }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
 
@@ -443,8 +497,9 @@ function Step1({
 
       <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
         {t("email", "Email address").toUpperCase()}
+        <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
       </Text>
-      <NeuInset style={{ marginBottom: 12 }}>
+      <NeuInset style={{ marginBottom: 6 }}>
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -456,13 +511,22 @@ function Step1({
           style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
         />
       </NeuInset>
+      <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body }]}>
+        {t("emailHint", "You can add it later in your profile")}
+      </Text>
       {error ? <Text style={s.err}>{error}</Text> : null}
 
       <View style={{ flex: 1, minHeight: 24 }} />
 
-      <NeuCard gradient={gradients.black} onPress={onContinue} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
+      <NeuCard gradient={gradients.black} onPress={onContinue} style={{ padding: 16, alignItems: "center", borderRadius: 99, marginBottom: 10 }}>
         <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("continue", "Continue →")}</Text>
       </NeuCard>
+
+      <Pressable onPress={onSkip} style={{ alignItems: "center", paddingVertical: 10 }}>
+        <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+          {t("skipForNow", "Skip for now")}
+        </Text>
+      </Pressable>
     </View>
   )
 }
@@ -545,6 +609,116 @@ const s = StyleSheet.create({
   scroll: { flexGrow: 1, padding: 18, paddingTop: 32 },
   step: { flex: 1, minHeight: 600 },
 
+  // ── TelegramOnboarding Step 0 — fullscreen animated welcome ──
+  tgFullScreen: {
+    flex: 1,
+    backgroundColor: "#0d0d0d",
+  },
+  tgLangHeader: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    paddingTop: 56,
+    paddingHorizontal: 24,
+  },
+  tgLangChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  tgLangChipActive: {
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderColor: "rgba(255,255,255,0.4)",
+  },
+  tgLangText: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 12,
+    letterSpacing: 1.2,
+  },
+  tgLangTextActive: {
+    color: "#fff",
+  },
+  tgWelcomeBody: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  tgLogoOrb: {
+    width: 80,
+    height: 80,
+    borderRadius: 28,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  tgLogoChar: {
+    color: "#fff",
+    fontSize: 38,
+    fontWeight: "900",
+  },
+  tgHello: {
+    color: "#fff",
+    fontSize: 30,
+    lineHeight: 36,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  tgTagline: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 28,
+  },
+  tgBonusBadge: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 24,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  tgBonusPoints: {
+    color: "#fff",
+    fontSize: 36,
+    lineHeight: 40,
+  },
+  tgBonusSub: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  tgBottomSheet: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    paddingTop: 12,
+  },
+  tgInput: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    marginBottom: 6,
+  },
+  tgNicknameHint: {
+    color: "rgba(255,255,255,0.35)",
+    fontSize: 12,
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  tgContinueBtn: {
+    backgroundColor: "#fff",
+    borderRadius: 99,
+    padding: 16,
+    alignItems: "center",
+  },
+
   logoOrb: {
     width: 88, height: 88, borderRadius: 34,
     alignItems: "center", justifyContent: "center", marginBottom: 16,
@@ -581,6 +755,7 @@ const s = StyleSheet.create({
   subtitle: { fontSize: 13, lineHeight: 18 },
 
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
+  emailHint: { fontSize: 12, marginBottom: 12, paddingHorizontal: 4 },
 
   backBtn: { alignSelf: "flex-start", paddingVertical: 4, paddingRight: 12, marginBottom: 18 },
   backText: { fontSize: 13 },

@@ -130,6 +130,9 @@ model User {
   // Telegram Mini App
   telegramId String? @unique
 
+  // Universal loyalty card (5-digit, last 5 of the 12-digit display ID shown to user)
+  cardNumber String? @unique
+
   // Anti-fraud
   deviceFingerprint String?
   isEmailVerified   Boolean @default(false)

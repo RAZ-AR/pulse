@@ -5,6 +5,7 @@ import { router, publicProcedure } from "../trpc"
 import { signMobileToken } from "@pulse/auth/mobile-jwt"
 import {
   generateReferralCode,
+  generateCardNumber,
   WELCOME_BONUS_AMOUNT,
   WELCOME_EXPIRY_DAYS,
   REFERRAL_SIGNUP_POINTS,
@@ -69,6 +70,14 @@ export const authRouter = router({
         const expiresAt = new Date()
         expiresAt.setDate(expiresAt.getDate() + WELCOME_EXPIRY_DAYS)
 
+        // Find a unique 5-digit card number (retries on collision)
+        let cardNumber: string | undefined
+        for (let cn = 0; cn < 10; cn++) {
+          const candidate = generateCardNumber()
+          const taken = await ctx.db.user.findUnique({ where: { cardNumber: candidate }, select: { id: true } })
+          if (!taken) { cardNumber = candidate; break }
+        }
+
         let created: AuthUser | null = null
         for (let attempt = 0; attempt < 5; attempt++) {
           try {
@@ -79,6 +88,7 @@ export const authRouter = router({
                 emailVerified: new Date(),
                 name,
                 language,
+                ...(cardNumber ? { cardNumber } : {}),
                 referralCode: generateReferralCode(),
                 welcomePoints: WELCOME_BONUS_AMOUNT,
                 welcomeExpiresAt: expiresAt,
@@ -110,7 +120,8 @@ export const authRouter = router({
   signInWithEmail: publicProcedure
     .input(
       z.object({
-        email: z.string().email().toLowerCase().trim(),
+        // Optional — if not provided a guest account is created (email can be added later in profile)
+        email: z.string().email().toLowerCase().trim().optional(),
         name: z.string().min(1).max(100).trim().optional(),
         homeCity: z.string().max(100).trim().optional(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
@@ -118,12 +129,17 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // If no email provided, generate a guest synthetic email (user can add real email in profile later)
+      const email = input.email ?? `guest_${crypto.randomUUID().replace(/-/g, "")}@pulse.app`
+
       // Find or create user
       type AuthUser = { id: string; email: string; onboardingDone: boolean; name: string | null; language: "EN" | "RU" | "SR" }
-      let user: AuthUser | null = await ctx.db.user.findUnique({
-        where: { email: input.email },
-        select: { id: true, email: true, onboardingDone: true, name: true, language: true },
-      })
+      let user: AuthUser | null = input.email
+        ? await ctx.db.user.findUnique({
+            where: { email: input.email },
+            select: { id: true, email: true, onboardingDone: true, name: true, language: true },
+          })
+        : null
 
       if (!user) {
         // Resolve referrer if a code was provided. Silently ignore unknown codes —
@@ -140,13 +156,22 @@ export const authRouter = router({
         const expiresAt = new Date()
         expiresAt.setDate(expiresAt.getDate() + WELCOME_EXPIRY_DAYS)
 
+        // Find a unique 5-digit card number (retries on collision)
+        let cardNumber: string | undefined
+        for (let cn = 0; cn < 10; cn++) {
+          const candidate = generateCardNumber()
+          const taken = await ctx.db.user.findUnique({ where: { cardNumber: candidate }, select: { id: true } })
+          if (!taken) { cardNumber = candidate; break }
+        }
+
         let created: AuthUser | null = null
         for (let attempt = 0; attempt < 5; attempt++) {
           try {
             created = await ctx.db.user.create({
               data: {
-                email: input.email,
-                emailVerified: new Date(),
+                email,
+                ...(cardNumber ? { cardNumber } : {}),
+                ...(input.email ? { emailVerified: new Date() } : {}),
                 ...(input.name ? { name: input.name } : {}),
                 ...(input.homeCity ? { homeCity: input.homeCity } : {}),
                 ...(input.language ? { language: input.language } : {}),
