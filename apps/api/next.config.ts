@@ -1,4 +1,8 @@
 import type { NextConfig } from "next"
+import path from "path"
+
+// Monorepo root — two levels above apps/api/
+const repoRoot = path.join(__dirname, "../../")
 
 const config: NextConfig = {
   transpilePackages: [
@@ -9,11 +13,14 @@ const config: NextConfig = {
     "@pulse/trpc",
     "@pulse/jobs",
   ],
+  // Expand file tracing scope to the monorepo root so Next.js can trace
+  // files in packages/db/generated (Prisma engine binary for Vercel Linux).
+  outputFileTracingRoot: repoRoot,
   experimental: {
-    // Include Prisma engine binary for all app routes.
-    // Glob is relative to this app's root (apps/api/); ../../ reaches the monorepo root.
     outputFileTracingIncludes: {
-      "app/**": ["../../packages/db/generated/**/*.node"],
+      // Match all App Router routes; include the Prisma native engine binary.
+      // Path is relative to outputFileTracingRoot (the monorepo root).
+      "/api/**": ["packages/db/generated/**/*.node"],
     },
   },
 }

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build && node -e \"const fs=require('fs'),src='../../packages/db/generated/libquery_engine-rhel-openssl-3.0.x.so.node'; ['.','.next/server'].forEach(d=>{try{fs.copyFileSync(src,d+'/libquery_engine-rhel-openssl-3.0.x.so.node');console.log('Copied Prisma engine to',d)}catch(e){console.log('Skip',d,e.message)}})\"",
+    "build": "next build",
     "start": "next start --port 3000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
