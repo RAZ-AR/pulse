@@ -292,8 +292,27 @@ function detectTelegramWebApp(): boolean {
 
 export default function OnboardingScreen() {
   const theme = useTheme()
-  // useState lazy initializer runs at mount (window always defined in browser SPA).
-  const [isTg] = useState(detectTelegramWebApp)
+
+  // null = still detecting (max 800 ms wait)
+  // Telegram natively injects window.Telegram.WebApp before scripts, but some
+  // versions do it slightly async — we poll briefly before falling back to email.
+  const [isTg, setIsTg] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (detectTelegramWebApp()) { setIsTg(true); return }
+    let attempts = 0
+    const id = setInterval(() => {
+      attempts++
+      if (detectTelegramWebApp()) { setIsTg(true); clearInterval(id); return }
+      if (attempts >= 8) { setIsTg(false); clearInterval(id) }
+    }, 100)
+    return () => clearInterval(id)
+  }, [])
+
+  // Dark screen while detecting environment (≤ 800 ms)
+  if (isTg === null) {
+    return <View style={{ flex: 1, backgroundColor: "#0d0d0d" }} />
+  }
 
   if (isTg) return <TelegramOnboarding />
 

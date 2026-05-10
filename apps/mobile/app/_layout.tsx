@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
@@ -49,8 +49,17 @@ function AuthGate() {
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
   const tgSignIn = trpc.auth.signInWithTelegram.useMutation()
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
-  const telegramInitData = getTelegramInitData()
-  const telegramMode = isTelegramWebApp() // true if running inside Telegram, even with empty initData
+
+  // Use state so Telegram detection is reactive — some Telegram versions inject
+  // window.Telegram.WebApp slightly after the first synchronous render.
+  const [telegramMode, setTelegramMode] = useState(false)
+  const [telegramInitData, setTelegramInitData] = useState<string | null>(null)
+
+  useEffect(() => {
+    const isTg = isTelegramWebApp()
+    setTelegramMode(isTg)
+    if (isTg) setTelegramInitData(getTelegramInitData())
+  }, [])
   const sessionProbe = trpc.user.me.useQuery(undefined, {
     enabled: (demoMode || telegramMode) && hydrated && Boolean(token),
     retry: false,
