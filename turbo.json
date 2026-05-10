@@ -1,6 +1,19 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "AUTH_SECRET",
+    "AUTH_URL",
+    "RESEND_API_KEY",
+    "EMAIL_FROM",
+    "MERCHANT_AUTH_SECRET",
+    "TELEGRAM_BOT_TOKEN",
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_DEMO_MODE",
+    "NODE_ENV"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
