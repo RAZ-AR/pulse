@@ -283,11 +283,14 @@ function TgStep1({
 // ── Email onboarding ──────────────────────────────────────────
 function detectTelegramWebApp(): boolean {
   if (typeof window === "undefined") return false
-  // @ts-expect-error – injected by Telegram WebView
+  // @ts-expect-error
   if (window.Telegram?.WebApp) return true
-  // Fallback: Telegram always appends tgWebAppData/tgWebAppVersion to the hash.
+  // @ts-expect-error – lower-level proxy on older Telegram iOS/Android
+  if (window.TelegramWebviewProxy) return true
   const hash = window.location?.hash ?? ""
-  return hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")
+  if (hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")) return true
+  const search = window.location?.search ?? ""
+  return search.includes("tgWebAppData") || search.includes("tgWebAppStartParam")
 }
 
 export default function OnboardingScreen() {
@@ -304,7 +307,7 @@ export default function OnboardingScreen() {
     const id = setInterval(() => {
       attempts++
       if (detectTelegramWebApp()) { setIsTg(true); clearInterval(id); return }
-      if (attempts >= 8) { setIsTg(false); clearInterval(id) }
+      if (attempts >= 20) { setIsTg(false); clearInterval(id) } // 2 second wait
     }, 100)
     return () => clearInterval(id)
   }, [])
