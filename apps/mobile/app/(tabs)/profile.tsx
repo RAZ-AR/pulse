@@ -9,6 +9,7 @@ import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
 import { setLocale } from "../../src/lib/i18n"
 import { CITY_OPTIONS } from "../../src/lib/venues"
+import { formatLoyaltyId } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 
 const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
@@ -36,6 +37,7 @@ const DEMO_PROFILE = {
   lastCheckinAt: null,
   stepsToday: 8420,
   stepsTotal: 128400,
+  cardNumber: "45678",
   referralCode: "PULSE1",
   referredById: null,
   onboardingDone: true,
@@ -187,6 +189,14 @@ export default function ProfileScreen() {
             <Text style={[s.refBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
           </View>
         </View>
+
+        {/* ── Loyalty card strip ────────────────────────────── */}
+        {u.cardNumber ? (
+          <LoyaltyCard
+            cardNumber={u.cardNumber}
+            loyaltyId={formatLoyaltyId(new Date(u.createdAt), u.cardNumber)}
+          />
+        ) : null}
 
         <View style={s.balancePanel}>
           <View>
@@ -405,6 +415,36 @@ export default function ProfileScreen() {
 
 // ── helpers ───────────────────────────────────────────────────
 
+// ── Loyalty Card ──────────────────────────────────────────────
+function LoyaltyCard({ cardNumber, loyaltyId }: { cardNumber: string; loyaltyId: string }) {
+  const { t } = useTranslation("profile")
+  // Format: "2026001 45678" → "2026001 · 45678" for readability
+  const prefix = loyaltyId.slice(0, 7)
+  const suffix = loyaltyId.slice(7)
+  return (
+    <View style={s.loyaltyCard}>
+      <View style={s.loyaltyLeft}>
+        <Text style={[s.loyaltyLabel, { fontFamily: fonts.bodyBold }]}>
+          {t("loyaltyCard", "LOYALTY CARD")}
+        </Text>
+        <Text style={[s.loyaltyId, { fontFamily: fonts.displayHeavy }]}>
+          {prefix}
+          <Text style={s.loyaltyIdSep}> · </Text>
+          {suffix}
+        </Text>
+      </View>
+      <View style={s.loyaltyRight}>
+        <Text style={[s.loyaltyCardLabel, { fontFamily: fonts.bodyBold }]}>
+          {t("cardNo", "CARD #")}
+        </Text>
+        <Text style={[s.loyaltyCardNumber, { fontFamily: fonts.displayHeavy }]}>
+          {cardNumber}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
 function MiniBalance({ label, value }: { label: string; value: number }) {
   return (
     <View style={s.miniBalance}>
@@ -552,6 +592,26 @@ const s = StyleSheet.create({
   heroCity: { color: "#91A1B4", fontSize: 12, marginTop: 1 },
   refBadge: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.66)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   refBadgeText: { color: colors.ink, fontSize: 11, letterSpacing: 1.5 },
+
+  loyaltyCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
+  },
+  loyaltyLeft: { flex: 1 },
+  loyaltyLabel: { color: "rgba(255,255,255,0.4)", fontSize: 9, letterSpacing: 1.5, marginBottom: 3 },
+  loyaltyId: { color: "rgba(255,255,255,0.85)", fontSize: 15, letterSpacing: 1 },
+  loyaltyIdSep: { color: "rgba(255,255,255,0.3)" },
+  loyaltyRight: { alignItems: "flex-end" },
+  loyaltyCardLabel: { color: "rgba(255,255,255,0.4)", fontSize: 9, letterSpacing: 1.5, marginBottom: 3 },
+  loyaltyCardNumber: { color: "#85F5F2", fontSize: 20, letterSpacing: 2 },
 
   balancePanel: { borderRadius: 30, backgroundColor: "rgba(255,255,255,0.54)", padding: 14, flexDirection: "row", justifyContent: "space-between", gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
   balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },

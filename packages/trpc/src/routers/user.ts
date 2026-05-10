@@ -40,6 +40,7 @@ export const userRouter = router({
         lastCheckinAt: true,
         stepsToday: true,
         stepsTotal: true,
+        cardNumber: true,
         referralCode: true,
         referredById: true,
         onboardingDone: true,
