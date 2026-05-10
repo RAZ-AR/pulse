@@ -144,7 +144,16 @@ function AuthGate() {
     const onAuthRoute = segments[0] === "onboarding"
     if (!token && !onAuthRoute) {
       router.replace("/onboarding")
-    } else if (token && onAuthRoute) {
+      return
+    }
+    // In Telegram mode, never auto-redirect away from /onboarding —
+    // the dedicated TG-onboarding effect above owns that routing. Without
+    // this guard we get a redirect loop: TG sign-in sets the token →
+    // this redirect bounces user to /(tabs) → onboardingDone=false effect
+    // bounces back to /onboarding → repeat. Each remount restarts the 2 s
+    // detection timer, so the user only ever sees the dark loading screen.
+    if (telegramMode && onAuthRoute) return
+    if (token && onAuthRoute) {
       router.replace("/(tabs)")
     }
   }, [demoMode, telegramMode, hydrated, token, segments, router, navState?.key])
