@@ -30,8 +30,13 @@ function TelegramOnboarding() {
   const { t, i18n } = useTranslation("auth")
   const router = useRouter()
   const utils = trpc.useUtils()
+  const { token, hydrated } = useAuth()
+  const signOut = useAuth((s) => s.signOut)
 
-  const me = trpc.user.me.useQuery()
+  // Wait for the AuthGate to finish TG sign-in before asking the server who we are.
+  // Without this guard `me` fires with an empty/stale token → 401 → "Open via Telegram"
+  // error screen even though the sign-in is still in flight.
+  const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token) })
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
@@ -69,7 +74,8 @@ function TelegramOnboarding() {
     router.replace("/(tabs)")
   }
 
-  if (me.isLoading) {
+  // Either the auth store is still hydrating, or AuthGate is mid TG sign-in.
+  if (!hydrated || !token || me.isLoading) {
     return (
       <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" }]}>
         <ActivityIndicator color={theme.text} />
@@ -77,16 +83,24 @@ function TelegramOnboarding() {
     )
   }
 
-  // No valid session (e.g. Telegram initData was empty — rare edge case).
+  // Stale or rejected token. Sign out so AuthGate's TG-auto-login fires a fresh
+  // sign-in on the next render — and give the user a manual retry button just
+  // in case auto-recovery doesn't kick in.
   if (me.isError) {
     return (
       <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
         <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy, textAlign: "center" }]}>
-          {t("openFromTelegram", "Open via Telegram")}
+          {t("sessionExpired", "Session expired")}
         </Text>
         <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center", marginTop: 12 }]}>
-          {t("openFromTelegramDesc", "Please open PULSE through the Telegram bot to sign in.")}
+          {t("sessionExpiredDesc", "Tap to sign in again with Telegram.")}
         </Text>
+        <Pressable
+          onPress={() => { signOut().catch(() => {}) }}
+          style={{ marginTop: 24, backgroundColor: theme.text, borderRadius: 99, paddingHorizontal: 28, paddingVertical: 14 }}
+        >
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("retry", "Try again")}</Text>
+        </Pressable>
       </View>
     )
   }
