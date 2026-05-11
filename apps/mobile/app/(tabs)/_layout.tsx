@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next"
 import { LinearGradient } from "expo-linear-gradient"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { LavaLampSurface } from "../../src/components/neu"
 
 const TABS = [
   { name: "index",   icon: "⌂", label: "home"    },
@@ -128,12 +127,13 @@ function DockTabIcon({ icon, label, focused }: { icon: string; label: string; fo
 }
 
 function LiquidDockBackground() {
+  // LavaLampSurface was nice but slow to mount in TG WebView, causing the dock
+  // to pop in a few hundred ms after the page. Static gradient renders instantly.
   return (
-    <View style={StyleSheet.absoluteFill}>
-      <LavaLampSurface intensity="glass" style={StyleSheet.absoluteFill} />
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.82)", borderRadius: 41 }]}>
       <LinearGradient
-        colors={["rgba(255,255,255,0.68)", "rgba(255,255,255,0.20)", "rgba(225,230,239,0.22)"]}
-        locations={[0, 0.48, 1]}
+        colors={["rgba(255,255,255,0.92)", "rgba(245,247,251,0.78)", "rgba(225,230,239,0.62)"]}
+        locations={[0, 0.5, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}

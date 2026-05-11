@@ -295,22 +295,6 @@ function TgStep1({
 }
 
 // ── Email onboarding ──────────────────────────────────────────
-function getTgDebugInfo(): Record<string, string> {
-  if (typeof window === "undefined") return { env: "SSR" }
-  const info: Record<string, string> = {}
-  // @ts-expect-error
-  info.hasTelegramWebApp = String(Boolean(window.Telegram?.WebApp))
-  // @ts-expect-error
-  info.hasTelegramProxy = String(Boolean(window.TelegramWebviewProxy))
-  // @ts-expect-error
-  info.initDataLen = String(window.Telegram?.WebApp?.initData?.length ?? 0)
-  info.hash = window.location?.hash?.slice(0, 120) || "(empty)"
-  info.search = window.location?.search?.slice(0, 120) || "(empty)"
-  info.href = window.location?.href?.slice(0, 120) || "(empty)"
-  info.ua = (navigator?.userAgent ?? "").slice(0, 120)
-  return info
-}
-
 function detectTelegramWebApp(): boolean {
   if (typeof window === "undefined") return false
   // @ts-expect-error
@@ -337,8 +321,6 @@ export default function OnboardingScreen() {
 
   // null = still detecting (max 2 s wait)
   const [isTg, setIsTg] = useState<boolean | null>(null)
-  const [debugInfo, setDebugInfo] = useState<Record<string, string>>({})
-  const [debugDismissed, setDebugDismissed] = useState(false)
 
   useEffect(() => {
     if (detectTelegramWebApp()) { setIsTg(true); return }
@@ -346,11 +328,7 @@ export default function OnboardingScreen() {
     const id = setInterval(() => {
       attempts++
       if (detectTelegramWebApp()) { setIsTg(true); clearInterval(id); return }
-      if (attempts >= 20) {
-        setDebugInfo(getTgDebugInfo())
-        setIsTg(false)
-        clearInterval(id)
-      }
+      if (attempts >= 20) { setIsTg(false); clearInterval(id) }
     }, 100)
     return () => clearInterval(id)
   }, [])
@@ -361,41 +339,6 @@ export default function OnboardingScreen() {
   }
 
   if (isTg) return <TelegramOnboarding />
-
-  // ── DEBUG: ALWAYS show diagnostic panel when detection fails ──
-  // This is temporary — once detection is fixed, remove this panel.
-  if (!debugDismissed) {
-    return (
-      <ScrollView style={{ flex: 1, backgroundColor: "#0d0d0d" }} contentContainerStyle={{ padding: 20, paddingTop: 60 }}>
-        <Text style={{ color: "#85F5F2", fontSize: 18, fontWeight: "bold", marginBottom: 4 }}>
-          🔍 PULSE — TG DETECT DEBUG
-        </Text>
-        <Text style={{ color: "#888", fontSize: 11, marginBottom: 16 }}>
-          build: {new Date().toISOString().slice(0, 16)} · screenshot this & send
-        </Text>
-        {Object.entries(debugInfo).map(([k, v]) => (
-          <View key={k} style={{ marginBottom: 10, padding: 8, backgroundColor: "#1a1a1a", borderRadius: 6 }}>
-            <Text style={{ color: "#85F5F2", fontSize: 11, fontWeight: "bold" }}>{k}</Text>
-            <Text selectable style={{ color: "#fff", fontSize: 12, fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", marginTop: 2 }}>
-              {v || "(empty)"}
-            </Text>
-          </View>
-        ))}
-        <Pressable
-          onPress={() => setIsTg(true)}
-          style={{ marginTop: 16, backgroundColor: "#85F5F2", borderRadius: 12, padding: 14, alignItems: "center" }}
-        >
-          <Text style={{ color: "#000", fontWeight: "bold" }}>Force Telegram mode →</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setDebugDismissed(true)}
-          style={{ marginTop: 10, borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#444" }}
-        >
-          <Text style={{ color: "#888" }}>Continue with Email →</Text>
-        </Pressable>
-      </ScrollView>
-    )
-  }
 
   return <EmailOnboarding theme={theme} />
 }
