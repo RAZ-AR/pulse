@@ -35,8 +35,21 @@ function TelegramOnboarding() {
 
   // Wait for the AuthGate to finish TG sign-in before asking the server who we are.
   // Without this guard `me` fires with an empty/stale token → 401 → "Open via Telegram"
-  // error screen even though the sign-in is still in flight.
-  const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token) })
+  // error screen even though the sign-in is still in flight. Use retry:false so a
+  // bad token surfaces the recovery UI in <1s instead of after 3 exponential retries.
+  const me = trpc.user.me.useQuery(undefined, {
+    enabled: hydrated && Boolean(token),
+    retry: false,
+  })
+
+  // If hydration completed but the AuthGate hasn't produced a token within 6s,
+  // something is stuck (e.g. tgSignIn rejected initData). Surface a recovery UI.
+  const [authTimedOut, setAuthTimedOut] = useState(false)
+  useEffect(() => {
+    if (!hydrated || token) return
+    const id = setTimeout(() => setAuthTimedOut(true), 6000)
+    return () => clearTimeout(id)
+  }, [hydrated, token])
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
@@ -75,10 +88,33 @@ function TelegramOnboarding() {
   }
 
   // Either the auth store is still hydrating, or AuthGate is mid TG sign-in.
-  if (!hydrated || !token || me.isLoading) {
+  if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) {
     return (
       <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" }]}>
         <ActivityIndicator color={theme.text} />
+      </View>
+    )
+  }
+
+  // No token after 6s — AuthGate's TG sign-in likely failed (e.g. stale initData).
+  // Offer a hard reload, which makes Telegram regenerate initData and restarts the flow.
+  if (!token && authTimedOut) {
+    return (
+      <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
+        <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy, textAlign: "center" }]}>
+          {t("signInStuck", "Sign-in stuck")}
+        </Text>
+        <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center", marginTop: 12 }]}>
+          {t("signInStuckDesc", "Tap to reload and sign in again.")}
+        </Text>
+        <Pressable
+          onPress={() => {
+            if (typeof window !== "undefined") window.location.reload()
+          }}
+          style={{ marginTop: 24, backgroundColor: theme.text, borderRadius: 99, paddingHorizontal: 28, paddingVertical: 14 }}
+        >
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("reload", "Reload")}</Text>
+        </Pressable>
       </View>
     )
   }
