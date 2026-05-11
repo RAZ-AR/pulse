@@ -1,7 +1,8 @@
 import { Tabs } from "expo-router"
-import { StyleSheet, Text, View } from "react-native"
+import { Platform, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { LinearGradient } from "expo-linear-gradient"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
 import { LavaLampSurface } from "../../src/components/neu"
 
@@ -16,6 +17,12 @@ const TABS = [
 export default function TabsLayout() {
   const { t } = useTranslation("common")
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  // On web (Telegram WebView), useSafeAreaInsets returns 0 for bottom because
+  // there's no native iOS safeAreaInsets API. Hard-code a sensible reserve so
+  // the floating dock clears the home indicator and Telegram's bottom gesture
+  // bar. On native iOS the insets are real.
+  const bottomReserve = Platform.OS === "web" ? 24 : Math.max(insets.bottom, 10)
 
   return (
     <Tabs
@@ -31,7 +38,7 @@ export default function TabsLayout() {
           borderTopWidth: 0,
           height: 82,
           marginHorizontal: 12,
-          marginBottom: 10,
+          marginBottom: bottomReserve,
           paddingHorizontal: 10,
           paddingTop: 0,
           paddingBottom: 0,
