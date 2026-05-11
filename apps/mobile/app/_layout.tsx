@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
@@ -8,155 +8,87 @@ import { useAuth } from "../src/store/auth"
 import { trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
 
+// Telegram Mini App injects window.Telegram.WebApp synchronously before any
+// script runs. If it's not there, we're not in a Mini App — full stop.
+function getTg(): { initData: string } | null {
+  if (typeof window === "undefined") return null
+  // @ts-expect-error – injected by Telegram native client
+  return window.Telegram?.WebApp ?? null
+}
+
 function PushRegistrar() {
   const me = trpc.user.me.useQuery()
   usePushToken(me.data?.id)
   return null
 }
 
-function isTelegramWebApp(): boolean {
-  if (typeof window === "undefined") return false
-  // Primary: window.Telegram.WebApp is injected natively by Telegram before any scripts run
-  // @ts-expect-error
-  if (window.Telegram?.WebApp) return true
-  // Secondary: TelegramWebviewProxy is the lower-level bridge (older Telegram iOS/Android)
-  // @ts-expect-error
-  if (window.TelegramWebviewProxy) return true
-  // Tertiary: Telegram appends params to URL hash or query string
-  const hash = window.location?.hash ?? ""
-  if (hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")) return true
-  const search = window.location?.search ?? ""
-  return search.includes("tgWebAppData") || search.includes("tgWebAppStartParam")
-}
-
-function getTelegramInitData(): string | null {
-  if (typeof window === "undefined") return null
-  // @ts-expect-error
-  const d = window.Telegram?.WebApp?.initData
-  if (typeof d === "string" && d.length > 0) return d
-  // Fallback: parse from URL hash (#tgWebAppData=...)
-  const hash = window.location?.hash ?? ""
-  if (hash) {
-    const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash)
-    const tgData = params.get("tgWebAppData")
-    if (tgData && tgData.length > 0) return decodeURIComponent(tgData)
-  }
-  // Fallback: parse from query string (?tgWebAppData=...)
-  const search = window.location?.search ?? ""
-  if (search) {
-    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search)
-    const tgData = params.get("tgWebAppData")
-    if (tgData && tgData.length > 0) return decodeURIComponent(tgData)
-  }
-  return null
-}
+const noop = () => {}
 
 function AuthGate() {
   const router = useRouter()
   const segments = useSegments()
+  const navReady = !!useRootNavigationState()?.key
   const { token, hydrated } = useAuth()
   const signIn = useAuth((s) => s.signIn)
   const signOut = useAuth((s) => s.signOut)
-  const navState = useRootNavigationState()
-  const demoAttempted = useRef(false)
-  const tgAttempted = useRef(false)
-  const demoSignIn = trpc.auth.signInWithEmail.useMutation()
+
   const tgSignIn = trpc.auth.signInWithTelegram.useMutation()
+  const demoSignIn = trpc.auth.signInWithEmail.useMutation()
+
+  const tg = getTg()
+  const telegramMode = !!tg
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
+  const onAuthRoute = segments[0] === "onboarding"
+  const attempted = useRef(false)
 
-  // Use state so Telegram detection is reactive — some Telegram versions inject
-  // window.Telegram.WebApp slightly after the first synchronous render.
-  const [telegramMode, setTelegramMode] = useState(false)
-  const [telegramInitData, setTelegramInitData] = useState<string | null>(null)
-
-  useEffect(() => {
-    const isTg = isTelegramWebApp()
-    setTelegramMode(isTg)
-    if (isTg) setTelegramInitData(getTelegramInitData())
-  }, [])
-  const sessionProbe = trpc.user.me.useQuery(undefined, {
-    enabled: (demoMode || telegramMode) && hydrated && Boolean(token),
+  // Probes the current session. If the server rejects the token we drop it
+  // so the auto sign-in below can re-fire on the next reload.
+  const me = trpc.user.me.useQuery(undefined, {
+    enabled: hydrated && !!token,
     retry: false,
     staleTime: 0,
   })
 
+  // 1) Auto sign-in (TG or demo). Fires once per page lifetime — if it fails,
+  // the recovery UI in onboarding offers a hard reload.
   useEffect(() => {
-    if (!(demoMode || telegramMode) || !hydrated || !token || !sessionProbe.isError) return
-    demoAttempted.current = false
-    tgAttempted.current = false
-    signOut().catch(() => {})
-  }, [demoMode, telegramMode, hydrated, token, sessionProbe.isError, signOut])
-
-  // Telegram: if user already has token but hasn't finished onboarding, send to /onboarding
-  useEffect(() => {
-    if (!telegramMode || !hydrated || !navState?.key || !token) return
-    if (!sessionProbe.data) return
-    const onboardingRoute = segments[0] === "onboarding"
-    if (!sessionProbe.data.onboardingDone && !onboardingRoute) {
-      router.replace("/onboarding")
-    }
-  }, [telegramMode, hydrated, navState?.key, token, sessionProbe.data, segments, router])
-
-  // Telegram auto-login
-  useEffect(() => {
-    if (!telegramMode || !hydrated || !navState?.key || token || tgAttempted.current) return
-    // initData can be empty string in some Telegram launch contexts (keyboard button, session restore).
-    // Guard here so we don't pass null to the server validator.
-    if (!telegramInitData) {
-      router.replace("/onboarding")
-      return
-    }
-    tgAttempted.current = true
-    tgSignIn
-      .mutateAsync({ initData: telegramInitData })
-      .then(async (result) => {
-        await signIn(result.token)
-        router.replace(result.user.onboardingDone ? "/(tabs)" : "/onboarding")
-      })
-      .catch(() => {
-        router.replace("/onboarding")
-      })
-  }, [telegramMode, hydrated, token, tgSignIn, telegramInitData, signIn, router, navState?.key])
-
-  // Demo auto-login
-  useEffect(() => {
-    if (!demoMode || telegramMode || !hydrated || !navState?.key || token || demoAttempted.current) return
-    demoAttempted.current = true
-    demoSignIn
-      .mutateAsync({
+    if (!hydrated || !navReady || token || attempted.current) return
+    if (telegramMode && tg?.initData) {
+      attempted.current = true
+      tgSignIn.mutateAsync({ initData: tg.initData })
+        .then((r) => signIn(r.token))
+        .catch(noop)
+    } else if (demoMode) {
+      attempted.current = true
+      demoSignIn.mutateAsync({
         email: "demo@pulse.app",
         name: "Demo User",
         homeCity: "Belgrade",
         language: "EN",
       })
-      .then(async (result) => {
-        await signIn(result.token)
-        router.replace("/(tabs)")
-      })
-      .catch(() => {
-        router.replace("/onboarding")
-      })
-  }, [demoMode, telegramMode, hydrated, token, demoSignIn, signIn, router, navState?.key])
+        .then((r) => signIn(r.token))
+        .catch(noop)
+    }
+  }, [hydrated, navReady, token, telegramMode, demoMode, tg?.initData, tgSignIn, demoSignIn, signIn])
 
+  // 2) Drop stale token so onboarding can recover.
   useEffect(() => {
-    if (!hydrated || !navState?.key) return
-    if ((demoMode || telegramMode) && !token) return
-    const onAuthRoute = segments[0] === "onboarding"
-    if (!token && !onAuthRoute) {
-      router.replace("/onboarding")
+    if (me.isError && token) signOut().catch(noop)
+  }, [me.isError, token, signOut])
+
+  // 3) Route. Pure function of state — no per-mode branches.
+  useEffect(() => {
+    if (!hydrated || !navReady) return
+    if (!token) {
+      // Email flow: nothing auto-signs us in, push to /onboarding.
+      // TG/demo flow: stay put; sign-in effect is running.
+      if (!telegramMode && !demoMode && !onAuthRoute) router.replace("/onboarding")
       return
     }
-    // In Telegram mode, never auto-redirect away from /onboarding —
-    // the dedicated TG-onboarding effect above owns that routing. Without
-    // this guard we get a redirect loop: TG sign-in sets the token →
-    // this redirect bounces user to /(tabs) → onboardingDone=false effect
-    // bounces back to /onboarding → repeat. Each remount restarts the 2 s
-    // detection timer, so the user only ever sees the dark loading screen.
-    if (telegramMode && onAuthRoute) return
-    if (token && onAuthRoute) {
-      router.replace("/(tabs)")
-    }
-  }, [demoMode, telegramMode, hydrated, token, segments, router, navState?.key])
+    if (!me.data) return
+    if (!me.data.onboardingDone && !onAuthRoute) router.replace("/onboarding")
+    else if (me.data.onboardingDone && onAuthRoute) router.replace("/(tabs)")
+  }, [hydrated, navReady, token, me.data, onAuthRoute, telegramMode, demoMode, router])
 
   return null
 }

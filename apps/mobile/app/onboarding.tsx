@@ -24,6 +24,33 @@ function friendlyAuthError(message: string, fallback: string) {
   return message
 }
 
+// Loading + auth-status fallback. With no title/desc → just a spinner.
+function StatusScreen({ theme, title, desc, button, onPress }: {
+  theme: ReturnType<typeof useTheme>
+  title?: string; desc?: string; button?: string; onPress?: () => void
+}) {
+  return (
+    <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
+      {title ? (
+        <>
+          <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy, textAlign: "center" }]}>{title}</Text>
+          {desc ? <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center", marginTop: 12 }]}>{desc}</Text> : null}
+          {button ? (
+            <Pressable
+              onPress={onPress}
+              style={{ marginTop: 24, backgroundColor: theme.text, borderRadius: 99, paddingHorizontal: 28, paddingVertical: 14 }}
+            >
+              <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{button}</Text>
+            </Pressable>
+          ) : null}
+        </>
+      ) : (
+        <ActivityIndicator color={theme.text} />
+      )}
+    </View>
+  )
+}
+
 // ── Telegram onboarding (2 steps: welcome → city) ────────────
 function TelegramOnboarding() {
   const theme = useTheme()
@@ -87,57 +114,32 @@ function TelegramOnboarding() {
     router.replace("/(tabs)")
   }
 
-  // Either the auth store is still hydrating, or AuthGate is mid TG sign-in.
+  // Loading: auth store hydrating, or AuthGate is mid TG sign-in.
   if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) {
-    return (
-      <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" }]}>
-        <ActivityIndicator color={theme.text} />
-      </View>
-    )
+    return <StatusScreen theme={theme} />
   }
-
-  // No token after 6s — AuthGate's TG sign-in likely failed (e.g. stale initData).
-  // Offer a hard reload, which makes Telegram regenerate initData and restarts the flow.
+  // Stuck after 6s with no token — Telegram initData likely stale. Reload regenerates it.
   if (!token && authTimedOut) {
     return (
-      <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
-        <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy, textAlign: "center" }]}>
-          {t("signInStuck", "Sign-in stuck")}
-        </Text>
-        <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center", marginTop: 12 }]}>
-          {t("signInStuckDesc", "Tap to reload and sign in again.")}
-        </Text>
-        <Pressable
-          onPress={() => {
-            if (typeof window !== "undefined") window.location.reload()
-          }}
-          style={{ marginTop: 24, backgroundColor: theme.text, borderRadius: 99, paddingHorizontal: 28, paddingVertical: 14 }}
-        >
-          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("reload", "Reload")}</Text>
-        </Pressable>
-      </View>
+      <StatusScreen
+        theme={theme}
+        title={t("signInStuck", "Sign-in stuck")}
+        desc={t("signInStuckDesc", "Tap to reload and sign in again.")}
+        button={t("reload", "Reload")}
+        onPress={() => { if (typeof window !== "undefined") window.location.reload() }}
+      />
     )
   }
-
-  // Stale or rejected token. Sign out so AuthGate's TG-auto-login fires a fresh
-  // sign-in on the next render — and give the user a manual retry button just
-  // in case auto-recovery doesn't kick in.
+  // Token rejected by server. Sign out so AuthGate re-fires auto-login on next render.
   if (me.isError) {
     return (
-      <View style={[s.container, { backgroundColor: theme.bg, alignItems: "center", justifyContent: "center", padding: 32 }]}>
-        <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy, textAlign: "center" }]}>
-          {t("sessionExpired", "Session expired")}
-        </Text>
-        <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center", marginTop: 12 }]}>
-          {t("sessionExpiredDesc", "Tap to sign in again with Telegram.")}
-        </Text>
-        <Pressable
-          onPress={() => { signOut().catch(() => {}) }}
-          style={{ marginTop: 24, backgroundColor: theme.text, borderRadius: 99, paddingHorizontal: 28, paddingVertical: 14 }}
-        >
-          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("retry", "Try again")}</Text>
-        </Pressable>
-      </View>
+      <StatusScreen
+        theme={theme}
+        title={t("sessionExpired", "Session expired")}
+        desc={t("sessionExpiredDesc", "Tap to sign in again with Telegram.")}
+        button={t("retry", "Try again")}
+        onPress={() => { signOut().catch(() => {}) }}
+      />
     )
   }
 
@@ -330,53 +332,15 @@ function TgStep1({
   )
 }
 
-// ── Email onboarding ──────────────────────────────────────────
-function detectTelegramWebApp(): boolean {
-  if (typeof window === "undefined") return false
-  // @ts-expect-error
-  if (window.Telegram?.WebApp) return true
-  // @ts-expect-error – lower-level proxy on older Telegram iOS/Android
-  if (window.TelegramWebviewProxy) return true
-  // User-Agent check — Telegram's WebView includes "Telegram" in UA
-  const ua = navigator?.userAgent ?? ""
-  if (ua.includes("Telegram")) return true
-  const hash = window.location?.hash ?? ""
-  if (hash.includes("tgWebAppData") || hash.includes("tgWebAppVersion")) return true
-  const search = window.location?.search ?? ""
-  // tgWebAppVersion & tgWebAppPlatform are ALWAYS present in Telegram Mini App URL params
-  return (
-    search.includes("tgWebAppData") ||
-    search.includes("tgWebAppStartParam") ||
-    search.includes("tgWebAppVersion") ||
-    search.includes("tgWebAppPlatform")
-  )
+// Telegram Mini App injects window.Telegram.WebApp synchronously — one check.
+function isTelegramMiniApp(): boolean {
+  // @ts-expect-error – injected by Telegram native client
+  return typeof window !== "undefined" && !!window.Telegram?.WebApp
 }
 
 export default function OnboardingScreen() {
   const theme = useTheme()
-
-  // null = still detecting (max 2 s wait)
-  const [isTg, setIsTg] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    if (detectTelegramWebApp()) { setIsTg(true); return }
-    let attempts = 0
-    const id = setInterval(() => {
-      attempts++
-      if (detectTelegramWebApp()) { setIsTg(true); clearInterval(id); return }
-      if (attempts >= 20) { setIsTg(false); clearInterval(id) }
-    }, 100)
-    return () => clearInterval(id)
-  }, [])
-
-  // Dark screen while detecting environment (≤ 2 s)
-  if (isTg === null) {
-    return <View style={{ flex: 1, backgroundColor: "#0d0d0d" }} />
-  }
-
-  if (isTg) return <TelegramOnboarding />
-
-  return <EmailOnboarding theme={theme} />
+  return isTelegramMiniApp() ? <TelegramOnboarding /> : <EmailOnboarding theme={theme} />
 }
 
 function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
