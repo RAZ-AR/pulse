@@ -47,3 +47,4 @@ coverage
 
 # Supabase local state
 supabase/.temp
+.claude/worktrees/
