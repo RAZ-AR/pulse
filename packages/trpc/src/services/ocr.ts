@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import OpenAI from "openai"
+import Anthropic from "@anthropic-ai/sdk"
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@ export type OcrReceiptData = {
 export type OcrResult = {
   data: OcrReceiptData
   confidence: number   // 0–1
-  source: "gpt4o" | "google_vision"
+  source: "claude" | "google_vision"
 }
 
 // ── Prompts ───────────────────────────────────────────────────
@@ -33,33 +33,42 @@ Extract exactly these fields and return ONLY valid JSON:
 If a field is unreadable use null. Do NOT invent values.
 For total: use "ukupno", "total", "итого", "ընդամենը" — the bottom line.`
 
-// ── GPT-4o (primary) ──────────────────────────────────────────
+// ── Claude (primary) ──────────────────────────────────────────
 
-export async function extractWithGpt4o(imageUrl: string): Promise<OcrResult> {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+async function fetchAsBase64(url: string): Promise<{ data: string; mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" }> {
+  const res = await fetch(url)
+  const buf = await res.arrayBuffer()
+  const ct = res.headers.get("content-type") ?? "image/jpeg"
+  const mediaType = (["image/jpeg", "image/png", "image/gif", "image/webp"].includes(ct) ? ct : "image/jpeg") as "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+  return { data: Buffer.from(buf).toString("base64"), mediaType }
+}
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+export async function extractWithClaude(imageUrl: string): Promise<OcrResult> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const img = await fetchAsBase64(imageUrl)
+
+  const message = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 400,
-    response_format: { type: "json_object" },
     messages: [
       {
         role: "user",
         content: [
-          { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
+          { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
           { type: "text", text: OCR_PROMPT },
         ],
       },
     ],
   })
 
-  const content = response.choices[0]?.message?.content
-  if (!content) throw new Error("GPT-4o returned empty response")
+  const block = message.content[0]
+  if (!block || block.type !== "text") throw new Error("Claude returned no text")
 
-  const parsed = JSON.parse(content) as OcrReceiptData
-  const confidence = computeConfidence(parsed)
+  const jsonMatch = block.text.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) throw new Error("Claude returned no JSON")
 
-  return { data: parsed, confidence, source: "gpt4o" }
+  const parsed = JSON.parse(jsonMatch[0]) as OcrReceiptData
+  return { data: parsed, confidence: computeConfidence(parsed), source: "claude" }
 }
 
 // ── Google Vision (fallback) ──────────────────────────────────
@@ -83,18 +92,17 @@ export async function extractWithGoogleVision(imageUrl: string): Promise<OcrResu
   const rawText = body.responses[0]?.fullTextAnnotation?.text ?? ""
   const data = parseRawText(rawText)
 
-  // Google Vision raw-text parsing is less reliable — cap confidence
   return { data, confidence: computeConfidence(data) * 0.85, source: "google_vision" }
 }
 
 // ── Main entrypoint ───────────────────────────────────────────
 
 export async function extractReceiptData(imageUrl: string): Promise<OcrResult> {
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.ANTHROPIC_API_KEY) {
     try {
-      return await extractWithGpt4o(imageUrl)
+      return await extractWithClaude(imageUrl)
     } catch (e) {
-      console.error("[OCR] GPT-4o failed, falling back:", e)
+      console.error("[OCR] Claude failed, falling back:", e)
     }
   }
 
@@ -102,7 +110,7 @@ export async function extractReceiptData(imageUrl: string): Promise<OcrResult> {
     return await extractWithGoogleVision(imageUrl)
   }
 
-  throw new Error("No OCR provider configured. Set OPENAI_API_KEY or GOOGLE_CLOUD_API_KEY.")
+  throw new Error("No OCR provider configured. Set ANTHROPIC_API_KEY or GOOGLE_CLOUD_API_KEY.")
 }
 
 // ── Receipt hash (anti-fraud dedup) ──────────────────────────
@@ -136,7 +144,6 @@ function computeConfidence(data: OcrReceiptData): number {
 function parseRawText(text: string): OcrReceiptData {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean)
 
-  // Total amount
   const totalPatterns = [
     /(?:total|ukupno|итого|ընդամենը)[:\s]+([0-9][0-9.,]*)/i,
     /([0-9][0-9.,]{2,})\s*(?:rsd|din|рсд)/i,
@@ -150,7 +157,6 @@ function parseRawText(text: string): OcrReceiptData {
     if (total !== null) break
   }
 
-  // Date
   let date: string | null = null
   for (const line of lines) {
     const m = line.match(/(\d{4}-\d{2}-\d{2}|\d{2}[./]\d{2}[./]\d{4})/)
@@ -167,7 +173,6 @@ function parseRawText(text: string): OcrReceiptData {
     }
   }
 
-  // Currency
   const t = text.toLowerCase()
   let currency: string | null = null
   if (t.includes("rsd") || t.includes("din")) currency = "RSD"
