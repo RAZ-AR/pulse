@@ -327,6 +327,7 @@ model Transaction {
   ocrRawData      Json?
   ocrConfidence   Float?
   receiptHash     String? @unique
+  receiptNumber   String? @unique  // Serbian fiscal receipt number (dedup for QR scans)
 
   // Verification
   status          TransactionStatus @default(PENDING)
