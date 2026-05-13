@@ -15,7 +15,7 @@ type Phase =
   | { kind: "scanning"; imageUrl: string }
   | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number }
   | { kind: "submitting" }
-  | { kind: "done"; pointsEarned: number; vendorName?: string; totalRsd?: number }
+  | { kind: "done"; pointsEarned: number; vendorName?: string; totalRsd?: number; offerTitle?: string }
 
 type OcrFields = {
   vendor: string
@@ -41,34 +41,45 @@ export default function ScanScreen() {
 
   const scanMutation = trpc.transaction.scanReceipt.useMutation()
   const scanQrMutation = trpc.transaction.scanQrReceipt.useMutation()
+  const redeemOfferMutation = trpc.offer.redeem.useMutation()
   const confirmMutation = trpc.transaction.confirmReceipt.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
 
-  // ── QR scan (Serbian fiscal) ──────────────────────────────
+  // ── QR scan — роутер по типу QR ──────────────────────────
 
-  async function handleQrScanned(url: string) {
+  async function handleQrScanned(data: string) {
     if (phase.kind !== "camera") return
     setPhase({ kind: "submitting" })
+
     try {
-      const res = await scanQrMutation.mutateAsync({ qrUrl: url })
-      utils.user.me.invalidate()
-      setPhase({
-        kind: "done",
-        pointsEarned: res.pointsEarned,
-        vendorName: res.vendorName ?? undefined,
-        totalRsd: res.totalRsd,
-      })
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      // If the QR is not a Serbian fiscal receipt, fall through to photo mode
-      if (msg.includes("Not a Serbian fiscal")) {
-        Alert.alert(t("notFiscalQr", "Not a fiscal receipt QR"), t("tryPhotoMode", "Use the photo mode to scan the receipt instead."))
-        setPhase({ kind: "camera", mode: "qr" })
-      } else {
-        Alert.alert(t("scanFailed", "Scan failed"), msg)
-        setPhase({ kind: "camera", mode: "qr" })
+      // 1. PULSE offer QR: pulse://offer/<token>
+      const offerMatch = data.match(/^pulse:\/\/offer\/(.+)$/)
+      if (offerMatch) {
+        const token = offerMatch[1]
+        const res = await redeemOfferMutation.mutateAsync({ token })
+        utils.user.me.invalidate()
+        setPhase({ kind: "done", pointsEarned: res.pointsEarned, offerTitle: res.offerTitle })
+        return
       }
+
+      // 2. Serbian fiscal QR: suf.purs.gov.rs/v/?vl=...
+      if (data.includes("suf.purs.gov.rs")) {
+        const res = await scanQrMutation.mutateAsync({ qrUrl: data })
+        utils.user.me.invalidate()
+        setPhase({ kind: "done", pointsEarned: res.pointsEarned, vendorName: res.vendorName ?? undefined, totalRsd: res.totalRsd })
+        return
+      }
+
+      // 3. Неизвестный QR
+      Alert.alert(
+        t("unknownQr", "Unknown QR code"),
+        t("unknownQrDesc", "This QR is not a PULSE offer or a Serbian fiscal receipt.")
+      )
+      setPhase({ kind: "camera", mode: "qr" })
+    } catch (e) {
+      Alert.alert(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e))
+      setPhase({ kind: "camera", mode: "qr" })
     }
   }
 
@@ -318,11 +329,12 @@ function ConfirmPhase({
 }
 
 function DonePhase({
-  pointsEarned, vendorName, totalRsd, onClose, theme,
+  pointsEarned, vendorName, totalRsd, offerTitle, onClose, theme,
 }: {
   pointsEarned: number
   vendorName?: string
   totalRsd?: number
+  offerTitle?: string
   onClose: () => void
   theme: ReturnType<typeof useTheme>
 }) {
@@ -334,6 +346,9 @@ function DonePhase({
       <Text style={[s.doneTitle, { color: theme.text }]}>
         {isManualReview ? t("pendingReview", "Pending review") : t("pointsAwarded", "Points awarded!")}
       </Text>
+      {offerTitle ? (
+        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 4 }]}>{offerTitle}</Text>
+      ) : null}
       {vendorName ? (
         <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 4 }]}>{vendorName}</Text>
       ) : null}
