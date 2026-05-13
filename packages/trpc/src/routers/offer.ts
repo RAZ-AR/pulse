@@ -186,11 +186,11 @@ export const offerRouter = router({
           venueId:      input.venueId,
           merchantId:   ctx.merchantId,
           title:        input.title,
-          description:  input.description,
+          description:  input.description ?? null,
           pointsReward: input.pointsReward,
           costPoints,
           endsAt:       input.endsAt ? new Date(input.endsAt) : null,
-          usageLimit:   input.usageLimit,
+          usageLimit:   input.usageLimit ?? null,
         },
       })
 

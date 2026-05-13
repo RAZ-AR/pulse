@@ -56,7 +56,7 @@ export default function ScanScreen() {
       // 1. PULSE offer QR: pulse://offer/<token>
       const offerMatch = data.match(/^pulse:\/\/offer\/(.+)$/)
       if (offerMatch) {
-        const token = offerMatch[1]
+        const token = offerMatch[1]!
         const res = await redeemOfferMutation.mutateAsync({ token })
         utils.user.me.invalidate()
         setPhase({ kind: "done", pointsEarned: res.pointsEarned, offerTitle: res.offerTitle })
@@ -209,8 +209,8 @@ export default function ScanScreen() {
         ) : (
           <DonePhase
             pointsEarned={phase.pointsEarned}
-            vendorName={phase.vendorName}
-            totalRsd={phase.totalRsd}
+            {...(phase.vendorName !== undefined ? { vendorName: phase.vendorName } : {})}
+            {...(phase.totalRsd !== undefined ? { totalRsd: phase.totalRsd } : {})}
             onClose={() => router.back()}
             theme={theme}
           />

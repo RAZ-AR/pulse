@@ -105,7 +105,7 @@ function extractVlParam(url: string): string | null {
   } catch {
     // plain string — try regex
     const m = url.match(/[?&]vl=([^&]+)/)
-    return m ? m[1] : null
+    return m ? m[1] ?? null : null
   }
 }
 
@@ -120,11 +120,11 @@ function readAscii(bytes: Uint8Array, offset: number, length: number): string {
 
 function readUint32LE(bytes: Uint8Array, offset: number): number {
   return (
-    bytes[offset] |
-    (bytes[offset + 1] << 8) |
-    (bytes[offset + 2] << 16) |
-    (bytes[offset + 3] << 24)
-  ) >>> 0
+    (bytes[offset]! |
+    (bytes[offset + 1]! << 8) |
+    (bytes[offset + 2]! << 16) |
+    (bytes[offset + 3]! << 24)) >>> 0
+  )
 }
 
 function readUint64LE(bytes: Uint8Array, offset: number): number {
