@@ -160,43 +160,43 @@ const pastelTheme: Theme = {
   },
 }
 
-// ── Rainbow / neon dark theme ──────────────────────────────────
+// ── Rainbow volumetric theme (light grey bg + vivid 3D gradient elements) ─
 const rainbowTheme: Theme = {
-  isDark: true,
-  bg: "#0A0A18",
-  bgLight: "#141428",
-  surface: "#16162A",
-  text: "#FFFFFF",
-  textSecondary: "#C8BEFF",
-  textMuted: "#7766AA",
-  border: "rgba(139,61,255,0.28)",
+  isDark: false,
+  bg: "#E4E4E9",       // neutral grey like the reference image background
+  bgLight: "#EDEDF2",
+  surface: "#F2F2F6",
+  text: "#1A1A2E",
+  textSecondary: "#44446A",
+  textMuted: "#8888AA",
+  border: "rgba(255,255,255,0.72)",
   shadowRaised: {
-    shadowColor: "#FF2D9B",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowColor: "#8B3DFF",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.28,
+    shadowRadius: 22,
+    elevation: 10,
   },
   shadowRaisedSm: {
-    shadowColor: "#8B3DFF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
+    shadowColor: "#FF2D9B",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
     elevation: 6,
   },
   shadowInset: {
-    shadowColor: "#2B6EFF",
+    shadowColor: "#A3B1C6",
     shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.15,
     shadowRadius: 3,
     elevation: 0,
   },
   shadowGlow: {
     shadowColor: "#FF2D9B",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 24,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    elevation: 14,
   },
 }
 

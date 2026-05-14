@@ -222,6 +222,84 @@ export function LavaLampSurface({
   )
 }
 
+// ── Volumetric gradient pill (rainbow mode) ───────────────────
+// Replicates the glossy inflated pill aesthetic: rich multi-stop gradient,
+// white specular highlight top-left, and a soft colored drop shadow.
+type VolumeGradientProps = {
+  children?: React.ReactNode
+  colors: readonly [string, string, ...string[]]
+  shadowColor: string
+  style?: StyleProp<ViewStyle>
+  borderRadius?: number
+  onPress?: () => void
+  glossOpacity?: number
+}
+
+export function VolumeGradient({
+  children,
+  colors,
+  shadowColor,
+  style,
+  borderRadius = 28,
+  onPress,
+  glossOpacity = 0.28,
+}: VolumeGradientProps) {
+  const shadow: ViewStyle = {
+    shadowColor,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.50,
+    shadowRadius: 28,
+    elevation: 14,
+  }
+  const inner = (
+    <View style={[{ borderRadius, overflow: "hidden" }, style]}>
+      <LinearGradient
+        colors={colors as unknown as [string, string, ...string[]]}
+        start={{ x: 0.18, y: 0 }}
+        end={{ x: 0.82, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Specular highlight — oval in upper-left mimics a round light source */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: "6%",
+          left: "8%",
+          width: "62%",
+          height: "36%",
+          borderRadius: 99,
+          backgroundColor: `rgba(255,255,255,${glossOpacity})`,
+        }}
+      />
+      {/* Rim light — faint white border on top edge */}
+      <View
+        pointerEvents="none"
+        style={{
+          ...StyleSheet.absoluteFillObject,
+          borderRadius,
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.30)",
+          borderBottomColor: "rgba(0,0,0,0.08)",
+        }}
+      />
+      {children}
+    </View>
+  )
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [{ borderRadius }, shadow, pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] }]}
+      >
+        {inner}
+      </Pressable>
+    )
+  }
+  return <View style={[{ borderRadius }, shadow]}>{inner}</View>
+}
+
 import { Text } from "react-native"
 function PillLabel({ label }: { label: string }) {
   return (
