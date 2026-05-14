@@ -2,11 +2,18 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
-import { NeuCard, GradPill } from "../../src/components/neu"
+import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { NeuCard, GradPill, VolumeGradient } from "../../src/components/neu"
 import { DEMO_VENUES } from "../../src/lib/venues"
 
 const REWARD_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
+const REWARD_RAINBOW = [
+  ["#8B3DFF", "#2B6EFF"] as const,
+  ["#2B6EFF", "#00F5FF"] as const,
+  ["#FF2D9B", "#8B3DFF"] as const,
+  ["#00F5FF", "#2B6EFF"] as const,
+]
 
 type DetailVenue = {
   id: string
@@ -78,12 +85,18 @@ function sourceLabel(venue: DetailVenue) {
 
 export default function VenueDetailScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("venue")
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
 
   const venue = trpc.venue.detail.useQuery({ id })
   const reviews = trpc.review.listByVenue.useQuery({ venueId: id, limit: 10 })
+  const partnerOffers = trpc.offer.list.useQuery(
+    { venueId: id, limit: 10 },
+    { enabled: !id.startsWith("demo_") }
+  )
   const demoVenue = DEMO_VENUES.find((item) => item.id === id)
 
   if (venue.isLoading && !demoVenue) {
@@ -109,6 +122,7 @@ export default function VenueDetailScreen() {
     : null
   const rewards = v.rewards ?? []
   const offers = venueOffers(v)
+  const activeOffers = partnerOffers.data?.offers ?? []
   const contacts = contactRows(v)
   const importSourceLabel = sourceLabel(v)
 
@@ -146,21 +160,38 @@ export default function VenueDetailScreen() {
 
         {/* Points rate hero */}
         {v.isPartner && effectiveRate ? (
-          <NeuCard gradient={gradients.black} style={s.rateCard}>
-            <View style={s.heroBlob} />
-            <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold }]}>
-              {t("pointsRate", "Points rate").toUpperCase()}
-            </Text>
-            <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy }]}>{effectiveRate.toFixed(3)}</Text>
-            <Text style={s.rateUnit}>{t("perCurrency", "pts per RSD")}</Text>
-            {boostActive ? (
-              <View style={s.boostBadge}>
-                <Text style={[s.boostText, { fontFamily: fonts.bodyBold }]}>
-                  ×{v.boostMultiplier} {t("boostActiveLabel")}
-                </Text>
-              </View>
-            ) : null}
-          </NeuCard>
+          isRainbow ? (
+            <VolumeGradient colors={["#8B3DFF", "#2B6EFF", "#00F5FF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={32} style={[s.rateCard, { marginBottom: 16 }]}>
+              <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>
+                {t("pointsRate", "Points rate").toUpperCase()}
+              </Text>
+              <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{effectiveRate.toFixed(3)}</Text>
+              <Text style={[s.rateUnit, { color: "rgba(255,255,255,0.65)" }]}>{t("perCurrency", "pts per RSD")}</Text>
+              {boostActive ? (
+                <View style={[s.boostBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+                  <Text style={[s.boostText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>
+                    ×{v.boostMultiplier} {t("boostActiveLabel")}
+                  </Text>
+                </View>
+              ) : null}
+            </VolumeGradient>
+          ) : (
+            <NeuCard gradient={gradients.black} style={s.rateCard}>
+              <View style={s.heroBlob} />
+              <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold }]}>
+                {t("pointsRate", "Points rate").toUpperCase()}
+              </Text>
+              <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy }]}>{effectiveRate.toFixed(3)}</Text>
+              <Text style={s.rateUnit}>{t("perCurrency", "pts per RSD")}</Text>
+              {boostActive ? (
+                <View style={s.boostBadge}>
+                  <Text style={[s.boostText, { fontFamily: fonts.bodyBold }]}>
+                    ×{v.boostMultiplier} {t("boostActiveLabel")}
+                  </Text>
+                </View>
+              ) : null}
+            </NeuCard>
+          )
         ) : (
           <NeuCard style={{ padding: 16, alignItems: "center", marginBottom: 16 }}>
             <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
@@ -184,6 +215,36 @@ export default function VenueDetailScreen() {
                   <Text style={[s.offerText, { fontFamily: fonts.bodyBold }]}>{offer}</Text>
                 </View>
               ))}
+            </View>
+          </NeuCard>
+        ) : null}
+
+        {activeOffers.length > 0 ? (
+          <NeuCard style={{ padding: 16, marginBottom: 16 }}>
+            <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 10 }]}>
+              {t("partnerOffers", "Partner offers").toUpperCase()}
+            </Text>
+            <View style={{ gap: 8 }}>
+              {activeOffers.map((o) => (
+                <View key={o.id} style={s.partnerOfferRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.partnerOfferTitle, { fontFamily: fonts.bodyBold }]}>{o.title}</Text>
+                    {o.endsAt ? (
+                      <Text style={s.partnerOfferMeta}>
+                        до {new Date(o.endsAt).toLocaleDateString("ru-RU")}
+                        {o.usageLimit ? ` · ${o.usageCount}/${o.usageLimit}` : ""}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={s.partnerOfferPts}>
+                    <Text style={[s.partnerOfferPtsVal, { fontFamily: fonts.displayHeavy }]}>+{o.pointsReward}</Text>
+                    <Text style={s.partnerOfferPtsUnit}>pts</Text>
+                  </View>
+                </View>
+              ))}
+              <Text style={[s.partnerOfferHint, { color: theme.textSecondary }]}>
+                Сканируйте QR-код в заведении чтобы получить баллы
+              </Text>
             </View>
           </NeuCard>
         ) : null}
@@ -229,11 +290,33 @@ export default function VenueDetailScreen() {
             </Text>
             <View style={{ gap: 10, marginBottom: 24 }}>
               {rewards.map((r, i) => {
-                const grad = REWARD_GRADS[i % REWARD_GRADS.length]!
-                return (
+                const rainbowGrad = REWARD_RAINBOW[i % REWARD_RAINBOW.length]!
+                const normalGrad = REWARD_GRADS[i % REWARD_GRADS.length]!
+                return isRainbow ? (
+                  <VolumeGradient
+                    key={r.id}
+                    colors={[...rainbowGrad]}
+                    shadowColor={rainbowGrad[0]}
+                    shadowOpacity={0.3}
+                    borderRadius={28}
+                    style={s.rewardRow}
+                    onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.rewardTitle, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{r.title}</Text>
+                      {r.description ? (
+                        <Text style={[s.rewardDesc, { color: "rgba(255,255,255,0.65)" }]} numberOfLines={1}>{r.description}</Text>
+                      ) : null}
+                    </View>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={[s.rewardCost, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{r.pointsCost}</Text>
+                      <Text style={[s.rewardCostUnit, { color: "rgba(255,255,255,0.65)" }]}>pts</Text>
+                    </View>
+                  </VolumeGradient>
+                ) : (
                   <NeuCard
                     key={r.id}
-                    gradient={grad}
+                    gradient={normalGrad}
                     onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
                     style={s.rewardRow}
                   >
@@ -326,6 +409,14 @@ const s = StyleSheet.create({
   offerRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 9 },
   offerDot: { color: "#9FEED3", fontSize: 10 },
   offerText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
+
+  partnerOfferRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(139,61,255,0.06)", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 11 },
+  partnerOfferTitle: { fontSize: 14, color: colors.ink },
+  partnerOfferMeta: { fontSize: 11, color: "#91A1B4", marginTop: 2 },
+  partnerOfferPts: { alignItems: "flex-end" },
+  partnerOfferPtsVal: { fontSize: 18, color: "#8B3DFF", lineHeight: 20 },
+  partnerOfferPtsUnit: { fontSize: 10, color: "#91A1B4" },
+  partnerOfferHint: { fontSize: 11, textAlign: "center", marginTop: 4, opacity: 0.7 },
   contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottomWidth: 1, borderBottomColor: "rgba(163,160,200,0.14)", paddingVertical: 8 },
   contactLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6 },
   contactValue: { fontSize: 13, flex: 1, textAlign: "right" },

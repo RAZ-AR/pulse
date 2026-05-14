@@ -61,6 +61,80 @@ bot.use(async (ctx, next) => {
 // ── /start ────────────────────────────────────────────────
 
 bot.start(async (ctx) => {
+  const payload = ctx.payload?.trim() // e.g. "gift_clxxxxxxxx"
+
+  // ── Gift link claim (consumer flow) ──────────────────────
+  if (payload?.startsWith("gift_")) {
+    const token = payload.slice(5)
+    const telegramId = String(ctx.from.id)
+
+    const user = await db.user.findUnique({
+      where: { telegramId },
+      select: { id: true, onboardingDone: true },
+    })
+
+    if (!user || !user.onboardingDone) {
+      // New user — redirect to Mini App with start_param so onboarding handles it
+      const miniAppUrl = process.env.MINI_APP_URL ?? "https://t.me/pulse_loyalty_bot/app"
+      await ctx.reply(
+        `🎁 Тебе подарили баллы PULSE!\n\n` +
+        `Открой приложение, чтобы получить их:\n${miniAppUrl}?startapp=gift_${token}`
+      )
+      return
+    }
+
+    // Existing PULSE user — claim directly
+    const link = await db.giftLink.findUnique({
+      where: { token },
+      select: { id: true, senderId: true, amount: true, status: true, expiresAt: true },
+    })
+
+    if (!link) {
+      await ctx.reply("❌ Ссылка не найдена или уже истекла.")
+      return
+    }
+    if (link.status !== "PENDING") {
+      await ctx.reply(link.status === "CLAIMED" ? "✅ Эти баллы уже были получены." : "❌ Ссылка истекла.")
+      return
+    }
+    if (link.expiresAt < new Date()) {
+      await db.giftLink.update({ where: { id: link.id }, data: { status: "EXPIRED" } })
+      await ctx.reply("❌ Срок действия ссылки истёк.")
+      return
+    }
+    if (link.senderId === user.id) {
+      await ctx.reply("❌ Нельзя получить свой собственный подарок.")
+      return
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.giftLink.update({
+        where: { id: link.id },
+        data: { status: "CLAIMED", recipientId: user.id, claimedAt: new Date() },
+      })
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          earnedPoints: { increment: link.amount },
+          totalEarnedLifetime: { increment: link.amount },
+        },
+      })
+      await tx.transaction.create({
+        data: {
+          userId: user.id,
+          type: "GIFT_RECEIVED",
+          pointsEarned: link.amount,
+          status: "VERIFIED",
+          verifiedAt: new Date(),
+        },
+      })
+    })
+
+    await ctx.reply(`🎁 Отлично! *+${link.amount} баллов* зачислено на твой счёт PULSE!`, { parse_mode: "Markdown" })
+    return
+  }
+
+  // ── Partner flow ──────────────────────────────────────────
   const merchant = ctx.merchantData
 
   if (!merchant) {
@@ -180,6 +254,98 @@ bot.command("stop", async (ctx): Promise<void> => {
 
   await db.offer.update({ where: { id: offerId }, data: { active: false } })
   await ctx.reply(`✅ Акция «${offer.title}» остановлена.`)
+})
+
+// ── /admin ────────────────────────────────────────────────
+
+bot.command("admin", async (ctx): Promise<void> => {
+  const adminId = process.env.ADMIN_CHAT_ID
+  if (!adminId || String(ctx.chat!.id) !== adminId) {
+    await ctx.reply("❌ Нет доступа.")
+    return
+  }
+
+  const args = (ctx.message as { text: string }).text.trim().split(/\s+/)
+  const sub = args[1]
+
+  if (sub === "list") {
+    const pending = await db.merchant.findMany({
+      where: { status: "PENDING" },
+      select: { id: true, name: true, telegramChatId: true, email: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    })
+    if (pending.length === 0) {
+      await ctx.reply("✅ Нет заявок в ожидании.")
+      return
+    }
+    const lines = pending.map((m) =>
+      `• *${m.name}* (${m.email})\n  chatId: \`${m.telegramChatId}\`\n  id: \`${m.id}\``
+    )
+    await ctx.reply(`📋 *Заявки на активацию (${pending.length}):*\n\n${lines.join("\n\n")}`, { parse_mode: "Markdown" })
+    return
+  }
+
+  if (sub === "activate") {
+    const targetId = args[2]?.trim()
+    if (!targetId) {
+      await ctx.reply("Использование: /admin activate <chatId или merchantId>")
+      return
+    }
+    const merchant = await db.merchant.findFirst({
+      where: { OR: [{ telegramChatId: targetId }, { id: targetId }] },
+    })
+    if (!merchant) { await ctx.reply("Партнёр не найден."); return }
+    if (merchant.status === "ACTIVE") { await ctx.reply("Уже активен."); return }
+
+    await db.merchant.update({ where: { id: merchant.id }, data: { status: "ACTIVE" } })
+
+    if (merchant.telegramChatId) {
+      await ctx.telegram.sendMessage(
+        merchant.telegramChatId,
+        `🎉 *Ваш аккаунт активирован!*\n\n` +
+        `Добро пожаловать в PULSE Partners, *${merchant.name}*!\n` +
+        `На вашем балансе 500 стартовых баллов.\n\n` +
+        `Создайте первую акцию: /newoffer`,
+        { parse_mode: "Markdown" }
+      )
+    }
+
+    await ctx.reply(`✅ Партнёр *${merchant.name}* активирован. Уведомление отправлено.`, { parse_mode: "Markdown" })
+    return
+  }
+
+  if (sub === "reject") {
+    const targetId = args[2]?.trim()
+    if (!targetId) {
+      await ctx.reply("Использование: /admin reject <chatId или merchantId>")
+      return
+    }
+    const merchant = await db.merchant.findFirst({
+      where: { OR: [{ telegramChatId: targetId }, { id: targetId }] },
+    })
+    if (!merchant) { await ctx.reply("Партнёр не найден."); return }
+
+    await db.merchant.update({ where: { id: merchant.id }, data: { status: "SUSPENDED" } })
+
+    if (merchant.telegramChatId) {
+      await ctx.telegram.sendMessage(
+        merchant.telegramChatId,
+        `❌ К сожалению, ваша заявка на участие в PULSE Partners не была одобрена.\n\nЕсть вопросы? Напишите @pulse_support`,
+      )
+    }
+
+    await ctx.reply(`🗑 Партнёр *${merchant.name}* отклонён.`, { parse_mode: "Markdown" })
+    return
+  }
+
+  await ctx.reply(
+    `🔧 *Admin команды:*\n\n` +
+    `/admin list — заявки в ожидании\n` +
+    `/admin activate <chatId> — активировать партнёра\n` +
+    `/admin reject <chatId> — отклонить заявку`,
+    { parse_mode: "Markdown" }
+  )
 })
 
 // ── Запуск ────────────────────────────────────────────────

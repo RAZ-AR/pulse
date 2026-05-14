@@ -2,6 +2,7 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, publicProcedure, protectedProcedure, merchantProcedure } from "../trpc"
 import { checkAndAwardBadges } from "../services/badges"
+import { trackVisit } from "../services/challenge-progress"
 
 export const offerRouter = router({
 
@@ -10,9 +11,10 @@ export const offerRouter = router({
   /** Список активных акций для главного экрана Mini App */
   list: publicProcedure
     .input(z.object({
-      city:   z.string().optional(),
-      limit:  z.number().min(1).max(50).default(20),
-      cursor: z.string().optional(),
+      city:    z.string().optional(),
+      venueId: z.string().optional(),
+      limit:   z.number().min(1).max(50).default(20),
+      cursor:  z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
       const now = new Date()
@@ -21,7 +23,8 @@ export const offerRouter = router({
           active: true,
           startsAt: { lte: now },
           OR: [{ endsAt: null }, { endsAt: { gte: now } }],
-          ...(input.city ? { venue: { city: { contains: input.city, mode: "insensitive" } } } : {}),
+          ...(input.venueId ? { venueId: input.venueId } : {}),
+          ...(input.city && !input.venueId ? { venue: { city: { contains: input.city, mode: "insensitive" } } } : {}),
         },
         take: input.limit + 1,
         ...(input.cursor ? { cursor: { id: input.cursor } } : {}),
@@ -131,6 +134,7 @@ export const offerRouter = router({
           },
         })
 
+        await trackVisit(tx, ctx.userId)
         const newBadges = await checkAndAwardBadges(tx, ctx.userId)
 
         return { updatedUser, newBadges }

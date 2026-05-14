@@ -27,6 +27,19 @@ export async function verifyQStashSignature(req: Request): Promise<Response | nu
   return null
 }
 
+/**
+ * Verifies the Vercel native cron secret.
+ * Returns a Response (401) if invalid, null if valid.
+ * If CRON_SECRET is not set, always passes (dev/no-auth mode).
+ */
+export function verifyCronSecret(req: Request): Response | null {
+  const secret = process.env.CRON_SECRET
+  if (!secret) return null
+  const auth = req.headers.get("Authorization")
+  if (auth !== `Bearer ${secret}`) return new Response("Unauthorized", { status: 401 })
+  return null
+}
+
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false
   let diff = 0

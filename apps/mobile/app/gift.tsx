@@ -30,6 +30,7 @@ export default function GiftScreen() {
   const utils = trpc.useUtils()
 
   const status = trpc.social.giftStatus.useQuery()
+  const history = trpc.social.giftLinkHistory.useQuery({ limit: 10 })
 
   const [amount, setAmount] = useState("")
   const [message, setMessage] = useState("")
@@ -266,6 +267,54 @@ export default function GiftScreen() {
               </Text>
             </>
           )}
+
+          {/* ── История отправленных подарков ── */}
+          {(history.data?.length ?? 0) > 0 ? (
+            <>
+              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 28 }]}>История</Text>
+              <View style={s.historyList}>
+                {history.data!.map((link) => {
+                  const claimed = link.status === "CLAIMED"
+                  const expired = link.status === "EXPIRED"
+                  return (
+                    <View key={link.id} style={[s.historyRow, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF" }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[s.historyAmount, { color: claimed ? (isRainbow ? neonColors.green : colors.mint) : theme.text, fontFamily: fonts.displayHeavy }]}>
+                          {link.amount} pts
+                        </Text>
+                        {link.recipient ? (
+                          <Text style={[s.historyMeta, { color: theme.textSecondary }]}>
+                            → {link.recipient.name ?? "пользователь"}
+                          </Text>
+                        ) : null}
+                        {link.message ? (
+                          <Text style={[s.historyMeta, { color: theme.textSecondary }]} numberOfLines={1}>{link.message}</Text>
+                        ) : null}
+                      </View>
+                      <View style={[s.historyStatus, {
+                        backgroundColor: claimed
+                          ? (isRainbow ? "rgba(57,255,20,0.12)" : "rgba(178,255,200,0.4)")
+                          : expired
+                          ? "rgba(163,160,200,0.18)"
+                          : (isRainbow ? "rgba(43,110,255,0.10)" : "rgba(235,254,255,0.8)"),
+                      }]}>
+                        <Text style={[s.historyStatusText, {
+                          color: claimed
+                            ? (isRainbow ? neonColors.green : "#5EC67A")
+                            : expired
+                            ? theme.textSecondary
+                            : (isRainbow ? neonColors.cyan : "#7FAFC2"),
+                          fontFamily: fonts.bodyBold,
+                        }]}>
+                          {claimed ? "получен" : expired ? "истёк" : "ждёт"}
+                        </Text>
+                      </View>
+                    </View>
+                  )
+                })}
+              </View>
+            </>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </>
@@ -323,4 +372,11 @@ const s = StyleSheet.create({
   primaryBtn: { padding: 14, alignItems: "center", borderRadius: 99 },
   secondaryPressable: { padding: 12, alignItems: "center" },
   secondaryText: { fontSize: 14 },
+
+  historyList: { gap: 8 },
+  historyRow: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 24, gap: 10 },
+  historyAmount: { fontSize: 18 },
+  historyMeta: { fontSize: 12, marginTop: 2 },
+  historyStatus: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 },
+  historyStatusText: { fontSize: 11 },
 })

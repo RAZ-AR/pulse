@@ -32,6 +32,12 @@ export default function RewardsScreen() {
   const all = rewards.data?.rewards ?? []
   const filtered = filter === "welcome" ? all.filter((r) => r.pointsCost <= 100) : all
 
+  const welcomeExpiresAt = me.data?.welcomeExpiresAt
+  const welcomeDaysLeft = welcomeExpiresAt
+    ? Math.max(0, Math.ceil((new Date(welcomeExpiresAt).getTime() - Date.now()) / 86_400_000))
+    : null
+  const showExpiryWarning = welcomePoints > 0 && welcomeDaysLeft !== null && welcomeDaysLeft <= 7
+
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
       <LavaLampSurface intensity="glass" style={[s.hero, isRainbow ? {} : theme.shadowRaised]}>
@@ -64,6 +70,17 @@ export default function RewardsScreen() {
           </View>
         </View>
       </LavaLampSurface>
+
+      {showExpiryWarning ? (
+        <View style={[s.expiryBanner, isRainbow ? s.expiryBannerRainbow : {}]}>
+          <Text style={[s.expiryText, { fontFamily: fonts.bodyBold, color: isRainbow ? "#FF5500" : "#C0392B" }]}>
+            ⚠️ {welcomePoints} welcome pts истекают через {welcomeDaysLeft === 0 ? "сегодня" : `${welcomeDaysLeft} дн.`}
+          </Text>
+          <Text style={[s.expirySub, { color: isRainbow ? "#8B3DFF" : "#666" }]}>
+            Потратьте баллы сейчас — они не сгорят у партнёров
+          </Text>
+        </View>
+      ) : null}
 
       <View style={s.filters}>
         <FilterPill
@@ -224,6 +241,11 @@ function RewardCard({
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 34 },
+
+  expiryBanner: { backgroundColor: "rgba(255,59,48,0.08)", borderRadius: 18, padding: 14, marginBottom: 12 },
+  expiryBannerRainbow: { backgroundColor: "rgba(255,85,0,0.08)" },
+  expiryText: { fontSize: 13, marginBottom: 3 },
+  expirySub: { fontSize: 12 },
   hero: { borderRadius: 32, padding: 18, marginBottom: 14, overflow: "hidden" },
   heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
   kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },

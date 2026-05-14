@@ -103,11 +103,27 @@ export default function EarnScreen() {
           onPress={() => router.push("/steps")}
           isRainbow={isRainbow}
         />
+        <EarnMethod
+          tone="purple"
+          icon="✦"
+          title={t("partnerOffers", "Partner Offers")}
+          sub={t("partnerOffersSub", "Scan QR at venue · earn bonus pts")}
+          note={t("findOnMap", "Find on Map")}
+          onPress={() => router.push("/map")}
+          isRainbow={isRainbow}
+        />
       </View>
 
-      <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-        {t("recentActivity", "Recent Activity")}
-      </Text>
+      <View style={s.sectionRow}>
+        <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+          {t("recentActivity", "Recent Activity")}
+        </Text>
+        <Pressable onPress={() => router.push("/points-history")}>
+          <Text style={[s.seeAll, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+            {t("seeAll", "See all")} →
+          </Text>
+        </Pressable>
+      </View>
       {txs.length === 0 ? (
         <NeuCard style={{ padding: 20, alignItems: "center", marginTop: 4 }}>
           <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
@@ -156,15 +172,16 @@ export default function EarnScreen() {
 }
 
 const EARN_METHOD_RAINBOW: Record<string, readonly [string, string]> = {
-  cyan:  ["#00F5FF", "#2B6EFF"],
-  black: ["#FF2D9B", "#8B3DFF"],
-  white: ["#8B3DFF", "#2B6EFF"],
+  cyan:   ["#00F5FF", "#2B6EFF"],
+  black:  ["#FF2D9B", "#8B3DFF"],
+  white:  ["#8B3DFF", "#2B6EFF"],
+  purple: ["#FF5500", "#8B3DFF"],
 }
 
 function EarnMethod({
   tone, icon, title, sub, note, onPress, isRainbow,
 }: {
-  tone: "cyan" | "black" | "white"
+  tone: "cyan" | "black" | "white" | "purple"
   icon: string
   title: string
   sub: string
@@ -201,7 +218,7 @@ function EarnMethod({
   }
 
   const dark = tone === "black"
-  const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : "#F9FBFF"
+  const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : tone === "purple" ? "rgba(245,236,255,0.92)" : "#F9FBFF"
   const fg = colors.ink
   const content = (
     <>
@@ -263,7 +280,9 @@ const s = StyleSheet.create({
   methodSub: { fontSize: 12, marginTop: 3 },
   methodNote: { fontSize: 10, maxWidth: 82, textAlign: "right" },
   methodArrow: { fontSize: 22, marginTop: 4 },
-  sectionTitle: { fontSize: 25, marginBottom: 12 },
+  sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 },
+  sectionTitle: { fontSize: 25 },
+  seeAll: { fontSize: 12 },
   activityCard: { padding: 0 },
   txRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
   txIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cyan, alignItems: "center", justifyContent: "center" },

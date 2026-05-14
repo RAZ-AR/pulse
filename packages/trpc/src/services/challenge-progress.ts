@@ -1,4 +1,5 @@
 import type { db as PrismaDb } from "@pulse/db"
+import { sendPushToUser } from "./push"
 
 type Tx = Parameters<Parameters<typeof PrismaDb.$transaction>[0]>[0]
 
@@ -88,26 +89,34 @@ async function completeChallenge(
   userId: string,
   pointsReward: number,
 ): Promise<void> {
-  await tx.userChallenge.update({
-    where: { id: userChallengeId },
-    data: { isCompleted: true, completedAt: new Date() },
-  })
+  const [uc] = await Promise.all([
+    tx.userChallenge.update({
+      where: { id: userChallengeId },
+      data: { isCompleted: true, completedAt: new Date() },
+      include: { challenge: { select: { title: true } } },
+    }),
+    tx.user.update({
+      where: { id: userId },
+      data: {
+        earnedPoints: { increment: pointsReward },
+        totalEarnedLifetime: { increment: pointsReward },
+      },
+    }),
+    tx.transaction.create({
+      data: {
+        userId,
+        type: "CHALLENGE_COMPLETE",
+        pointsEarned: pointsReward,
+        status: "VERIFIED",
+        verifiedAt: new Date(),
+      },
+    }),
+  ])
 
-  await tx.user.update({
-    where: { id: userId },
-    data: {
-      earnedPoints: { increment: pointsReward },
-      totalEarnedLifetime: { increment: pointsReward },
-    },
-  })
-
-  await tx.transaction.create({
-    data: {
-      userId,
-      type: "CHALLENGE_COMPLETE",
-      pointsEarned: pointsReward,
-      status: "VERIFIED",
-      verifiedAt: new Date(),
-    },
-  })
+  const user = await tx.user.findUnique({ where: { id: userId }, select: { pushToken: true } })
+  void sendPushToUser(
+    user?.pushToken,
+    "🏆 Challenge complete!",
+    `${uc.challenge.title} — +${pointsReward} pts added to your balance`,
+  )
 }

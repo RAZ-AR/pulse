@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { Pedometer } from "expo-sensors"
 import { trpc } from "../src/lib/trpc"
-import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
-import { NeuCard } from "../src/components/neu"
+import { colors, neonColors, fonts, gradients, useTheme } from "../src/lib/theme"
+import { NeuCard, VolumeGradient } from "../src/components/neu"
+import { useColorMode } from "../src/store/colorMode"
 import { stepMultiplier } from "@pulse/shared"
 
 const TIERS = [
@@ -24,6 +25,8 @@ function startOfDay(): Date {
 export default function StepsScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const utils = trpc.useUtils()
 
   const me = trpc.user.me.useQuery()
@@ -89,17 +92,31 @@ export default function StepsScreen() {
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <NeuCard gradient={gradients.black} style={s.hero}>
-          <View style={s.heroBlob} />
-          <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold }]}>{t("today", "TODAY")}</Text>
-          <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy }]}>{displaySteps.toLocaleString()}</Text>
-          <Text style={s.heroSub}>{t("steps", "steps")}</Text>
-          <View style={s.multBadge}>
-            <Text style={[s.multText, { fontFamily: fonts.bodyBold }]}>
-              ×{currentMult.toFixed(1)} {t("multiplier", "multiplier").toUpperCase()}
-            </Text>
-          </View>
-        </NeuCard>
+        {isRainbow ? (
+          <VolumeGradient colors={["#2B6EFF", "#8B3DFF", "#FF2D9B"]} shadowColor="#8B3DFF" style={s.hero}>
+            <View style={s.heroBlob} />
+            <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.6)" }]}>{t("today", "TODAY")}</Text>
+            <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{displaySteps.toLocaleString()}</Text>
+            <Text style={[s.heroSub, { color: "rgba(255,255,255,0.6)" }]}>{t("steps", "steps")}</Text>
+            <View style={[s.multBadge, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+              <Text style={[s.multText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>
+                ×{currentMult.toFixed(1)} {t("multiplier", "multiplier").toUpperCase()}
+              </Text>
+            </View>
+          </VolumeGradient>
+        ) : (
+          <NeuCard gradient={gradients.black} style={s.hero}>
+            <View style={s.heroBlob} />
+            <Text style={[s.heroLabel, { fontFamily: fonts.bodyBold }]}>{t("today", "TODAY")}</Text>
+            <Text style={[s.heroValue, { fontFamily: fonts.displayHeavy }]}>{displaySteps.toLocaleString()}</Text>
+            <Text style={s.heroSub}>{t("steps", "steps")}</Text>
+            <View style={s.multBadge}>
+              <Text style={[s.multText, { fontFamily: fonts.bodyBold }]}>
+                ×{currentMult.toFixed(1)} {t("multiplier", "multiplier").toUpperCase()}
+              </Text>
+            </View>
+          </NeuCard>
+        )}
 
         {/* Multiplier tiers */}
         <Text style={[s.sectionTitle, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
@@ -118,7 +135,7 @@ export default function StepsScreen() {
               >
                 <View style={s.tierLeft}>
                   <Text style={[s.tierMult, {
-                    color: isActive ? colors.ink : theme.textSecondary,
+                    color: isActive ? (isRainbow ? neonColors.purple : colors.ink) : theme.textSecondary,
                     fontFamily: isActive ? fonts.displayHeavy : fonts.bodyBold,
                   }]}>
                     ×{tier.mult.toFixed(1)}
@@ -170,16 +187,20 @@ export default function StepsScreen() {
                   {serverSteps.toLocaleString()}
                 </Text>
               </View>
-              <Pressable onPress={syncNow} disabled={sync.isPending || pedometerSteps === null} style={{ opacity: sync.isPending ? 0.5 : 1 }}>
-                <NeuCard
-                  gradient={gradients.black}
-                  small
-                  style={{ padding: 12, alignItems: "center", marginTop: 4 }}
-                >
-                  <Text style={[s.syncBtnText, { fontFamily: fonts.bodyBold }]}>
-                    {sync.isPending ? t("syncing", "Syncing…") : t("syncNow", "Sync now")}
-                  </Text>
-                </NeuCard>
+              <Pressable onPress={syncNow} disabled={sync.isPending || pedometerSteps === null} style={{ opacity: sync.isPending ? 0.5 : 1, marginTop: 4 }}>
+                {isRainbow ? (
+                  <VolumeGradient colors={["#2B6EFF", "#8B3DFF", "#FF2D9B"]} shadowColor="#8B3DFF" style={{ padding: 12, alignItems: "center", borderRadius: 20 }}>
+                    <Text style={[s.syncBtnText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>
+                      {sync.isPending ? t("syncing", "Syncing…") : t("syncNow", "Sync now")}
+                    </Text>
+                  </VolumeGradient>
+                ) : (
+                  <NeuCard gradient={gradients.black} small style={{ padding: 12, alignItems: "center" }}>
+                    <Text style={[s.syncBtnText, { fontFamily: fonts.bodyBold }]}>
+                      {sync.isPending ? t("syncing", "Syncing…") : t("syncNow", "Sync now")}
+                    </Text>
+                  </NeuCard>
+                )}
               </Pressable>
             </>
           )}

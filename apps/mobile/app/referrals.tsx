@@ -2,7 +2,8 @@ import { ScrollView, Share, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
+import { colors, neonColors, fonts, gradients, useTheme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
 import { NeuCard } from "../src/components/neu"
 import { REFERRAL_REWARD_POINTS, REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
 
@@ -13,6 +14,8 @@ function formatDate(d: Date | string) {
 export default function ReferralsScreen() {
   const theme = useTheme()
   const { t } = useTranslation("profile")
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
 
   const me = trpc.user.me.useQuery()
   const referrals = trpc.user.getReferrals.useQuery()
@@ -112,8 +115,8 @@ export default function ReferralsScreen() {
                   i < list.length - 1 && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 },
                 ]}
               >
-                <View style={[s.avatar, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
-                  <Text style={[s.avatarLetter, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                <View style={[s.avatar, { backgroundColor: isRainbow ? "#F2F2F6" : theme.bg }, theme.shadowRaisedSm]}>
+                  <Text style={[s.avatarLetter, { color: isRainbow ? neonColors.cyan : theme.text, fontFamily: fonts.displayHeavy }]}>
                     {(r.name?.[0] ?? "?").toUpperCase()}
                   </Text>
                 </View>
@@ -126,7 +129,7 @@ export default function ReferralsScreen() {
                   </Text>
                 </View>
                 {r.onboardingDone ? (
-                  <Text style={[s.statusActive, { fontFamily: fonts.bodyBold }]}>{t("active", "active")}</Text>
+                  <Text style={[s.statusActive, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.green : colors.ink }]}>{t("active", "active")}</Text>
                 ) : (
                   <Text style={[s.statusPending, { color: theme.textSecondary }]}>
                     {t("pendingOnboarding", "pending")}

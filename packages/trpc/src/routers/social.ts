@@ -2,6 +2,7 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure } from "../trpc"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT, GIFT_LINK_EXPIRY_DAYS } from "@pulse/shared"
+import { sendPushToUser } from "../services/push"
 
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "pulse_loyalty_bot"
 
@@ -196,7 +197,6 @@ export const socialRouter = router({
             spentPoints: { increment: input.amount },
           },
         })
-
         await tx.transaction.create({
           data: {
             userId: ctx.userId,
@@ -206,7 +206,6 @@ export const socialRouter = router({
             verifiedAt: new Date(),
           },
         })
-
         return tx.giftLink.create({
           data: {
             senderId: ctx.userId,
@@ -228,8 +227,7 @@ export const socialRouter = router({
     }),
 
   /**
-   * Claim a gift link. Called by an authenticated user who opened the share link.
-   * Also called internally during completeOnboarding when giftToken is present.
+   * Claim a gift link. Called by authenticated users who opened a share link.
    */
   claimGiftLink: protectedProcedure
     .input(z.object({ token: z.string() }))
@@ -251,12 +249,16 @@ export const socialRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot claim your own gift" })
       }
 
+      const [recipient, sender] = await Promise.all([
+        ctx.db.user.findUnique({ where: { id: ctx.userId }, select: { name: true } }),
+        ctx.db.user.findUnique({ where: { id: link.senderId }, select: { pushToken: true } }),
+      ])
+
       await ctx.db.$transaction(async (tx) => {
         await tx.giftLink.update({
           where: { id: link.id },
           data: { status: "CLAIMED", recipientId: ctx.userId, claimedAt: new Date() },
         })
-
         await tx.user.update({
           where: { id: ctx.userId },
           data: {
@@ -264,7 +266,6 @@ export const socialRouter = router({
             totalEarnedLifetime: { increment: link.amount },
           },
         })
-
         await tx.transaction.create({
           data: {
             userId: ctx.userId,
@@ -275,6 +276,9 @@ export const socialRouter = router({
           },
         })
       })
+
+      const recipientName = recipient?.name ?? "Someone"
+      void sendPushToUser(sender?.pushToken, "🎁 Gift claimed!", `${recipientName} received your ${link.amount} pts gift`)
 
       return { received: link.amount }
     }),
@@ -361,5 +365,27 @@ export const socialRouter = router({
           venue: t.venue,
         })),
       }
+    }),
+
+  giftLinkHistory: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(20) }))
+    .query(async ({ ctx, input }) => {
+      const links = await ctx.db.giftLink.findMany({
+        where: { senderId: ctx.userId },
+        select: {
+          id: true,
+          token: true,
+          amount: true,
+          message: true,
+          status: true,
+          createdAt: true,
+          claimedAt: true,
+          expiresAt: true,
+          recipient: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: input.limit,
+      })
+      return links
     }),
 })

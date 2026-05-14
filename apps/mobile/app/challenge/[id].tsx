@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
-import { NeuCard } from "../../src/components/neu"
+import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { NeuCard, VolumeGradient } from "../../src/components/neu"
 
 const TYPE_ICON: Record<string, string> = {
   SPEND_AMOUNT: "□",
@@ -28,6 +29,8 @@ function ruleSummary(type: string, rules: unknown): string {
 
 export default function ChallengeDetailScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("common")
   const router = useRouter()
   const utils = trpc.useUtils()
@@ -66,6 +69,9 @@ export default function ChallengeDetailScreen() {
   const pct = uc?.isCompleted ? 100 : uc ? Math.min(100, (uc.progress / total) * 100) : 0
   const isJoined = !!uc
   const heroGrad = uc?.isCompleted ? gradients.aqua : gradients.black
+  const heroRainbow: [string, string, string] = uc?.isCompleted
+    ? ["#00F5FF", "#2B6EFF", "#8B3DFF"]
+    : ["#8B3DFF", "#FF2D9B", "#2B6EFF"]
 
   return (
     <>
@@ -77,12 +83,20 @@ export default function ChallengeDetailScreen() {
       }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Hero */}
-        <NeuCard gradient={heroGrad} style={s.hero}>
-          <View style={s.heroBlob} />
-          <Text style={s.heroIcon}>{TYPE_ICON[c.type] ?? "✦"}</Text>
-          <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{c.title}</Text>
-          <Text style={[s.heroReward, { fontFamily: fonts.displayHeavy }]}>+{c.pointsReward} pts</Text>
-        </NeuCard>
+        {isRainbow ? (
+          <VolumeGradient colors={heroRainbow} shadowColor={heroRainbow[0]} shadowOpacity={0.4} borderRadius={32} style={[s.hero, { marginBottom: 16 }]}>
+            <Text style={[s.heroIcon, { color: "rgba(255,255,255,0.6)" }]}>{TYPE_ICON[c.type] ?? "✦"}</Text>
+            <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]} numberOfLines={2}>{c.title}</Text>
+            <Text style={[s.heroReward, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>+{c.pointsReward} pts</Text>
+          </VolumeGradient>
+        ) : (
+          <NeuCard gradient={heroGrad} style={s.hero}>
+            <View style={s.heroBlob} />
+            <Text style={s.heroIcon}>{TYPE_ICON[c.type] ?? "✦"}</Text>
+            <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{c.title}</Text>
+            <Text style={[s.heroReward, { fontFamily: fonts.displayHeavy }]}>+{c.pointsReward} pts</Text>
+          </NeuCard>
+        )}
 
         {/* Description */}
         <NeuCard style={s.card}>
@@ -104,14 +118,16 @@ export default function ChallengeDetailScreen() {
                 <Text style={{ color: theme.textSecondary, fontSize: 18, fontWeight: "500" }}> / {total}</Text>
               </Text>
               {uc.isCompleted ? (
-                <Text style={[s.completedTag, { color: "#5FEFC0", fontFamily: fonts.bodyBold }]}>
+                <Text style={[s.completedTag, { color: isRainbow ? neonColors.green : "#5FEFC0", fontFamily: fonts.bodyBold }]}>
                   {t("completed", "Completed")}
                 </Text>
               ) : null}
             </View>
             <View style={s.progressTrack}>
               <LinearGradient
-                colors={(uc.isCompleted ? gradients.aqua : gradients.black) as unknown as [string, string, ...string[]]}
+                colors={isRainbow
+                  ? (uc.isCompleted ? ["#00F5FF", "#2B6EFF"] : ["#8B3DFF", "#FF2D9B"]) as [string, string]
+                  : (uc.isCompleted ? gradients.aqua : gradients.black) as unknown as [string, string]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[s.progressFill, { width: `${pct}%` }]}
@@ -122,27 +138,42 @@ export default function ChallengeDetailScreen() {
 
         {/* Stats */}
         <View style={s.statsRow}>
-          <Stat label={t("daysLeft", "Days left")} value={`${daysLeft(c.endDate)}`} theme={theme} />
-          <Stat label={t("participants", "Participants")} value={`${c._count?.participants ?? 0}`} theme={theme} />
-          <Stat label={t("goal", "Goal")} value={ruleSummary(c.type, c.rules)} theme={theme} small />
+          <Stat label={t("daysLeft", "Days left")} value={`${daysLeft(c.endDate)}`} theme={theme} isRainbow={isRainbow} />
+          <Stat label={t("participants", "Participants")} value={`${c._count?.participants ?? 0}`} theme={theme} isRainbow={isRainbow} />
+          <Stat label={t("goal", "Goal")} value={ruleSummary(c.type, c.rules)} theme={theme} small isRainbow={isRainbow} />
         </View>
 
         {/* Action */}
         {!isJoined ? (
-          <NeuCard
-            gradient={gradients.black}
-            onPress={() => join.mutate({ challengeId: c.id })}
-            disabled={join.isPending}
-            style={{ padding: 16, alignItems: "center" }}
-          >
-            <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
-              {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "Join challenge")}
-            </Text>
-          </NeuCard>
+          isRainbow ? (
+            <VolumeGradient
+              colors={["#8B3DFF", "#2B6EFF"]}
+              shadowColor="#8B3DFF"
+              shadowOpacity={0.35}
+              borderRadius={99}
+              style={{ padding: 16, alignItems: "center" }}
+              onPress={() => join.mutate({ challengeId: c.id })}
+            >
+              <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
+                {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "Join challenge")}
+              </Text>
+            </VolumeGradient>
+          ) : (
+            <NeuCard
+              gradient={gradients.black}
+              onPress={() => join.mutate({ challengeId: c.id })}
+              disabled={join.isPending}
+              style={{ padding: 16, alignItems: "center" }}
+            >
+              <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
+                {join.isPending ? t("joining", "Joining…") : t("joinChallenge", "Join challenge")}
+              </Text>
+            </NeuCard>
+          )
         ) : uc?.isCompleted ? (
-          <NeuCard gradient={gradients.black} style={{ padding: 18, alignItems: "center", borderRadius: 30 }}>
-            <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>✓ {t("rewardClaimed", "Reward claimed")}</Text>
-            <Text style={s.completedSub}>+{c.pointsReward} pts {t("addedToBalance", "added to your balance")}</Text>
+          <NeuCard gradient={isRainbow ? undefined : gradients.black} style={{ padding: 18, alignItems: "center", borderRadius: 30, backgroundColor: isRainbow ? "#F2F2F6" : undefined }}>
+            <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.green : colors.ink }]}>✓ {t("rewardClaimed", "Reward claimed")}</Text>
+            <Text style={[s.completedSub, { color: isRainbow ? neonColors.cyan : "#91A1B4" }]}>+{c.pointsReward} pts {t("addedToBalance", "added to your balance")}</Text>
           </NeuCard>
         ) : (
           <Pressable
@@ -160,15 +191,15 @@ export default function ChallengeDetailScreen() {
 }
 
 function Stat({
-  label, value, theme, small,
-}: { label: string; value: string; theme: Theme; small?: boolean }) {
+  label, value, theme, small, isRainbow,
+}: { label: string; value: string; theme: Theme; small?: boolean; isRainbow?: boolean }) {
   return (
     <NeuCard small style={s.stat}>
       <Text style={[s.statLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
       <Text
         style={[
           small ? s.statValueSmall : s.statValue,
-          { color: theme.text, fontFamily: fonts.displayHeavy },
+          { color: isRainbow ? neonColors.purple : theme.text, fontFamily: fonts.displayHeavy },
         ]}
         numberOfLines={1}
       >

@@ -5,7 +5,8 @@ import { useRouter } from "expo-router"
 import * as Location from "expo-location"
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from "react-native-maps"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, useTheme } from "../../src/lib/theme"
+import { colors, neonColors, fonts, useTheme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 // Belgrade as default center (until we get user location)
@@ -20,6 +21,8 @@ export default function MapScreen() {
   const theme = useTheme()
   const { t } = useTranslation("venue")
   const router = useRouter()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
   const [region, setRegion] = useState<Region>(DEFAULT_REGION)
@@ -99,7 +102,7 @@ export default function MapScreen() {
             <Marker
               key={v.id}
               coordinate={{ latitude: v.lat, longitude: v.lng }}
-              pinColor={isFeatured ? "#FFB347" : v.isPartner ? colors.pinkSolid : colors.skySolid}
+              pinColor={isFeatured ? (isRainbow ? neonColors.pink : "#FFB347") : v.isPartner ? (isRainbow ? neonColors.purple : colors.pinkSolid) : (isRainbow ? neonColors.cyan : colors.skySolid)}
               title={isFeatured ? `★ ${v.name}` : v.name}
               description={v.isPartner && v.pointsPerCurrency
                 ? `${v.pointsPerCurrency.toFixed(3)} pts/RSD${isFeatured ? " · FEATURED" : ""}`
@@ -118,8 +121,8 @@ export default function MapScreen() {
       ) : null}
 
       {/* Status badge */}
-      <View style={[s.badge, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
-        <Text style={{ color: theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
+      <View style={[s.badge, { backgroundColor: isRainbow ? "#F2F2F6" : theme.bg }, theme.shadowRaisedSm]}>
+        <Text style={{ color: isRainbow ? neonColors.cyan : theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
           {venues.data?.length ?? 0} {t("nearby", "nearby")}
         </Text>
       </View>
@@ -131,9 +134,15 @@ export default function MapScreen() {
             <Pressable
               key={city.name}
               onPress={() => updateProfile.mutate({ homeCity: city.name })}
-              style={[s.cityBadge, active ? s.cityBadgeActive : { backgroundColor: theme.bg }, theme.shadowRaisedSm]}
+              style={[
+                s.cityBadge,
+                active
+                  ? (isRainbow ? s.cityBadgeActiveRainbow : s.cityBadgeActive)
+                  : { backgroundColor: isRainbow ? "#F2F2F6" : theme.bg },
+                theme.shadowRaisedSm,
+              ]}
             >
-              <Text style={{ color: theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
+              <Text style={{ color: active && isRainbow ? neonColors.purple : theme.text, fontSize: 12, fontFamily: fonts.bodyBold }}>
                 ⌖ {city.label}
               </Text>
             </Pressable>
@@ -142,17 +151,20 @@ export default function MapScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filtersWrap} contentContainerStyle={s.filters}>
-        {VENUE_FILTERS.map((filter) => (
-          <Pressable
-            key={filter.key}
-            onPress={() => setActiveFilterKey(filter.key)}
-            style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
-          >
-            <Text style={[s.filterText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
-              {filter.label}
-            </Text>
-          </Pressable>
-        ))}
+        {VENUE_FILTERS.map((filter) => {
+          const active = filter.key === activeFilterKey
+          return (
+            <Pressable
+              key={filter.key}
+              onPress={() => setActiveFilterKey(filter.key)}
+              style={[s.filterChip, active ? (isRainbow ? s.filterChipActiveRainbow : s.filterChipActive) : s.filterChipIdle]}
+            >
+              <Text style={[s.filterText, { color: active && isRainbow ? neonColors.cyan : colors.ink, fontFamily: fonts.bodyBold }]}>
+                {filter.label}
+              </Text>
+            </Pressable>
+          )
+        })}
       </ScrollView>
 
       {/* Denied state */}
@@ -184,10 +196,12 @@ const s = StyleSheet.create({
   cityBadges: { position: "absolute", top: 16, left: 16, gap: 8 },
   cityBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
   cityBadgeActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  cityBadgeActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
   filtersWrap: { position: "absolute", left: 16, right: 16, bottom: 26 },
   filters: { gap: 8, paddingRight: 32 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
   filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  filterChipActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
   filterChipIdle: { backgroundColor: "rgba(249,251,255,0.68)" },
   filterText: { fontSize: 11 },
   deniedCard: { position: "absolute", bottom: 24, left: 16, right: 16, padding: 18, borderRadius: 34 },
