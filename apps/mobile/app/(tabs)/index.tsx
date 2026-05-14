@@ -67,6 +67,7 @@ export default function HomeScreen() {
   })
   const rewards = trpc.reward.list.useQuery({ limit: 8 })
   const selectedCity = resolveCity(me.data?.homeCity)
+  const partnerOffers = trpc.offer.list.useQuery({ city: selectedCity.name, limit: 6 })
   const activeFilter = VENUE_FILTERS.find((filter) => filter.key === activeFilterKey) ?? DEFAULT_VENUE_FILTER
   const nearby = trpc.venue.nearby.useQuery({
     lat: selectedCity.lat,
@@ -282,6 +283,32 @@ export default function HomeScreen() {
           />
         ))}
       </ScrollView>
+
+      {(partnerOffers.data?.offers ?? []).length > 0 ? (
+        <>
+          <SectionHeader title={t("partnerBonuses", "Partner Bonuses")} action={t("seeAll", "See all")} onPress={() => router.push("/map")} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.offerRail}>
+            {(partnerOffers.data?.offers ?? []).map((offer) => (
+              <Pressable
+                key={offer.id}
+                onPress={() => router.push({ pathname: "/venue/[id]", params: { id: offer.venue.id } })}
+                style={[s.partnerOfferCard, isRainbow ? s.partnerOfferCardRainbow : {}]}
+              >
+                <View style={[s.partnerOfferPtsBox, isRainbow ? s.partnerOfferPtsBoxRainbow : {}]}>
+                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#8B3DFF" : "#7FAFC2" }]}>+{offer.pointsReward}</Text>
+                  <Text style={[s.partnerOfferPtsLabel, { color: isRainbow ? "#8B3DFF" : "#91A1B4" }]}>pts</Text>
+                </View>
+                <Text style={[s.partnerOfferTitle, { color: isRainbow ? "#1A1A2E" : "#2C3E50", fontFamily: fonts.bodyBold }]} numberOfLines={2}>
+                  {offer.title}
+                </Text>
+                <Text style={[s.partnerOfferVenue, { color: isRainbow ? "#8877BB" : "#91A1B4" }]} numberOfLines={1}>
+                  {offer.venue.name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </>
+      ) : null}
 
       <SectionHeader title={t("venuesNearby")} action={t("nav.map")} onPress={() => router.push("/map")} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRail}>
@@ -1137,6 +1164,15 @@ const s = StyleSheet.create({
   filterChipIdle: { backgroundColor: "rgba(249,251,255,0.52)" },
   filterChipText: { fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
+
+  partnerOfferCard: { width: 140, backgroundColor: "rgba(235,254,255,0.85)", borderRadius: 22, padding: 14, gap: 6 },
+  partnerOfferCardRainbow: { backgroundColor: "rgba(245,236,255,0.85)" },
+  partnerOfferPtsBox: { backgroundColor: "rgba(127,175,194,0.12)", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", flexDirection: "row", alignItems: "baseline", gap: 2 },
+  partnerOfferPtsBoxRainbow: { backgroundColor: "rgba(139,61,255,0.08)" },
+  partnerOfferPts: { fontSize: 18, lineHeight: 20 },
+  partnerOfferPtsLabel: { fontSize: 10 },
+  partnerOfferTitle: { fontSize: 13, lineHeight: 17 },
+  partnerOfferVenue: { fontSize: 11 },
   offerPressable: { width: 176 },
   offerCard: { minHeight: 174, borderRadius: 34, padding: 14, overflow: "hidden", shadowColor: "#A3B1C6", shadowOffset: { width: 8, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 3 },
   offerCardFeatured: { backgroundColor: "rgba(255,244,254,0.92)" },
