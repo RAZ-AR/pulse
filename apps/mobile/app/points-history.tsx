@@ -2,8 +2,9 @@ import { useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useRouter } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, fonts, useTheme } from "../src/lib/theme"
-import { LavaLampSurface, NeuCard } from "../src/components/neu"
+import { colors, fonts, neonColors, useTheme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
+import { LavaLampSurface, NeuCard, VolumeGradient } from "../src/components/neu"
 
 type Filter = "all" | "earned" | "spent"
 
@@ -49,6 +50,8 @@ function txPoints(tx: {
 
 export default function PointsHistoryScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const [filter, setFilter] = useState<Filter>("all")
   const me = trpc.user.me.useQuery()
@@ -79,11 +82,11 @@ export default function PointsHistoryScreen() {
         </View>
       </View>
 
-      <LavaLampSurface intensity="glass" style={[s.summary, theme.shadowRaised]}>
+      <LavaLampSurface intensity="glass" style={[s.summary, isRainbow ? {} : theme.shadowRaised]}>
         <View style={s.summaryGlow} />
-        <Metric label="available" value={available} />
-        <Metric label="lifetime" value={lifetime} />
-        <Metric label="spent" value={spent} muted />
+        <Metric label="available" value={available} index={0} isRainbow={isRainbow} />
+        <Metric label="lifetime" value={lifetime} index={1} isRainbow={isRainbow} />
+        <Metric label="spent" value={spent} muted index={2} isRainbow={isRainbow} />
       </LavaLampSurface>
 
       <View style={s.filters}>
@@ -93,9 +96,16 @@ export default function PointsHistoryScreen() {
           ["spent", "Spent"],
         ] as const).map(([key, label]) => {
           const active = filter === key
+          if (active && isRainbow) {
+            return (
+              <VolumeGradient key={key} colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.30} borderRadius={99} onPress={() => setFilter(key)} style={[s.filterChip, { flex: 1 }]}>
+                <Text style={[s.filterText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{label}</Text>
+              </VolumeGradient>
+            )
+          }
           return (
             <Pressable key={key} onPress={() => setFilter(key)} style={[s.filterChip, active ? s.filterChipActive : s.filterChipIdle]}>
-              <Text style={[s.filterText, { color: active ? colors.ink : "#91A1B4", fontFamily: fonts.bodyBold }]}>{label}</Text>
+              <Text style={[s.filterText, { color: active ? (isRainbow ? theme.text : colors.ink) : "#91A1B4", fontFamily: fonts.bodyBold }]}>{label}</Text>
             </Pressable>
           )
         })}
@@ -116,7 +126,7 @@ export default function PointsHistoryScreen() {
             const positive = points >= 0
             return (
               <View key={tx.id} style={[s.txRow, index < filteredTxs.length - 1 && s.txBorder]}>
-                <View style={[s.txIcon, positive ? s.txIconEarn : s.txIconSpend]}>
+                <View style={[s.txIcon, positive ? (isRainbow ? s.txIconEarnRainbow : s.txIconEarn) : (isRainbow ? s.txIconSpendRainbow : s.txIconSpend)]}>
                   <Text style={[s.txIconText, { fontFamily: fonts.displayHeavy }]}>{TX_ICONS[tx.type] ?? "P"}</Text>
                 </View>
                 <View style={s.txMain}>
@@ -139,7 +149,22 @@ export default function PointsHistoryScreen() {
   )
 }
 
-function Metric({ label, value, muted }: { label: string; value: number; muted?: boolean }) {
+const METRIC_RAINBOW = [
+  ["#8B3DFF", "#2B6EFF"] as const,
+  ["#2B6EFF", "#00F5FF"] as const,
+  ["#FF2D9B", "#8B3DFF"] as const,
+]
+
+function Metric({ label, value, muted, index, isRainbow }: { label: string; value: number; muted?: boolean; index?: number; isRainbow?: boolean }) {
+  if (isRainbow) {
+    const grad = METRIC_RAINBOW[(index ?? 0) % METRIC_RAINBOW.length]!
+    return (
+      <VolumeGradient colors={grad} shadowColor={grad[0]} shadowOpacity={0.32} borderRadius={24} style={[s.metric, { minHeight: 104 }]}>
+        <Text style={[s.metricValue, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{fmt(value)}</Text>
+        <Text style={[s.metricLabel, { color: "rgba(255,255,255,0.75)", fontFamily: fonts.bodyBold }]}>{label}</Text>
+      </VolumeGradient>
+    )
+  }
   return (
     <View style={s.metric}>
       <Text style={[s.metricValue, muted && s.metricMuted, { fontFamily: fonts.displayHeavy }]}>{fmt(value)}</Text>
@@ -175,11 +200,13 @@ const s = StyleSheet.create({
   txIcon: { width: 44, height: 44, borderRadius: 18, alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.2, shadowRadius: 7, elevation: 2 },
   txIconEarn: { backgroundColor: "rgba(236,255,235,0.9)" },
   txIconSpend: { backgroundColor: "rgba(255,244,254,0.9)" },
+  txIconEarnRainbow: { backgroundColor: "rgba(0,245,255,0.15)" },
+  txIconSpendRainbow: { backgroundColor: "rgba(255,45,155,0.12)" },
   txIconText: { color: "#7A8EA3", fontSize: 17 },
   txMain: { flex: 1, minWidth: 0 },
   txTitle: { color: "#6E7D8E", fontSize: 15 },
   txMeta: { color: "#91A1B4", fontSize: 11, marginTop: 2 },
   txPoints: { fontSize: 19, minWidth: 64, textAlign: "right" },
   txPointsEarn: { color: "#67C887" },
-  txPointsSpend: { color: "#91A1B4" },
+  txPointsSpend: { color: "#D96AA7" },
 })

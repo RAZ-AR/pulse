@@ -2,8 +2,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { LavaLampSurface, NeuCard } from "../../src/components/neu"
+import { colors, fonts, neonColors, useTheme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
 
 const TX_ICONS: Record<string, string> = {
   PARTNER_PURCHASE: "P",
@@ -19,6 +20,8 @@ const TX_ICONS: Record<string, string> = {
 
 export default function EarnScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("common")
   const router = useRouter()
 
@@ -37,20 +40,37 @@ export default function EarnScreen() {
             {t("earnPoints", "Earn Points")}
           </Text>
         </View>
-        <View style={s.balanceBubble}>
-          <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
-          <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
-        </View>
+        {isRainbow ? (
+          <VolumeGradient
+            colors={["#8B3DFF", "#2B6EFF"]}
+            shadowColor="#8B3DFF"
+            shadowOpacity={0.40}
+            borderRadius={43}
+            style={s.balanceBubble}
+          >
+            <Text style={[s.balanceValue, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
+            <Text style={[s.balanceLabel, { color: "rgba(255,255,255,0.75)", fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
+          </VolumeGradient>
+        ) : (
+          <View style={s.balanceBubble}>
+            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
+          </View>
+        )}
       </View>
 
-      <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
+      <LavaLampSurface intensity="glass" style={[s.hero, isRainbow ? {} : theme.shadowRaised]}>
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
-          <View style={s.blackLogo}><Text style={s.blackLogoText}>P</Text></View>
-          <View style={s.blackPill}><Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }]}>{t("activePlan")}</Text></View>
+          <View style={s.blackLogo}>
+            <Text style={[s.blackLogoText, isRainbow ? { color: "#8B3DFF" } : {}]}>P</Text>
+          </View>
+          <View style={s.blackPill}>
+            <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("activePlan")}</Text>
+          </View>
         </View>
-        <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }]}>{t("earnMoreFromEveryVisit")}</Text>
-        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }]}>
+        <Text style={[s.heroTitle, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{t("earnMoreFromEveryVisit")}</Text>
+        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>
           {t("partnersBeatScans", "Partners give up to 6× more than scanning")}
         </Text>
       </LavaLampSurface>
@@ -63,6 +83,7 @@ export default function EarnScreen() {
           sub={t("scanReceiptSub", "1pt / 500 RSD · any venue")}
           note={t("worksEverywhere", "Works everywhere")}
           onPress={() => router.push("/scan")}
+          isRainbow={isRainbow}
         />
         <EarnMethod
           tone="black"
@@ -71,6 +92,7 @@ export default function EarnScreen() {
           sub={t("checkinPhotoSub", "5 pts · with geolocation")}
           note={t("plusStreakBonus", "+ Streak bonus")}
           onPress={() => router.push("/checkin")}
+          isRainbow={isRainbow}
         />
         <EarnMethod
           tone="white"
@@ -79,6 +101,7 @@ export default function EarnScreen() {
           sub={t("stepCounterSub", "+1.1-1.3× multiplier")}
           note={t("connectHealth", "Connect Health")}
           onPress={() => router.push("/steps")}
+          isRainbow={isRainbow}
         />
       </View>
 
@@ -100,11 +123,11 @@ export default function EarnScreen() {
                 key={tx.id}
                 style={[
                   s.txRow,
-                  i < txs.length - 1 && { borderBottomColor: "rgba(5,6,10,0.07)", borderBottomWidth: 1 },
+                  i < txs.length - 1 && { borderBottomColor: isRainbow ? "rgba(180,160,255,0.15)" : "rgba(5,6,10,0.07)", borderBottomWidth: 1 },
                 ]}
               >
-                <View style={s.txIcon}>
-                  <Text style={[s.txIconText, { fontFamily: fonts.bodyBold }]}>{TX_ICONS[tx.type] ?? "·"}</Text>
+                <View style={[s.txIcon, isRainbow && s.txIconRainbow]}>
+                  <Text style={[s.txIconText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: neonColors.cyan } : {}]}>{TX_ICONS[tx.type] ?? "·"}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.txTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>
@@ -118,7 +141,7 @@ export default function EarnScreen() {
                 <Text
                   style={[
                     s.txValue,
-                    { color: isEarn ? colors.ink : "#D96AA7", fontFamily: fonts.displayHeavy },
+                    { color: isEarn ? (isRainbow ? neonColors.cyan : colors.ink) : "#D96AA7", fontFamily: fonts.displayHeavy },
                   ]}
                 >
                   {isEarn ? "+" : ""}{tx.pointsEarned}
@@ -132,8 +155,14 @@ export default function EarnScreen() {
   )
 }
 
+const EARN_METHOD_RAINBOW: Record<string, readonly [string, string]> = {
+  cyan:  ["#00F5FF", "#2B6EFF"],
+  black: ["#FF2D9B", "#8B3DFF"],
+  white: ["#8B3DFF", "#2B6EFF"],
+}
+
 function EarnMethod({
-  tone, icon, title, sub, note, onPress,
+  tone, icon, title, sub, note, onPress, isRainbow,
 }: {
   tone: "cyan" | "black" | "white"
   icon: string
@@ -141,13 +170,42 @@ function EarnMethod({
   sub: string
   note: string
   onPress: () => void
+  isRainbow: boolean
 }) {
+  if (isRainbow) {
+    const grad = EARN_METHOD_RAINBOW[tone]!
+    return (
+      <VolumeGradient
+        colors={grad}
+        shadowColor={grad[0]}
+        shadowOpacity={0.38}
+        borderRadius={32}
+        onPress={onPress}
+        style={s.methodCard}
+      >
+        <View style={s.methodCardContent}>
+          <View style={[s.methodIcon, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
+            <Text style={[s.methodIconText, { color: "rgba(255,255,255,0.95)" }]}>{icon}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.methodTitle, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{title}</Text>
+            <Text style={[s.methodSub, { color: "rgba(255,255,255,0.72)" }]}>{sub}</Text>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={[s.methodNote, { color: "rgba(255,255,255,0.88)", fontFamily: fonts.bodyBold }]}>{note}</Text>
+            <Text style={[s.methodArrow, { color: "rgba(255,255,255,0.9)" }]}>↗</Text>
+          </View>
+        </View>
+      </VolumeGradient>
+    )
+  }
+
   const dark = tone === "black"
   const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : "#F9FBFF"
   const fg = colors.ink
   const content = (
     <>
-      <View style={[s.methodIcon, { backgroundColor: dark ? "rgba(255,255,255,0.72)" : "rgba(255,255,255,0.72)" }]}>
+      <View style={[s.methodIcon, { backgroundColor: "rgba(255,255,255,0.72)" }]}>
         <Text style={[s.methodIconText, { color: dark ? "#B0D4E3" : "#91A1B4" }]}>{icon}</Text>
       </View>
       <View style={{ flex: 1 }}>
@@ -209,6 +267,7 @@ const s = StyleSheet.create({
   activityCard: { padding: 0 },
   txRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
   txIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cyan, alignItems: "center", justifyContent: "center" },
+  txIconRainbow: { backgroundColor: "rgba(0,245,255,0.15)" },
   txIconText: { color: colors.ink, fontSize: 14 },
   txTitle: { fontSize: 14 },
   txDate: { fontSize: 11, marginTop: 1 },

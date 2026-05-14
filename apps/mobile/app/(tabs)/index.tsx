@@ -4,8 +4,9 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { LavaLampSurface } from "../../src/components/neu"
+import { colors, neonColors, fonts, useTheme, rainbowGradients } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { LavaLampSurface, VolumeGradient } from "../../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 type RewardItem = {
@@ -53,6 +54,8 @@ function tierProgress(points: number, start: number, next: number) {
 
 export default function HomeScreen() {
   const theme = useTheme()
+  const { mode, toggle } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const { t } = useTranslation(["common", "venue"])
 
@@ -89,8 +92,8 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <View style={s.topBar}>
-        <CircleButton label="+" onPress={() => router.push("/earn")} />
+      <View style={[s.topBar, isRainbow && s.topBarRainbow]}>
+        <CircleButton label="+" onPress={() => router.push("/earn")} isRainbow={isRainbow} />
         <View style={s.helloBlock}>
           <Text style={[s.kicker, { color: theme.textMuted, fontFamily: fonts.bodyBold }]}>PULSE</Text>
           <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
@@ -103,9 +106,9 @@ export default function HomeScreen() {
                 <Pressable
                   key={city.name}
                   onPress={() => updateProfile.mutate({ homeCity: city.name })}
-                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdle]}
+                  style={[s.cityPill, active ? (isRainbow ? s.cityPillActiveRainbow : s.cityPillActive) : s.cityPillIdle]}
                 >
-                  <Text style={[s.cityPillText, { color: active ? "#7A8EA3" : theme.textMuted, fontFamily: fonts.bodyBold }]}>
+                  <Text style={[s.cityPillText, { color: active ? (isRainbow ? neonColors.cyan : "#7A8EA3") : theme.textMuted, fontFamily: fonts.bodyBold }]}>
                     ⌖ {city.label}
                   </Text>
                 </Pressable>
@@ -113,12 +116,12 @@ export default function HomeScreen() {
             })}
           </View>
         </View>
-        <CircleButton label="◦" onPress={() => router.push("/profile")} />
+        <ColorModeToggle isRainbow={isRainbow} onToggle={toggle} />
       </View>
 
-      <View style={[s.dashboard, theme.shadowRaised]}>
-        <View style={s.dashboardGlowTop} />
-        <View style={s.dashboardGlowBottom} />
+      <View style={[s.dashboard, theme.shadowRaised, isRainbow && s.dashboardRainbow]}>
+        <View style={[s.dashboardGlowTop, isRainbow && s.dashboardGlowTopRainbow]} />
+        <View style={[s.dashboardGlowBottom, isRainbow && s.dashboardGlowBottomRainbow]} />
         <ProgressOrb points={lifetimePoints} tier={tier} progress={progress} />
 
         <View style={s.profileRow}>
@@ -140,14 +143,14 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={s.levelSplit}>
-          <View style={s.levelPaneLight}>
-            <Text style={[s.levelValueDark, s.weekGain, { fontFamily: fonts.displayHeavy }]}>+{fmt(weeklyEarned)}</Text>
-            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold }]}>earned{"\n"}this week</Text>
+        <View style={[s.levelSplit, isRainbow && s.levelSplitRainbow]}>
+          <View style={[s.levelPaneLight, isRainbow && { backgroundColor: "rgba(57,255,20,0.10)" }]}>
+            <Text style={[s.levelValueDark, s.weekGain, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.green : "#67C887" }]}>+{fmt(weeklyEarned)}</Text>
+            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#6E7D8E" }]}>earned{"\n"}this week</Text>
           </View>
-          <View style={s.levelPaneBlue}>
-            <Text style={[s.levelValueLight, s.weekSpend, { fontFamily: fonts.displayHeavy }]}>-{fmt(weeklySpent)}</Text>
-            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold }]}>spent{"\n"}this week</Text>
+          <View style={[s.levelPaneBlue, isRainbow && { backgroundColor: "rgba(255,45,155,0.10)" }]}>
+            <Text style={[s.levelValueLight, s.weekSpend, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.pink : "#91A1B4" }]}>-{fmt(weeklySpent)}</Text>
+            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#7FAFC2" }]}>spent{"\n"}this week</Text>
           </View>
         </View>
 
@@ -158,77 +161,109 @@ export default function HomeScreen() {
           onToday={() => router.push("/earn")}
           onHistory={() => router.push("/points-history")}
           onShare={() => router.push("/gift")}
+          isRainbow={isRainbow}
         />
 
         <View style={s.dashboardSectionHead}>
-          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy }]}>Daily plan</Text>
-          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold }]}>earn more ›</Text>
+          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>Daily plan</Text>
+          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>earn more ›</Text>
         </View>
 
         <LinearGradient
-          colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
+          colors={isRainbow ? ["rgba(43,110,255,0.22)", "rgba(139,61,255,0.18)", "rgba(255,45,155,0.14)"] : ["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={s.rewardProgressCard}
+          style={[s.rewardProgressCard, isRainbow && s.rewardProgressCardRainbow]}
         >
           <View style={s.rewardProgressTop}>
             <View>
-              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy }]}>Scan, visit, redeem</Text>
-              <Text style={s.rewardProgressSub}>Choose your level and get started today.</Text>
+              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>Scan, visit, redeem</Text>
+              <Text style={[s.rewardProgressSub, { color: isRainbow ? neonColors.muted : "#91A1B4" }]}>Choose your level and get started today.</Text>
             </View>
-            <View style={s.rewardProgressButton}>
-              <Text style={s.rewardProgressButtonText}>⌃</Text>
+            <View style={[s.rewardProgressButton, isRainbow && { backgroundColor: "rgba(139,61,255,0.22)" }]}>
+              <Text style={[s.rewardProgressButtonText, { color: isRainbow ? neonColors.purple : "#91A1B4" }]}>⌃</Text>
             </View>
           </View>
-          <Text style={[s.rewardProgressLabel, { fontFamily: fonts.bodyBold }]}>Levels:</Text>
+          <Text style={[s.rewardProgressLabel, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>Levels:</Text>
           <View style={s.levelBlocks}>
             {["01", "02", "03", "04", "05", "06"].map((level, index) => (
-              <View key={level} style={[s.levelBlock, index > 3 && s.levelBlockFuture]}>
-                <Text style={s.levelCheck}>{index < 4 ? "✓" : ""}</Text>
-                <Text style={[s.levelBlockText, { fontFamily: fonts.bodyBold }]}>{level}</Text>
+              <View key={level} style={[s.levelBlock, isRainbow && s.levelBlockRainbow, (index > 3) && (isRainbow ? s.levelBlockFutureRainbow : s.levelBlockFuture)]}>
+                <Text style={[s.levelCheck, { color: isRainbow ? neonColors.cyan : "#91A1B4" }]}>{index < 4 ? "✓" : ""}</Text>
+                <Text style={[s.levelBlockText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>{level}</Text>
               </View>
             ))}
           </View>
         </LinearGradient>
 
-        <Pressable onPress={() => router.push("/rewards")} style={s.blueRewardPill}>
-          <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy }]}>Special offers</Text>
-          <View style={s.blueRewardIcon}>
-            <Text style={s.blueRewardIconText}>⌄</Text>
+        <Pressable onPress={() => router.push("/rewards")} style={[s.blueRewardPill, isRainbow && s.blueRewardPillRainbow]}>
+          <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#FFFFFF" : "#6E7D8E" }]}>Special offers</Text>
+          <View style={[s.blueRewardIcon, isRainbow && { backgroundColor: "rgba(255,45,155,0.22)" }]}>
+            <Text style={[s.blueRewardIconText, { color: isRainbow ? neonColors.pink : "#91A1B4" }]}>⌄</Text>
           </View>
         </Pressable>
       </View>
 
-      <View style={s.quickStatsPanel}>
-        <View style={s.quickStat}>
-          <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${me.data?.currentStreak ?? 0}d`}</Text>
-          <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("streakLabel")}</Text>
+      {isRainbow ? (
+        <View style={s.quickStatsPanelVolume}>
+          <VolumeGradient colors={["#0066FF", "#00BBDD"]} shadowColor="#0066FF" borderRadius={22} style={s.quickStatVolume}>
+            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{`${me.data?.currentStreak ?? 0}d`}</Text>
+            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("streakLabel")}</Text>
+          </VolumeGradient>
+          <VolumeGradient colors={["#FF1155", "#CC0088"]} shadowColor="#FF1155" borderRadius={22} style={s.quickStatVolume}>
+            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{`${welcomeDays}d`}</Text>
+            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("welcomeLeft")}</Text>
+          </VolumeGradient>
+          <VolumeGradient colors={["#AA00FF", "#FF2288"]} shadowColor="#AA00FF" borderRadius={22} style={s.quickStatVolume}>
+            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{activeChallenges.length}</Text>
+            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("quests")}</Text>
+          </VolumeGradient>
         </View>
-        <View style={s.quickStat}>
-          <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${welcomeDays}d`}</Text>
-          <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("welcomeLeft")}</Text>
+      ) : (
+        <View style={s.quickStatsPanel}>
+          <View style={s.quickStat}>
+            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${me.data?.currentStreak ?? 0}d`}</Text>
+            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("streakLabel")}</Text>
+          </View>
+          <View style={s.quickStat}>
+            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${welcomeDays}d`}</Text>
+            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("welcomeLeft")}</Text>
+          </View>
+          <View style={s.quickStat}>
+            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{activeChallenges.length}</Text>
+            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("quests")}</Text>
+          </View>
         </View>
-        <View style={s.quickStat}>
-          <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{activeChallenges.length}</Text>
-          <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("quests")}</Text>
-        </View>
-      </View>
+      )}
 
-      <View style={s.modeTabs}>
-        <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabLight]}>
-          <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold }]}>Goals</Text>
-        </Pressable>
-        <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabBlue]}>
-          <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Rewards</Text>
-        </Pressable>
-        <Pressable onPress={() => router.push("/profile")} style={[s.modeTab, s.modeTabRed]}>
-          <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Support</Text>
-        </Pressable>
-      </View>
+      {isRainbow ? (
+        <View style={s.modeTabs}>
+          <VolumeGradient colors={["#AA00FF", "#2200CC"]} shadowColor="#AA00FF" borderRadius={99} onPress={() => router.push("/rewards")} style={s.modeTabVolume}>
+            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>Goals</Text>
+          </VolumeGradient>
+          <VolumeGradient colors={["#0066FF", "#00BBDD"]} shadowColor="#0066FF" borderRadius={99} onPress={() => router.push("/rewards")} style={s.modeTabVolume}>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>Rewards</Text>
+          </VolumeGradient>
+          <VolumeGradient colors={["#FF1155", "#CC0088"]} shadowColor="#FF1155" borderRadius={99} onPress={() => router.push("/profile")} style={s.modeTabVolume}>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>Support</Text>
+          </VolumeGradient>
+        </View>
+      ) : (
+        <View style={s.modeTabs}>
+          <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabLight]}>
+            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold }]}>Goals</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabBlue]}>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Rewards</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/profile")} style={[s.modeTab, s.modeTabRed]}>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Support</Text>
+          </Pressable>
+        </View>
+      )}
 
       <View style={s.actionRow}>
-        <ActionPill label={t("scanReceipt")} icon="⌁" onPress={() => router.push("/scan")} dark />
-        <ActionPill label={t("checkIn")} icon="⌖" onPress={() => router.push("/checkin")} />
+        <ActionPill label={t("scanReceipt")} icon="⌁" onPress={() => router.push("/scan")} dark isRainbow={isRainbow} />
+        <ActionPill label={t("checkIn")} icon="⌖" onPress={() => router.push("/checkin")} isRainbow={isRainbow} />
       </View>
 
       <SectionHeader title={t("specialOffers")} action={t("allRewards")} onPress={() => router.push("/rewards")} />
@@ -242,6 +277,7 @@ export default function HomeScreen() {
             pointsLabel={t("pointsUnit")}
             openLabel={t("open")}
             featured={index === 0}
+            index={index}
             onPress={() => router.push({ pathname: "/reward/[id]", params: { id: reward.id } })}
           />
         ))}
@@ -249,17 +285,20 @@ export default function HomeScreen() {
 
       <SectionHeader title={t("venuesNearby")} action={t("nav.map")} onPress={() => router.push("/map")} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRail}>
-        {VENUE_FILTERS.map((filter) => (
-          <Pressable
-            key={filter.key}
-            onPress={() => setActiveFilterKey(filter.key)}
-            style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
-          >
-            <Text style={[s.filterChipText, { color: filter.key === activeFilterKey ? "#7A8EA3" : colors.ink, fontFamily: fonts.bodyBold }]}>
-              {filter.label}
-            </Text>
-          </Pressable>
-        ))}
+        {VENUE_FILTERS.map((filter) => {
+          const isActive = filter.key === activeFilterKey
+          return (
+            <Pressable
+              key={filter.key}
+              onPress={() => setActiveFilterKey(filter.key)}
+              style={[s.filterChip, isActive ? (isRainbow ? s.filterChipActiveRainbow : s.filterChipActive) : (isRainbow ? s.filterChipIdleRainbow : s.filterChipIdle)]}
+            >
+              <Text style={[s.filterChipText, { color: isActive ? (isRainbow ? neonColors.cyan : "#7A8EA3") : (isRainbow ? neonColors.muted : colors.ink), fontFamily: fonts.bodyBold }]}>
+                {filter.label}
+              </Text>
+            </Pressable>
+          )
+        })}
       </ScrollView>
       <View style={s.venueList}>
         {nearby.isLoading ? (
@@ -293,6 +332,7 @@ export default function HomeScreen() {
               discount={venue.enableDiscount ? venue.maxDiscountPercent : null}
               onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
               receiptScanLabel={t("receiptScan")}
+              isRainbow={isRainbow}
             />
           )
         })}
@@ -301,10 +341,26 @@ export default function HomeScreen() {
   )
 }
 
-function CircleButton({ label, onPress }: { label: string; onPress: () => void }) {
+function CircleButton({ label, onPress, isRainbow }: { label: string; onPress: () => void; isRainbow?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={s.circleButton}>
-      <Text style={s.circleButtonText}>{label}</Text>
+    <Pressable onPress={onPress} style={[s.circleButton, isRainbow && s.circleButtonRainbow]}>
+      <Text style={[s.circleButtonText, isRainbow && { color: neonColors.cyan }]}>{label}</Text>
+    </Pressable>
+  )
+}
+
+function ColorModeToggle({ isRainbow, onToggle }: { isRainbow: boolean; onToggle: () => void }) {
+  return (
+    <Pressable onPress={onToggle} style={[s.modeToggle, isRainbow && s.modeToggleRainbow]}>
+      <View style={[s.modeToggleTrack, isRainbow && s.modeToggleTrackRainbow]}>
+        <View style={[s.modeToggleThumb, isRainbow ? s.modeToggleThumbRight : s.modeToggleThumbLeft]}>
+          {isRainbow ? (
+            <Text style={s.modeToggleIcon}>🌈</Text>
+          ) : (
+            <Text style={s.modeToggleIcon}>🌸</Text>
+          )}
+        </View>
+      </View>
     </Pressable>
   )
 }
@@ -334,30 +390,60 @@ function MetricCard({ value, label, tone }: { value: string; label: string; tone
   )
 }
 
-function ActionPill({ label, icon, onPress, dark }: { label: string; icon: string; onPress: () => void; dark?: boolean }) {
+function ActionPill({ label, icon, onPress, dark, isRainbow }: { label: string; icon: string; onPress: () => void; dark?: boolean; isRainbow?: boolean }) {
+  if (isRainbow) {
+    const grad = dark
+      ? (["#FF1155", "#AA00CC", "#0044FF"] as const)
+      : (["#0066FF", "#00BBDD", "#AA00FF"] as const)
+    const shadow = dark ? "#FF1155" : "#0066FF"
+    return (
+      <VolumeGradient
+        colors={grad}
+        shadowColor={shadow}
+        borderRadius={28}
+        onPress={onPress}
+        style={s.actionPillVolume}
+      >
+        <View style={s.actionIconVolume}>
+          <Text style={[s.actionIconText, { color: "rgba(255,255,255,0.95)" }]}>{icon}</Text>
+        </View>
+        <Text style={[s.actionLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{label}</Text>
+      </VolumeGradient>
+    )
+  }
   return (
     <Pressable onPress={onPress} style={[s.actionPill, dark ? s.actionPillDark : s.actionPillLight]}>
       {dark ? <LavaLampSurface style={StyleSheet.absoluteFill} /> : null}
       <View style={[s.actionIcon, dark ? s.actionIconDark : s.actionIconLight]}>
         <Text style={[s.actionIconText, { color: dark ? colors.lavaPink : "#FFFFFF" }]}>{icon}</Text>
       </View>
-      <Text style={[s.actionLabel, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
-        {label}
-      </Text>
+      <Text style={[s.actionLabel, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{label}</Text>
     </Pressable>
   )
 }
 
 function SectionHeader({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   return (
     <View style={s.sectionHead}>
-      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy }]}>{title}</Text>
-      <Pressable onPress={onPress} style={s.sectionButton}>
-        <Text style={[s.sectionButtonText, { fontFamily: fonts.bodyBold }]}>{action}</Text>
+      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>{title}</Text>
+      <Pressable onPress={onPress} style={[s.sectionButton, isRainbow && s.sectionButtonRainbow]}>
+        <Text style={[s.sectionButtonText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.cyan : "#91A1B4" }]}>{action}</Text>
       </Pressable>
     </View>
   )
 }
+
+// Volumetric gradients for rainbow mode — inspired by the pill-shape reference image
+const OFFER_VOLUME = [
+  { gradient: ["#FF1155", "#AA00CC", "#1100EE"] as const, shadow: "#FF1155" },
+  { gradient: ["#0044FF", "#FF2288", "#FF5500"] as const, shadow: "#0044FF" },
+  { gradient: ["#0077FF", "#00BBDD", "#FF1166"] as const, shadow: "#0077FF" },
+  { gradient: ["#FFB800", "#FF4400", "#220099"] as const, shadow: "#FF4400" },
+  { gradient: ["#BB00FF", "#FF2288", "#0022DD"] as const, shadow: "#BB00FF" },
+  { gradient: ["#00CC88", "#0066FF", "#BB00FF"] as const, shadow: "#00CC88" },
+] as const
 
 function OfferCard({
   title,
@@ -367,6 +453,7 @@ function OfferCard({
   openLabel,
   featured,
   onPress,
+  index = 0,
 }: {
   title: string
   venue: string
@@ -375,71 +462,58 @@ function OfferCard({
   openLabel: string
   featured: boolean
   onPress: () => void
+  index?: number
 }) {
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
+
+  if (isRainbow) {
+    const vol = OFFER_VOLUME[index % OFFER_VOLUME.length]!
+    return (
+      <View style={s.offerPressable}>
+        <VolumeGradient
+          colors={vol.gradient}
+          shadowColor={vol.shadow}
+          borderRadius={34}
+          onPress={onPress}
+          style={s.offerCardVolume}
+        >
+          <View style={s.offerTop}>
+            <View style={[s.offerLogo, s.offerLogoVolume]}>
+              <Text style={[s.offerLogoText, { color: "rgba(255,255,255,0.9)" }]}>✦</Text>
+            </View>
+            <Text style={[s.offerPoints, s.offerPointsVolume, { fontFamily: fonts.bodyBold }]}>
+              {points} {pointsLabel}
+            </Text>
+          </View>
+          <Text style={[s.offerTitle, s.offerTitleVolume, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
+          <Text style={[s.offerVenue, s.offerVenueVolume, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+          <View style={s.offerLinkVolume}>
+            <Text style={[s.offerLinkText, s.offerLinkTextVolume, { fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
+          </View>
+        </VolumeGradient>
+      </View>
+    )
+  }
+
   return (
     <Pressable onPress={onPress} style={s.offerPressable}>
-      {featured ? (
-        <View style={[s.offerCard, s.offerCardFeatured]}>
-          <OfferCardContent
-            title={title}
-            venue={venue}
-            points={points}
-            pointsLabel={pointsLabel}
-            openLabel={openLabel}
-            featured={featured}
-          />
+      <View style={[s.offerCard, featured ? s.offerCardFeatured : s.offerCardBlue]}>
+        <View style={s.offerTop}>
+          <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
+            <Text style={[s.offerLogoText, { color: "#91A1B4" }]}>✦</Text>
+          </View>
+          <Text style={[s.offerPoints, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>
+            {points} {pointsLabel}
+          </Text>
         </View>
-      ) : (
-        <View style={[s.offerCard, s.offerCardBlue]}>
-          <OfferCardContent
-            title={title}
-            venue={venue}
-            points={points}
-            pointsLabel={pointsLabel}
-            openLabel={openLabel}
-            featured={featured}
-          />
+        <Text style={[s.offerTitle, { color: "#6E7D8E", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
+        <Text style={[s.offerVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+        <View style={s.offerLink}>
+          <Text style={[s.offerLinkText, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
         </View>
-      )}
+      </View>
     </Pressable>
-  )
-}
-
-function OfferCardContent({
-  title,
-  venue,
-  points,
-  pointsLabel,
-  openLabel,
-  featured,
-}: {
-  title: string
-  venue: string
-  points: number
-  pointsLabel: string
-  openLabel: string
-  featured: boolean
-}) {
-  return (
-    <>
-      <View style={s.offerTop}>
-        <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
-        <Text style={[s.offerLogoText, { color: "#91A1B4" }]}>✦</Text>
-        </View>
-        <Text style={[s.offerPoints, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>
-          {points} {pointsLabel}
-        </Text>
-      </View>
-      <Text style={[s.offerTitle, { color: "#6E7D8E", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
-        {title}
-      </Text>
-      <Text style={[s.offerVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-        {venue}
-      </Text>
-      <View style={s.offerLink}>
-        <Text style={[s.offerLinkText, { color: "#91A1B4", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
-      </View>
-    </>
   )
 }
 
@@ -457,6 +531,7 @@ function VenueCard({
   discount,
   onPress,
   receiptScanLabel,
+  isRainbow,
 }: {
   name: string
   category: string
@@ -471,7 +546,57 @@ function VenueCard({
   discount: number | null
   onPress: () => void
   receiptScanLabel: string
+  isRainbow?: boolean
 }) {
+  if (isRainbow) {
+    return (
+      <VolumeGradient
+        colors={["#1A0055", "#440099", "#0033CC"]}
+        shadowColor="#6600FF"
+        borderRadius={28}
+        onPress={onPress}
+        style={s.venueCardVolume}
+        glossOpacity={0.18}
+      >
+        <View style={[s.venueLogo, s.venueLogoVolume]}>
+          <Text style={[s.venueLogoText, { fontFamily: fonts.displayHeavy, color: "rgba(255,255,255,0.9)" }]}>{logo}</Text>
+        </View>
+        <View style={s.venueMain}>
+          <View style={s.venueTitleRow}>
+            <Text style={[s.venueName, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]} numberOfLines={1}>{name}</Text>
+            <Text style={[s.venueArrow, { color: "rgba(255,255,255,0.7)" }]}>↗</Text>
+          </View>
+          <Text style={[s.venueMeta, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.6)" }]} numberOfLines={1}>
+            {category} · {city}
+          </Text>
+          <Text style={[s.venueAddress, { color: "rgba(255,255,255,0.5)" }]} numberOfLines={1}>{address}</Text>
+          <View style={s.venueChips}>
+            <View style={s.venueChipVolume}>
+              <Text style={[s.venueChipDarkText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]}>
+                {rate ? `${rate.toFixed(3)} pts/RSD` : receiptScanLabel}
+              </Text>
+            </View>
+            <View style={s.venueChipVolume}>
+              <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{distanceLabel(distance)}</Text>
+            </View>
+            <View style={s.venueChipVolume}>
+              <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{ratingLabel(rating, reviews)}</Text>
+            </View>
+            {discount ? (
+              <View style={[s.venueChipVolume, { backgroundColor: "rgba(57,255,20,0.25)" }]}>
+                <Text style={[s.venueChipMintText, { fontFamily: fonts.bodyBold, color: "#AAFFAA" }]}>-{discount}%</Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={s.specialLineVolume}>
+            <Text style={[s.specialDot, { color: "rgba(255,255,255,0.6)" }]}>●</Text>
+            <Text style={[s.specialText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]} numberOfLines={1}>{offer}</Text>
+          </View>
+        </View>
+      </VolumeGradient>
+    )
+  }
+
   return (
     <Pressable onPress={onPress} style={s.venueCard}>
       <View style={s.venueLogo}>
@@ -631,6 +756,7 @@ function BalancePanel({
   onToday,
   onHistory,
   onShare,
+  isRainbow,
 }: {
   total: number
   available: number
@@ -638,7 +764,36 @@ function BalancePanel({
   onToday: () => void
   onHistory: () => void
   onShare: () => void
+  isRainbow?: boolean
 }) {
+  if (isRainbow) {
+    return (
+      <VolumeGradient
+        colors={["#FF1155", "#8800EE", "#0033FF"]}
+        shadowColor="#8800EE"
+        borderRadius={34}
+        style={s.balancePanelVolume}
+        glossOpacity={0.22}
+      >
+        <Pressable onPress={onShare} style={s.balanceShareVolume}>
+          <Text style={[s.balanceIcon, { color: "rgba(255,255,255,0.9)" }]}>↗</Text>
+        </Pressable>
+        <View style={s.balanceGrid}>
+          <BalanceTile value={fmt(total)} label="total points" isRainbow accentColor="#FFFFFF" />
+          <BalanceTile value={fmt(available)} label="available" isRainbow accentColor="rgba(255,255,255,0.85)" />
+          <Pressable onPress={onToday} style={[s.balanceTile, s.balanceTileWide, s.balanceTileVolume]}>
+            <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>+{fmt(today)}</Text>
+            <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>can get today</Text>
+            <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]}>open tasks</Text>
+          </Pressable>
+        </View>
+        <Pressable onPress={onHistory} style={s.balanceHistoryVolume}>
+          <Text style={[s.balanceIcon, { color: "rgba(255,255,255,0.9)" }]}>◷</Text>
+        </Pressable>
+      </VolumeGradient>
+    )
+  }
+
   return (
     <LinearGradient
       colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
@@ -647,7 +802,7 @@ function BalancePanel({
       style={s.balancePanel}
     >
       <Pressable onPress={onShare} style={s.balanceShare}>
-        <Text style={s.balanceIcon}>↗</Text>
+        <Text style={[s.balanceIcon, { color: "#91A1B4" }]}>↗</Text>
       </Pressable>
       <View style={s.balanceGrid}>
         <BalanceTile value={fmt(total)} label="total points" />
@@ -659,17 +814,17 @@ function BalancePanel({
         </Pressable>
       </View>
       <Pressable onPress={onHistory} style={s.balanceHistory}>
-        <Text style={s.balanceIcon}>◷</Text>
+        <Text style={[s.balanceIcon, { color: "#91A1B4" }]}>◷</Text>
       </Pressable>
     </LinearGradient>
   )
 }
 
-function BalanceTile({ value, label }: { value: string; label: string }) {
+function BalanceTile({ value, label, isRainbow, accentColor }: { value: string; label: string; isRainbow?: boolean; accentColor?: string }) {
   return (
-    <View style={s.balanceTile}>
-      <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy }]}>{value}</Text>
-      <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold }]}>{label}</Text>
+    <View style={[s.balanceTile, isRainbow && s.balanceTileRainbow]}>
+      <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy, color: isRainbow ? (accentColor ?? neonColors.cyan) : "#6E7D8E" }]}>{value}</Text>
+      <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>{label}</Text>
     </View>
   )
 }
@@ -1028,4 +1183,213 @@ const s = StyleSheet.create({
   specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
   specialDot: { color: "#9FEED3", fontSize: 10 },
   specialText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
+
+  // ── Rainbow overrides ────────────────────────────────────────
+  topBarRainbow: {
+    backgroundColor: "#F2F2F6",
+    borderColor: "rgba(180,160,255,0.35)",
+    shadowColor: "#AA00FF",
+    shadowOpacity: 0.18,
+  },
+  circleButtonRainbow: {
+    backgroundColor: "#EEEEF4",
+    borderColor: "rgba(180,160,255,0.4)",
+    shadowColor: "#AA00FF",
+    shadowOpacity: 0.25,
+  },
+  cityPillActiveRainbow: {
+    backgroundColor: "rgba(0,245,255,0.14)",
+    shadowColor: "#00F5FF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  modeToggle: {
+    width: 64,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modeToggleRainbow: {},
+  modeToggleTrack: {
+    width: 56,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#EAEEF8",
+    justifyContent: "center",
+    paddingHorizontal: 2,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  modeToggleTrackRainbow: {
+    backgroundColor: "#1A0A3A",
+    shadowColor: "#8B3DFF",
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(139,61,255,0.4)",
+  },
+  modeToggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modeToggleThumbLeft: { alignSelf: "flex-start" },
+  modeToggleThumbRight: {
+    alignSelf: "flex-end",
+    backgroundColor: "#1A0A3A",
+    shadowColor: "#FF2D9B",
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+  },
+  modeToggleIcon: { fontSize: 14 },
+
+  dashboardRainbow: {
+    backgroundColor: "#F2F2F6",
+    borderColor: "rgba(180,160,255,0.25)",
+    shadowColor: "#AA00FF",
+    shadowOpacity: 0.18,
+  },
+  dashboardGlowTopRainbow: { backgroundColor: "rgba(100,0,255,0.06)" },
+  dashboardGlowBottomRainbow: { backgroundColor: "rgba(255,0,100,0.05)" },
+
+  levelSplitRainbow: {
+    backgroundColor: "#EEEEF4",
+    shadowColor: "#AA00FF",
+    shadowOpacity: 0.18,
+  },
+
+  balancePanelRainbow: {
+    shadowColor: "#FF2D9B",
+    shadowOpacity: 0.5,
+    borderWidth: 1,
+    borderColor: "rgba(255,45,155,0.18)",
+  },
+  balanceTileRainbow: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    shadowColor: "#8B3DFF",
+    shadowOpacity: 0.3,
+  },
+
+  rewardProgressCardRainbow: {
+    borderWidth: 1,
+    borderColor: "rgba(43,110,255,0.22)",
+    shadowColor: "#2B6EFF",
+    shadowOpacity: 0.4,
+  },
+  levelBlockRainbow: {
+    backgroundColor: "rgba(139,61,255,0.14)",
+  },
+  levelBlockFutureRainbow: { backgroundColor: "rgba(255,255,255,0.04)" },
+
+  blueRewardPillRainbow: {
+    backgroundColor: "#16162E",
+    borderWidth: 1,
+    borderColor: "rgba(255,45,155,0.22)",
+    shadowColor: "#FF2D9B",
+    shadowOpacity: 0.4,
+  },
+
+  quickStatsPanelRainbow: {
+    backgroundColor: "#EEEEF4",
+    shadowColor: "#AA00FF",
+    shadowOpacity: 0.15,
+  },
+
+  modeTabNeonPurple: { backgroundColor: "rgba(139,61,255,0.16)", borderWidth: 1, borderColor: "rgba(139,61,255,0.3)" },
+  modeTabNeonCyan:   { backgroundColor: "rgba(0,245,255,0.10)",  borderWidth: 1, borderColor: "rgba(0,245,255,0.25)" },
+  modeTabNeonPink:   { backgroundColor: "rgba(255,45,155,0.14)", borderWidth: 1, borderColor: "rgba(255,45,155,0.3)" },
+
+  actionPillNeonPink: {
+    backgroundColor: "rgba(255,45,155,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(255,45,155,0.35)",
+    shadowColor: "#FF2D9B",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  actionPillNeonCyan: {
+    backgroundColor: "rgba(0,245,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(0,245,255,0.28)",
+    shadowColor: "#00F5FF",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  actionIconNeonPink: { backgroundColor: "rgba(255,45,155,0.22)" },
+  actionIconNeonCyan: { backgroundColor: "rgba(0,245,255,0.18)" },
+
+  sectionButtonRainbow: {
+    backgroundColor: "rgba(0,245,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(0,245,255,0.22)",
+  },
+
+  filterChipActiveRainbow: {
+    backgroundColor: "rgba(0,245,255,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(0,245,255,0.3)",
+    shadowColor: "#00F5FF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  filterChipIdleRainbow: { backgroundColor: "rgba(255,255,255,0.04)" },
+
+  offerCardRainbow: {
+    borderWidth: 1,
+    shadowColor: "#FF2D9B",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+
+  // ── Volume (3D gradient pill) styles ────────────────────────
+  offerCardVolume: { minHeight: 190, padding: 14 },
+  offerLogoVolume: { backgroundColor: "rgba(255,255,255,0.2)" },
+  offerPointsVolume: { color: "rgba(255,255,255,0.9)", backgroundColor: "rgba(0,0,0,0.18)" },
+  offerTitleVolume: { color: "#FFFFFF" },
+  offerVenueVolume: { color: "rgba(255,255,255,0.7)" },
+  offerLinkVolume: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.2)" },
+  offerLinkTextVolume: { color: "rgba(255,255,255,0.95)" },
+
+  actionPillVolume: { flex: 1, padding: 9, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 60 },
+  actionIconVolume: { width: 35, height: 35, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+
+  balancePanelVolume: { padding: 12, minHeight: 156, marginBottom: 14 },
+  balanceTileVolume: { backgroundColor: "rgba(255,255,255,0.16)" },
+  balanceShareVolume: { position: "absolute", top: 11, right: 11, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", zIndex: 2 },
+  balanceHistoryVolume: { position: "absolute", right: 12, bottom: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+
+  modeTabVolume: { flex: 1, paddingVertical: 12, alignItems: "center", justifyContent: "center" },
+
+  quickStatsPanelVolume: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  quickStatVolume: { flex: 1, minHeight: 82, justifyContent: "center", alignItems: "center", padding: 10 },
+
+  venueCardVolume: { padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", marginBottom: 0 },
+  venueLogoVolume: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  venueChipVolume: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
+  specialLineVolume: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
+
+  // Legacy rainbow styles (kept for toggle switch etc.)
+  venueCardRainbow: { backgroundColor: "#F2F2F6" },
+  venueLogoRainbow: { backgroundColor: "rgba(139,61,255,0.08)" },
 })

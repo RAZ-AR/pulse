@@ -1,9 +1,10 @@
 /**
- * PULSE design system — soft unicorn-neumorphic reference.
- *
- * Cool raised surfaces, pastel RGB gradients, large grotesk typography,
- * and pill controls with soft floating shadows.
+ * PULSE design system — two modes:
+ *  pastel  — soft unicorn-neumorphic (default)
+ *  rainbow — neon vivid dark mode, inspired by gradient orb/pill references
  */
+
+import { useColorMode } from "../store/colorMode"
 
 export type Theme = {
   bg: string
@@ -13,11 +14,12 @@ export type Theme = {
   textSecondary: string
   textMuted: string
   border: string
-  // Pre-built shadow recipes for Pressable / View
   shadowRaised: ShadowStyle
   shadowRaisedSm: ShadowStyle
-  shadowInset: ShadowStyle // simulated — RN doesn't support inset
+  shadowInset: ShadowStyle
   shadowGlow: ShadowStyle
+  // rainbow-mode extras
+  isDark: boolean
 }
 
 export type ShadowStyle = {
@@ -28,7 +30,7 @@ export type ShadowStyle = {
   elevation: number
 }
 
-// ── Brand gradients (multi-stop arrays for expo-linear-gradient) ──
+// ── Pastel gradients (original) ───────────────────────────────
 export const gradients = {
   aqua: ["#A7E8EE", "#84DCE4"] as const,
   ice: ["#F3F7FF", "#E6EDF8"] as const,
@@ -57,7 +59,24 @@ export const gradients = {
   violet: ["#DDE6FF", "#C9C6FF"] as const,
 }
 
-// Shorthands the design uses heavily
+// ── Neon rainbow gradients (vibrant mode) ─────────────────────
+export const rainbowGradients = {
+  hotPinkBlue:   ["#FF2D9B", "#2B6EFF"] as const,
+  cyanMagenta:   ["#00F5FF", "#FF2D9B", "#8B3DFF"] as const,
+  orangePurple:  ["#FF5500", "#C800FF"] as const,
+  electricBlue:  ["#00CFFF", "#0041FF"] as const,
+  neonGreen:     ["#39FF14", "#00F5A0"] as const,
+  fireRed:       ["#FF2200", "#FF6B00"] as const,
+  violetPink:    ["#9B00FF", "#FF2D9B"] as const,
+  pillMain:      ["#FF2D9B", "#8B3DFF", "#2B6EFF"] as const,
+  pillCyan:      ["#00F5FF", "#2B6EFF"] as const,
+  pillOrange:    ["#FF5500", "#FF2D9B"] as const,
+  darkBg:        ["#0D0D1E", "#0A0A18"] as const,
+  darkSurface:   ["#1A1A30", "#141428"] as const,
+  neonBalance:   ["#FF2D9B", "#00F5FF", "#39FF14"] as const,
+}
+
+// ── Pastel color shorthands ────────────────────────────────────
 export const colors = {
   pink: "#F7D6EA",
   sky: "#A7E8EE",
@@ -78,7 +97,22 @@ export const colors = {
   cyan: "#85F5F2",
 }
 
-// ── Radius scale ─────────────────────────────────────────────
+// ── Neon color shorthands ──────────────────────────────────────
+export const neonColors = {
+  pink:    "#FF2D9B",
+  cyan:    "#00F5FF",
+  purple:  "#8B3DFF",
+  blue:    "#2B6EFF",
+  green:   "#39FF14",
+  orange:  "#FF5500",
+  red:     "#FF2200",
+  yellow:  "#FFE600",
+  white:   "#FFFFFF",
+  muted:   "#8877BB",
+  surface: "#141428",
+  bg:      "#0A0A18",
+}
+
 export const radius = {
   xs: 12,
   sm: 18,
@@ -86,8 +120,9 @@ export const radius = {
   pill: 99,
 }
 
-// ── Single light theme (no dark variant for v1) ──────────────
-const lightTheme: Theme = {
+// ── Pastel theme ───────────────────────────────────────────────
+const pastelTheme: Theme = {
+  isDark: false,
   bg: "#E1E6EF",
   bgLight: "#F7FAFF",
   surface: "#F9FBFF",
@@ -95,7 +130,6 @@ const lightTheme: Theme = {
   textSecondary: "#91A1B4",
   textMuted: "#B0D4E3",
   border: "rgba(255,255,255,0.72)",
-
   shadowRaised: {
     shadowColor: "#A3B1C6",
     shadowOffset: { width: 9, height: 9 },
@@ -111,8 +145,6 @@ const lightTheme: Theme = {
     elevation: 4,
   },
   shadowInset: {
-    // RN doesn't support inset — caller layers a translucent gradient overlay instead.
-    // This recipe just dampens the raised look on input fields.
     shadowColor: "#A3B1C6",
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.18,
@@ -128,19 +160,55 @@ const lightTheme: Theme = {
   },
 }
 
-export function useTheme(): Theme {
-  // Dark mode is intentionally not implemented in the unicorn iteration —
-  // the entire palette is light by design. Bring it back only if requested.
-  return lightTheme
+// ── Rainbow volumetric theme (light grey bg + vivid 3D gradient elements) ─
+const rainbowTheme: Theme = {
+  isDark: false,
+  bg: "#E4E4E9",       // neutral grey like the reference image background
+  bgLight: "#EDEDF2",
+  surface: "#F2F2F6",
+  text: "#1A1A2E",
+  textSecondary: "#44446A",
+  textMuted: "#8888AA",
+  border: "rgba(255,255,255,0.72)",
+  shadowRaised: {
+    shadowColor: "#8B3DFF",
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.28,
+    shadowRadius: 22,
+    elevation: 10,
+  },
+  shadowRaisedSm: {
+    shadowColor: "#FF2D9B",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  shadowInset: {
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 0,
+  },
+  shadowGlow: {
+    shadowColor: "#FF2D9B",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    elevation: 14,
+  },
 }
 
-// ── Typography ───────────────────────────────────────────────
-// Use these `fontFamily` values once Space Grotesk is loaded.
-// Falls back to system if loading fails.
+export function useTheme(): Theme {
+  const mode = useColorMode((s) => s.mode)
+  return mode === "rainbow" ? rainbowTheme : pastelTheme
+}
+
 export const fonts = {
   display: "SpaceGrotesk_700Bold",
   displayHeavy: "SpaceGrotesk_800ExtraBold",
-  displayBlack: "SpaceGrotesk_700Bold", // 900 not in google-fonts package; map to 700
+  displayBlack: "SpaceGrotesk_700Bold",
   body: "SpaceGrotesk_500Medium",
   bodyBold: "SpaceGrotesk_700Bold",
 }

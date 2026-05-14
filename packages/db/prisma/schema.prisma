@@ -154,13 +154,16 @@ model User {
   accounts Account[]
 
   // App relations
-  transactions   Transaction[]
-  checkins       Checkin[]
-  badges         UserBadge[]
-  challenges     UserChallenge[]
-  reviews        Review[]
-  pointsGifts    PointsGift[] @relation("Sender")
-  pointsReceived PointsGift[] @relation("Receiver")
+  transactions      Transaction[]
+  checkins          Checkin[]
+  badges            UserBadge[]
+  challenges        UserChallenge[]
+  reviews           Review[]
+  pointsGifts       PointsGift[]      @relation("Sender")
+  pointsReceived    PointsGift[]      @relation("Receiver")
+  offerRedemptions  OfferRedemption[]
+  giftLinksSent     GiftLink[]        @relation("GiftLinksSent")
+  giftLinksReceived GiftLink[]        @relation("GiftLinksReceived")
 
   @@index([referralCode])
   @@index([email])
@@ -200,14 +203,31 @@ model VerificationToken {
 // Merchants (B2B cabinet owners)
 // ============================================================
 
+enum MerchantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
 model Merchant {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String         @id @default(cuid())
+  email        String?        @unique
   name         String
   phone        String?
-  passwordHash String
+  passwordHash String?
+  address      String?
+  taxId        String?        // PIB / ИНН
+
+  // Telegram bot registration
+  telegramChatId String?      @unique
+  status         MerchantStatus @default(PENDING)
+
+  // Points balance (funded by redemptions, used to create offers)
+  pointsBalance  Int          @default(0)
+
   venues       Venue[]
   importLogs   VenueImportLog[]
+  offers       Offer[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -271,6 +291,7 @@ model Venue {
   rewards    Reward[]
   reviews    Review[]
   challenges Challenge[]
+  offers     Offer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -327,6 +348,7 @@ model Transaction {
   ocrRawData      Json?
   ocrConfidence   Float?
   receiptHash     String? @unique
+  receiptNumber   String? @unique  // Serbian fiscal receipt number (dedup for QR scans)
 
   // Verification
   status          TransactionStatus @default(PENDING)
@@ -504,4 +526,75 @@ model PointsGift {
 
   @@index([senderId])
   @@index([receiverId])
+}
+
+// ============================================================
+// Offers (QR-coupon promo system)
+// ============================================================
+
+model Offer {
+  id          String   @id @default(cuid())
+  venueId     String
+  venue       Venue    @relation(fields: [venueId], references: [id])
+  merchantId  String
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+
+  title       String
+  description String?
+  imageUrl    String?
+
+  pointsReward Int      // баллы юзеру
+  costPoints   Int      // списывается с баланса партнёра
+
+  startsAt    DateTime  @default(now())
+  endsAt      DateTime?
+  usageLimit  Int?      // null = безлимит
+  usageCount  Int       @default(0)
+
+  qrToken     String    @unique @default(cuid())
+  active      Boolean   @default(true)
+
+  redemptions OfferRedemption[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([venueId, active])
+  @@index([qrToken])
+}
+
+model OfferRedemption {
+  id           String   @id @default(cuid())
+  offerId      String
+  offer        Offer    @relation(fields: [offerId], references: [id])
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  pointsEarned Int
+
+  createdAt    DateTime @default(now())
+
+  @@unique([offerId, userId])   // 1 раз на юзера на акцию
+  @@index([userId])
+}
+
+// ============================================================
+// Gift Links (share-link gifting)
+// ============================================================
+
+model GiftLink {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  senderId    String
+  sender      User      @relation("GiftLinksSent", fields: [senderId], references: [id])
+  amount      Int
+  message     String?
+  status      String    @default("PENDING") // PENDING | CLAIMED | EXPIRED
+  recipientId String?
+  recipient   User?     @relation("GiftLinksReceived", fields: [recipientId], references: [id])
+  createdAt   DateTime  @default(now())
+  claimedAt   DateTime?
+  expiresAt   DateTime
+
+  @@index([token])
+  @@index([senderId])
 }

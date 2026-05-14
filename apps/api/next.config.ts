@@ -4,6 +4,7 @@ import path from "path"
 const config: NextConfig = {
   transpilePackages: [
     "@pulse/auth",
+    "@pulse/bot",
     "@pulse/db",
     "@pulse/i18n",
     "@pulse/shared",

@@ -7,13 +7,15 @@ import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
 import { colors, fonts, useTheme } from "../src/lib/theme"
 
+type Mode = "qr" | "photo"
+
 type Phase =
-  | { kind: "camera" }
+  | { kind: "camera"; mode: Mode }
   | { kind: "uploading" }
   | { kind: "scanning"; imageUrl: string }
   | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number }
   | { kind: "submitting" }
-  | { kind: "done"; pointsEarned: number }
+  | { kind: "done"; pointsEarned: number; vendorName?: string; totalRsd?: number; offerTitle?: string }
 
 type OcrFields = {
   vendor: string
@@ -35,17 +37,56 @@ export default function ScanScreen() {
 
   const [permission, requestPermission] = useCameraPermissions()
   const cameraRef = useRef<CameraView | null>(null)
-  const [phase, setPhase] = useState<Phase>({ kind: "camera" })
+  const [phase, setPhase] = useState<Phase>({ kind: "camera", mode: "qr" })
 
   const scanMutation = trpc.transaction.scanReceipt.useMutation()
+  const scanQrMutation = trpc.transaction.scanQrReceipt.useMutation()
+  const redeemOfferMutation = trpc.offer.redeem.useMutation()
   const confirmMutation = trpc.transaction.confirmReceipt.useMutation({
-    onSuccess: () => {
-      utils.user.me.invalidate()
-    },
+    onSuccess: () => utils.user.me.invalidate(),
   })
 
+  // ── QR scan — роутер по типу QR ──────────────────────────
+
+  async function handleQrScanned(data: string) {
+    if (phase.kind !== "camera") return
+    setPhase({ kind: "submitting" })
+
+    try {
+      // 1. PULSE offer QR: pulse://offer/<token>
+      const offerMatch = data.match(/^pulse:\/\/offer\/(.+)$/)
+      if (offerMatch) {
+        const token = offerMatch[1]!
+        const res = await redeemOfferMutation.mutateAsync({ token })
+        utils.user.me.invalidate()
+        setPhase({ kind: "done", pointsEarned: res.pointsEarned, offerTitle: res.offerTitle })
+        return
+      }
+
+      // 2. Serbian fiscal QR: suf.purs.gov.rs/v/?vl=...
+      if (data.includes("suf.purs.gov.rs")) {
+        const res = await scanQrMutation.mutateAsync({ qrUrl: data })
+        utils.user.me.invalidate()
+        setPhase({ kind: "done", pointsEarned: res.pointsEarned, vendorName: res.vendorName ?? undefined, totalRsd: res.totalRsd })
+        return
+      }
+
+      // 3. Неизвестный QR
+      Alert.alert(
+        t("unknownQr", "Unknown QR code"),
+        t("unknownQrDesc", "This QR is not a PULSE offer or a Serbian fiscal receipt.")
+      )
+      setPhase({ kind: "camera", mode: "qr" })
+    } catch (e) {
+      Alert.alert(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e))
+      setPhase({ kind: "camera", mode: "qr" })
+    }
+  }
+
+  // ── Photo scan (AI OCR) ───────────────────────────────────
+
   async function handleCapture() {
-    if (!cameraRef.current || !userId) return
+    if (phase.kind !== "camera" || !cameraRef.current || !userId) return
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.7, base64: false })
       if (!photo?.uri) throw new Error("No photo URI")
@@ -72,7 +113,7 @@ export default function ScanScreen() {
       })
     } catch (e) {
       Alert.alert(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e))
-      setPhase({ kind: "camera" })
+      setPhase({ kind: "camera", mode: "photo" })
     }
   }
 
@@ -102,18 +143,11 @@ export default function ScanScreen() {
       setPhase({ kind: "done", pointsEarned: res.pointsEarned })
     } catch (e) {
       Alert.alert(t("submitFailed", "Submit failed"), e instanceof Error ? e.message : String(e))
-      // keep ocr state so user can retry
-      setPhase({
-        kind: "confirm",
-        imageUrl: phase.imageUrl,
-        receiptHash: phase.receiptHash,
-        confidence: phase.confidence,
-        ocr: phase.ocr,
-      })
+      setPhase({ kind: "confirm", imageUrl: phase.imageUrl, receiptHash: phase.receiptHash, confidence: phase.confidence, ocr: phase.ocr })
     }
   }
 
-  // ── Render by phase ───────────────────────────────────────
+  const currentMode = phase.kind === "camera" ? phase.mode : "qr"
 
   return (
     <>
@@ -124,14 +158,39 @@ export default function ScanScreen() {
         headerTintColor: theme.text,
       }} />
       <View style={[s.container, { backgroundColor: theme.bg }]}>
+
         {phase.kind === "camera" ? (
-          <CameraPhase
-            permission={permission}
-            requestPermission={requestPermission}
-            cameraRef={cameraRef}
-            onCapture={handleCapture}
-            theme={theme}
-          />
+          <>
+            {/* Mode toggle */}
+            <View style={[s.modeRow, { borderBottomColor: theme.border }]}>
+              <Pressable
+                style={[s.modeBtn, phase.mode === "qr" && s.modeBtnActive]}
+                onPress={() => setPhase({ kind: "camera", mode: "qr" })}
+              >
+                <Text style={[s.modeBtnText, { color: phase.mode === "qr" ? colors.skySolid : theme.textSecondary }]}>
+                  {t("qrCode", "QR Code")}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[s.modeBtn, phase.mode === "photo" && s.modeBtnActive]}
+                onPress={() => setPhase({ kind: "camera", mode: "photo" })}
+              >
+                <Text style={[s.modeBtnText, { color: phase.mode === "photo" ? colors.skySolid : theme.textSecondary }]}>
+                  {t("photo", "Photo")}
+                </Text>
+              </Pressable>
+            </View>
+
+            <CameraPhase
+              mode={phase.mode}
+              permission={permission}
+              requestPermission={requestPermission}
+              cameraRef={cameraRef}
+              onCapture={handleCapture}
+              onQrScanned={handleQrScanned}
+              theme={theme}
+            />
+          </>
         ) : phase.kind === "uploading" || phase.kind === "scanning" ? (
           <LoadingPhase
             label={phase.kind === "uploading" ? t("uploading", "Uploading…") : t("readingReceipt", "Reading receipt…")}
@@ -150,6 +209,8 @@ export default function ScanScreen() {
         ) : (
           <DonePhase
             pointsEarned={phase.pointsEarned}
+            {...(phase.vendorName !== undefined ? { vendorName: phase.vendorName } : {})}
+            {...(phase.totalRsd !== undefined ? { totalRsd: phase.totalRsd } : {})}
             onClose={() => router.back()}
             theme={theme}
           />
@@ -159,22 +220,24 @@ export default function ScanScreen() {
   )
 }
 
-// ── Phase components ─────────────────────────────────────────
+// ── CameraPhase ───────────────────────────────────────────────
 
 function CameraPhase({
-  permission, requestPermission, cameraRef, onCapture, theme,
+  mode, permission, requestPermission, cameraRef, onCapture, onQrScanned, theme,
 }: {
+  mode: Mode
   permission: ReturnType<typeof useCameraPermissions>[0]
   requestPermission: ReturnType<typeof useCameraPermissions>[1]
   cameraRef: { current: CameraView | null }
   onCapture: () => void
+  onQrScanned: (url: string) => void
   theme: ReturnType<typeof useTheme>
 }) {
   const { t } = useTranslation("common")
+  const [qrScanned, setQrScanned] = useState(false)
 
-  if (!permission) {
-    return <View style={s.center}><ActivityIndicator color={theme.text} /></View>
-  }
+  if (!permission) return <View style={s.center}><ActivityIndicator color={theme.text} /></View>
+
   if (!permission.granted) {
     return (
       <View style={[s.center, { padding: 24 }]}>
@@ -188,21 +251,41 @@ function CameraPhase({
       </View>
     )
   }
+
+  const isQr = mode === "qr"
+
   return (
     <View style={s.cameraWrap}>
-      <CameraView ref={cameraRef} style={s.camera} facing="back" />
+      <CameraView
+        ref={cameraRef}
+        style={s.camera}
+        facing="back"
+        barcodeScannerSettings={isQr ? { barcodeTypes: ["qr"] } : undefined}
+        onBarcodeScanned={isQr && !qrScanned ? (e) => {
+          setQrScanned(true)
+          onQrScanned(e.data)
+        } : undefined}
+      />
       <View style={s.cameraOverlay}>
-        <View style={s.frame} />
-        <Text style={s.frameHint}>{t("framingHint", "Position the receipt in the frame")}</Text>
+        <View style={[s.frame, isQr && s.frameQr]} />
+        <Text style={s.frameHint}>
+          {isQr
+            ? t("frameQrHint", "Point at the QR code on the receipt")
+            : t("framingHint", "Position the receipt in the frame")}
+        </Text>
       </View>
-      <View style={s.shutterRow}>
-        <Pressable onPress={onCapture} style={s.shutter}>
-          <View style={s.shutterInner} />
-        </Pressable>
-      </View>
+      {!isQr && (
+        <View style={s.shutterRow}>
+          <Pressable onPress={onCapture} style={s.shutter}>
+            <View style={s.shutterInner} />
+          </Pressable>
+        </View>
+      )}
     </View>
   )
 }
+
+// ── Other phases ──────────────────────────────────────────────
 
 function LoadingPhase({ label, theme }: { label: string; theme: ReturnType<typeof useTheme> }) {
   return (
@@ -230,16 +313,14 @@ function ConfirmPhase({
       </Text>
       {confidence < 0.85 ? (
         <Text style={[s.lowConf, { color: colors.pink }]}>
-          {t("lowConfidence", "Low OCR confidence - please double-check fields below")}
+          {t("lowConfidence", "Low OCR confidence — please double-check fields below")}
         </Text>
       ) : null}
-
       <Field label={t("vendor", "Vendor")} value={ocr.vendor} onChangeText={(v) => onChange({ ...ocr, vendor: v })} theme={theme} />
       <Field label={t("amount", "Amount")} value={ocr.amount} onChangeText={(v) => onChange({ ...ocr, amount: v })} keyboardType="decimal-pad" theme={theme} />
       <Field label={t("currency", "Currency")} value={ocr.currency} onChangeText={(v) => onChange({ ...ocr, currency: v.toUpperCase() })} theme={theme} />
       <Field label={t("date", "Date (YYYY-MM-DD)")} value={ocr.date} onChangeText={(v) => onChange({ ...ocr, date: v })} theme={theme} />
       <Field label={t("receiptNumber", "Receipt # (optional)")} value={ocr.receiptNumber} onChangeText={(v) => onChange({ ...ocr, receiptNumber: v })} theme={theme} />
-
       <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: "#F9FBFF", marginTop: 12 }]}>
         <Text style={{ color: theme.text, fontWeight: "700" }}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
       </Pressable>
@@ -248,8 +329,15 @@ function ConfirmPhase({
 }
 
 function DonePhase({
-  pointsEarned, onClose, theme,
-}: { pointsEarned: number; onClose: () => void; theme: ReturnType<typeof useTheme> }) {
+  pointsEarned, vendorName, totalRsd, offerTitle, onClose, theme,
+}: {
+  pointsEarned: number
+  vendorName?: string
+  totalRsd?: number
+  offerTitle?: string
+  onClose: () => void
+  theme: ReturnType<typeof useTheme>
+}) {
   const { t } = useTranslation("common")
   const isManualReview = pointsEarned === 0
   return (
@@ -258,8 +346,17 @@ function DonePhase({
       <Text style={[s.doneTitle, { color: theme.text }]}>
         {isManualReview ? t("pendingReview", "Pending review") : t("pointsAwarded", "Points awarded!")}
       </Text>
+      {offerTitle ? (
+        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 4 }]}>{offerTitle}</Text>
+      ) : null}
+      {vendorName ? (
+        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 4 }]}>{vendorName}</Text>
+      ) : null}
+      {totalRsd ? (
+        <Text style={[s.doneSub, { color: theme.textSecondary }]}>{totalRsd.toLocaleString()} RSD</Text>
+      ) : null}
       {isManualReview ? (
-        <Text style={[s.doneSub, { color: theme.textSecondary }]}>
+        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 8 }]}>
           {t("largeReceiptReview", "Large receipts go through manual review. You'll see the points soon.")}
         </Text>
       ) : (
@@ -298,10 +395,25 @@ function Field({
 const s = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  modeRow: {
+    flexDirection: "row",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modeBtnActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.skySolid,
+  },
+  modeBtnText: { fontSize: 14, fontWeight: "700" },
   cameraWrap: { flex: 1 },
   camera: { flex: 1 },
   cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center", padding: 24 },
   frame: { width: "100%", aspectRatio: 0.6, borderWidth: 2, borderColor: "#FFF", borderRadius: 30, opacity: 0.86 },
+  frameQr: { width: 220, aspectRatio: 1, borderRadius: 16 },
   frameHint: { color: "#FFF", marginTop: 12, fontSize: 13, fontWeight: "600", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, alignItems: "center" },
   shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
@@ -318,6 +430,6 @@ const s = StyleSheet.create({
   dialogText: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
   doneIcon: { fontSize: 64, marginBottom: 12 },
   doneTitle: { fontSize: 31, lineHeight: 34, fontWeight: "800" },
-  doneSub: { fontSize: 13, marginTop: 8, textAlign: "center", lineHeight: 18 },
+  doneSub: { fontSize: 14, textAlign: "center" },
   donePoints: { fontSize: 32, fontWeight: "800", marginTop: 12 },
 })

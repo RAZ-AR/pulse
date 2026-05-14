@@ -41,6 +41,7 @@ export const OCR_CONFIDENCE_THRESHOLD = 0.85
 // ── Points gifting (spec §4.7) ────────────────────────────────
 export const GIFT_MIN_AMOUNT = 50
 export const GIFT_DAILY_LIMIT = 500
+export const GIFT_LINK_EXPIRY_DAYS = 30
 
 // ── Steps multiplier (spec §4.3) ──────────────────────────────
 /** Returns earnings multiplier based on today's step count. */

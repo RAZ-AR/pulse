@@ -3,8 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack, useRouter } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
-import { NeuCard, GradPill } from "../src/components/neu"
+import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
+import { NeuCard, GradPill, VolumeGradient } from "../src/components/neu"
 
 const CHALLENGE_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
 
@@ -156,7 +157,7 @@ function ChallengeCard({
       {pct !== undefined ? (
         <>
           <View style={ss.progressTrack}>
-            <View style={[ss.progressFill, { width: `${pct}%` }]} />
+            <ProgressFill pct={pct} />
           </View>
           <View style={ss.cardFoot}>
             <Text style={ss.progressText}>{progress ?? 0} / {total}</Text>
@@ -174,6 +175,12 @@ function ChallengeCard({
       )}
     </NeuCard>
   )
+}
+
+function ProgressFill({ pct }: { pct: number }) {
+  const { mode } = useColorMode()
+  const fill = mode === "rainbow" ? neonColors.cyan : "rgba(133,245,242,0.95)"
+  return <View style={[ss.progressFill, { width: `${pct}%`, backgroundColor: fill }]} />
 }
 
 function TabButton({

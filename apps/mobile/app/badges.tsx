@@ -2,7 +2,8 @@ import { ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, useTheme } from "../src/lib/theme"
+import { colors, neonColors, useTheme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
 import { LavaLampSurface } from "../src/components/neu"
 
 const RARITY_COLORS: Record<string, string> = {
@@ -14,6 +15,8 @@ const RARITY_COLORS: Record<string, string> = {
 
 export default function BadgesScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("profile")
 
   const all = trpc.badge.list.useQuery()
@@ -39,7 +42,7 @@ export default function BadgesScreen() {
           <Text style={s.heroValue}>{unlockedCount} <Text style={s.heroDenom}>/ {totalCount}</Text></Text>
           {totalCount > 0 ? (
             <View style={s.progressTrack}>
-              <View style={[s.progressFill, { width: `${(unlockedCount / totalCount) * 100}%` }]} />
+              <View style={[s.progressFill, { width: `${(unlockedCount / totalCount) * 100}%`, backgroundColor: isRainbow ? neonColors.cyan : colors.cyan }]} />
             </View>
           ) : null}
         </LavaLampSurface>

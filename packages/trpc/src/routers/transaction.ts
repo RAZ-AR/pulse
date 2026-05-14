@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, merchantProcedure } from "../trpc"
 import { extractReceiptData, computeReceiptHash } from "../services/ocr"
 import { verifyReceiptPhoto } from "../services/receipt-verify"
+import { decodeSerbiaQrUrl, fetchVendorName } from "../services/serbia-qr"
 import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
 import { trackSpend } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
@@ -293,6 +294,150 @@ export const transactionRouter = router({
         newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
         status,
         needsManualReview,
+        matchedVenue: matchedVenue?.id ?? null,
+        newBadges: result.newBadges,
+      }
+    }),
+
+  /**
+   * Scan a Serbian fiscal receipt QR code.
+   * Decodes the government-issued QR directly — no AI, no OCR, 100% accurate.
+   * Single step: decodes, validates, awards points.
+   */
+  scanQrReceipt: protectedProcedure
+    .input(z.object({ qrUrl: z.string().min(10) }))
+    .mutation(async ({ ctx, input }) => {
+      // 1. Decode QR — throws if not a valid Serbian fiscal QR
+      let qr
+      try {
+        qr = decodeSerbiaQrUrl(input.qrUrl)
+      } catch (e) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: e instanceof Error ? e.message : "Invalid QR code",
+        })
+      }
+
+      // 2. Date validation
+      validateReceiptDate(qr.date)
+
+      // 3. Rate limiting
+      await checkReceiptScanLimits(ctx.userId)
+
+      // 4. Dedup by receipt number (unique across all Serbian fiscal receipts)
+      const existingByNumber = await ctx.db.transaction.findFirst({
+        where: { receiptNumber: qr.receiptNumber },
+        select: { id: true },
+      })
+      if (existingByNumber) {
+        throw new TRPCError({ code: "CONFLICT", message: "This receipt has already been scanned." })
+      }
+
+      // 5. Fetch vendor name from PURS (best-effort, non-blocking)
+      const vendorName = await fetchVendorName(qr.verificationUrl) ?? qr.requestedBy
+
+      // 6. Per-vendor velocity check
+      await checkVendorVelocity(ctx.userId, vendorName)
+
+      // 7. Try to match to a known venue
+      const matchedVenue = await ctx.db.venue.findFirst({
+        where: { name: { contains: vendorName, mode: "insensitive" } },
+        select: { id: true },
+      })
+
+      // 8. Load user
+      const user = await ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: {
+          earnedPoints: true,
+          currentStreak: true,
+          longestStreak: true,
+          lastCheckinAt: true,
+          totalEarnedLifetime: true,
+          stepsToday: true,
+        },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" })
+
+      // 9. Calculate points
+      const needsManualReview = qr.totalRsd > RECEIPT_MANUAL_REVIEW_THRESHOLD
+      const stepMult = stepMultiplier(user.stepsToday)
+      const pointsEarned = needsManualReview
+        ? 0
+        : Math.floor(qr.totalRsd * SCAN_POINTS_PER_CURRENCY * stepMult)
+
+      const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
+      const totalPoints = pointsEarned + streak.milestoneBonus
+
+      // 10. DB transaction
+      const result = await ctx.db.$transaction(async (tx) => {
+        const transaction = await tx.transaction.create({
+          data: {
+            userId: ctx.userId,
+            venueId: matchedVenue?.id ?? null,
+            type: "RECEIPT_SCAN",
+            amount: qr.totalRsd,
+            currency: "RSD",
+            pointsEarned: totalPoints,
+            receiptNumber: qr.receiptNumber,
+            status: needsManualReview ? "PENDING" : "VERIFIED",
+            verifiedAt: needsManualReview ? null : new Date(),
+            ocrRawData: {
+              source: "serbia_qr",
+              requestedBy: qr.requestedBy,
+              signedBy: qr.signedBy,
+              vendorName,
+              verificationUrl: qr.verificationUrl,
+            },
+            ocrConfidence: 1.0,
+          },
+        })
+
+        const updatedUser = await tx.user.update({
+          where: { id: ctx.userId },
+          data: {
+            earnedPoints: { increment: totalPoints },
+            totalEarnedLifetime: { increment: totalPoints },
+            currentStreak: streak.currentStreak,
+            longestStreak: streak.longestStreak,
+            lastCheckinAt: new Date(),
+          },
+          select: { earnedPoints: true, welcomePoints: true, currentStreak: true },
+        })
+
+        if (streak.milestoneBonus > 0) {
+          await tx.transaction.create({
+            data: {
+              userId: ctx.userId,
+              type: "BONUS",
+              pointsEarned: streak.milestoneBonus,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+        }
+
+        let newBadges: string[] = []
+        if (!needsManualReview) {
+          await trackSpend(tx, ctx.userId, qr.totalRsd)
+          newBadges = await checkAndAwardBadges(tx, ctx.userId)
+        }
+
+        return { transaction, updatedUser, newBadges }
+      })
+
+      return {
+        transactionId: result.transaction.id,
+        pointsEarned: totalPoints,
+        streakBonus: streak.milestoneBonus,
+        newStreak: streak.currentStreak,
+        newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
+        status: needsManualReview ? "PENDING" : "VERIFIED",
+        needsManualReview,
+        vendorName,
+        totalRsd: qr.totalRsd,
+        date: qr.date,
+        receiptNumber: qr.receiptNumber,
         matchedVenue: matchedVenue?.id ?? null,
         newBadges: result.newBadges,
       }
