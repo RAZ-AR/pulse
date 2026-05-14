@@ -2,6 +2,7 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure } from "../trpc"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT, GIFT_LINK_EXPIRY_DAYS } from "@pulse/shared"
+import { sendPushToUser } from "../services/push"
 
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "pulse_loyalty_bot"
 
@@ -248,6 +249,11 @@ export const socialRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot claim your own gift" })
       }
 
+      const [recipient, sender] = await Promise.all([
+        ctx.db.user.findUnique({ where: { id: ctx.userId }, select: { name: true } }),
+        ctx.db.user.findUnique({ where: { id: link.senderId }, select: { pushToken: true } }),
+      ])
+
       await ctx.db.$transaction(async (tx) => {
         await tx.giftLink.update({
           where: { id: link.id },
@@ -270,6 +276,9 @@ export const socialRouter = router({
           },
         })
       })
+
+      const recipientName = recipient?.name ?? "Someone"
+      void sendPushToUser(sender?.pushToken, "🎁 Gift claimed!", `${recipientName} received your ${link.amount} pts gift`)
 
       return { received: link.amount }
     }),

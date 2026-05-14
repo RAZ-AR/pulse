@@ -2,7 +2,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack, useRouter } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
+import { colors, neonColors, fonts, gradients, useTheme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
 import { NeuCard } from "../src/components/neu"
 
 const TYPE_ICON: Record<string, string> = {
@@ -32,6 +33,8 @@ function actionText(type: string, venueName: string | null | undefined, t: (k: s
 export default function FriendsScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const router = useRouter()
 
   const friends = trpc.social.friends.useQuery()
@@ -73,15 +76,15 @@ export default function FriendsScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.friendsRow}>
             {friendsList.map((f) => (
               <View key={f.id} style={s.friend}>
-                <View style={[s.friendAvatar, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
-                  <Text style={[s.friendLetter, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                <View style={[s.friendAvatar, { backgroundColor: isRainbow ? "#F2F2F6" : theme.bg }, theme.shadowRaisedSm]}>
+                  <Text style={[s.friendLetter, { color: isRainbow ? neonColors.cyan : theme.text, fontFamily: fonts.displayHeavy }]}>
                     {(f.name?.[0] ?? "?").toUpperCase()}
                   </Text>
                 </View>
                 <Text style={[s.friendName, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
                   {f.name ?? "User"}
                 </Text>
-                <Text style={[s.friendStreak, { fontFamily: fonts.bodyBold }]}>{f.currentStreak}d</Text>
+                <Text style={[s.friendStreak, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.green : colors.ink }]}>{f.currentStreak}d</Text>
               </View>
             ))}
           </ScrollView>
@@ -108,8 +111,8 @@ export default function FriendsScreen() {
                 onPress={item.venue ? () => router.push({ pathname: "/venue/[id]", params: { id: item.venue!.id } }) : undefined}
                 style={s.feedRow}
               >
-                <View style={[s.feedAvatar, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
-                  <Text style={[s.feedLetter, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                <View style={[s.feedAvatar, { backgroundColor: isRainbow ? "#F2F2F6" : theme.bg }, theme.shadowRaisedSm]}>
+                  <Text style={[s.feedLetter, { color: isRainbow ? neonColors.purple : theme.text, fontFamily: fonts.displayHeavy }]}>
                     {(item.user.name?.[0] ?? "?").toUpperCase()}
                   </Text>
                 </View>
@@ -123,7 +126,7 @@ export default function FriendsScreen() {
                     {item.pointsEarned > 0 ? `  ·  +${item.pointsEarned} pts` : ""}
                   </Text>
                 </View>
-                <Text style={s.feedIcon}>{TYPE_ICON[item.type] ?? "•"}</Text>
+                <Text style={[s.feedIcon, { color: isRainbow ? neonColors.pink : colors.ink }]}>{TYPE_ICON[item.type] ?? "•"}</Text>
               </NeuCard>
             ))}
           </View>
