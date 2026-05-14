@@ -2,6 +2,7 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, publicProcedure, merchantProcedure } from "../trpc"
 import { CHECKIN_POINTS, RECEIPT_DAILY_LIMIT, SCAN_POINTS_PER_CURRENCY, REFERRAL_SIGNUP_POINTS, stepMultiplier } from "@pulse/shared"
+import { sendPushToUser } from "../services/push"
 
 const OptionalReferralCode = z.preprocess((value) => {
   if (typeof value !== "string") return value
@@ -177,6 +178,18 @@ export const userRouter = router({
 
         return u
       })
+
+      if (referrerId) {
+        const referrer = await ctx.db.user.findUnique({
+          where: { id: referrerId },
+          select: { pushToken: true },
+        })
+        void sendPushToUser(
+          referrer?.pushToken,
+          "🎉 Реферал присоединился!",
+          `Ваш друг ${input.name ?? "Someone"} зарегистрировался по вашей ссылке. +${REFERRAL_SIGNUP_POINTS} pts!`,
+        )
+      }
 
       return {
         ...updated,
