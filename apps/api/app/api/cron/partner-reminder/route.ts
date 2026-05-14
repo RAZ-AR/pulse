@@ -1,12 +1,9 @@
-import { verifyQStashSignature } from "../_verify"
+import { verifyQStashSignature, verifyCronSecret } from "../_verify"
 import { PrismaClient } from "@pulse/db"
 
 const db = new PrismaClient()
 
-export async function POST(req: Request) {
-  const err = await verifyQStashSignature(req)
-  if (err) return err
-
+async function run() {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   if (!botToken) return Response.json({ error: "No bot token" }, { status: 500 })
 
@@ -65,5 +62,17 @@ export async function POST(req: Request) {
     sent++
   }
 
-  return Response.json({ sent })
+  return { sent }
+}
+
+export async function GET(req: Request) {
+  const err = verifyCronSecret(req)
+  if (err) return err
+  return Response.json(await run())
+}
+
+export async function POST(req: Request) {
+  const err = await verifyQStashSignature(req)
+  if (err) return err
+  return Response.json(await run())
 }

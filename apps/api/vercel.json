@@ -3,6 +3,22 @@
     {
       "path": "/api/cron/partner-reminder",
       "schedule": "0 8 * * 0"
+    },
+    {
+      "path": "/api/cron/streak-reminder",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/expire-welcome",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/expire-earned",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/generate-challenges",
+      "schedule": "0 6 * * 1"
     }
   ]
 }
