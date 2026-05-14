@@ -95,6 +95,7 @@ export const userRouter = router({
         language: z.enum(["EN", "RU", "SR"]).optional(),
         referralCode: OptionalReferralCode,
         deviceFingerprint: z.string().max(256).optional(),
+        giftToken: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -118,6 +119,18 @@ export const userRouter = router({
         }
       }
 
+      // Resolve gift link if provided (new user gets 500 welcome + gift points)
+      let giftLink: { id: string; amount: number; senderId: string } | null = null
+      if (input.giftToken) {
+        const found = await ctx.db.giftLink.findUnique({
+          where: { token: input.giftToken },
+          select: { id: true, amount: true, senderId: true, status: true, expiresAt: true },
+        })
+        if (found && found.status === "PENDING" && found.expiresAt >= new Date() && found.senderId !== ctx.userId) {
+          giftLink = found
+        }
+      }
+
       const updated = await ctx.db.$transaction(async (tx) => {
         const u = await tx.user.update({
           where: { id: ctx.userId },
@@ -128,6 +141,8 @@ export const userRouter = router({
             ...(input.deviceFingerprint !== undefined ? { deviceFingerprint: input.deviceFingerprint } : {}),
             ...(referrerId ? { referredById: referrerId } : {}),
             ...(referrerId ? { earnedPoints: { increment: REFERRAL_SIGNUP_POINTS } } : {}),
+            ...(giftLink ? { earnedPoints: { increment: giftLink.amount } } : {}),
+            ...(giftLink ? { totalEarnedLifetime: { increment: giftLink.amount } } : {}),
           },
           select: { id: true, earnedPoints: true, welcomePoints: true, referralCode: true },
         })
@@ -144,12 +159,29 @@ export const userRouter = router({
           })
         }
 
+        if (giftLink) {
+          await tx.giftLink.update({
+            where: { id: giftLink.id },
+            data: { status: "CLAIMED", recipientId: ctx.userId, claimedAt: new Date() },
+          })
+          await tx.transaction.create({
+            data: {
+              userId: ctx.userId,
+              type: "GIFT_RECEIVED",
+              pointsEarned: giftLink.amount,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+        }
+
         return u
       })
 
       return {
         ...updated,
         totalPoints: updated.earnedPoints + updated.welcomePoints,
+        giftReceived: giftLink?.amount ?? null,
       }
     }),
 
