@@ -4,11 +4,14 @@ import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import QRCode from "react-native-qrcode-svg"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, useTheme } from "../../src/lib/theme"
-import { NeuCard } from "../../src/components/neu"
+import { colors, fonts, gradients, neonColors, useTheme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { NeuCard, VolumeGradient } from "../../src/components/neu"
 
 export default function RewardDetailScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("rewards")
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -52,26 +55,28 @@ export default function RewardDetailScreen() {
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {redemption ? (
           <View style={{ alignItems: "center" }}>
-            <Text style={[s.successTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+            <Text style={[s.successTitle, { color: isRainbow ? neonColors.green : theme.text, fontFamily: fonts.displayHeavy }]}>
               {t("redeemSuccess", "Reward redeemed!")}
             </Text>
             <Text style={[s.successDesc, { color: theme.textSecondary }]}>
               {t("redeemSuccessDescription", "Show this code to the cashier")}
             </Text>
-            <NeuCard style={s.qrBox}>
+            <NeuCard style={[s.qrBox, { backgroundColor: "#FFFFFF" }]}>
               <QRCode value={redemption.code} size={220} backgroundColor="#FFFFFF" />
             </NeuCard>
-            <Text style={[s.code, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{redemption.code}</Text>
+            <Text style={[s.code, { color: isRainbow ? neonColors.purple : theme.text, fontFamily: fonts.displayHeavy }]}>{redemption.code}</Text>
             <Text style={[s.expiry, { color: theme.textSecondary }]}>
               {t("codeExpiresIn", "Code expires in {{hours}}h", { hours: expiryHours })}
             </Text>
-            <NeuCard
-              gradient={gradients.black}
-              onPress={() => router.back()}
-              style={{ padding: 16, alignItems: "center", width: "100%", marginTop: 12 }}
-            >
-              <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("common:done", "Done")}</Text>
-            </NeuCard>
+            {isRainbow ? (
+              <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={99} style={{ padding: 16, alignItems: "center", width: "100%", marginTop: 12 }} onPress={() => router.back()}>
+                <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{t("common:done", "Done")}</Text>
+              </VolumeGradient>
+            ) : (
+              <NeuCard gradient={gradients.black} onPress={() => router.back()} style={{ padding: 16, alignItems: "center", width: "100%", marginTop: 12 }}>
+                <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("common:done", "Done")}</Text>
+              </NeuCard>
+            )}
           </View>
         ) : (
           <>
@@ -80,16 +85,28 @@ export default function RewardDetailScreen() {
               {reward.venue.name} · {reward.venue.city}
             </Text>
 
-            <NeuCard gradient={gradients.black} style={s.priceCard}>
-              <View style={s.priceBlob} />
-              <Text style={[s.priceLabel, { fontFamily: fonts.bodyBold }]}>
-                {t("pointsCostLabel").toUpperCase()}
-              </Text>
-              <Text style={[s.priceValue, { fontFamily: fonts.displayHeavy }]}>{reward.pointsCost}</Text>
-              <Text style={s.priceSub}>
-                {t("yourBalance")}: {totalPoints}
-              </Text>
-            </NeuCard>
+            {isRainbow ? (
+              <VolumeGradient colors={["#8B3DFF", "#2B6EFF", "#00F5FF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={32} style={[s.priceCard, { marginBottom: 16 }]}>
+                <Text style={[s.priceLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>
+                  {t("pointsCostLabel").toUpperCase()}
+                </Text>
+                <Text style={[s.priceValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{reward.pointsCost}</Text>
+                <Text style={[s.priceSub, { color: "rgba(255,255,255,0.65)" }]}>
+                  {t("yourBalance")}: {totalPoints}
+                </Text>
+              </VolumeGradient>
+            ) : (
+              <NeuCard gradient={gradients.black} style={s.priceCard}>
+                <View style={s.priceBlob} />
+                <Text style={[s.priceLabel, { fontFamily: fonts.bodyBold }]}>
+                  {t("pointsCostLabel").toUpperCase()}
+                </Text>
+                <Text style={[s.priceValue, { fontFamily: fonts.displayHeavy }]}>{reward.pointsCost}</Text>
+                <Text style={s.priceSub}>
+                  {t("yourBalance")}: {totalPoints}
+                </Text>
+              </NeuCard>
+            )}
 
             {reward.description ? (
               <NeuCard style={{ padding: 16, marginBottom: 16 }}>
@@ -106,16 +123,31 @@ export default function RewardDetailScreen() {
             ) : null}
 
             {canRedeem ? (
-              <NeuCard
-                gradient={gradients.black}
-                onPress={() => redeem.mutate({ rewardId: reward.id })}
-                disabled={redeem.isPending}
-                style={s.btnGrad}
-              >
-                <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
-                  {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
-                </Text>
-              </NeuCard>
+              isRainbow ? (
+                <VolumeGradient
+                  colors={["#8B3DFF", "#FF2D9B"]}
+                  shadowColor="#8B3DFF"
+                  shadowOpacity={0.35}
+                  borderRadius={99}
+                  style={s.btnGrad}
+                  onPress={() => redeem.mutate({ rewardId: reward.id })}
+                >
+                  <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
+                    {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
+                  </Text>
+                </VolumeGradient>
+              ) : (
+                <NeuCard
+                  gradient={gradients.black}
+                  onPress={() => redeem.mutate({ rewardId: reward.id })}
+                  disabled={redeem.isPending}
+                  style={s.btnGrad}
+                >
+                  <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
+                    {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
+                  </Text>
+                </NeuCard>
+              )
             ) : (
               <Pressable disabled style={[s.btnDisabled, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
                 <Text style={[s.ctaDisabled, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
@@ -157,7 +189,7 @@ const s = StyleSheet.create({
 
   successTitle: { fontSize: 22 },
   successDesc: { fontSize: 13, marginTop: 4, marginBottom: 24, textAlign: "center" },
-  qrBox: { padding: 20, marginBottom: 16, backgroundColor: "#FFFFFF", borderRadius: 30 },
+  qrBox: { padding: 20, marginBottom: 16, borderRadius: 30 },
   code: { fontSize: 18, letterSpacing: 3, marginBottom: 8 },
   expiry: { fontSize: 12, marginBottom: 12 },
 })
