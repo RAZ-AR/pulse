@@ -5,7 +5,8 @@ import { useRouter, Stack } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
-import { colors, fonts, useTheme } from "../src/lib/theme"
+import { colors, neonColors, fonts, useTheme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
 
 type Mode = "qr" | "photo"
 
@@ -30,6 +31,8 @@ const today = () => new Date().toISOString().slice(0, 10)
 export default function ScanScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const utils = trpc.useUtils()
   const me = trpc.user.me.useQuery()
@@ -211,8 +214,10 @@ export default function ScanScreen() {
             pointsEarned={phase.pointsEarned}
             {...(phase.vendorName !== undefined ? { vendorName: phase.vendorName } : {})}
             {...(phase.totalRsd !== undefined ? { totalRsd: phase.totalRsd } : {})}
+            {...(phase.offerTitle !== undefined ? { offerTitle: phase.offerTitle } : {})}
             onClose={() => router.back()}
             theme={theme}
+            isRainbow={isRainbow}
           />
         )}
       </View>
@@ -329,7 +334,7 @@ function ConfirmPhase({
 }
 
 function DonePhase({
-  pointsEarned, vendorName, totalRsd, offerTitle, onClose, theme,
+  pointsEarned, vendorName, totalRsd, offerTitle, onClose, theme, isRainbow,
 }: {
   pointsEarned: number
   vendorName?: string
@@ -337,6 +342,7 @@ function DonePhase({
   offerTitle?: string
   onClose: () => void
   theme: ReturnType<typeof useTheme>
+  isRainbow?: boolean
 }) {
   const { t } = useTranslation("common")
   const isManualReview = pointsEarned === 0
@@ -360,9 +366,9 @@ function DonePhase({
           {t("largeReceiptReview", "Large receipts go through manual review. You'll see the points soon.")}
         </Text>
       ) : (
-        <Text style={[s.donePoints, { color: colors.mint }]}>+{pointsEarned} pts</Text>
+        <Text style={[s.donePoints, { color: isRainbow ? neonColors.green : colors.mint }]}>+{pointsEarned} pts</Text>
       )}
-      <Pressable onPress={onClose} style={[s.btn, { backgroundColor: "#F9FBFF", marginTop: 24 }]}>
+      <Pressable onPress={onClose} style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF", marginTop: 24 }]}>
         <Text style={{ color: theme.text, fontWeight: "700" }}>{t("done", "Done")}</Text>
       </Pressable>
     </View>

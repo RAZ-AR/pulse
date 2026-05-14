@@ -6,7 +6,8 @@ import { CameraView, useCameraPermissions } from "expo-camera"
 import * as Location from "expo-location"
 import { trpc } from "../src/lib/trpc"
 import { uploadCheckinImage } from "../src/lib/storage"
-import { colors, fonts, useTheme } from "../src/lib/theme"
+import { colors, neonColors, fonts, useTheme } from "../src/lib/theme"
+import { useColorMode } from "../src/store/colorMode"
 
 type Coords = { lat: number; lng: number; accuracy: number }
 type NearbyVenue = {
@@ -30,6 +31,8 @@ const NEARBY_RADIUS_KM = 0.1 // 100m matches CHECKIN_RADIUS_METERS on backend
 export default function CheckinScreen() {
   const theme = useTheme()
   const { t } = useTranslation("checkin")
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const utils = trpc.useUtils()
 
@@ -165,12 +168,12 @@ export default function CheckinScreen() {
           </Centered>
         ) : (
           <Centered>
-            <Text style={s.bigIcon}>✓</Text>
+            <Text style={[s.bigIcon, { color: isRainbow ? neonColors.green : colors.ink }]}>✓</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("success", "Checked in!")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.venue.name}</Text>
-            <Text style={[s.points, { color: colors.mint }]}>+{phase.pointsEarned} pts</Text>
+            <Text style={[s.points, { color: isRainbow ? neonColors.green : colors.mint }]}>+{phase.pointsEarned} pts</Text>
             {phase.streakBonus > 0 ? (
-              <Text style={[s.streakBonus, { color: colors.pink }]}>
+              <Text style={[s.streakBonus, { color: isRainbow ? neonColors.pink : colors.pink }]}>
                 +{phase.streakBonus} {t("streakBonus", "streak bonus")}
               </Text>
             ) : null}
@@ -178,11 +181,14 @@ export default function CheckinScreen() {
               {phase.newStreak} {t("dayStreak", "day streak")}
             </Text>
             {phase.newBadges.length > 0 ? (
-              <Text style={[s.newBadge, { color: colors.pink }]}>
+              <Text style={[s.newBadge, { color: isRainbow ? neonColors.cyan : colors.pink }]}>
                 {t("newBadge", "New badge unlocked!")}
               </Text>
             ) : null}
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF", marginTop: 24 }, theme.shadowRaisedSm]}>
+            <Pressable
+              onPress={() => router.back()}
+              style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF", marginTop: 24 }, theme.shadowRaisedSm]}
+            >
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
             </Pressable>
           </Centered>
