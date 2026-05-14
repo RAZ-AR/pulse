@@ -103,6 +103,15 @@ export default function EarnScreen() {
           onPress={() => router.push("/steps")}
           isRainbow={isRainbow}
         />
+        <EarnMethod
+          tone="purple"
+          icon="✦"
+          title={t("partnerOffers", "Partner Offers")}
+          sub={t("partnerOffersSub", "Scan QR at venue · earn bonus pts")}
+          note={t("findOnMap", "Find on Map")}
+          onPress={() => router.push("/map")}
+          isRainbow={isRainbow}
+        />
       </View>
 
       <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
@@ -156,15 +165,16 @@ export default function EarnScreen() {
 }
 
 const EARN_METHOD_RAINBOW: Record<string, readonly [string, string]> = {
-  cyan:  ["#00F5FF", "#2B6EFF"],
-  black: ["#FF2D9B", "#8B3DFF"],
-  white: ["#8B3DFF", "#2B6EFF"],
+  cyan:   ["#00F5FF", "#2B6EFF"],
+  black:  ["#FF2D9B", "#8B3DFF"],
+  white:  ["#8B3DFF", "#2B6EFF"],
+  purple: ["#FF5500", "#8B3DFF"],
 }
 
 function EarnMethod({
   tone, icon, title, sub, note, onPress, isRainbow,
 }: {
-  tone: "cyan" | "black" | "white"
+  tone: "cyan" | "black" | "white" | "purple"
   icon: string
   title: string
   sub: string
@@ -201,7 +211,7 @@ function EarnMethod({
   }
 
   const dark = tone === "black"
-  const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : "#F9FBFF"
+  const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : tone === "purple" ? "rgba(245,236,255,0.92)" : "#F9FBFF"
   const fg = colors.ink
   const content = (
     <>
