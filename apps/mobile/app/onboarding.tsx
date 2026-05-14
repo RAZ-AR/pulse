@@ -91,14 +91,15 @@ function TelegramOnboarding() {
     return () => clearTimeout(id)
   }, [hydrated, token])
 
-  const updateProfile = trpc.user.updateProfile.useMutation({
+  const completeOnboarding = trpc.user.completeOnboarding.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
-  const claimGift = trpc.social.claimGiftLink.useMutation()
+  const updateProfile = trpc.user.updateProfile.useMutation()
 
   const [step, setStep] = useState<0 | 1>(0)
   const [homeCity, setHomeCity] = useState(DEFAULT_CITY.name)
   const [displayName, setDisplayName] = useState("")
+  const [referralCode, setReferralCode] = useState("")
   const currentLng = (i18n.language ?? "en") as SupportedLocale
 
   const userName = me.data?.name ?? ""
@@ -120,16 +121,17 @@ function TelegramOnboarding() {
   }
 
   async function finish() {
-    const nameToSave = displayName.trim() || userName
-    await updateProfile.mutateAsync({
-      homeCity,
-      onboardingDone: true,
-      ...(nameToSave && nameToSave !== userName ? { name: nameToSave } : {}),
+    const nameToSave = (displayName.trim() || userName || "").trim()
+    if (!nameToSave) return
+    const lng = (i18n.language ?? "en").toUpperCase() as "EN" | "RU" | "SR"
+    await completeOnboarding.mutateAsync({
+      name: nameToSave,
+      language: lng,
+      ...(referralCode.length === 6 ? { referralCode } : {}),
+      ...(giftToken ? { giftToken } : {}),
     })
-    // Claim gift link if user arrived via share link
-    if (giftToken) {
-      claimGift.mutate({ token: giftToken })
-    }
+    // homeCity is not part of completeOnboarding — update it separately
+    updateProfile.mutate({ homeCity })
     router.replace("/(tabs)")
   }
 
@@ -183,7 +185,9 @@ function TelegramOnboarding() {
         <TgStep1
           homeCity={homeCity}
           setHomeCity={setHomeCity}
-          isPending={updateProfile.isPending}
+          referralCode={referralCode}
+          setReferralCode={(v) => setReferralCode(cleanReferralCode(v))}
+          isPending={completeOnboarding.isPending}
           onBack={() => setStep(0)}
           onFinish={finish}
         />
@@ -312,10 +316,12 @@ function TgStep0({
 }
 
 function TgStep1({
-  homeCity, setHomeCity, isPending, onBack, onFinish,
+  homeCity, setHomeCity, referralCode, setReferralCode, isPending, onBack, onFinish,
 }: {
   homeCity: string
   setHomeCity: (v: "Belgrade" | "Novi Sad") => void
+  referralCode: string
+  setReferralCode: (v: string) => void
   isPending: boolean
   onBack: () => void
   onFinish: () => void
@@ -353,6 +359,25 @@ function TgStep1({
         })}
       </View>
 
+      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginTop: 24 }]}>
+        {t("referralCode", "Referral code").toUpperCase()}
+        <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
+      </Text>
+      <NeuInset style={{ marginBottom: 6 }}>
+        <TextInput
+          value={referralCode}
+          onChangeText={setReferralCode}
+          placeholder="ABC123"
+          placeholderTextColor={theme.textMuted}
+          autoCapitalize="characters"
+          maxLength={6}
+          style={[s.input, { color: theme.text, fontFamily: fonts.body, letterSpacing: 3 }]}
+        />
+      </NeuInset>
+      <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body }]}>
+        {t("referralHint", "Enter a friend's code to earn bonus points")}
+      </Text>
+
       <View style={{ flex: 1, minHeight: 24 }} />
 
       <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
@@ -384,6 +409,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [homeCity, setHomeCity] = useState<"Belgrade" | "Novi Sad">(DEFAULT_CITY.name)
+  const [referralCode, setReferralCode] = useState("")
   const [error, setError] = useState("")
 
   const signInMutation = trpc.auth.signInWithEmail.useMutation()
@@ -423,6 +449,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
         name: trimmedName,
         homeCity,
         language: lng,
+        ...(referralCode.length === 6 ? { referralCode } : {}),
       })
       await signIn(result.token)
       router.replace("/(tabs)")
@@ -455,6 +482,8 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
             setName={setName}
             homeCity={homeCity}
             setHomeCity={setHomeCity}
+            referralCode={referralCode}
+            setReferralCode={(v) => setReferralCode(cleanReferralCode(v))}
             error={error}
             isPending={signInMutation.isPending}
             onBack={() => setStep(1)}
@@ -608,10 +637,11 @@ function Step1({
 
 // ── Step 2: name + city ───────────────────────────────────────
 function Step2({
-  name, setName, homeCity, setHomeCity, error, isPending, onBack, onSubmit,
+  name, setName, homeCity, setHomeCity, referralCode, setReferralCode, error, isPending, onBack, onSubmit,
 }: {
   name: string; setName: (v: string) => void
   homeCity: string; setHomeCity: (v: "Belgrade" | "Novi Sad") => void
+  referralCode: string; setReferralCode: (v: string) => void
   error: string; isPending: boolean
   onBack: () => void; onSubmit: () => void
 }) {
@@ -665,6 +695,25 @@ function Step2({
           )
         })}
       </View>
+
+      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginTop: 8 }]}>
+        {t("referralCode", "Referral code").toUpperCase()}
+        <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
+      </Text>
+      <NeuInset style={{ marginBottom: 6 }}>
+        <TextInput
+          value={referralCode}
+          onChangeText={setReferralCode}
+          placeholder="ABC123"
+          placeholderTextColor={theme.textMuted}
+          autoCapitalize="characters"
+          maxLength={6}
+          style={[s.input, { color: theme.text, fontFamily: fonts.body, letterSpacing: 3 }]}
+        />
+      </NeuInset>
+      <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 12 }]}>
+        {t("referralHint", "Enter a friend's code to earn bonus points")}
+      </Text>
 
       {error ? <Text style={s.err}>{error}</Text> : null}
 
