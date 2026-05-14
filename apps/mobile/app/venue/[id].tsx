@@ -2,11 +2,18 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
-import { NeuCard, GradPill } from "../../src/components/neu"
+import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { NeuCard, GradPill, VolumeGradient } from "../../src/components/neu"
 import { DEMO_VENUES } from "../../src/lib/venues"
 
 const REWARD_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
+const REWARD_RAINBOW = [
+  ["#8B3DFF", "#2B6EFF"] as const,
+  ["#2B6EFF", "#00F5FF"] as const,
+  ["#FF2D9B", "#8B3DFF"] as const,
+  ["#00F5FF", "#2B6EFF"] as const,
+]
 
 type DetailVenue = {
   id: string
@@ -78,6 +85,8 @@ function sourceLabel(venue: DetailVenue) {
 
 export default function VenueDetailScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("venue")
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -151,21 +160,38 @@ export default function VenueDetailScreen() {
 
         {/* Points rate hero */}
         {v.isPartner && effectiveRate ? (
-          <NeuCard gradient={gradients.black} style={s.rateCard}>
-            <View style={s.heroBlob} />
-            <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold }]}>
-              {t("pointsRate", "Points rate").toUpperCase()}
-            </Text>
-            <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy }]}>{effectiveRate.toFixed(3)}</Text>
-            <Text style={s.rateUnit}>{t("perCurrency", "pts per RSD")}</Text>
-            {boostActive ? (
-              <View style={s.boostBadge}>
-                <Text style={[s.boostText, { fontFamily: fonts.bodyBold }]}>
-                  ×{v.boostMultiplier} {t("boostActiveLabel")}
-                </Text>
-              </View>
-            ) : null}
-          </NeuCard>
+          isRainbow ? (
+            <VolumeGradient colors={["#8B3DFF", "#2B6EFF", "#00F5FF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={32} style={[s.rateCard, { marginBottom: 16 }]}>
+              <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>
+                {t("pointsRate", "Points rate").toUpperCase()}
+              </Text>
+              <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{effectiveRate.toFixed(3)}</Text>
+              <Text style={[s.rateUnit, { color: "rgba(255,255,255,0.65)" }]}>{t("perCurrency", "pts per RSD")}</Text>
+              {boostActive ? (
+                <View style={[s.boostBadge, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
+                  <Text style={[s.boostText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>
+                    ×{v.boostMultiplier} {t("boostActiveLabel")}
+                  </Text>
+                </View>
+              ) : null}
+            </VolumeGradient>
+          ) : (
+            <NeuCard gradient={gradients.black} style={s.rateCard}>
+              <View style={s.heroBlob} />
+              <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold }]}>
+                {t("pointsRate", "Points rate").toUpperCase()}
+              </Text>
+              <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy }]}>{effectiveRate.toFixed(3)}</Text>
+              <Text style={s.rateUnit}>{t("perCurrency", "pts per RSD")}</Text>
+              {boostActive ? (
+                <View style={s.boostBadge}>
+                  <Text style={[s.boostText, { fontFamily: fonts.bodyBold }]}>
+                    ×{v.boostMultiplier} {t("boostActiveLabel")}
+                  </Text>
+                </View>
+              ) : null}
+            </NeuCard>
+          )
         ) : (
           <NeuCard style={{ padding: 16, alignItems: "center", marginBottom: 16 }}>
             <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
@@ -264,11 +290,33 @@ export default function VenueDetailScreen() {
             </Text>
             <View style={{ gap: 10, marginBottom: 24 }}>
               {rewards.map((r, i) => {
-                const grad = REWARD_GRADS[i % REWARD_GRADS.length]!
-                return (
+                const rainbowGrad = REWARD_RAINBOW[i % REWARD_RAINBOW.length]!
+                const normalGrad = REWARD_GRADS[i % REWARD_GRADS.length]!
+                return isRainbow ? (
+                  <VolumeGradient
+                    key={r.id}
+                    colors={[...rainbowGrad]}
+                    shadowColor={rainbowGrad[0]}
+                    shadowOpacity={0.3}
+                    borderRadius={28}
+                    style={s.rewardRow}
+                    onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.rewardTitle, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{r.title}</Text>
+                      {r.description ? (
+                        <Text style={[s.rewardDesc, { color: "rgba(255,255,255,0.65)" }]} numberOfLines={1}>{r.description}</Text>
+                      ) : null}
+                    </View>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text style={[s.rewardCost, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{r.pointsCost}</Text>
+                      <Text style={[s.rewardCostUnit, { color: "rgba(255,255,255,0.65)" }]}>pts</Text>
+                    </View>
+                  </VolumeGradient>
+                ) : (
                   <NeuCard
                     key={r.id}
-                    gradient={grad}
+                    gradient={normalGrad}
                     onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
                     style={s.rewardRow}
                   >
