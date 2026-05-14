@@ -366,4 +366,26 @@ export const socialRouter = router({
         })),
       }
     }),
+
+  giftLinkHistory: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(20) }))
+    .query(async ({ ctx, input }) => {
+      const links = await ctx.db.giftLink.findMany({
+        where: { senderId: ctx.userId },
+        select: {
+          id: true,
+          token: true,
+          amount: true,
+          message: true,
+          status: true,
+          createdAt: true,
+          claimedAt: true,
+          expiresAt: true,
+          recipient: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: input.limit,
+      })
+      return links
+    }),
 })
