@@ -1,7 +1,9 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure } from "../trpc"
-import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT } from "@pulse/shared"
+import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT, GIFT_LINK_EXPIRY_DAYS } from "@pulse/shared"
+
+const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "pulse_loyalty_bot"
 
 export const socialRouter = router({
   giftStatus: protectedProcedure.query(async ({ ctx }) => {
@@ -142,6 +144,134 @@ export const socialRouter = router({
         toUser: receiver.name ?? receiver.id,
         remainingDailyLimit: GIFT_DAILY_LIMIT - totalGiftedToday - input.amount,
       }
+    }),
+
+  /**
+   * Create a shareable gift link. Deducts earnedPoints immediately.
+   * Recipient claims later via claimGiftLink (or during onboarding).
+   */
+  createGiftLink: protectedProcedure
+    .input(
+      z.object({
+        amount: z.number().int().min(GIFT_MIN_AMOUNT).max(GIFT_DAILY_LIMIT),
+        message: z.string().max(200).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+
+      const [sender, giftedToday] = await Promise.all([
+        ctx.db.user.findUnique({
+          where: { id: ctx.userId },
+          select: { earnedPoints: true },
+        }),
+        ctx.db.transaction.aggregate({
+          where: { userId: ctx.userId, type: "GIFT_SENT", createdAt: { gte: todayStart } },
+          _sum: { pointsEarned: true },
+        }),
+      ])
+
+      if (!sender) throw new TRPCError({ code: "NOT_FOUND" })
+      if (sender.earnedPoints < input.amount) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Not enough earned points to gift" })
+      }
+
+      const totalGiftedToday = giftedToday._sum.pointsEarned ?? 0
+      if (totalGiftedToday + input.amount > GIFT_DAILY_LIMIT) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Daily gift limit is ${GIFT_DAILY_LIMIT} pts (${GIFT_DAILY_LIMIT - totalGiftedToday} remaining today)`,
+        })
+      }
+
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + GIFT_LINK_EXPIRY_DAYS)
+
+      const link = await ctx.db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: ctx.userId },
+          data: {
+            earnedPoints: { decrement: input.amount },
+            spentPoints: { increment: input.amount },
+          },
+        })
+        await tx.transaction.create({
+          data: {
+            userId: ctx.userId,
+            type: "GIFT_SENT",
+            pointsEarned: input.amount,
+            status: "VERIFIED",
+            verifiedAt: new Date(),
+          },
+        })
+        return tx.giftLink.create({
+          data: {
+            senderId: ctx.userId,
+            amount: input.amount,
+            expiresAt,
+            ...(input.message ? { message: input.message } : {}),
+          },
+          select: { token: true, amount: true, expiresAt: true },
+        })
+      })
+
+      return {
+        token: link.token,
+        amount: link.amount,
+        expiresAt: link.expiresAt,
+        shareUrl: `https://t.me/${BOT_USERNAME}?start=gift_${link.token}`,
+        shareText: `Я дарю тебе ${input.amount} баллов PULSE! Открой ссылку, чтобы получить их: https://t.me/${BOT_USERNAME}?start=gift_${link.token}`,
+      }
+    }),
+
+  /**
+   * Claim a gift link. Called by authenticated users who opened a share link.
+   */
+  claimGiftLink: protectedProcedure
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const link = await ctx.db.giftLink.findUnique({
+        where: { token: input.token },
+        select: { id: true, senderId: true, amount: true, status: true, expiresAt: true },
+      })
+
+      if (!link) throw new TRPCError({ code: "NOT_FOUND", message: "Gift link not found" })
+      if (link.status !== "PENDING") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: link.status === "CLAIMED" ? "Gift already claimed" : "Gift link expired" })
+      }
+      if (link.expiresAt < new Date()) {
+        await ctx.db.giftLink.update({ where: { id: link.id }, data: { status: "EXPIRED" } })
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Gift link has expired" })
+      }
+      if (link.senderId === ctx.userId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot claim your own gift" })
+      }
+
+      await ctx.db.$transaction(async (tx) => {
+        await tx.giftLink.update({
+          where: { id: link.id },
+          data: { status: "CLAIMED", recipientId: ctx.userId, claimedAt: new Date() },
+        })
+        await tx.user.update({
+          where: { id: ctx.userId },
+          data: {
+            earnedPoints: { increment: link.amount },
+            totalEarnedLifetime: { increment: link.amount },
+          },
+        })
+        await tx.transaction.create({
+          data: {
+            userId: ctx.userId,
+            type: "GIFT_RECEIVED",
+            pointsEarned: link.amount,
+            status: "VERIFIED",
+            verifiedAt: new Date(),
+          },
+        })
+      })
+
+      return { received: link.amount }
     }),
 
   /**

@@ -61,6 +61,80 @@ bot.use(async (ctx, next) => {
 // ── /start ────────────────────────────────────────────────
 
 bot.start(async (ctx) => {
+  const payload = ctx.payload?.trim() // e.g. "gift_clxxxxxxxx"
+
+  // ── Gift link claim (consumer flow) ──────────────────────
+  if (payload?.startsWith("gift_")) {
+    const token = payload.slice(5)
+    const telegramId = String(ctx.from.id)
+
+    const user = await db.user.findUnique({
+      where: { telegramId },
+      select: { id: true, onboardingDone: true },
+    })
+
+    if (!user || !user.onboardingDone) {
+      // New user — redirect to Mini App with start_param so onboarding handles it
+      const miniAppUrl = process.env.MINI_APP_URL ?? "https://t.me/pulse_loyalty_bot/app"
+      await ctx.reply(
+        `🎁 Тебе подарили баллы PULSE!\n\n` +
+        `Открой приложение, чтобы получить их:\n${miniAppUrl}?startapp=gift_${token}`
+      )
+      return
+    }
+
+    // Existing PULSE user — claim directly
+    const link = await db.giftLink.findUnique({
+      where: { token },
+      select: { id: true, senderId: true, amount: true, status: true, expiresAt: true },
+    })
+
+    if (!link) {
+      await ctx.reply("❌ Ссылка не найдена или уже истекла.")
+      return
+    }
+    if (link.status !== "PENDING") {
+      await ctx.reply(link.status === "CLAIMED" ? "✅ Эти баллы уже были получены." : "❌ Ссылка истекла.")
+      return
+    }
+    if (link.expiresAt < new Date()) {
+      await db.giftLink.update({ where: { id: link.id }, data: { status: "EXPIRED" } })
+      await ctx.reply("❌ Срок действия ссылки истёк.")
+      return
+    }
+    if (link.senderId === user.id) {
+      await ctx.reply("❌ Нельзя получить свой собственный подарок.")
+      return
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.giftLink.update({
+        where: { id: link.id },
+        data: { status: "CLAIMED", recipientId: user.id, claimedAt: new Date() },
+      })
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          earnedPoints: { increment: link.amount },
+          totalEarnedLifetime: { increment: link.amount },
+        },
+      })
+      await tx.transaction.create({
+        data: {
+          userId: user.id,
+          type: "GIFT_RECEIVED",
+          pointsEarned: link.amount,
+          status: "VERIFIED",
+          verifiedAt: new Date(),
+        },
+      })
+    })
+
+    await ctx.reply(`🎁 Отлично! *+${link.amount} баллов* зачислено на твой счёт PULSE!`, { parse_mode: "Markdown" })
+    return
+  }
+
+  // ── Partner flow ──────────────────────────────────────────
   const merchant = ctx.merchantData
 
   if (!merchant) {

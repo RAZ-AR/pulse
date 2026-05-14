@@ -154,14 +154,16 @@ model User {
   accounts Account[]
 
   // App relations
-  transactions   Transaction[]
-  checkins       Checkin[]
-  badges         UserBadge[]
-  challenges     UserChallenge[]
-  reviews        Review[]
-  pointsGifts      PointsGift[]      @relation("Sender")
-  pointsReceived   PointsGift[]      @relation("Receiver")
-  offerRedemptions OfferRedemption[]
+  transactions      Transaction[]
+  checkins          Checkin[]
+  badges            UserBadge[]
+  challenges        UserChallenge[]
+  reviews           Review[]
+  pointsGifts       PointsGift[]      @relation("Sender")
+  pointsReceived    PointsGift[]      @relation("Receiver")
+  offerRedemptions  OfferRedemption[]
+  giftLinksSent     GiftLink[]        @relation("GiftLinksSent")
+  giftLinksReceived GiftLink[]        @relation("GiftLinksReceived")
 
   @@index([referralCode])
   @@index([email])
@@ -573,4 +575,26 @@ model OfferRedemption {
 
   @@unique([offerId, userId])   // 1 раз на юзера на акцию
   @@index([userId])
+}
+
+// ============================================================
+// Gift Links (share-link gifting)
+// ============================================================
+
+model GiftLink {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  senderId    String
+  sender      User      @relation("GiftLinksSent", fields: [senderId], references: [id])
+  amount      Int
+  message     String?
+  status      String    @default("PENDING") // PENDING | CLAIMED | EXPIRED
+  recipientId String?
+  recipient   User?     @relation("GiftLinksReceived", fields: [recipientId], references: [id])
+  createdAt   DateTime  @default(now())
+  claimedAt   DateTime?
+  expiresAt   DateTime
+
+  @@index([token])
+  @@index([senderId])
 }

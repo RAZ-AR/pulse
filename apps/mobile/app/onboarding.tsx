@@ -51,6 +51,16 @@ function StatusScreen({ theme, title, desc, button, onPress }: {
   )
 }
 
+// Read gift token from Telegram start_param (e.g. gift_TOKEN123)
+function readTgGiftToken(): string | undefined {
+  try {
+    // @ts-expect-error — injected by Telegram
+    const startParam = window?.Telegram?.WebApp?.initDataUnsafe?.start_param as string | undefined
+    if (startParam?.startsWith("gift_")) return startParam.slice(5)
+  } catch {}
+  return undefined
+}
+
 // ── Telegram onboarding (2 steps: welcome → city) ────────────
 function TelegramOnboarding() {
   const theme = useTheme()
@@ -59,6 +69,9 @@ function TelegramOnboarding() {
   const utils = trpc.useUtils()
   const { token, hydrated } = useAuth()
   const signOut = useAuth((s) => s.signOut)
+
+  // Gift token from TG start_param — read once on mount
+  const [giftToken] = useState<string | undefined>(readTgGiftToken)
 
   // Wait for the AuthGate to finish TG sign-in before asking the server who we are.
   // Without this guard `me` fires with an empty/stale token → 401 → "Open via Telegram"
@@ -77,9 +90,11 @@ function TelegramOnboarding() {
     const id = setTimeout(() => setAuthTimedOut(true), 6000)
     return () => clearTimeout(id)
   }, [hydrated, token])
+
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
+  const claimGift = trpc.social.claimGiftLink.useMutation()
 
   const [step, setStep] = useState<0 | 1>(0)
   const [homeCity, setHomeCity] = useState(DEFAULT_CITY.name)
@@ -111,6 +126,10 @@ function TelegramOnboarding() {
       onboardingDone: true,
       ...(nameToSave && nameToSave !== userName ? { name: nameToSave } : {}),
     })
+    // Claim gift link if user arrived via share link
+    if (giftToken) {
+      claimGift.mutate({ token: giftToken })
+    }
     router.replace("/(tabs)")
   }
 
@@ -153,6 +172,7 @@ function TelegramOnboarding() {
         currentLng={currentLng}
         onChangeLang={changeLanguage}
         onContinue={() => setStep(1)}
+        {...(giftToken !== undefined ? { giftToken } : {})}
       />
     )
   }
@@ -173,7 +193,7 @@ function TelegramOnboarding() {
 }
 
 function TgStep0({
-  name, displayName, setDisplayName, currentLng, onChangeLang, onContinue,
+  name, displayName, setDisplayName, currentLng, onChangeLang, onContinue, giftToken,
 }: {
   name: string
   displayName: string
@@ -181,6 +201,7 @@ function TgStep0({
   currentLng: SupportedLocale
   onChangeLang: (lng: SupportedLocale) => void
   onContinue: () => void
+  giftToken?: string
 }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
@@ -241,12 +262,23 @@ function TgStep0({
           {t("tgBonus", "500 welcome points are already yours.")}
         </Text>
 
-        {/* +500 badge — springs in after welcome text */}
+        {/* Points badge — gift amount if arrived via share link, else standard +500 */}
         <Animated.View style={[s.tgBonusBadge, { transform: [{ scale: badgeScale }] }]}>
-          <Text style={[s.tgBonusPoints, { fontFamily: fonts.displayHeavy }]}>+500</Text>
-          <Text style={[s.tgBonusSub, { fontFamily: fonts.body }]}>
-            pts · {t("validDays", "valid 90 days")}
-          </Text>
+          {giftToken ? (
+            <>
+              <Text style={[s.tgBonusPoints, { fontFamily: fonts.displayHeavy }]}>🎁 +500</Text>
+              <Text style={[s.tgBonusSub, { fontFamily: fonts.body }]}>
+                pts приветствие + подарок от друга
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[s.tgBonusPoints, { fontFamily: fonts.displayHeavy }]}>+500</Text>
+              <Text style={[s.tgBonusSub, { fontFamily: fonts.body }]}>
+                pts · {t("validDays", "valid 90 days")}
+              </Text>
+            </>
+          )}
         </Animated.View>
       </Animated.View>
 
