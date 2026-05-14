@@ -5,13 +5,19 @@ import { Stack, useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
 import { trpc } from "../src/lib/trpc"
 import { colors, fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
-import { NeuCard, GradPill } from "../src/components/neu"
+import { useColorMode } from "../src/store/colorMode"
+import { NeuCard, GradPill, VolumeGradient } from "../src/components/neu"
 
 const CATEGORIES = ["ALL", "CAFE", "RESTAURANT", "RETAIL", "SERVICE"] as const
 type Category = (typeof CATEGORIES)[number]
 type MainTab = "venues" | "players"
 
 const PODIUM_GRADS = [gradients.gold, ["#E8E8E8", "#C0C0C0"] as const, ["#F5C7A0", "#CD7F32"] as const]
+const PODIUM_RAINBOW = [
+  ["#FFB800", "#FF5500"] as const,
+  ["#8B8B8B", "#555555"] as const,
+  ["#CD7F32", "#A0522D"] as const,
+]
 
 export default function LeaderboardScreen() {
   const theme = useTheme()
@@ -236,7 +242,17 @@ function MainTabBtn({ label, active, onPress, theme }: { label: string; active: 
 }
 
 function RankBadge({ rank, theme }: { rank: number; theme: Theme }) {
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   if (rank <= 3) {
+    if (isRainbow) {
+      const grad = PODIUM_RAINBOW[rank - 1]!
+      return (
+        <VolumeGradient colors={grad} shadowColor={grad[0]} shadowOpacity={0.40} borderRadius={17} style={s.rankBox}>
+          <Text style={[s.rankText, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{rank}</Text>
+        </VolumeGradient>
+      )
+    }
     const grad = PODIUM_GRADS[rank - 1]!
     return (
       <LinearGradient
@@ -250,13 +266,22 @@ function RankBadge({ rank, theme }: { rank: number; theme: Theme }) {
     )
   }
   return (
-    <View style={[s.rankBox, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
+    <View style={[s.rankBox, { backgroundColor: isRainbow ? "#F2F2F6" : theme.bg }, theme.shadowRaisedSm]}>
       <Text style={[s.rankText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{rank}</Text>
     </View>
   )
 }
 
 function Chip({ label, active, onPress, theme }: { label: string; active: boolean; onPress: () => void; theme: Theme }) {
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
+  if (active && isRainbow) {
+    return (
+      <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.32} borderRadius={99} onPress={onPress} style={s.chip}>
+        <Text style={[s.chipActive, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{label}</Text>
+      </VolumeGradient>
+    )
+  }
   if (active) {
     return (
       <Pressable onPress={onPress}>
@@ -272,7 +297,7 @@ function Chip({ label, active, onPress, theme }: { label: string; active: boolea
     )
   }
   return (
-    <Pressable onPress={onPress} style={[s.chip, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+    <Pressable onPress={onPress} style={[s.chip, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF" }, theme.shadowRaisedSm]}>
       <Text style={[s.chipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>{label}</Text>
     </Pressable>
   )

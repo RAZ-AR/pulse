@@ -4,10 +4,22 @@ import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { LavaLampSurface, NeuCard } from "../../src/components/neu"
+import { useColorMode } from "../../src/store/colorMode"
+import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
+
+const REWARD_RAINBOW = [
+  ["#FF2D9B", "#8B3DFF", "#2B6EFF"] as const,
+  ["#2B6EFF", "#00F5FF", "#8B3DFF"] as const,
+  ["#FF5500", "#FF2D9B", "#8B3DFF"] as const,
+  ["#8B3DFF", "#2B6EFF", "#00F5FF"] as const,
+  ["#00F5FF", "#2B6EFF", "#FF2D9B"] as const,
+  ["#FF2D9B", "#FF5500", "#8B3DFF"] as const,
+]
 
 export default function RewardsScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("rewards")
   const router = useRouter()
 
@@ -22,27 +34,33 @@ export default function RewardsScreen() {
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
+      <LavaLampSurface intensity="glass" style={[s.hero, isRainbow ? {} : theme.shadowRaised]}>
         <View style={s.heroHead}>
           <View>
-            <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>REWARDS</Text>
-            <Text style={[s.title, { fontFamily: fonts.displayHeavy }]}>{t("title", "Rewards")}</Text>
+            <Text style={[s.kicker, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#8877BB" } : {}]}>REWARDS</Text>
+            <Text style={[s.title, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{t("title", "Rewards")}</Text>
           </View>
-          <View style={s.pointsPill}>
-            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>{total.toLocaleString()} {t("pts")}</Text>
-          </View>
+          {isRainbow ? (
+            <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={99} style={s.pointsPill}>
+              <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{total.toLocaleString()} {t("pts")}</Text>
+            </VolumeGradient>
+          ) : (
+            <View style={s.pointsPill}>
+              <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>{total.toLocaleString()} {t("pts")}</Text>
+            </View>
+          )}
         </View>
-        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }]}>
+        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>
           {t("subtitle", "Redeem points for real perks")}
         </Text>
         <View style={s.balanceRow}>
-          <View style={s.balanceCell}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>{t("common:available", "Available").toUpperCase()}</Text>
+          <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow : {}]}>
+            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{total.toLocaleString()}</Text>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("common:available", "Available").toUpperCase()}</Text>
           </View>
-          <View style={[s.balanceCell, s.balanceCellLight]}>
-            <Text style={[s.balanceValueDark, { fontFamily: fonts.displayHeavy }]}>{welcomePoints}</Text>
-            <Text style={[s.balanceLabelDark, { fontFamily: fonts.bodyBold }]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
+          <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow2 : s.balanceCellLight]}>
+            <Text style={[s.balanceValueDark, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{welcomePoints}</Text>
+            <Text style={[s.balanceLabelDark, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
           </View>
         </View>
       </LavaLampSurface>
@@ -52,15 +70,16 @@ export default function RewardsScreen() {
           label={t("all", "All")}
           active={filter === "all"}
           onPress={() => setFilter("all")}
+          isRainbow={isRainbow}
         />
         <FilterPill
           label={t("welcomeOnly", "Welcome ≤100")}
           active={filter === "welcome"}
           onPress={() => setFilter("welcome")}
+          isRainbow={isRainbow}
         />
       </View>
 
-      {/* Reward grid */}
       {filtered.length === 0 ? (
         <NeuCard style={{ padding: 24, alignItems: "center", marginTop: 4 }}>
           <Text style={{ color: theme.textSecondary }}>{t("noRewardsAvailable")}</Text>
@@ -82,6 +101,8 @@ export default function RewardsScreen() {
                 useLabel={t("use")}
                 canRedeem={canRedeem}
                 featured={featured}
+                index={i}
+                isRainbow={isRainbow}
                 onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
               />
             )
@@ -92,7 +113,15 @@ export default function RewardsScreen() {
   )
 }
 
-function FilterPill({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function FilterPill({ label, active, onPress, isRainbow }: { label: string; active: boolean; onPress: () => void; isRainbow: boolean }) {
+  if (active && isRainbow) {
+    return (
+      <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.32} borderRadius={99} onPress={onPress} style={s.pill}>
+        <Text style={[s.pillText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{label}</Text>
+      </VolumeGradient>
+    )
+  }
+
   if (active) {
     return (
       <Pressable onPress={onPress}>
@@ -111,15 +140,7 @@ function FilterPill({ label, active, onPress }: { label: string; active: boolean
 }
 
 function RewardCard({
-  title,
-  venue,
-  points,
-  ptsLabel,
-  leftLabel,
-  useLabel,
-  canRedeem,
-  featured,
-  onPress,
+  title, venue, points, ptsLabel, leftLabel, useLabel, canRedeem, featured, index, isRainbow, onPress,
 }: {
   title: string
   venue: string
@@ -129,20 +150,51 @@ function RewardCard({
   useLabel: string
   canRedeem: boolean
   featured: boolean
+  index: number
+  isRainbow: boolean
   onPress: () => void
 }) {
+  if (isRainbow) {
+    const grad = REWARD_RAINBOW[index % REWARD_RAINBOW.length]!
+    return (
+      <VolumeGradient
+        colors={grad}
+        shadowColor={grad[0]}
+        shadowOpacity={0.38}
+        borderRadius={34}
+        onPress={onPress}
+        style={[s.rewardCard, { minHeight: 180 }]}
+      >
+        <View style={[s.rewardLogo, { backgroundColor: "rgba(255,255,255,0.22)", marginBottom: 22 }]}>
+          <Text style={[s.rewardLogoText, { color: "rgba(255,255,255,0.9)" }]}>✦</Text>
+        </View>
+        <Text style={[s.rewardTitle, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
+        <Text style={[s.rewardVenue, { color: "rgba(255,255,255,0.72)", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+        {leftLabel ? <Text style={[s.stockHint, { color: "rgba(255,255,255,0.8)", fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
+        <View style={{ flex: 1 }} />
+        <View style={s.rewardFoot}>
+          <View>
+            <Text style={[s.rewardCost, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{points}</Text>
+            <Text style={[s.rewardCostUnit, { color: "rgba(255,255,255,0.7)" }]}>{ptsLabel}</Text>
+          </View>
+          {canRedeem ? (
+            <View style={[s.useBadge, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
+              <Text style={[s.useBadgeText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{useLabel}</Text>
+            </View>
+          ) : null}
+        </View>
+      </VolumeGradient>
+    )
+  }
+
   const content = (
     <>
       <View style={[s.rewardLogo, featured ? s.rewardLogoDark : s.rewardLogoLight]}>
         <Text style={[s.rewardLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
       </View>
-      <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
-        {title}
-      </Text>
+      <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
       <Text style={[s.rewardVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
-      {leftLabel ? (
-        <Text style={[s.stockHint, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text>
-      ) : null}
+      {leftLabel ? <Text style={[s.stockHint, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
       <View style={{ flex: 1 }} />
       <View style={s.rewardFoot}>
         <View>
@@ -182,6 +234,8 @@ const s = StyleSheet.create({
   balanceRow: { flexDirection: "row", gap: 10 },
   balanceCell: { flex: 1, backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 24, padding: 14 },
   balanceCellLight: { backgroundColor: "rgba(235,254,255,0.74)" },
+  balanceCellRainbow: { backgroundColor: "rgba(255,255,255,0.72)", borderRadius: 24 },
+  balanceCellRainbow2: { backgroundColor: "rgba(180,160,255,0.15)", borderRadius: 24 },
   balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
   balanceValue: { color: colors.ink, fontSize: 34, lineHeight: 36 },
   balanceLabelDark: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },

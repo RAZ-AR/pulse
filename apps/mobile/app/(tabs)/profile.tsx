@@ -3,8 +3,9 @@ import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View 
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
-import { colors, fonts, gradients, useTheme, type Theme } from "../../src/lib/theme"
-import { NeuCard, NeuInset } from "../../src/components/neu"
+import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
+import { useColorMode } from "../../src/store/colorMode"
+import { NeuCard, NeuInset, VolumeGradient } from "../../src/components/neu"
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
 import { setLocale } from "../../src/lib/i18n"
@@ -58,6 +59,8 @@ const DEMO_REDEMPTIONS = [
 
 export default function ProfileScreen() {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const { t, i18n } = useTranslation("profile")
   const token = useAuth((s) => s.token)
@@ -226,17 +229,17 @@ export default function ProfileScreen() {
       </NeuCard>
 
       <View style={s.quickGrid}>
-        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} tone="mint" onPress={() => router.push("/checkin")} />
-        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} tone="blue" onPress={() => router.push("/scan")} />
-        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} tone="pink" onPress={() => router.push("/gift")} />
-        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} tone="white" onPress={() => router.push("/friends")} />
+        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} tone="mint" onPress={() => router.push("/checkin")} isRainbow={isRainbow} />
+        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} tone="blue" onPress={() => router.push("/scan")} isRainbow={isRainbow} />
+        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} tone="pink" onPress={() => router.push("/gift")} isRainbow={isRainbow} />
+        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} tone="white" onPress={() => router.push("/friends")} isRainbow={isRainbow} />
       </View>
 
       <SectionTitle title={t("activity", "Activity")} action={t("leaderboard", "Leaderboard")} onPress={() => router.push("/leaderboard")} />
       <View style={s.statsRow}>
-        <StatTile label={t("lifetime", "Lifetime")} value={u.totalEarnedLifetime.toLocaleString()} />
-        <StatTile label={t("streak", "Streak")} value={`${u.currentStreak}d`} />
-        <StatTile label={t("steps", "Steps")} value={u.stepsToday.toLocaleString()} />
+        <StatTile label={t("lifetime", "Lifetime")} value={u.totalEarnedLifetime.toLocaleString()} isRainbow={isRainbow} rainbowGrad={["#FF2D9B", "#8B3DFF"]} />
+        <StatTile label={t("streak", "Streak")} value={`${u.currentStreak}d`} isRainbow={isRainbow} rainbowGrad={["#2B6EFF", "#00F5FF"]} />
+        <StatTile label={t("steps", "Steps")} value={u.stepsToday.toLocaleString()} isRainbow={isRainbow} rainbowGrad={["#8B3DFF", "#FF2D9B"]} />
       </View>
 
       {lifetimeStats ? (
@@ -377,6 +380,13 @@ export default function ProfileScreen() {
       <View style={s.langRow}>
         {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => {
           const active = currentLng === lng
+          if (active && isRainbow) {
+            return (
+              <VolumeGradient key={lng} colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={99} onPress={() => changeLanguage(lng)} style={[s.langChip, { flex: 1 }]}>
+                <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{lng.toUpperCase()}</Text>
+              </VolumeGradient>
+            )
+          }
           if (active) {
             return (
               <Pressable key={lng} onPress={() => changeLanguage(lng)} style={{ flex: 1 }}>
@@ -454,7 +464,15 @@ function MiniBalance({ label, value }: { label: string; value: number }) {
   )
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+function StatTile({ label, value, isRainbow, rainbowGrad }: { label: string; value: string; isRainbow?: boolean; rainbowGrad?: readonly [string, string] }) {
+  if (isRainbow && rainbowGrad) {
+    return (
+      <VolumeGradient colors={rainbowGrad} shadowColor={rainbowGrad[0]} shadowOpacity={0.35} borderRadius={24} style={[s.statTile, { flex: 1 }]}>
+        <Text style={[s.statValue, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{value}</Text>
+        <Text style={[s.statLabel, { color: "rgba(255,255,255,0.75)" }]}>{label.toUpperCase()}</Text>
+      </VolumeGradient>
+    )
+  }
   return (
     <NeuCard gradient={gradients.black} style={s.statTile} small>
       <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{value}</Text>
@@ -463,9 +481,29 @@ function StatTile({ label, value }: { label: string; value: string }) {
   )
 }
 
+const QUICK_RAINBOW: Record<string, readonly [string, string]> = {
+  mint:  ["#00F5FF", "#2B6EFF"],
+  blue:  ["#2B6EFF", "#8B3DFF"],
+  pink:  ["#FF2D9B", "#8B3DFF"],
+  white: ["#8B3DFF", "#2B6EFF"],
+}
+
 function QuickAction({
-  icon, label, sub, tone, onPress,
-}: { icon: string; label: string; sub: string; tone: "mint" | "blue" | "pink" | "white"; onPress: () => void }) {
+  icon, label, sub, tone, onPress, isRainbow,
+}: { icon: string; label: string; sub: string; tone: "mint" | "blue" | "pink" | "white"; onPress: () => void; isRainbow?: boolean }) {
+  if (isRainbow) {
+    const grad = QUICK_RAINBOW[tone]!
+    return (
+      <VolumeGradient colors={grad} shadowColor={grad[0]} shadowOpacity={0.32} borderRadius={26} onPress={onPress} style={[s.quickCard, { minHeight: 92 }]}>
+        <View style={[s.quickIcon, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
+          <Text style={[s.quickIconText, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{icon}</Text>
+        </View>
+        <Text style={[s.quickLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
+        <Text style={[s.quickSub, { color: "rgba(255,255,255,0.72)" }]} numberOfLines={1}>{sub}</Text>
+      </VolumeGradient>
+    )
+  }
+
   const toneStyle =
     tone === "mint" ? s.quickIconMint :
     tone === "blue" ? s.quickIconBlue :
@@ -540,7 +578,16 @@ function Btn({
   label, onPress, variant = "primary", disabled,
 }: { label: string; onPress: () => void; variant?: "primary" | "ghost"; disabled?: boolean }) {
   const theme = useTheme()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
   if (variant === "primary") {
+    if (isRainbow) {
+      return (
+        <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.32} borderRadius={10} {...(!disabled ? { onPress } : {})} style={{ flex: 1, padding: 12, alignItems: "center", opacity: disabled ? 0.5 : 1 }}>
+          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
+        </VolumeGradient>
+      )
+    }
     return (
       <Pressable onPress={onPress} disabled={disabled} style={{ flex: 1, opacity: disabled ? 0.5 : 1 }}>
         <LinearGradient
