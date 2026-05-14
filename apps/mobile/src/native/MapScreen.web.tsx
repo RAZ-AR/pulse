@@ -4,8 +4,9 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
-import { colors, fonts, useTheme } from "../lib/theme"
-import { LavaLampSurface } from "../components/neu"
+import { colors, neonColors, fonts, useTheme } from "../lib/theme"
+import { LavaLampSurface, VolumeGradient } from "../components/neu"
+import { useColorMode } from "../store/colorMode"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../lib/venues"
 
 function ratingLabel(rating: number | null | undefined, reviews: number | null | undefined) {
@@ -22,6 +23,8 @@ export default function MapWebScreen() {
   const theme = useTheme()
   const { t } = useTranslation("venue")
   const router = useRouter()
+  const { mode } = useColorMode()
+  const isRainbow = mode === "rainbow"
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
   const me = trpc.user.me.useQuery()
@@ -96,7 +99,7 @@ export default function MapWebScreen() {
                   left: `${12 + ((index * 29) % 72)}%`,
                   top: `${18 + ((index * 19) % 62)}%`,
                 },
-                index === 0 && s.pinFeatured,
+                index === 0 && (isRainbow ? s.pinFeaturedRainbow : s.pinFeatured),
               ]}
             >
               <Text style={[s.pinText, { fontFamily: fonts.displayHeavy }]}>
@@ -124,43 +127,55 @@ export default function MapWebScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
-        {VENUE_FILTERS.map((filter) => (
-          <Pressable
-            key={filter.key}
-            onPress={() => setActiveFilterKey(filter.key)}
-            style={[s.filterChip, filter.key === activeFilterKey ? s.filterChipActive : s.filterChipIdle]}
-          >
-            <Text style={[s.filterText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
-              {filter.label}
-            </Text>
-          </Pressable>
-        ))}
+        {VENUE_FILTERS.map((filter) => {
+          const active = filter.key === activeFilterKey
+          if (active && isRainbow) {
+            return (
+              <VolumeGradient key={filter.key} colors={["#2B6EFF", "#8B3DFF", "#FF2D9B"]} shadowColor="#8B3DFF" style={s.filterChip}>
+                <Pressable onPress={() => setActiveFilterKey(filter.key)} style={s.filterChipInner}>
+                  <Text style={[s.filterText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{filter.label}</Text>
+                </Pressable>
+              </VolumeGradient>
+            )
+          }
+          return (
+            <Pressable
+              key={filter.key}
+              onPress={() => setActiveFilterKey(filter.key)}
+              style={[s.filterChip, active ? (isRainbow ? s.filterChipActiveRainbow : s.filterChipActive) : s.filterChipIdle]}
+            >
+              <Text style={[s.filterText, { color: active && isRainbow ? neonColors.cyan : colors.ink, fontFamily: fonts.bodyBold }]}>
+                {filter.label}
+              </Text>
+            </Pressable>
+          )
+        })}
       </ScrollView>
 
       <View style={s.list}>
         {visibleVenues.map((venue) => (
           <Pressable
             key={venue.id}
-            style={s.card}
+            style={[s.card, isRainbow && s.cardRainbow]}
             onPress={() =>
               router.push({ pathname: "/venue/[id]", params: { id: venue.id } })
             }
           >
             <View style={s.row}>
-              <View style={s.logo}>
-                <Text style={[s.logoText, { fontFamily: fonts.displayHeavy }]}>
+              <View style={[s.logo, isRainbow && s.logoRainbow]}>
+                <Text style={[s.logoText, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.cyan : colors.ink }]}>
                   {venue.name.slice(0, 1).toUpperCase()}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <View style={s.nameRow}>
                   <Text
-                    style={[s.name, { fontFamily: fonts.displayHeavy }]}
+                    style={[s.name, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : colors.ink }]}
                     numberOfLines={1}
                   >
                     {venue.name}
                   </Text>
-                  <Text style={s.arrow}>↗</Text>
+                  <Text style={[s.arrow, { color: isRainbow ? neonColors.purple : colors.ink }]}>↗</Text>
                 </View>
                 <Text style={s.meta} numberOfLines={1}>
                   {t(`category.${venue.category}`, venue.category.toLowerCase())} ·{" "}
@@ -173,32 +188,32 @@ export default function MapWebScreen() {
                   {venue.description ?? "Contacts, website and Instagram will appear after source import."}
                 </Text>
                 <View style={s.chips}>
-                  <View style={s.darkChip}>
-                    <Text style={[s.darkChipText, { fontFamily: fonts.bodyBold }]}>
+                  <View style={[s.darkChip, isRainbow && s.darkChipRainbow]}>
+                    <Text style={[s.darkChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.pink : colors.ink }]}>
                       {venue.pointsPerCurrency
                         ? `${venue.pointsPerCurrency.toFixed(3)} pts/RSD`
                         : t("receiptScan")}
                     </Text>
                   </View>
-                  <View style={s.lightChip}>
-                    <Text style={[s.lightChipText, { fontFamily: fonts.bodyBold }]}>
+                  <View style={[s.lightChip, isRainbow && s.lightChipRainbow]}>
+                    <Text style={[s.lightChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : colors.ink }]}>
                       {distanceLabel(venue.distanceMeters)}
                     </Text>
                   </View>
-                  <View style={s.lightChip}>
-                    <Text style={[s.lightChipText, { fontFamily: fonts.bodyBold }]}>
+                  <View style={[s.lightChip, isRainbow && s.lightChipRainbow]}>
+                    <Text style={[s.lightChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : colors.ink }]}>
                       {ratingLabel(venue.googleRating, venue.googleReviews)}
                     </Text>
                   </View>
                   {venue.enableDiscount ? (
-                    <View style={s.discountChip}>
-                      <Text style={[s.discountChipText, { fontFamily: fonts.bodyBold }]}>
+                    <View style={[s.discountChip, isRainbow && s.discountChipRainbow]}>
+                      <Text style={[s.discountChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.green : colors.ink }]}>
                         up to {venue.maxDiscountPercent}% off
                       </Text>
                     </View>
                   ) : null}
-                  <View style={s.sourceChip}>
-                    <Text style={[s.sourceChipText, { fontFamily: fonts.bodyBold }]}>
+                  <View style={[s.sourceChip, isRainbow && s.sourceChipRainbow]}>
+                    <Text style={[s.sourceChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.cyan : colors.ink }]}>
                       open sources ready
                     </Text>
                   </View>
@@ -247,7 +262,9 @@ const s = StyleSheet.create({
   locationText: { fontSize: 12 },
   filters: { gap: 8, paddingBottom: 14 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
+  filterChipInner: { paddingHorizontal: 0, paddingVertical: 0, alignItems: "center", justifyContent: "center" },
   filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  filterChipActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
   filterChipIdle: { backgroundColor: "rgba(249,251,255,0.62)" },
   filterText: { fontSize: 11 },
   list: { gap: 12 },
@@ -307,6 +324,13 @@ const s = StyleSheet.create({
     borderRadius: 27,
     backgroundColor: "rgba(255,244,254,0.92)",
   },
+  pinFeaturedRainbow: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(139,61,255,0.22)",
+    borderColor: "rgba(139,61,255,0.44)",
+  },
   pinText: { color: colors.ink, fontSize: 16 },
   mapStats: {
     position: "absolute",
@@ -327,6 +351,7 @@ const s = StyleSheet.create({
   mapStatValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
   mapStatLabel: { color: "#91A1B4", fontSize: 9, textTransform: "uppercase", marginTop: 4 },
   card: { backgroundColor: "#F9FBFF", borderRadius: 34, padding: 12, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
+  cardRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOpacity: 0.14 },
   row: { flexDirection: "row", gap: 12 },
   logo: {
     width: 58,
@@ -336,6 +361,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  logoRainbow: { backgroundColor: "rgba(43,110,255,0.12)" },
   logoText: { color: colors.ink, fontSize: 22 },
   nameRow: {
     flexDirection: "row",
@@ -382,5 +408,9 @@ const s = StyleSheet.create({
     paddingVertical: 6,
   },
   sourceChipText: { color: colors.ink, fontSize: 10 },
+  darkChipRainbow: { backgroundColor: "rgba(255,45,155,0.12)" },
+  lightChipRainbow: { backgroundColor: "rgba(43,110,255,0.10)" },
+  discountChipRainbow: { backgroundColor: "rgba(57,255,20,0.12)" },
+  sourceChipRainbow: { backgroundColor: "rgba(43,110,255,0.10)" },
   empty: { textAlign: "center", marginTop: 24 },
 })
