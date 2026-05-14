@@ -2,6 +2,7 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, publicProcedure, protectedProcedure, merchantProcedure } from "../trpc"
 import { checkAndAwardBadges } from "../services/badges"
+import { trackVisit } from "../services/challenge-progress"
 
 export const offerRouter = router({
 
@@ -133,6 +134,7 @@ export const offerRouter = router({
           },
         })
 
+        await trackVisit(tx, ctx.userId)
         const newBadges = await checkAndAwardBadges(tx, ctx.userId)
 
         return { updatedUser, newBadges }

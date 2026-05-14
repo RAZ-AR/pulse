@@ -256,6 +256,98 @@ bot.command("stop", async (ctx): Promise<void> => {
   await ctx.reply(`✅ Акция «${offer.title}» остановлена.`)
 })
 
+// ── /admin ────────────────────────────────────────────────
+
+bot.command("admin", async (ctx): Promise<void> => {
+  const adminId = process.env.ADMIN_CHAT_ID
+  if (!adminId || String(ctx.chat!.id) !== adminId) {
+    await ctx.reply("❌ Нет доступа.")
+    return
+  }
+
+  const args = (ctx.message as { text: string }).text.trim().split(/\s+/)
+  const sub = args[1]
+
+  if (sub === "list") {
+    const pending = await db.merchant.findMany({
+      where: { status: "PENDING" },
+      select: { id: true, name: true, telegramChatId: true, email: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    })
+    if (pending.length === 0) {
+      await ctx.reply("✅ Нет заявок в ожидании.")
+      return
+    }
+    const lines = pending.map((m) =>
+      `• *${m.name}* (${m.email})\n  chatId: \`${m.telegramChatId}\`\n  id: \`${m.id}\``
+    )
+    await ctx.reply(`📋 *Заявки на активацию (${pending.length}):*\n\n${lines.join("\n\n")}`, { parse_mode: "Markdown" })
+    return
+  }
+
+  if (sub === "activate") {
+    const targetId = args[2]?.trim()
+    if (!targetId) {
+      await ctx.reply("Использование: /admin activate <chatId или merchantId>")
+      return
+    }
+    const merchant = await db.merchant.findFirst({
+      where: { OR: [{ telegramChatId: targetId }, { id: targetId }] },
+    })
+    if (!merchant) { await ctx.reply("Партнёр не найден."); return }
+    if (merchant.status === "ACTIVE") { await ctx.reply("Уже активен."); return }
+
+    await db.merchant.update({ where: { id: merchant.id }, data: { status: "ACTIVE" } })
+
+    if (merchant.telegramChatId) {
+      await ctx.telegram.sendMessage(
+        merchant.telegramChatId,
+        `🎉 *Ваш аккаунт активирован!*\n\n` +
+        `Добро пожаловать в PULSE Partners, *${merchant.name}*!\n` +
+        `На вашем балансе 500 стартовых баллов.\n\n` +
+        `Создайте первую акцию: /newoffer`,
+        { parse_mode: "Markdown" }
+      )
+    }
+
+    await ctx.reply(`✅ Партнёр *${merchant.name}* активирован. Уведомление отправлено.`, { parse_mode: "Markdown" })
+    return
+  }
+
+  if (sub === "reject") {
+    const targetId = args[2]?.trim()
+    if (!targetId) {
+      await ctx.reply("Использование: /admin reject <chatId или merchantId>")
+      return
+    }
+    const merchant = await db.merchant.findFirst({
+      where: { OR: [{ telegramChatId: targetId }, { id: targetId }] },
+    })
+    if (!merchant) { await ctx.reply("Партнёр не найден."); return }
+
+    await db.merchant.update({ where: { id: merchant.id }, data: { status: "SUSPENDED" } })
+
+    if (merchant.telegramChatId) {
+      await ctx.telegram.sendMessage(
+        merchant.telegramChatId,
+        `❌ К сожалению, ваша заявка на участие в PULSE Partners не была одобрена.\n\nЕсть вопросы? Напишите @pulse_support`,
+      )
+    }
+
+    await ctx.reply(`🗑 Партнёр *${merchant.name}* отклонён.`, { parse_mode: "Markdown" })
+    return
+  }
+
+  await ctx.reply(
+    `🔧 *Admin команды:*\n\n` +
+    `/admin list — заявки в ожидании\n` +
+    `/admin activate <chatId> — активировать партнёра\n` +
+    `/admin reject <chatId> — отклонить заявку`,
+    { parse_mode: "Markdown" }
+  )
+})
+
 // ── Запуск ────────────────────────────────────────────────
 
 const webhookUrl = process.env.BOT_WEBHOOK_URL
