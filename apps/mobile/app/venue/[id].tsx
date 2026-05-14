@@ -84,6 +84,10 @@ export default function VenueDetailScreen() {
 
   const venue = trpc.venue.detail.useQuery({ id })
   const reviews = trpc.review.listByVenue.useQuery({ venueId: id, limit: 10 })
+  const partnerOffers = trpc.offer.list.useQuery(
+    { venueId: id, limit: 10 },
+    { enabled: !id.startsWith("demo_") }
+  )
   const demoVenue = DEMO_VENUES.find((item) => item.id === id)
 
   if (venue.isLoading && !demoVenue) {
@@ -109,6 +113,7 @@ export default function VenueDetailScreen() {
     : null
   const rewards = v.rewards ?? []
   const offers = venueOffers(v)
+  const activeOffers = partnerOffers.data?.offers ?? []
   const contacts = contactRows(v)
   const importSourceLabel = sourceLabel(v)
 
@@ -184,6 +189,36 @@ export default function VenueDetailScreen() {
                   <Text style={[s.offerText, { fontFamily: fonts.bodyBold }]}>{offer}</Text>
                 </View>
               ))}
+            </View>
+          </NeuCard>
+        ) : null}
+
+        {activeOffers.length > 0 ? (
+          <NeuCard style={{ padding: 16, marginBottom: 16 }}>
+            <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 10 }]}>
+              {t("partnerOffers", "Partner offers").toUpperCase()}
+            </Text>
+            <View style={{ gap: 8 }}>
+              {activeOffers.map((o) => (
+                <View key={o.id} style={s.partnerOfferRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.partnerOfferTitle, { fontFamily: fonts.bodyBold }]}>{o.title}</Text>
+                    {o.endsAt ? (
+                      <Text style={s.partnerOfferMeta}>
+                        до {new Date(o.endsAt).toLocaleDateString("ru-RU")}
+                        {o.usageLimit ? ` · ${o.usageCount}/${o.usageLimit}` : ""}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={s.partnerOfferPts}>
+                    <Text style={[s.partnerOfferPtsVal, { fontFamily: fonts.displayHeavy }]}>+{o.pointsReward}</Text>
+                    <Text style={s.partnerOfferPtsUnit}>pts</Text>
+                  </View>
+                </View>
+              ))}
+              <Text style={[s.partnerOfferHint, { color: theme.textSecondary }]}>
+                Сканируйте QR-код в заведении чтобы получить баллы
+              </Text>
             </View>
           </NeuCard>
         ) : null}
@@ -326,6 +361,14 @@ const s = StyleSheet.create({
   offerRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 9 },
   offerDot: { color: "#9FEED3", fontSize: 10 },
   offerText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
+
+  partnerOfferRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(139,61,255,0.06)", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 11 },
+  partnerOfferTitle: { fontSize: 14, color: colors.ink },
+  partnerOfferMeta: { fontSize: 11, color: "#91A1B4", marginTop: 2 },
+  partnerOfferPts: { alignItems: "flex-end" },
+  partnerOfferPtsVal: { fontSize: 18, color: "#8B3DFF", lineHeight: 20 },
+  partnerOfferPtsUnit: { fontSize: 10, color: "#91A1B4" },
+  partnerOfferHint: { fontSize: 11, textAlign: "center", marginTop: 4, opacity: 0.7 },
   contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottomWidth: 1, borderBottomColor: "rgba(163,160,200,0.14)", paddingVertical: 8 },
   contactLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6 },
   contactValue: { fontSize: 13, flex: 1, textAlign: "right" },
