@@ -178,6 +178,7 @@ export const userRouter = router({
         }
 
         await checkAndAwardBadges(tx, ctx.userId)
+        if (referrerId) await checkAndAwardBadges(tx, referrerId)
 
         return u
       })

@@ -124,12 +124,18 @@ function TelegramOnboarding() {
     const nameToSave = (displayName.trim() || userName || "").trim()
     if (!nameToSave) return
     const lng = (i18n.language ?? "en").toUpperCase() as "EN" | "RU" | "SR"
-    await completeOnboarding.mutateAsync({
-      name: nameToSave,
-      language: lng,
-      ...(referralCode.length === 6 ? { referralCode } : {}),
-      ...(giftToken ? { giftToken } : {}),
-    })
+    try {
+      await completeOnboarding.mutateAsync({
+        name: nameToSave,
+        language: lng,
+        ...(referralCode.length === 6 ? { referralCode } : {}),
+        ...(giftToken ? { giftToken } : {}),
+      })
+    } catch (e: unknown) {
+      // CONFLICT = onboarding already done (e.g. back button race) — just proceed
+      const code = (e as { data?: { code?: string } })?.data?.code
+      if (code !== "CONFLICT") throw e
+    }
     // homeCity is not part of completeOnboarding — update it separately
     updateProfile.mutate({ homeCity })
     router.replace("/(tabs)")
