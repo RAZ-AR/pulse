@@ -165,7 +165,7 @@ export default function HomeScreen() {
         />
 
         <View style={s.dashboardSectionHead}>
-          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#FFFFFF" : "#6E7D8E" }]}>Daily plan</Text>
+          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>Daily plan</Text>
           <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>earn more ›</Text>
         </View>
 
@@ -177,7 +177,7 @@ export default function HomeScreen() {
         >
           <View style={s.rewardProgressTop}>
             <View>
-              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#FFFFFF" : "#6E7D8E" }]}>Scan, visit, redeem</Text>
+              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>Scan, visit, redeem</Text>
               <Text style={[s.rewardProgressSub, { color: isRainbow ? neonColors.muted : "#91A1B4" }]}>Choose your level and get started today.</Text>
             </View>
             <View style={[s.rewardProgressButton, isRainbow && { backgroundColor: "rgba(139,61,255,0.22)" }]}>
@@ -427,7 +427,7 @@ function SectionHeader({ title, action, onPress }: { title: string; action: stri
   const isRainbow = mode === "rainbow"
   return (
     <View style={s.sectionHead}>
-      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.white : "#6E7D8E" }]}>{title}</Text>
+      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>{title}</Text>
       <Pressable onPress={onPress} style={[s.sectionButton, isRainbow && s.sectionButtonRainbow]}>
         <Text style={[s.sectionButtonText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.cyan : "#91A1B4" }]}>{action}</Text>
       </Pressable>

@@ -327,6 +327,15 @@ export function VolumeGradient({
   onPress,
   glossOpacity = 0.28,
 }: VolumeGradientProps) {
+  // Extract layout-only props so flex/width/height apply to the outer shadow wrapper,
+  // not just the inner content view (fixes tiles not sharing space equally).
+  const flat = StyleSheet.flatten(style) ?? ({} as ViewStyle)
+  const { flex, flexGrow, flexShrink, flexBasis, width, height, minWidth, maxWidth, minHeight, maxHeight, alignSelf, ...innerStyle } = flat
+  const outerLayout: ViewStyle = Object.fromEntries(
+    Object.entries({ flex, flexGrow, flexShrink, flexBasis, width, height, minWidth, maxWidth, minHeight, maxHeight, alignSelf })
+      .filter(([, v]) => v !== undefined),
+  ) as ViewStyle
+
   const shadow: ViewStyle = {
     shadowColor,
     shadowOffset: { width: 0, height: 16 },
@@ -335,7 +344,7 @@ export function VolumeGradient({
     elevation: 14,
   }
   const inner = (
-    <View style={[{ borderRadius, overflow: "hidden" }, style]}>
+    <View style={[{ borderRadius, overflow: "hidden" }, innerStyle]}>
       <LinearGradient
         colors={colors as unknown as [string, string, ...string[]]}
         start={{ x: 0.18, y: 0 }}
@@ -374,13 +383,13 @@ export function VolumeGradient({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [{ borderRadius }, shadow, pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] }]}
+        style={({ pressed }) => [{ borderRadius }, shadow, outerLayout, pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] }]}
       >
         {inner}
       </Pressable>
     )
   }
-  return <View style={[{ borderRadius }, shadow]}>{inner}</View>
+  return <View style={[{ borderRadius }, shadow, outerLayout]}>{inner}</View>
 }
 
 import { Text } from "react-native"
