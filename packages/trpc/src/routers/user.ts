@@ -260,15 +260,6 @@ export const userRouter = router({
       return updated
     }),
 
-  /** Reset all users' stepsToday — called by daily Upstash QStash cron at user's local midnight (server UTC for v1). */
-  resetDailySteps: publicProcedure
-    .mutation(async ({ ctx }) => {
-      const result = await ctx.db.user.updateMany({
-        where: { stepsToday: { gt: 0 } },
-        data: { stepsToday: 0 },
-      })
-      return { resetCount: result.count }
-    }),
 
   getStreak: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.user.findUnique({
