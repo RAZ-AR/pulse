@@ -8,6 +8,7 @@ import { decodeSerbiaQrUrl, fetchVendorName } from "../services/serbia-qr"
 import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
 import { trackSpend } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
+import { sendPushToUser } from "../services/push"
 import {
   SCAN_POINTS_PER_CURRENCY,
   RECEIPT_MAX_AGE_DAYS,
@@ -286,6 +287,11 @@ export const transactionRouter = router({
         return { transaction, updatedUser, newBadges }
       })
 
+      if (result.newBadges.length > 0) {
+        const u = await ctx.db.user.findUnique({ where: { id: ctx.userId }, select: { pushToken: true } })
+        void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
+      }
+
       return {
         transactionId: result.transaction.id,
         pointsEarned: totalPoints,
@@ -425,6 +431,11 @@ export const transactionRouter = router({
 
         return { transaction, updatedUser, newBadges }
       })
+
+      if (result.newBadges.length > 0) {
+        const u = await ctx.db.user.findUnique({ where: { id: ctx.userId }, select: { pushToken: true } })
+        void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
+      }
 
       return {
         transactionId: result.transaction.id,
@@ -581,6 +592,11 @@ export const transactionRouter = router({
 
         return { transaction, updatedUser, newBadges }
       })
+
+      if (result.newBadges.length > 0) {
+        const u = await ctx.db.user.findUnique({ where: { id: input.userId }, select: { pushToken: true } })
+        void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
+      }
 
       return {
         transactionId: result.transaction.id,
