@@ -298,20 +298,54 @@ bot.command("admin", async (ctx): Promise<void> => {
     if (!merchant) { await ctx.reply("Партнёр не найден."); return }
     if (merchant.status === "ACTIVE") { await ctx.reply("Уже активен."); return }
 
-    await db.merchant.update({ where: { id: merchant.id }, data: { status: "ACTIVE" } })
+    const WELCOME_BALANCE = 500
+    await db.merchant.update({
+      where: { id: merchant.id },
+      data: { status: "ACTIVE", pointsBalance: { increment: WELCOME_BALANCE } },
+    })
 
     if (merchant.telegramChatId) {
       await ctx.telegram.sendMessage(
         merchant.telegramChatId,
         `🎉 *Ваш аккаунт активирован!*\n\n` +
         `Добро пожаловать в PULSE Partners, *${merchant.name}*!\n` +
-        `На вашем балансе 500 стартовых баллов.\n\n` +
+        `На вашем балансе ${WELCOME_BALANCE} стартовых баллов.\n\n` +
         `Создайте первую акцию: /newoffer`,
         { parse_mode: "Markdown" }
       )
     }
 
-    await ctx.reply(`✅ Партнёр *${merchant.name}* активирован. Уведомление отправлено.`, { parse_mode: "Markdown" })
+    await ctx.reply(`✅ Партнёр *${merchant.name}* активирован (+${WELCOME_BALANCE} pts). Уведомление отправлено.`, { parse_mode: "Markdown" })
+    return
+  }
+
+  if (sub === "credit") {
+    const targetId = args[2]?.trim()
+    const amount = parseInt(args[3] ?? "", 10)
+    if (!targetId || isNaN(amount) || amount <= 0) {
+      await ctx.reply("Использование: /admin credit <chatId или merchantId> <сумма>")
+      return
+    }
+    const merchant = await db.merchant.findFirst({
+      where: { OR: [{ telegramChatId: targetId }, { id: targetId }] },
+    })
+    if (!merchant) { await ctx.reply("Партнёр не найден."); return }
+
+    const updated = await db.merchant.update({
+      where: { id: merchant.id },
+      data: { pointsBalance: { increment: amount } },
+      select: { pointsBalance: true },
+    })
+
+    if (merchant.telegramChatId) {
+      await ctx.telegram.sendMessage(
+        merchant.telegramChatId,
+        `💳 На ваш баланс зачислено *${amount} баллов*.\nТекущий баланс: *${updated.pointsBalance} pts*`,
+        { parse_mode: "Markdown" }
+      )
+    }
+
+    await ctx.reply(`✅ *${merchant.name}* +${amount} pts → баланс ${updated.pointsBalance} pts`, { parse_mode: "Markdown" })
     return
   }
 
@@ -339,11 +373,38 @@ bot.command("admin", async (ctx): Promise<void> => {
     return
   }
 
+  if (sub === "boost") {
+    // /admin boost <venueId> <days> <multiplier>
+    const venueId = args[2]?.trim()
+    const days = parseInt(args[3] ?? "", 10)
+    const multiplier = parseFloat(args[4] ?? "")
+    if (!venueId || isNaN(days) || days <= 0 || isNaN(multiplier) || multiplier <= 1) {
+      await ctx.reply("Использование: /admin boost <venueId> <дней> <множитель>\nПример: /admin boost abc123 7 2.0")
+      return
+    }
+    const venue = await db.venue.findUnique({ where: { id: venueId }, select: { id: true, name: true } })
+    if (!venue) { await ctx.reply("Заведение не найдено."); return }
+
+    const boostUntil = new Date(Date.now() + days * 86_400_000)
+    await db.venue.update({
+      where: { id: venueId },
+      data: { boostMultiplier: multiplier, boostUntil },
+    })
+
+    await ctx.reply(
+      `🚀 Буст установлен:\n*${venue.name}* × ${multiplier} на ${days} дней (до ${boostUntil.toLocaleDateString("ru-RU")})`,
+      { parse_mode: "Markdown" }
+    )
+    return
+  }
+
   await ctx.reply(
     `🔧 *Admin команды:*\n\n` +
     `/admin list — заявки в ожидании\n` +
-    `/admin activate <chatId> — активировать партнёра\n` +
-    `/admin reject <chatId> — отклонить заявку`,
+    `/admin activate <chatId> — активировать партнёра (+500 pts)\n` +
+    `/admin reject <chatId> — отклонить заявку\n` +
+    `/admin credit <chatId> <сумма> — пополнить баланс\n` +
+    `/admin boost <venueId> <дней> <×> — поставить буст заведению`,
     { parse_mode: "Markdown" }
   )
 })
