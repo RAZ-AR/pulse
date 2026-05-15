@@ -469,23 +469,28 @@ bot.command("admin", async (ctx): Promise<void> => {
   )
 })
 
-// ── Запуск ────────────────────────────────────────────────
+// ── Запуск (только при прямом вызове, не при импорте) ────────
 
-const webhookUrl = process.env.BOT_WEBHOOK_URL
+export function startBot() {
+  const webhookUrl = process.env.BOT_WEBHOOK_URL
 
-if (webhookUrl) {
-  // Vercel / production: webhook mode
-  bot.telegram.setWebhook(webhookUrl).then(() => {
-    console.log(`[bot] Webhook set: ${webhookUrl}`)
-  })
-} else {
-  // Local dev: polling mode
-  bot.launch().then(() => {
-    console.log("[bot] Started in polling mode")
-  })
+  if (webhookUrl) {
+    bot.telegram.setWebhook(webhookUrl).then(() => {
+      console.log(`[bot] Webhook set: ${webhookUrl}`)
+    })
+  } else {
+    bot.launch().then(() => {
+      console.log("[bot] Started in polling mode")
+    })
+  }
+
+  process.once("SIGINT", () => bot.stop("SIGINT"))
+  process.once("SIGTERM", () => bot.stop("SIGTERM"))
 }
 
-process.once("SIGINT", () => bot.stop("SIGINT"))
-process.once("SIGTERM", () => bot.stop("SIGTERM"))
+// Auto-start when run directly (tsx src/index.ts), not when imported
+if (require.main === module) {
+  startBot()
+}
 
 export { bot }
