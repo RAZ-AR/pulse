@@ -75,5 +75,31 @@ export async function generateWeeklyChallenges() {
     })),
   })
 
-  return { created: templates.length, weekStart: startDate.toISOString() }
+  // Notify all users with push tokens
+  const totalReward = templates.reduce((sum, t) => sum + t.pointsReward, 0)
+  const users = await db.user.findMany({
+    where: { pushToken: { not: null }, onboardingDone: true },
+    select: { pushToken: true },
+  })
+
+  const messages = users.map((u) => ({
+    to: u.pushToken!,
+    title: "🏆 New weekly challenges!",
+    body: `${templates.length} challenges this week — earn up to ${totalReward} pts. Tap to join!`,
+    data: { screen: "challenges" },
+  }))
+
+  for (let i = 0; i < messages.length; i += 100) {
+    try {
+      await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(messages.slice(i, i + 100)),
+      })
+    } catch {
+      // best-effort
+    }
+  }
+
+  return { created: templates.length, notified: users.length, weekStart: startDate.toISOString() }
 }

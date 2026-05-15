@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-rout
 import { StatusBar } from "expo-status-bar"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+import * as Notifications from "expo-notifications"
 import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
 import { trpc } from "../src/lib/trpc"
@@ -19,6 +20,34 @@ function getTg(): { initData: string } | null {
 function PushRegistrar() {
   const me = trpc.user.me.useQuery()
   usePushToken(me.data?.id)
+  return null
+}
+
+const SCREEN_MAP: Record<string, string> = {
+  challenges: "/challenges",
+  rewards: "/(tabs)/rewards",
+  earn: "/(tabs)/earn",
+  home: "/(tabs)",
+  leaderboard: "/leaderboard",
+  gift: "/gift",
+  steps: "/steps",
+}
+
+function NotificationHandler() {
+  const router = useRouter()
+  const { token } = useAuth()
+
+  useEffect(() => {
+    if (!token) return
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const screen = response.notification.request.content.data?.screen as string | undefined
+      if (screen && SCREEN_MAP[screen]) {
+        router.push(SCREEN_MAP[screen] as Parameters<typeof router.push>[0])
+      }
+    })
+    return () => sub.remove()
+  }, [token, router])
+
   return null
 }
 
@@ -101,6 +130,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
           <AuthGate />
           <PushRegistrar />
+          <NotificationHandler />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
