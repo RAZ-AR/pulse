@@ -30,7 +30,7 @@ export const {
         const merchant = await db.merchant.findUnique({
           where: { email: parsed.data.email },
         })
-        if (!merchant) return null
+        if (!merchant || !merchant.passwordHash) return null
 
         const valid = await compare(parsed.data.password, merchant.passwordHash)
         if (!valid) return null
