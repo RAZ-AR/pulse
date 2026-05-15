@@ -4,22 +4,10 @@ import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { useColorMode } from "../../src/store/colorMode"
-import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
-
-const REWARD_RAINBOW = [
-  ["#FF2D9B", "#8B3DFF", "#2B6EFF"] as const,
-  ["#2B6EFF", "#00F5FF", "#8B3DFF"] as const,
-  ["#FF5500", "#FF2D9B", "#8B3DFF"] as const,
-  ["#8B3DFF", "#2B6EFF", "#00F5FF"] as const,
-  ["#00F5FF", "#2B6EFF", "#FF2D9B"] as const,
-  ["#FF2D9B", "#FF5500", "#8B3DFF"] as const,
-]
+import { LavaLampSurface, NeuCard } from "../../src/components/neu"
 
 export default function RewardsScreen() {
   const theme = useTheme()
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("rewards")
   const router = useRouter()
 
@@ -38,81 +26,59 @@ export default function RewardsScreen() {
     : null
   const showExpiryWarning = welcomePoints > 0 && welcomeDaysLeft !== null && welcomeDaysLeft <= 7
 
-  const heroContent = (
-    <>
-      <View style={s.heroHead}>
-        <View>
-          <Text style={[s.kicker, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.65)" } : {}]}>REWARDS</Text>
-          <Text style={[s.title, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#FFFFFF" } : {}]}>{t("title", "Rewards")}</Text>
-        </View>
-        {isRainbow ? (
-          <View style={s.pointsPillRainbow}>
-            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{total.toLocaleString()} {t("pts")}</Text>
-          </View>
-        ) : (
-          <View style={s.pointsPill}>
-            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>{total.toLocaleString()} {t("pts")}</Text>
-          </View>
-        )}
-      </View>
-      <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.75)" } : {}]}>
-        {t("subtitle", "Redeem points for real perks")}
-      </Text>
-      <View style={s.balanceRow}>
-        <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow : {}]}>
-          <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#FFFFFF" } : {}]}>{total.toLocaleString()}</Text>
-          <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.65)" } : {}]}>{t("common:available", "Available").toUpperCase()}</Text>
-        </View>
-        <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow2 : s.balanceCellLight]}>
-          <Text style={[s.balanceValueDark, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#FFFFFF" } : {}]}>{welcomePoints}</Text>
-          <Text style={[s.balanceLabelDark, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.65)" } : {}]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
-        </View>
-      </View>
-    </>
-  )
-
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      {isRainbow ? (
-        <VolumeGradient
-          colors={["#8B3DFF", "#2B6EFF", "#00C2FF"]}
-          shadowColor="#8B3DFF"
-          shadowOpacity={0.40}
-          borderRadius={32}
-          style={s.hero}
-        >
-          {heroContent}
-        </VolumeGradient>
-      ) : (
-        <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
-          {heroContent}
-        </LavaLampSurface>
-      )}
+      <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
+        <View style={s.heroHead}>
+          <View>
+            <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>REWARDS</Text>
+            <Text style={[s.title, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
+              {t("title", "Rewards")}
+            </Text>
+          </View>
+          <View style={s.pointsPill}>
+            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>
+              {total.toLocaleString()} {t("pts")}
+            </Text>
+          </View>
+        </View>
+        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
+          {t("subtitle", "Redeem points for real perks")}
+        </Text>
+        <View style={s.balanceRow}>
+          <View style={s.balanceCell}>
+            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
+              {total.toLocaleString()}
+            </Text>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
+              {t("common:available", "Available").toUpperCase()}
+            </Text>
+          </View>
+          <View style={[s.balanceCell, s.balanceCellLight]}>
+            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
+              {welcomePoints}
+            </Text>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
+              {t("common:welcome", "Welcome").toUpperCase()}
+            </Text>
+          </View>
+        </View>
+      </LavaLampSurface>
 
       {showExpiryWarning ? (
-        <View style={[s.expiryBanner, isRainbow ? s.expiryBannerRainbow : {}]}>
-          <Text style={[s.expiryText, { fontFamily: fonts.bodyBold, color: isRainbow ? "#FF5500" : "#C0392B" }]}>
+        <View style={s.expiryBanner}>
+          <Text style={[s.expiryText, { fontFamily: fonts.bodyBold, color: "#C0392B" }]}>
             ⚠️ {welcomePoints} welcome pts истекают через {welcomeDaysLeft === 0 ? "сегодня" : `${welcomeDaysLeft} дн.`}
           </Text>
-          <Text style={[s.expirySub, { color: isRainbow ? "#8B3DFF" : "#666" }]}>
+          <Text style={[s.expirySub, { color: "#666" }]}>
             Потратьте баллы сейчас — они не сгорят у партнёров
           </Text>
         </View>
       ) : null}
 
       <View style={s.filters}>
-        <FilterPill
-          label={t("all", "All")}
-          active={filter === "all"}
-          onPress={() => setFilter("all")}
-          isRainbow={isRainbow}
-        />
-        <FilterPill
-          label={t("welcomeOnly", "Welcome ≤100")}
-          active={filter === "welcome"}
-          onPress={() => setFilter("welcome")}
-          isRainbow={isRainbow}
-        />
+        <FilterPill label={t("all", "All")} active={filter === "all"} onPress={() => setFilter("all")} />
+        <FilterPill label={t("welcomeOnly", "Welcome ≤100")} active={filter === "welcome"} onPress={() => setFilter("welcome")} />
       </View>
 
       {filtered.length === 0 ? (
@@ -136,8 +102,6 @@ export default function RewardsScreen() {
                 useLabel={t("use")}
                 canRedeem={canRedeem}
                 featured={featured}
-                index={i}
-                isRainbow={isRainbow}
                 onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
               />
             )
@@ -148,15 +112,7 @@ export default function RewardsScreen() {
   )
 }
 
-function FilterPill({ label, active, onPress, isRainbow }: { label: string; active: boolean; onPress: () => void; isRainbow: boolean }) {
-  if (active && isRainbow) {
-    return (
-      <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.32} borderRadius={99} onPress={onPress} style={s.pill}>
-        <Text style={[s.pillText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{label}</Text>
-      </VolumeGradient>
-    )
-  }
-
+function FilterPill({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   if (active) {
     return (
       <Pressable onPress={onPress}>
@@ -166,16 +122,15 @@ function FilterPill({ label, active, onPress, isRainbow }: { label: string; acti
       </Pressable>
     )
   }
-
   return (
-    <Pressable onPress={onPress} style={[s.pill, active ? s.pillActive : s.pillIdle]}>
+    <Pressable onPress={onPress} style={[s.pill, s.pillIdle]}>
       <Text style={[s.pillText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{label}</Text>
     </Pressable>
   )
 }
 
 function RewardCard({
-  title, venue, points, ptsLabel, leftLabel, useLabel, canRedeem, featured, index, isRainbow, onPress,
+  title, venue, points, ptsLabel, leftLabel, useLabel, canRedeem, featured, onPress,
 }: {
   title: string
   venue: string
@@ -185,50 +140,19 @@ function RewardCard({
   useLabel: string
   canRedeem: boolean
   featured: boolean
-  index: number
-  isRainbow: boolean
   onPress: () => void
 }) {
-  if (isRainbow) {
-    const grad = REWARD_RAINBOW[index % REWARD_RAINBOW.length]!
-    return (
-      <VolumeGradient
-        colors={grad}
-        shadowColor={grad[0]}
-        shadowOpacity={0.38}
-        borderRadius={34}
-        onPress={onPress}
-        style={[s.rewardCard, { minHeight: 180 }]}
-      >
-        <View style={[s.rewardLogo, { backgroundColor: "rgba(255,255,255,0.22)", marginBottom: 22 }]}>
-          <Text style={[s.rewardLogoText, { color: "rgba(255,255,255,0.9)" }]}>✦</Text>
-        </View>
-        <Text style={[s.rewardTitle, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
-        <Text style={[s.rewardVenue, { color: "rgba(255,255,255,0.72)", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
-        {leftLabel ? <Text style={[s.stockHint, { color: "rgba(255,255,255,0.8)", fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
-        <View style={{ flex: 1 }} />
-        <View style={s.rewardFoot}>
-          <View>
-            <Text style={[s.rewardCost, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{points}</Text>
-            <Text style={[s.rewardCostUnit, { color: "rgba(255,255,255,0.7)" }]}>{ptsLabel}</Text>
-          </View>
-          {canRedeem ? (
-            <View style={[s.useBadge, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
-              <Text style={[s.useBadgeText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{useLabel}</Text>
-            </View>
-          ) : null}
-        </View>
-      </VolumeGradient>
-    )
-  }
-
   const content = (
     <>
       <View style={[s.rewardLogo, featured ? s.rewardLogoDark : s.rewardLogoLight]}>
         <Text style={[s.rewardLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
       </View>
-      <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
-      <Text style={[s.rewardVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+      <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
+        {title}
+      </Text>
+      <Text style={[s.rewardVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+        {venue}
+      </Text>
       {leftLabel ? <Text style={[s.stockHint, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
       <View style={{ flex: 1 }} />
       <View style={s.rewardFoot}>
@@ -261,35 +185,34 @@ const s = StyleSheet.create({
   content: { padding: 18, paddingBottom: 34 },
 
   expiryBanner: { backgroundColor: "rgba(255,59,48,0.08)", borderRadius: 18, padding: 14, marginBottom: 12 },
-  expiryBannerRainbow: { backgroundColor: "rgba(255,85,0,0.08)" },
   expiryText: { fontSize: 13, marginBottom: 3 },
   expirySub: { fontSize: 12 },
+
   hero: { borderRadius: 32, padding: 18, marginBottom: 14, overflow: "hidden" },
   heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
   kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },
-  title: { color: "#6E7D8E", fontSize: 36, lineHeight: 40 },
+  title: { fontSize: 36, lineHeight: 40 },
   pointsPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 15, paddingVertical: 10 },
   pointsPillText: { color: "#91A1B4", fontSize: 12 },
-  heroSub: { color: "#91A1B4", fontSize: 13, marginBottom: 16 },
+  heroSub: { fontSize: 13, marginBottom: 16 },
   balanceRow: { flexDirection: "row", gap: 10 },
   balanceCell: { flex: 1, backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 24, padding: 14 },
   balanceCellLight: { backgroundColor: "rgba(235,254,255,0.74)" },
-  balanceCellRainbow: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 24 },
-  balanceCellRainbow2: { backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 24 },
-  pointsPillRainbow: { backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 99, paddingHorizontal: 15, paddingVertical: 10 },
-  balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
-  balanceValue: { color: colors.ink, fontSize: 34, lineHeight: 36 },
-  balanceLabelDark: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
-  balanceValueDark: { color: colors.ink, fontSize: 34, lineHeight: 36 },
+  balanceLabel: { fontSize: 10, letterSpacing: 1 },
+  balanceValue: { fontSize: 34, lineHeight: 36 },
+
   filters: { flexDirection: "row", gap: 10, marginBottom: 18 },
   pill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 99 },
   pillContent: { alignItems: "center" },
-  pillActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   pillIdle: { backgroundColor: "#F9FBFF" },
   pillText: { fontSize: 13 },
+
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   rewardPressable: { width: "48%" },
-  rewardCard: { padding: 14, minHeight: 180, borderRadius: 34, overflow: "hidden", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3 },
+  rewardCard: {
+    padding: 14, minHeight: 180, borderRadius: 34, overflow: "hidden",
+    shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3,
+  },
   rewardCardCyan: { backgroundColor: "rgba(235,254,255,0.92)" },
   rewardLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", marginBottom: 22 },
   rewardLogoDark: { backgroundColor: colors.lavaPink },
