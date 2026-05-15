@@ -38,38 +38,56 @@ export default function RewardsScreen() {
     : null
   const showExpiryWarning = welcomePoints > 0 && welcomeDaysLeft !== null && welcomeDaysLeft <= 7
 
+  const heroContent = (
+    <>
+      <View style={s.heroHead}>
+        <View>
+          <Text style={[s.kicker, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.65)" } : {}]}>REWARDS</Text>
+          <Text style={[s.title, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#FFFFFF" } : {}]}>{t("title", "Rewards")}</Text>
+        </View>
+        {isRainbow ? (
+          <View style={s.pointsPillRainbow}>
+            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{total.toLocaleString()} {t("pts")}</Text>
+          </View>
+        ) : (
+          <View style={s.pointsPill}>
+            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>{total.toLocaleString()} {t("pts")}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.75)" } : {}]}>
+        {t("subtitle", "Redeem points for real perks")}
+      </Text>
+      <View style={s.balanceRow}>
+        <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow : {}]}>
+          <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#FFFFFF" } : {}]}>{total.toLocaleString()}</Text>
+          <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.65)" } : {}]}>{t("common:available", "Available").toUpperCase()}</Text>
+        </View>
+        <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow2 : s.balanceCellLight]}>
+          <Text style={[s.balanceValueDark, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#FFFFFF" } : {}]}>{welcomePoints}</Text>
+          <Text style={[s.balanceLabelDark, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "rgba(255,255,255,0.65)" } : {}]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
+        </View>
+      </View>
+    </>
+  )
+
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <LavaLampSurface intensity="glass" style={[s.hero, isRainbow ? {} : theme.shadowRaised]}>
-        <View style={s.heroHead}>
-          <View>
-            <Text style={[s.kicker, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#8877BB" } : {}]}>REWARDS</Text>
-            <Text style={[s.title, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{t("title", "Rewards")}</Text>
-          </View>
-          {isRainbow ? (
-            <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={99} style={s.pointsPill}>
-              <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{total.toLocaleString()} {t("pts")}</Text>
-            </VolumeGradient>
-          ) : (
-            <View style={s.pointsPill}>
-              <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>{total.toLocaleString()} {t("pts")}</Text>
-            </View>
-          )}
-        </View>
-        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>
-          {t("subtitle", "Redeem points for real perks")}
-        </Text>
-        <View style={s.balanceRow}>
-          <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow : {}]}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{total.toLocaleString()}</Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("common:available", "Available").toUpperCase()}</Text>
-          </View>
-          <View style={[s.balanceCell, isRainbow ? s.balanceCellRainbow2 : s.balanceCellLight]}>
-            <Text style={[s.balanceValueDark, { fontFamily: fonts.displayHeavy }, isRainbow ? { color: "#1A1A2E" } : {}]}>{welcomePoints}</Text>
-            <Text style={[s.balanceLabelDark, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
-          </View>
-        </View>
-      </LavaLampSurface>
+      {isRainbow ? (
+        <VolumeGradient
+          colors={["#8B3DFF", "#2B6EFF", "#00C2FF"]}
+          shadowColor="#8B3DFF"
+          shadowOpacity={0.40}
+          borderRadius={32}
+          style={s.hero}
+        >
+          {heroContent}
+        </VolumeGradient>
+      ) : (
+        <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
+          {heroContent}
+        </LavaLampSurface>
+      )}
 
       {showExpiryWarning ? (
         <View style={[s.expiryBanner, isRainbow ? s.expiryBannerRainbow : {}]}>
@@ -256,8 +274,9 @@ const s = StyleSheet.create({
   balanceRow: { flexDirection: "row", gap: 10 },
   balanceCell: { flex: 1, backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 24, padding: 14 },
   balanceCellLight: { backgroundColor: "rgba(235,254,255,0.74)" },
-  balanceCellRainbow: { backgroundColor: "rgba(255,255,255,0.72)", borderRadius: 24 },
-  balanceCellRainbow2: { backgroundColor: "rgba(180,160,255,0.15)", borderRadius: 24 },
+  balanceCellRainbow: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 24 },
+  balanceCellRainbow2: { backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 24 },
+  pointsPillRainbow: { backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 99, paddingHorizontal: 15, paddingVertical: 10 },
   balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
   balanceValue: { color: colors.ink, fontSize: 34, lineHeight: 36 },
   balanceLabelDark: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
