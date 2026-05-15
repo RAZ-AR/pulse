@@ -1,13 +1,26 @@
+import { useRef, useEffect } from "react"
+import { Animated, Dimensions, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { Tabs } from "expo-router"
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native"
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
 import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Path, Circle } from "react-native-svg"
-import { neonColors, fonts, useTheme } from "../../src/lib/theme"
+import { LinearGradient } from "expo-linear-gradient"
+import { fonts, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 
-// ── SVG Icons ─────────────────────────────────────────────────
+// ── Layout geometry ────────────────────────────────────────────
+const SCREEN_W = Dimensions.get("window").width
+const H_MARGIN = 20
+const DOCK_W   = SCREEN_W - H_MARGIN * 2
+const DOCK_H   = 60
+const TAB_N    = 5
+const SLOT_W   = DOCK_W / TAB_N
+const IND_W    = 84
+const IND_H    = 44
+const IND_TOP  = (DOCK_H - IND_H) / 2   // vertical centering = 8
 
+// ── SVG Icons ─────────────────────────────────────────────────
 function IconHome({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -16,7 +29,6 @@ function IconHome({ color }: { color: string }) {
     </Svg>
   )
 }
-
 function IconEarn({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -24,7 +36,6 @@ function IconEarn({ color }: { color: string }) {
     </Svg>
   )
 }
-
 function IconRewards({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -32,7 +43,6 @@ function IconRewards({ color }: { color: string }) {
     </Svg>
   )
 }
-
 function IconMap({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -41,7 +51,6 @@ function IconMap({ color }: { color: string }) {
     </Svg>
   )
 }
-
 function IconProfile({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -67,107 +76,236 @@ const TABS = [
   { name: "profile", label: "profile" },
 ] as const
 
-export default function TabsLayout() {
+// ── Liquid Dock ───────────────────────────────────────────────
+function LiquidDock({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation("common")
-  const theme = useTheme()
   const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const insets = useSafeAreaInsets()
-  const bottomReserve = Platform.OS === "web" ? 20 : Math.max(insets.bottom, 8)
+  const bottom = Platform.OS === "web" ? 20 : Math.max(insets.bottom, 8)
 
-  // Dark pill in both modes; rainbow gets neon active pill
-  const pillBg = isRainbow ? "rgba(10,10,20,0.96)" : "rgba(18,18,18,0.96)"
-  const activeColor = isRainbow ? neonColors.cyan : "#FFFFFF"
-  const inactiveColor = isRainbow ? "rgba(0,245,255,0.45)" : "rgba(255,255,255,0.40)"
-  const activePillBg = isRainbow ? "rgba(0,245,255,0.18)" : "rgba(255,255,255,0.14)"
+  // Indicator slides to: center of active slot
+  const indX = useRef(
+    new Animated.Value(state.index * SLOT_W + (SLOT_W - IND_W) / 2),
+  ).current
+
+  useEffect(() => {
+    Animated.spring(indX, {
+      toValue: state.index * SLOT_W + (SLOT_W - IND_W) / 2,
+      useNativeDriver: true,
+      tension: 180,
+      friction: 15,
+    }).start()
+  }, [state.index, indX])
+
+  const activeColor   = isRainbow ? "#FFFFFF"                   : "#1A1A2E"
+  const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)"    : "rgba(80,90,110,0.42)"
+
+  return (
+    <View pointerEvents="box-none" style={[s.wrapper, { bottom }]}>
+      {/* ── Outer shadow shell (no overflow:hidden so shadow renders) ── */}
+      <View style={[s.dockShell, isRainbow ? s.shellRainbow : s.shellNormal]}>
+
+        {/* ── Animated liquid indicator ── */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            s.indicator,
+            isRainbow ? s.indRainbow : s.indNormal,
+            { transform: [{ translateX: indX }] },
+          ]}
+        >
+          {isRainbow && (
+            <>
+              <LinearGradient
+                colors={["#8B3DFF", "#2B6EFF", "#00C2FF"]}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 0.9, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Specular highlight — top-left oval */}
+              <View style={s.specular} />
+              {/* Rim light */}
+              <View style={s.rim} />
+            </>
+          )}
+          {!isRainbow && (
+            <>
+              {/* Top highlight edge */}
+              <View style={s.normalHighlight} />
+            </>
+          )}
+        </Animated.View>
+
+        {/* ── Tab slots ── */}
+        {state.routes.map((route, index) => {
+          const isFocused = state.index === index
+          const tab = TABS.find((t) => t.name === route.name)
+          if (!tab) return null
+          const Icon  = ICONS[tab.name as keyof typeof ICONS]
+          const label = t(`nav.${tab.label}`, tab.label[0]!.toUpperCase() + tab.label.slice(1))
+
+          return (
+            <Pressable
+              key={route.key}
+              onPress={() => {
+                const ev = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true })
+                if (!isFocused && !ev.defaultPrevented) navigation.navigate(route.name)
+              }}
+              onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
+              style={s.slot}
+            >
+              <Icon color={isFocused ? activeColor : inactiveColor} />
+              {isFocused ? (
+                <Text style={[s.label, { color: activeColor, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                  {label}
+                </Text>
+              ) : null}
+            </Pressable>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+// ── Layout ────────────────────────────────────────────────────
+export default function TabsLayout() {
+  const theme = useTheme()
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: theme.bg },
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          backgroundColor: pillBg,
-          borderTopWidth: 0,
-          height: 60,
-          marginHorizontal: 20,
-          marginBottom: bottomReserve,
-          borderRadius: 30,
-          shadowColor: isRainbow ? "#00F5FF" : "#000000",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: isRainbow ? 0.30 : 0.28,
-          shadowRadius: 24,
-          elevation: 12,
-          ...(isRainbow ? { borderWidth: 1, borderColor: "rgba(0,245,255,0.20)" } : {}),
-        },
-        tabBarItemStyle: { height: 60 },
-        tabBarActiveTintColor: activeColor,
-        tabBarInactiveTintColor: inactiveColor,
       }}
+      tabBar={(props) => <LiquidDock {...props} />}
     >
-      {TABS.map((tab) => {
-        const Icon = ICONS[tab.name]
-        return (
-          <Tabs.Screen
-            key={tab.name}
-            name={tab.name}
-            options={{
-              title: t(`nav.${tab.label}`, tab.label[0]!.toUpperCase() + tab.label.slice(1)),
-              tabBarButton: (props) => {
-                const focused = props.accessibilityState?.selected ?? false
-                return (
-                  <Pressable
-                    onPress={props.onPress}
-                    onLongPress={props.onLongPress}
-                    style={s.tabButton}
-                  >
-                    <View style={[
-                      s.pill,
-                      focused && { backgroundColor: activePillBg, paddingHorizontal: 14 },
-                      focused && isRainbow && {
-                        shadowColor: "#00F5FF",
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.5,
-                        shadowRadius: 8,
-                      },
-                    ]}>
-                      <Icon color={focused ? activeColor : inactiveColor} />
-                      {focused ? (
-                        <Text style={[s.label, { color: activeColor, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-                          {t(`nav.${tab.label}`, tab.label[0]!.toUpperCase() + tab.label.slice(1))}
-                        </Text>
-                      ) : null}
-                    </View>
-                  </Pressable>
-                )
-              },
-            }}
-          />
-        )
-      })}
+      {TABS.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{ title: tab.label[0]!.toUpperCase() + tab.label.slice(1) }}
+        />
+      ))}
     </Tabs>
   )
 }
 
+// ── Styles ────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  tabButton: {
+  wrapper: {
+    position: "absolute",
+    left: H_MARGIN,
+    right: H_MARGIN,
+    height: DOCK_H,
+  },
+
+  // ── Dock shell ────
+  dockShell: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    height: 60,
-  },
-  pill: {
     flexDirection: "row",
+    height: DOCK_H,
+    borderRadius: DOCK_H / 2,
     alignItems: "center",
-    justifyContent: "center",
-    height: 40,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    gap: 6,
   },
+
+  shellNormal: {
+    // Frosted light glass
+    backgroundColor: "rgba(236,238,244,0.80)",
+    borderWidth: 1,
+    borderTopColor:    "rgba(255,255,255,0.95)",
+    borderLeftColor:   "rgba(255,255,255,0.88)",
+    borderRightColor:  "rgba(200,208,226,0.50)",
+    borderBottomColor: "rgba(200,208,226,0.55)",
+    shadowColor:    "#8090B0",
+    shadowOffset:   { width: 0, height: 10 },
+    shadowOpacity:  0.22,
+    shadowRadius:   28,
+    elevation:      12,
+  },
+
+  shellRainbow: {
+    // Dark purple translucent
+    backgroundColor: "rgba(16,8,38,0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(140,100,255,0.30)",
+    shadowColor:   "#8B3DFF",
+    shadowOffset:  { width: 0, height: 10 },
+    shadowOpacity: 0.38,
+    shadowRadius:  28,
+    elevation:     14,
+  },
+
+  // ── Indicator ─────
+  indicator: {
+    position: "absolute",
+    top:    IND_TOP,
+    left:   0,
+    width:  IND_W,
+    height: IND_H,
+    borderRadius: IND_H / 2,
+    overflow: "hidden",
+  },
+
+  indNormal: {
+    // White glass droplet
+    backgroundColor:   "rgba(255,255,255,0.90)",
+    borderWidth: 1,
+    borderTopColor:    "rgba(255,255,255,1.0)",
+    borderLeftColor:   "rgba(255,255,255,0.90)",
+    borderRightColor:  "rgba(200,210,232,0.45)",
+    borderBottomColor: "rgba(200,210,232,0.50)",
+  },
+
+  indRainbow: {
+    // Filled by LinearGradient child
+    backgroundColor: "transparent",
+  },
+
+  // Specular highlight for rainbow indicator
+  specular: {
+    position:  "absolute",
+    top:       "8%",
+    left:      "7%",
+    width:     "52%",
+    height:    "38%",
+    borderRadius: 99,
+    backgroundColor: "rgba(255,255,255,0.28)",
+  },
+
+  // Rim border for rainbow indicator
+  rim: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius:    IND_H / 2,
+    borderWidth:     1,
+    borderColor:     "rgba(255,255,255,0.35)",
+    borderBottomColor: "rgba(0,0,0,0.12)",
+  },
+
+  // Top highlight line for normal indicator
+  normalHighlight: {
+    position: "absolute",
+    top: 0,
+    left: "10%",
+    right: "10%",
+    height: 1,
+    backgroundColor: "rgba(255,255,255,1.0)",
+    borderRadius: 1,
+  },
+
+  // ── Tab slot ──────
+  slot: {
+    flex:           1,
+    height:         DOCK_H,
+    flexDirection:  "row",
+    alignItems:     "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+
   label: {
-    fontSize: 13,
-    letterSpacing: -0.2,
+    fontSize:      12,
+    letterSpacing: -0.3,
   },
 })
