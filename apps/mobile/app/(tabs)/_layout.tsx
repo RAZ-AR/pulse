@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useCallback } from "react"
 import { Animated, Dimensions, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { Tabs } from "expo-router"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Path, Circle } from "react-native-svg"
 import { LinearGradient } from "expo-linear-gradient"
-import { fonts, useTheme } from "../../src/lib/theme"
+import { fonts } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 
 // ── Layout geometry ────────────────────────────────────────────
@@ -170,16 +170,19 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
 }
 
 // ── Layout ────────────────────────────────────────────────────
+// Does NOT call useTheme/useColorMode — those hooks are only in LiquidDock.
+// Stable renderDock reference prevents React Navigation from remounting screens
+// on every color-mode change (which caused the white-screen flash).
 export default function TabsLayout() {
-  const theme = useTheme()
+  const renderDock = useCallback(
+    (props: BottomTabBarProps) => <LiquidDock {...props} />,
+    [],
+  )
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        sceneStyle: { backgroundColor: theme.bg },
-      }}
-      tabBar={(props) => <LiquidDock {...props} />}
+      screenOptions={{ headerShown: false }}
+      tabBar={renderDock}
     >
       {TABS.map((tab) => (
         <Tabs.Screen
