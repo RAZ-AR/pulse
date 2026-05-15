@@ -6,6 +6,7 @@ type Tx = Parameters<Parameters<typeof PrismaDb.$transaction>[0]>[0]
 type RulesSpend = { threshold: number }
 type RulesVisit = { count: number }
 type RulesStreak = { days: number }
+type RulesSteps = { steps: number }
 
 /**
  * Called after a PARTNER_PURCHASE or RECEIPT_SCAN is confirmed.
@@ -27,6 +28,33 @@ export async function trackVisit(tx: Tx, userId: string): Promise<void> {
     const r = rules as RulesVisit
     return progress >= r.count
   })
+}
+
+/**
+ * Called after syncSteps. Sets WALK_STEPS progress to the new total steps value.
+ * Completes if stepsTotal >= required steps.
+ */
+export async function trackSteps(tx: Tx, userId: string, stepsTotal: number): Promise<void> {
+  const now = new Date()
+  const active = await tx.userChallenge.findMany({
+    where: {
+      userId,
+      isCompleted: false,
+      challenge: { type: "WALK_STEPS", startDate: { lte: now }, endDate: { gte: now } },
+    },
+    include: { challenge: true },
+  })
+
+  for (const uc of active) {
+    const rules = uc.challenge.rules as RulesSteps
+    await tx.userChallenge.update({
+      where: { id: uc.id },
+      data: { progress: stepsTotal },
+    })
+    if (stepsTotal >= rules.steps) {
+      await completeChallenge(tx, uc.id, userId, uc.challenge.pointsReward)
+    }
+  }
 }
 
 /**

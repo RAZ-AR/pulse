@@ -4,6 +4,7 @@ import { router, protectedProcedure, publicProcedure, merchantProcedure } from "
 import { CHECKIN_POINTS, RECEIPT_DAILY_LIMIT, SCAN_POINTS_PER_CURRENCY, REFERRAL_SIGNUP_POINTS, stepMultiplier } from "@pulse/shared"
 import { sendPushToUser } from "../services/push"
 import { checkAndAwardBadges } from "../services/badges"
+import { trackSteps } from "../services/challenge-progress"
 
 const OptionalReferralCode = z.preprocess((value) => {
   if (typeof value !== "string") return value
@@ -247,14 +248,19 @@ export const userRouter = router({
       // Only credit the *delta* against today's previously-reported steps.
       // First sync of the day: delta = input.steps. Re-sync mid-day: delta = new - old (clipped to >=0).
       const delta = Math.max(0, input.steps - user.stepsToday)
+      const newStepsTotal = user.stepsTotal + delta
 
-      const updated = await ctx.db.user.update({
-        where: { id: ctx.userId },
-        data: {
-          stepsToday: input.steps,
-          stepsTotal: { increment: delta },
-        },
-        select: { stepsToday: true, stepsTotal: true },
+      const updated = await ctx.db.$transaction(async (tx) => {
+        const u = await tx.user.update({
+          where: { id: ctx.userId },
+          data: {
+            stepsToday: input.steps,
+            stepsTotal: { increment: delta },
+          },
+          select: { stepsToday: true, stepsTotal: true },
+        })
+        if (delta > 0) await trackSteps(tx, ctx.userId, newStepsTotal)
+        return u
       })
 
       return updated
