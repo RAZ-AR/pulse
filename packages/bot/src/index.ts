@@ -157,6 +157,7 @@ bot.start(async (ctx) => {
     `/newoffer — создать акцию\n` +
     `/offers — мои акции\n` +
     `/balance — баланс\n` +
+    `/topup — пополнить баланс\n` +
     `/redeem — принять оплату баллами`,
     { parse_mode: "Markdown" }
   )
@@ -235,6 +236,65 @@ bot.command("redeem", async (ctx) => {
   if (!ctx.merchantData) return ctx.reply("Сначала зарегистрируйтесь: /register")
   if (ctx.merchantData.status !== "ACTIVE") return ctx.reply("⏳ Аккаунт ещё не активирован.")
   return ctx.scene.enter("accept-payment")
+})
+
+// ── /topup ────────────────────────────────────────────────
+
+const TOPUP_PACKAGES = [
+  { pts: 1000, rsd: 990 },
+  { pts: 5000, rsd: 4500 },
+  { pts: 10000, rsd: 8500 },
+]
+
+bot.command("topup", async (ctx): Promise<void> => {
+  const merchant = ctx.merchantData
+  if (!merchant) { await ctx.reply("Сначала зарегистрируйтесь: /register"); return }
+  if (merchant.status !== "ACTIVE") { await ctx.reply("⏳ Аккаунт ещё не активирован."); return }
+
+  const buttons = TOPUP_PACKAGES.map((p) => [{
+    text: `${p.pts.toLocaleString()} pts — ${p.rsd.toLocaleString()} RSD`,
+    callback_data: `topup_${p.pts}`,
+  }])
+
+  await ctx.reply(
+    `💳 *Пополнение баланса*\n\nВыберите пакет:`,
+    { parse_mode: "Markdown", reply_markup: { inline_keyboard: buttons } }
+  )
+})
+
+bot.action(/^topup_(\d+)$/, async (ctx): Promise<void> => {
+  const merchant = ctx.merchantData
+  if (!merchant) { await ctx.answerCbQuery(); return }
+
+  const pts = parseInt(ctx.match[1]!, 10)
+  const pkg = TOPUP_PACKAGES.find((p) => p.pts === pts)
+  if (!pkg) { await ctx.answerCbQuery("Неверный пакет"); return }
+
+  const adminId = process.env.ADMIN_CHAT_ID
+  if (adminId) {
+    await ctx.telegram.sendMessage(
+      adminId,
+      `💰 *Запрос пополнения баланса*\n\n` +
+      `Партнёр: *${merchant.name}*\n` +
+      `chatId: \`${merchant.telegramChatId}\`\n` +
+      `Пакет: *${pkg.pts.toLocaleString()} pts* — ${pkg.rsd.toLocaleString()} RSD\n\n` +
+      `После получения оплаты: \`/admin credit ${merchant.telegramChatId} ${pkg.pts}\``,
+      { parse_mode: "Markdown" }
+    )
+  }
+
+  const iban = process.env.COMPANY_IBAN ?? "RS35105008123456789"
+  const ref = `PULSE-${merchant.id.slice(-6).toUpperCase()}`
+  await ctx.editMessageText(
+    `✅ *Заявка принята!*\n\n` +
+    `Переведите *${pkg.rsd.toLocaleString()} RSD* по реквизитам:\n\n` +
+    `🏦 Назначение: PULSE Points\n` +
+    `📋 IBAN: \`${iban}\`\n` +
+    `🔖 Позив на број: \`${ref}\`\n\n` +
+    `После подтверждения оплаты мы зачислим *${pkg.pts.toLocaleString()} pts* на ваш баланс в течение 24 часов.`,
+    { parse_mode: "Markdown" }
+  )
+  await ctx.answerCbQuery()
 })
 
 // ── /stop <offerId> ───────────────────────────────────────
