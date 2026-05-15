@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, publicProcedure, merchantProcedure } from "../trpc"
 import { CHECKIN_POINTS, RECEIPT_DAILY_LIMIT, SCAN_POINTS_PER_CURRENCY, REFERRAL_SIGNUP_POINTS, stepMultiplier } from "@pulse/shared"
 import { sendPushToUser } from "../services/push"
+import { checkAndAwardBadges } from "../services/badges"
 
 const OptionalReferralCode = z.preprocess((value) => {
   if (typeof value !== "string") return value
@@ -176,6 +177,9 @@ export const userRouter = router({
           })
         }
 
+        await checkAndAwardBadges(tx, ctx.userId)
+        if (referrerId) await checkAndAwardBadges(tx, referrerId)
+
         return u
       })
 
@@ -256,15 +260,6 @@ export const userRouter = router({
       return updated
     }),
 
-  /** Reset all users' stepsToday — called by daily Upstash QStash cron at user's local midnight (server UTC for v1). */
-  resetDailySteps: publicProcedure
-    .mutation(async ({ ctx }) => {
-      const result = await ctx.db.user.updateMany({
-        where: { stepsToday: { gt: 0 } },
-        data: { stepsToday: 0 },
-      })
-      return { resetCount: result.count }
-    }),
 
   getStreak: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.user.findUnique({
