@@ -136,6 +136,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="reward/[id]" />
             <Stack.Screen name="venue/[id]" />
+            <Stack.Screen name="venue/[id]/review" />
             <Stack.Screen name="leaderboard" />
             <Stack.Screen name="scan" />
             <Stack.Screen name="checkin" />
