@@ -593,9 +593,28 @@ export const transactionRouter = router({
         return { transaction, updatedUser, newBadges }
       })
 
+      // Notify buyer about badge
       if (result.newBadges.length > 0) {
         const u = await ctx.db.user.findUnique({ where: { id: input.userId }, select: { pushToken: true } })
         void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
+      }
+
+      // Notify merchant via Telegram (best-effort)
+      const merchant = await ctx.db.merchant.findUnique({
+        where: { id: ctx.merchantId },
+        select: { telegramChatId: true },
+      })
+      const botToken = process.env.TELEGRAM_BOT_TOKEN
+      if (merchant?.telegramChatId && botToken) {
+        void fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: merchant.telegramChatId,
+            text: `💳 *Новая покупка*\n\nКлиент потратил *${input.amount} ${input.currency}* → начислено *+${totalPoints} pts*`,
+            parse_mode: "Markdown",
+          }),
+        }).catch(() => {})
       }
 
       return {
