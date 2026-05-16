@@ -3,6 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
+import { i18n, setLocale } from "../../src/lib/i18n"
+import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
 import { colors, neonColors, fonts, useTheme, rainbowGradients } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
@@ -121,6 +123,7 @@ export default function HomeScreen() {
               )
             })}
           </View>
+          <LanguageSwitcher isRainbow={isRainbow} />
         </View>
         <ColorModeToggle isRainbow={isRainbow} onToggle={toggle} />
       </View>
@@ -378,6 +381,52 @@ function CircleButton({ label, onPress, isRainbow }: { label: string; onPress: (
     <Pressable onPress={onPress} style={[s.circleButton, isRainbow && s.circleButtonRainbow]}>
       <Text style={[s.circleButtonText, isRainbow && { color: neonColors.cyan }]}>{label}</Text>
     </Pressable>
+  )
+}
+
+const LANGS: { code: SupportedLocale; label: string }[] = [
+  { code: "sr", label: "SR" },
+  { code: "ru", label: "RU" },
+  { code: "en", label: "EN" },
+]
+
+function LanguageSwitcher({ isRainbow }: { isRainbow?: boolean }) {
+  const [, forceUpdate] = useState(0)
+  const current = i18n.language as SupportedLocale
+
+  function pick(code: SupportedLocale) {
+    if (code === current) return
+    setLocale(code).catch(() => {})
+    forceUpdate((n) => n + 1)
+  }
+
+  return (
+    <View style={s.langSwitch}>
+      {LANGS.map(({ code, label }) => {
+        const active = current === code
+        return (
+          <Pressable
+            key={code}
+            onPress={() => pick(code)}
+            style={[
+              s.langPill,
+              active
+                ? isRainbow ? s.langPillActiveRainbow : s.langPillActive
+                : s.langPillIdle,
+            ]}
+          >
+            <Text
+              style={[
+                s.langPillText,
+                { fontFamily: fonts.bodyBold, color: active ? (isRainbow ? neonColors.cyan : "#5A7A99") : "#A0B0C0" },
+              ]}
+            >
+              {label}
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
   )
 }
 
@@ -1246,6 +1295,26 @@ const s = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  langSwitch: { flexDirection: "row", gap: 4, marginTop: 6 },
+  langPill: { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 4 },
+  langPillActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  langPillIdle: { backgroundColor: "rgba(225,230,239,0.55)" },
+  langPillActiveRainbow: {
+    backgroundColor: "rgba(0,245,255,0.18)",
+    shadowColor: "#00F5FF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  langPillText: { fontSize: 10, letterSpacing: 0.8 },
   modeToggle: {
     width: 64,
     height: 36,
