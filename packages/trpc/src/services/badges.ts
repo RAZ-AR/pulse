@@ -10,25 +10,28 @@ type Tx = Parameters<Parameters<typeof PrismaDb.$transaction>[0]>[0]
  * Call from `apps/api` startup or admin script (NOT inside hot paths).
  */
 export async function ensureBadges(db: typeof PrismaDb): Promise<void> {
-  for (const def of BADGE_DEFINITIONS) {
-    await db.badge.upsert({
-      where: { code: def.code },
-      create: {
-        code: def.code,
-        name: def.name,
-        description: def.description,
-        iconUrl: def.iconUrl,
-        rarity: def.rarity,
-        unlockCondition: { description: def.description },
-      },
-      update: {
-        name: def.name,
-        description: def.description,
-        iconUrl: def.iconUrl,
-        rarity: def.rarity,
-      },
-    })
-  }
+  // One transaction, N upserts — avoids N round-trips
+  await db.$transaction(
+    BADGE_DEFINITIONS.map((def) =>
+      db.badge.upsert({
+        where: { code: def.code },
+        create: {
+          code: def.code,
+          name: def.name,
+          description: def.description,
+          iconUrl: def.iconUrl,
+          rarity: def.rarity,
+          unlockCondition: { description: def.description },
+        },
+        update: {
+          name: def.name,
+          description: def.description,
+          iconUrl: def.iconUrl,
+          rarity: def.rarity,
+        },
+      })
+    )
+  )
 }
 
 async function loadStats(tx: Tx, userId: string): Promise<BadgeStats> {

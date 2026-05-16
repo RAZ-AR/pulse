@@ -1,5 +1,23 @@
 import { db } from "@pulse/db"
 
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+const EXPO_PUSH_BATCH = 100
+
+/** Send batched push messages to Expo. Best-effort — never throws. */
+async function sendBatchedPush(messages: Array<{ to: string; title: string; body: string; data?: Record<string, unknown> }>) {
+  for (let i = 0; i < messages.length; i += EXPO_PUSH_BATCH) {
+    try {
+      await fetch(EXPO_PUSH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(messages.slice(i, i + EXPO_PUSH_BATCH)),
+      })
+    } catch {
+      // best-effort
+    }
+  }
+}
+
 type WeekTemplate = {
   type: "VISIT_N_VENUES" | "SPEND_AMOUNT" | "STREAK"
   title: string
@@ -82,24 +100,12 @@ export async function generateWeeklyChallenges() {
     select: { pushToken: true },
   })
 
-  const messages = users.map((u) => ({
+  await sendBatchedPush(users.map((u) => ({
     to: u.pushToken!,
     title: "🏆 New weekly challenges!",
     body: `${templates.length} challenges this week — earn up to ${totalReward} pts. Tap to join!`,
     data: { screen: "challenges" },
-  }))
-
-  for (let i = 0; i < messages.length; i += 100) {
-    try {
-      await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(messages.slice(i, i + 100)),
-      })
-    } catch {
-      // best-effort
-    }
-  }
+  })))
 
   return { created: templates.length, notified: users.length, weekStart: startDate.toISOString() }
 }

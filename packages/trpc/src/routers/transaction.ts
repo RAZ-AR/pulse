@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { Prisma } from "@pulse/db"
+import type { db as PrismaDb } from "@pulse/db"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, merchantProcedure } from "../trpc"
 import { extractReceiptData, computeReceiptHash } from "../services/ocr"
@@ -8,7 +9,7 @@ import { decodeSerbiaQrUrl, fetchVendorName } from "../services/serbia-qr"
 import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
 import { trackSpend } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
-import { sendPushToUser } from "../services/push"
+import { sendPushToUser, sendTelegram } from "../services/push"
 import {
   SCAN_POINTS_PER_CURRENCY,
   RECEIPT_MAX_AGE_DAYS,
@@ -40,6 +41,87 @@ function validateReceiptDate(dateStr: string): void {
       message: `Receipt is older than ${RECEIPT_MAX_AGE_DAYS} days`,
     })
   }
+}
+
+type StreakResult = { currentStreak: number; longestStreak: number; milestoneBonus: number }
+
+/**
+ * Shared DB transaction for both confirmReceipt and scanQrReceipt.
+ * Creates receipt transaction + updates user streak + awards badges.
+ */
+async function runReceiptTx(
+  db: typeof PrismaDb,
+  params: {
+    userId: string
+    venueId: string | null
+    amount: number
+    currency: string
+    totalPoints: number
+    streak: StreakResult
+    status: "VERIFIED" | "PENDING"
+    record: {
+      receiptHash?: string | null
+      receiptNumber?: string | null
+      receiptImageUrl?: string | null
+      ocrRawData?: Prisma.InputJsonValue | null
+      ocrConfidence?: number | null
+    }
+  },
+) {
+  return db.$transaction(async (tx) => {
+    const transaction = await tx.transaction.create({
+      data: {
+        userId: params.userId,
+        venueId: params.venueId,
+        type: "RECEIPT_SCAN",
+        amount: params.amount,
+        currency: params.currency,
+        pointsEarned: params.totalPoints,
+        status: params.status,
+        verifiedAt: params.status === "VERIFIED" ? new Date() : null,
+        ...params.record,
+      },
+    })
+
+    const updatedUser = await tx.user.update({
+      where: { id: params.userId },
+      data: {
+        earnedPoints: { increment: params.totalPoints },
+        totalEarnedLifetime: { increment: params.totalPoints },
+        currentStreak: params.streak.currentStreak,
+        longestStreak: params.streak.longestStreak,
+        lastCheckinAt: new Date(),
+      },
+      select: { earnedPoints: true, welcomePoints: true, currentStreak: true },
+    })
+
+    if (params.streak.milestoneBonus > 0) {
+      await tx.transaction.create({
+        data: {
+          userId: params.userId,
+          type: "BONUS",
+          pointsEarned: params.streak.milestoneBonus,
+          status: "VERIFIED",
+          verifiedAt: new Date(),
+        },
+      })
+    }
+
+    let newBadges: string[] = []
+    if (params.status === "VERIFIED") {
+      await trackSpend(tx, params.userId, params.amount)
+      newBadges = await checkAndAwardBadges(tx, params.userId)
+    }
+
+    return { transaction, updatedUser, newBadges }
+  })
+}
+
+/** Sends a push notification for newly earned badges. Best-effort, fire-and-forget. */
+async function notifyBadges(db: typeof PrismaDb, userId: string, newBadges: string[]) {
+  if (newBadges.length === 0) return
+  const u = await db.user.findUnique({ where: { id: userId }, select: { pushToken: true } })
+  void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${newBadges.join(", ")}`)
 }
 
 // ── Router ────────────────────────────────────────────────────
@@ -233,64 +315,24 @@ export const transactionRouter = router({
       )
       const totalPoints = pointsEarned + streak.milestoneBonus
 
-      // 7. DB transaction: create Transaction + update user
-      const result = await ctx.db.$transaction(async (tx) => {
-        const transaction = await tx.transaction.create({
-          data: {
-            userId: ctx.userId,
-            venueId: matchedVenue?.id ?? null,
-            type: "RECEIPT_SCAN",
-            amount: input.amount,
-            currency: input.currency,
-            pointsEarned: totalPoints,
-            receiptImageUrl: input.imageUrl,
-            receiptHash,
-            ocrRawData: (input.ocrRawData as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull,
-            ocrConfidence: input.ocrConfidence ?? null,
-            status,
-            verifiedAt: status === "VERIFIED" ? new Date() : null,
-          },
-        })
-
-        const updatedUser = await tx.user.update({
-          where: { id: ctx.userId },
-          data: {
-            earnedPoints: { increment: totalPoints },
-            totalEarnedLifetime: { increment: totalPoints },
-            currentStreak: streak.currentStreak,
-            longestStreak: streak.longestStreak,
-            lastCheckinAt: new Date(),
-          },
-          select: { earnedPoints: true, welcomePoints: true, currentStreak: true },
-        })
-
-        // Milestone bonus transaction record
-        if (streak.milestoneBonus > 0) {
-          await tx.transaction.create({
-            data: {
-              userId: ctx.userId,
-              type: "BONUS",
-              pointsEarned: streak.milestoneBonus,
-              status: "VERIFIED",
-              verifiedAt: new Date(),
-            },
-          })
-        }
-
-        // Challenge progress: SPEND_AMOUNT (only for verified receipts)
-        let newBadges: string[] = []
-        if (status === "VERIFIED") {
-          await trackSpend(tx, ctx.userId, input.amount)
-          newBadges = await checkAndAwardBadges(tx, ctx.userId)
-        }
-
-        return { transaction, updatedUser, newBadges }
+      // 7. DB transaction
+      const result = await runReceiptTx(ctx.db, {
+        userId: ctx.userId,
+        venueId: matchedVenue?.id ?? null,
+        amount: input.amount,
+        currency: input.currency,
+        totalPoints,
+        streak,
+        status,
+        record: {
+          receiptHash,
+          receiptImageUrl: input.imageUrl,
+          ocrRawData: (input.ocrRawData as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull,
+          ocrConfidence: input.ocrConfidence ?? null,
+        },
       })
 
-      if (result.newBadges.length > 0) {
-        const u = await ctx.db.user.findUnique({ where: { id: ctx.userId }, select: { pushToken: true } })
-        void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
-      }
+      await notifyBadges(ctx.db, ctx.userId, result.newBadges)
 
       return {
         transactionId: result.transaction.id,
@@ -376,66 +418,28 @@ export const transactionRouter = router({
       const totalPoints = pointsEarned + streak.milestoneBonus
 
       // 10. DB transaction
-      const result = await ctx.db.$transaction(async (tx) => {
-        const transaction = await tx.transaction.create({
-          data: {
-            userId: ctx.userId,
-            venueId: matchedVenue?.id ?? null,
-            type: "RECEIPT_SCAN",
-            amount: qr.totalRsd,
-            currency: "RSD",
-            pointsEarned: totalPoints,
-            receiptNumber: qr.receiptNumber,
-            status: needsManualReview ? "PENDING" : "VERIFIED",
-            verifiedAt: needsManualReview ? null : new Date(),
-            ocrRawData: {
-              source: "serbia_qr",
-              requestedBy: qr.requestedBy,
-              signedBy: qr.signedBy,
-              vendorName,
-              verificationUrl: qr.verificationUrl,
-            },
-            ocrConfidence: 1.0,
+      const result = await runReceiptTx(ctx.db, {
+        userId: ctx.userId,
+        venueId: matchedVenue?.id ?? null,
+        amount: qr.totalRsd,
+        currency: "RSD",
+        totalPoints,
+        streak,
+        status: needsManualReview ? "PENDING" : "VERIFIED",
+        record: {
+          receiptNumber: qr.receiptNumber,
+          ocrConfidence: 1.0,
+          ocrRawData: {
+            source: "serbia_qr",
+            requestedBy: qr.requestedBy,
+            signedBy: qr.signedBy,
+            vendorName,
+            verificationUrl: qr.verificationUrl,
           },
-        })
-
-        const updatedUser = await tx.user.update({
-          where: { id: ctx.userId },
-          data: {
-            earnedPoints: { increment: totalPoints },
-            totalEarnedLifetime: { increment: totalPoints },
-            currentStreak: streak.currentStreak,
-            longestStreak: streak.longestStreak,
-            lastCheckinAt: new Date(),
-          },
-          select: { earnedPoints: true, welcomePoints: true, currentStreak: true },
-        })
-
-        if (streak.milestoneBonus > 0) {
-          await tx.transaction.create({
-            data: {
-              userId: ctx.userId,
-              type: "BONUS",
-              pointsEarned: streak.milestoneBonus,
-              status: "VERIFIED",
-              verifiedAt: new Date(),
-            },
-          })
-        }
-
-        let newBadges: string[] = []
-        if (!needsManualReview) {
-          await trackSpend(tx, ctx.userId, qr.totalRsd)
-          newBadges = await checkAndAwardBadges(tx, ctx.userId)
-        }
-
-        return { transaction, updatedUser, newBadges }
+        },
       })
 
-      if (result.newBadges.length > 0) {
-        const u = await ctx.db.user.findUnique({ where: { id: ctx.userId }, select: { pushToken: true } })
-        void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
-      }
+      await notifyBadges(ctx.db, ctx.userId, result.newBadges)
 
       return {
         transactionId: result.transaction.id,
@@ -593,29 +597,18 @@ export const transactionRouter = router({
         return { transaction, updatedUser, newBadges }
       })
 
-      // Notify buyer about badge
-      if (result.newBadges.length > 0) {
-        const u = await ctx.db.user.findUnique({ where: { id: input.userId }, select: { pushToken: true } })
-        void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`)
-      }
+      // Notify buyer about new badges
+      await notifyBadges(ctx.db, input.userId, result.newBadges)
 
       // Notify merchant via Telegram (best-effort)
       const merchant = await ctx.db.merchant.findUnique({
         where: { id: ctx.merchantId },
         select: { telegramChatId: true },
       })
-      const botToken = process.env.TELEGRAM_BOT_TOKEN
-      if (merchant?.telegramChatId && botToken) {
-        void fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: merchant.telegramChatId,
-            text: `💳 *Новая покупка*\n\nКлиент потратил *${input.amount} ${input.currency}* → начислено *+${totalPoints} pts*`,
-            parse_mode: "Markdown",
-          }),
-        }).catch(() => {})
-      }
+      void sendTelegram(
+        merchant?.telegramChatId ?? "",
+        `💳 *Новая покупка*\n\nКлиент потратил *${input.amount} ${input.currency}* → начислено *+${totalPoints} pts*`,
+      )
 
       return {
         transactionId: result.transaction.id,
