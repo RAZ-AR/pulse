@@ -1,12 +1,11 @@
-import { useRef, useEffect, useCallback } from "react"
+import { useRef, useEffect } from "react"
 import { Animated, Dimensions, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { Tabs } from "expo-router"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
-import { useTranslation } from "react-i18next"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Path, Circle } from "react-native-svg"
 import { LinearGradient } from "expo-linear-gradient"
-import { fonts } from "../../src/lib/theme"
+import { fonts, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 
 // ── Layout geometry ────────────────────────────────────────────
@@ -78,7 +77,6 @@ const TABS = [
 
 // ── Liquid Dock ───────────────────────────────────────────────
 function LiquidDock({ state, navigation }: BottomTabBarProps) {
-  const { t } = useTranslation("common")
   const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const insets = useSafeAreaInsets()
@@ -143,7 +141,7 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
           const tab = TABS.find((t) => t.name === route.name)
           if (!tab) return null
           const Icon  = ICONS[tab.name as keyof typeof ICONS]
-          const label = t(`nav.${tab.label}`, tab.label[0]!.toUpperCase() + tab.label.slice(1))
+          const label = tab.label[0]!.toUpperCase() + tab.label.slice(1)
 
           return (
             <Pressable
@@ -169,29 +167,45 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
   )
 }
 
-// ── Layout ────────────────────────────────────────────────────
-// Does NOT call useTheme/useColorMode — those hooks are only in LiquidDock.
-// Stable renderDock reference prevents React Navigation from remounting screens
-// on every color-mode change (which caused the white-screen flash).
-export default function TabsLayout() {
-  const renderDock = useCallback(
-    (props: BottomTabBarProps) => <LiquidDock {...props} />,
-    [],
-  )
+// ── Stable dock renderer (module-level = always same reference) ──
+function renderDock(props: BottomTabBarProps) {
+  return <LiquidDock {...props} />
+}
 
+// ── Themed root — provides correct bg on mode switch ──────────
+// Separate component so TabsLayout itself never re-renders on mode change.
+// This prevents React Navigation from scheduling a re-render of screens.
+function ThemedRoot({ children }: { children: React.ReactNode }) {
+  const theme = useTheme()
   return (
-    <Tabs
-      screenOptions={{ headerShown: false }}
-      tabBar={renderDock}
-    >
-      {TABS.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{ title: tab.label[0]!.toUpperCase() + tab.label.slice(1) }}
-        />
-      ))}
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      {children}
+    </View>
+  )
+}
+
+// ── Layout ────────────────────────────────────────────────────
+export default function TabsLayout() {
+  return (
+    <ThemedRoot>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          // Transparent so ThemedRoot background shows through — eliminates
+          // the white-screen flash when switching color modes.
+          sceneContainerStyle: { backgroundColor: "transparent" },
+        }}
+        tabBar={renderDock}
+      >
+        {TABS.map((tab) => (
+          <Tabs.Screen
+            key={tab.name}
+            name={tab.name}
+            options={{ title: tab.label[0]!.toUpperCase() + tab.label.slice(1) }}
+          />
+        ))}
+      </Tabs>
+    </ThemedRoot>
   )
 }
 

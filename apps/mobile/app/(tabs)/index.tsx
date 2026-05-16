@@ -92,7 +92,12 @@ export default function HomeScreen() {
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
 
   return (
-    <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+    <ScrollView
+      style={[s.scroll, { backgroundColor: theme.bg }]}
+      contentContainerStyle={s.content}
+      scrollEventThrottle={16}
+      removeClippedSubviews
+    >
       <View style={[s.topBar, isRainbow && s.topBarRainbow]}>
         <CircleButton label="+" onPress={() => router.push("/earn")} isRainbow={isRainbow} />
         <View style={s.helloBlock}>
@@ -884,7 +889,7 @@ function SoftRgbSliders() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 34 },
+  content: { padding: 18, paddingBottom: 110 },
   topBar: {
     flexDirection: "row",
     alignItems: "center",

@@ -27,7 +27,12 @@ export default function RewardsScreen() {
   const showExpiryWarning = welcomePoints > 0 && welcomeDaysLeft !== null && welcomeDaysLeft <= 7
 
   return (
-    <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+    <ScrollView
+      style={[s.scroll, { backgroundColor: theme.bg }]}
+      contentContainerStyle={s.content}
+      scrollEventThrottle={16}
+      removeClippedSubviews
+    >
       <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
         <View style={s.heroHead}>
           <View>
@@ -182,7 +187,7 @@ function RewardCard({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 34 },
+  content: { padding: 18, paddingBottom: 110 },
 
   expiryBanner: { backgroundColor: "rgba(255,59,48,0.08)", borderRadius: 18, padding: 14, marginBottom: 12 },
   expiryText: { fontSize: 13, marginBottom: 3 },

@@ -32,7 +32,12 @@ export default function EarnScreen() {
   const txs = history.data?.transactions ?? []
 
   return (
-    <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+    <ScrollView
+      style={[s.scroll, { backgroundColor: theme.bg }]}
+      contentContainerStyle={s.content}
+      scrollEventThrottle={16}
+      removeClippedSubviews
+    >
       <View style={s.topRow}>
         <View>
           <Text style={[s.kicker, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>EARN</Text>
@@ -255,7 +260,7 @@ function EarnMethod({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 34 },
+  content: { padding: 18, paddingBottom: 110 },
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   title: { fontSize: 34, lineHeight: 38, letterSpacing: 0 },

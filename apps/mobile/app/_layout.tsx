@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react"
 import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
-import { SafeAreaProvider } from "react-native-safe-area-context"
+import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-context"
 import * as Notifications from "expo-notifications"
 import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
@@ -125,7 +125,7 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <Providers>
           <StatusBar style="auto" />
           <AuthGate />
