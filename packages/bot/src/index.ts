@@ -8,15 +8,32 @@ import type { Merchant } from "@pulse/db"
 // ── Типы контекста ────────────────────────────────────────
 
 export interface WizardState extends Scenes.WizardSessionData {
+  // ── Register scene ────────────────────────────────────────
   name: string
+  category: string        // Кафе / Ресторан / Бар / Магазин / Другое
+  city: string
   address: string
+  social: string          // Instagram / сайт (может быть пустым)
+  phone: string
+  email: string
   taxId: string
+  preferredRate: number   // pts per RSD: 0.008 = 8pts/1000rsd
+  awaitingCustomCity: boolean
+  awaitingCustomRate: boolean
+
+  // ── New-offer scene ───────────────────────────────────────
   venueId: string
   venueName: string
   venues: { id: string; name: string }[]
+  offerType: string       // Блюдо / Комбо / Скидка / Другое
   title: string
+  description: string     // что получает клиент
   pointsReward: number
   endsAt?: string
+  awaitingCustomDate: boolean
+  awaitingCustomLimit: boolean
+
+  // ── Accept-payment scene ──────────────────────────────────
   userId: string
   userName: string
   userPoints: number
