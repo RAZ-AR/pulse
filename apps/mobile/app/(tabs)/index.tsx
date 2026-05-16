@@ -144,7 +144,7 @@ export default function HomeScreen() {
               {fmt(total)} pts
             </Text>
             <View style={s.profileStats}>
-              <Text style={s.profileStat}>active balance</Text>
+              <Text style={s.profileStat}>{t("activeBalance")}</Text>
             </View>
           </View>
           <View style={s.profileIcon}>
@@ -155,11 +155,11 @@ export default function HomeScreen() {
         <View style={[s.levelSplit, isRainbow && s.levelSplitRainbow]}>
           <View style={[s.levelPaneLight, isRainbow && { backgroundColor: "rgba(57,255,20,0.10)" }]}>
             <Text style={[s.levelValueDark, s.weekGain, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.green : "#67C887" }]}>+{fmt(weeklyEarned)}</Text>
-            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#6E7D8E" }]}>earned{"\n"}this week</Text>
+            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#6E7D8E" }]}>{t("earnedThisWeek")}</Text>
           </View>
           <View style={[s.levelPaneBlue, isRainbow && { backgroundColor: "rgba(255,45,155,0.10)" }]}>
             <Text style={[s.levelValueLight, s.weekSpend, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.pink : "#91A1B4" }]}>-{fmt(weeklySpent)}</Text>
-            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#7FAFC2" }]}>spent{"\n"}this week</Text>
+            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#7FAFC2" }]}>{t("spentThisWeek")}</Text>
           </View>
         </View>
 
@@ -174,8 +174,8 @@ export default function HomeScreen() {
         />
 
         <View style={s.dashboardSectionHead}>
-          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>Daily plan</Text>
-          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>earn more ›</Text>
+          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>{t("dailyPlan")}</Text>
+          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>{t("earnMore")} ›</Text>
         </View>
 
         <LinearGradient
@@ -186,14 +186,14 @@ export default function HomeScreen() {
         >
           <View style={s.rewardProgressTop}>
             <View>
-              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>Scan, visit, redeem</Text>
-              <Text style={[s.rewardProgressSub, { color: isRainbow ? neonColors.muted : "#91A1B4" }]}>Choose your level and get started today.</Text>
+              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#6E7D8E" }]}>{t("scanVisitRedeem")}</Text>
+              <Text style={[s.rewardProgressSub, { color: isRainbow ? neonColors.muted : "#91A1B4" }]}>{t("chooseLevelDesc")}</Text>
             </View>
             <View style={[s.rewardProgressButton, isRainbow && { backgroundColor: "rgba(139,61,255,0.22)" }]}>
               <Text style={[s.rewardProgressButtonText, { color: isRainbow ? neonColors.purple : "#91A1B4" }]}>⌃</Text>
             </View>
           </View>
-          <Text style={[s.rewardProgressLabel, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>Levels:</Text>
+          <Text style={[s.rewardProgressLabel, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#91A1B4" }]}>{t("levels")}</Text>
           <View style={s.levelBlocks}>
             {["01", "02", "03", "04", "05", "06"].map((level, index) => (
               <View key={level} style={[s.levelBlock, isRainbow && s.levelBlockRainbow, (index > 3) && (isRainbow ? s.levelBlockFutureRainbow : s.levelBlockFuture)]}>
@@ -205,7 +205,7 @@ export default function HomeScreen() {
         </LinearGradient>
 
         <Pressable onPress={() => router.push("/rewards")} style={[s.blueRewardPill, isRainbow && s.blueRewardPillRainbow]}>
-          <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#FFFFFF" : "#6E7D8E" }]}>Special offers</Text>
+          <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#FFFFFF" : "#6E7D8E" }]}>{t("specialOffers")}</Text>
           <View style={[s.blueRewardIcon, isRainbow && { backgroundColor: "rgba(255,45,155,0.22)" }]}>
             <Text style={[s.blueRewardIconText, { color: isRainbow ? neonColors.pink : "#91A1B4" }]}>⌄</Text>
           </View>
@@ -247,25 +247,25 @@ export default function HomeScreen() {
       {isRainbow ? (
         <View style={s.modeTabs}>
           <VolumeGradient colors={["#AA00FF", "#2200CC"]} shadowColor="#AA00FF" borderRadius={99} onPress={() => router.push("/rewards")} style={s.modeTabVolume}>
-            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>Goals</Text>
+            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{t("goals")}</Text>
           </VolumeGradient>
           <VolumeGradient colors={["#0066FF", "#00BBDD"]} shadowColor="#0066FF" borderRadius={99} onPress={() => router.push("/rewards")} style={s.modeTabVolume}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>Rewards</Text>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{t("nav.rewards")}</Text>
           </VolumeGradient>
           <VolumeGradient colors={["#FF1155", "#CC0088"]} shadowColor="#FF1155" borderRadius={99} onPress={() => router.push("/profile")} style={s.modeTabVolume}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>Support</Text>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{t("support")}</Text>
           </VolumeGradient>
         </View>
       ) : (
         <View style={s.modeTabs}>
           <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabLight]}>
-            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold }]}>Goals</Text>
+            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold }]}>{t("goals")}</Text>
           </Pressable>
           <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabBlue]}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Rewards</Text>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>{t("nav.rewards")}</Text>
           </Pressable>
           <Pressable onPress={() => router.push("/profile")} style={[s.modeTab, s.modeTabRed]}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>Support</Text>
+            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>{t("support")}</Text>
           </Pressable>
         </View>
       )}
@@ -847,6 +847,7 @@ function BalancePanel({
   onShare: () => void
   isRainbow?: boolean
 }) {
+  const { t } = useTranslation("common")
   if (isRainbow) {
     return (
       <VolumeGradient
@@ -860,12 +861,12 @@ function BalancePanel({
           <Text style={[s.balanceIcon, { color: "rgba(255,255,255,0.9)" }]}>↗</Text>
         </Pressable>
         <View style={s.balanceGrid}>
-          <BalanceTile value={fmt(total)} label="total points" isRainbow accentColor="#FFFFFF" />
-          <BalanceTile value={fmt(available)} label="available" isRainbow accentColor="rgba(255,255,255,0.85)" />
+          <BalanceTile value={fmt(total)} label={t("totalPointsLabel")} isRainbow accentColor="#FFFFFF" />
+          <BalanceTile value={fmt(available)} label={t("available")} isRainbow accentColor="rgba(255,255,255,0.85)" />
           <Pressable onPress={onToday} style={[s.balanceTile, s.balanceTileWide, s.balanceTileVolume]}>
             <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>+{fmt(today)}</Text>
-            <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>can get today</Text>
-            <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]}>open tasks</Text>
+            <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("canGetToday")}</Text>
+            <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]}>{t("openTasks")}</Text>
           </Pressable>
         </View>
         <Pressable onPress={onHistory} style={s.balanceHistoryVolume}>
@@ -886,12 +887,12 @@ function BalancePanel({
         <Text style={[s.balanceIcon, { color: "#91A1B4" }]}>↗</Text>
       </Pressable>
       <View style={s.balanceGrid}>
-        <BalanceTile value={fmt(total)} label="total points" />
-        <BalanceTile value={fmt(available)} label="available" />
+        <BalanceTile value={fmt(total)} label={t("totalPointsLabel")} />
+        <BalanceTile value={fmt(available)} label={t("available")} />
         <Pressable onPress={onToday} style={[s.balanceTile, s.balanceTileWide]}>
           <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy }]}>+{fmt(today)}</Text>
-          <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold }]}>can get today</Text>
-          <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold }]}>open tasks</Text>
+          <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold }]}>{t("canGetToday")}</Text>
+          <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold }]}>{t("openTasks")}</Text>
         </Pressable>
       </View>
       <Pressable onPress={onHistory} style={s.balanceHistory}>

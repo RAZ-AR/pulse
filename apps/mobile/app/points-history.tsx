@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useRouter } from "expo-router"
+import { useTranslation } from "react-i18next"
 import { trpc } from "../src/lib/trpc"
 import { colors, fonts, neonColors, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
@@ -18,18 +19,6 @@ const TX_ICONS: Record<string, string> = {
   GIFT_SENT: "G",
   CHALLENGE_COMPLETE: "✓",
   BONUS: "✦",
-}
-
-const TX_LABELS: Record<string, string> = {
-  PARTNER_PURCHASE: "Partner purchase",
-  RECEIPT_SCAN: "Receipt scan",
-  CHECKIN_PHOTO: "Check-in",
-  REWARD_REDEEMED: "Reward redeemed",
-  REFERRAL: "Referral bonus",
-  GIFT_RECEIVED: "Gift received",
-  GIFT_SENT: "Gift sent",
-  CHALLENGE_COMPLETE: "Challenge complete",
-  BONUS: "Bonus",
 }
 
 function fmt(n: number) {
@@ -53,6 +42,7 @@ export default function PointsHistoryScreen() {
   const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const router = useRouter()
+  const { t } = useTranslation(["common", "transactions"])
   const [filter, setFilter] = useState<Filter>("all")
   const me = trpc.user.me.useQuery()
   const history = trpc.transaction.history.useQuery({ limit: 40 })
@@ -78,23 +68,23 @@ export default function PointsHistoryScreen() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>POINTS</Text>
-          <Text style={[s.title, { fontFamily: fonts.displayHeavy }]}>History</Text>
+          <Text style={[s.title, { fontFamily: fonts.displayHeavy }]}>{t("historyTitle")}</Text>
         </View>
       </View>
 
       <LavaLampSurface intensity="glass" style={[s.summary, isRainbow ? {} : theme.shadowRaised]}>
         <View style={s.summaryGlow} />
-        <Metric label="available" value={available} index={0} isRainbow={isRainbow} />
-        <Metric label="lifetime" value={lifetime} index={1} isRainbow={isRainbow} />
-        <Metric label="spent" value={spent} muted index={2} isRainbow={isRainbow} />
+        <Metric label={t("metricAvailable")} value={available} index={0} isRainbow={isRainbow} />
+        <Metric label={t("metricLifetime")} value={lifetime} index={1} isRainbow={isRainbow} />
+        <Metric label={t("metricSpent")} value={spent} muted index={2} isRainbow={isRainbow} />
       </LavaLampSurface>
 
       <View style={s.filters}>
         {([
-          ["all", "All"],
-          ["earned", "Earned"],
-          ["spent", "Spent"],
-        ] as const).map(([key, label]) => {
+          { key: "all" as Filter,    label: t("filterAll")    },
+          { key: "earned" as Filter, label: t("filterEarned") },
+          { key: "spent" as Filter,  label: t("filterSpent")  },
+        ]).map(({ key, label }) => {
           const active = filter === key
           if (active && isRainbow) {
             return (
@@ -113,11 +103,11 @@ export default function PointsHistoryScreen() {
 
       {history.isLoading ? (
         <NeuCard style={s.emptyCard}>
-          <Text style={s.emptyText}>Loading history...</Text>
+          <Text style={s.emptyText}>{t("loading")}</Text>
         </NeuCard>
       ) : filteredTxs.length === 0 ? (
         <NeuCard style={s.emptyCard}>
-          <Text style={s.emptyText}>No point activity yet</Text>
+          <Text style={s.emptyText}>{t("noHistoryYet")}</Text>
         </NeuCard>
       ) : (
         <NeuCard style={s.listCard}>
@@ -131,10 +121,10 @@ export default function PointsHistoryScreen() {
                 </View>
                 <View style={s.txMain}>
                   <Text style={[s.txTitle, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-                    {tx.venue?.name ?? TX_LABELS[tx.type] ?? "PULSE"}
+                    {tx.venue?.name ?? t(`transactions:types.${tx.type}`, tx.type)}
                   </Text>
                   <Text style={s.txMeta} numberOfLines={1}>
-                    {TX_LABELS[tx.type] ?? tx.type} · {new Date(tx.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
+                    {t(`transactions:types.${tx.type}`, tx.type)} · {new Date(tx.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}
                   </Text>
                 </View>
                 <Text style={[s.txPoints, positive ? s.txPointsEarn : s.txPointsSpend, { fontFamily: fonts.displayHeavy }]}>
