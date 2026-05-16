@@ -80,7 +80,7 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
   const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const insets = useSafeAreaInsets()
-  const bottom = Platform.OS === "web" ? 20 : Math.max(insets.bottom, 8)
+  const bottom = Platform.OS === "web" ? 16 : Math.max(insets.bottom, 8)
 
   // Indicator slides to: center of active slot
   const indX = useRef(
@@ -88,9 +88,10 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
   ).current
 
   useEffect(() => {
+    // useNativeDriver не поддерживается на вебе — используем JS-анимацию там
     Animated.spring(indX, {
       toValue: state.index * SLOT_W + (SLOT_W - IND_W) / 2,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
       tension: 180,
       friction: 15,
     }).start()
@@ -99,8 +100,14 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
   const activeColor   = isRainbow ? "#FFFFFF"                   : "#1A1A2E"
   const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)"    : "rgba(80,90,110,0.42)"
 
+  // На вебе нужен position:fixed чтобы dock прилипал к низу viewport (не к родителю).
+  // React Native Web принимает "fixed" в runtime, но TypeScript это не знает.
+  const wrapperStyle = Platform.OS === "web"
+    ? [s.wrapper, { bottom, position: "fixed" as "absolute", zIndex: 1000 }]
+    : [s.wrapper, { bottom }]
+
   return (
-    <View pointerEvents="box-none" style={[s.wrapper, { bottom }]}>
+    <View pointerEvents="box-none" style={wrapperStyle}>
       {/* ── Outer shadow shell (no overflow:hidden so shadow renders) ── */}
       <View style={[s.dockShell, isRainbow ? s.shellRainbow : s.shellNormal]}>
 
@@ -191,10 +198,9 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          // Transparent so ThemedRoot background shows through — eliminates
-          // the white-screen flash when switching color modes.
-          sceneContainerStyle: { backgroundColor: "transparent" },
-        }}
+          // tabBarStyle hidden — we render our own LiquidDock via tabBar prop
+          tabBarStyle: { display: "none" },
+        } as object}
         tabBar={renderDock}
       >
         {TABS.map((tab) => (
