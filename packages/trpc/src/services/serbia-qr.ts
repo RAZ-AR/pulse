@@ -67,33 +67,58 @@ export function decodeSerbiaQrUrl(url: string): SerbiaQrData {
   }
 }
 
-// Fetches the public PURS verification page and extracts vendor name.
-// This is always a public page — no auth required.
-export async function fetchVendorName(verificationUrl: string): Promise<string | null> {
+export type VendorInfo = {
+  name: string | null
+  pib: string | null   // Serbian tax ID, 9 digits
+}
+
+/**
+ * Fetches the public PURS verification page and extracts vendor name + PIB.
+ * Both fields are best-effort — returns nulls on failure. Never throws.
+ */
+export async function fetchVendorInfo(verificationUrl: string): Promise<VendorInfo> {
   try {
     const res = await fetch(verificationUrl, {
       headers: { "Accept": "text/html", "User-Agent": "Mozilla/5.0" },
       signal: AbortSignal.timeout(5000),
     })
-    if (!res.ok) return null
+    if (!res.ok) return { name: null, pib: null }
     const html = await res.text()
 
-    // The page renders fields like "Naziv prodajnog mesta" or "Naziv" in a table
-    // Patterns seen in the wild:
-    const patterns = [
+    // Vendor name patterns seen in the wild on suf.purs.gov.rs
+    const namePatterns = [
       /Naziv prodajnog mesta[^>]*>[^<]*<[^>]*>([^<]+)</i,
       /Naziv obveznika[^>]*>[^<]*<[^>]*>([^<]+)</i,
       /<td[^>]*>\s*Naziv\s*<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
       /locationName["\s]*:["\s]*"([^"]+)"/i,
     ]
-    for (const pat of patterns) {
+    let name: string | null = null
+    for (const pat of namePatterns) {
       const m = html.match(pat)
-      if (m?.[1]) return m[1].trim()
+      if (m?.[1]) { name = m[1].trim(); break }
     }
-    return null
+
+    // PIB patterns: "PIB: 123456789" or table cell after PIB label
+    const pibPatterns = [
+      /PIB[^>]*>[^<]*<[^>]*>(\d{8,13})</i,
+      /PIB\s*:\s*(\d{8,13})/i,
+      /<td[^>]*>\s*PIB\s*<\/td>\s*<td[^>]*>(\d{8,13})<\/td>/i,
+    ]
+    let pib: string | null = null
+    for (const pat of pibPatterns) {
+      const m = html.match(pat)
+      if (m?.[1]) { pib = m[1].trim(); break }
+    }
+
+    return { name, pib }
   } catch {
-    return null
+    return { name: null, pib: null }
   }
+}
+
+/** @deprecated Use fetchVendorInfo instead */
+export async function fetchVendorName(verificationUrl: string): Promise<string | null> {
+  return (await fetchVendorInfo(verificationUrl)).name
 }
 
 // ── Helpers ───────────────────────────────────────────────────

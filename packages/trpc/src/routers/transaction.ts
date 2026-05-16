@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure, merchantProcedure } from "../trpc"
 import { extractReceiptData, computeReceiptHash } from "../services/ocr"
 import { verifyReceiptPhoto } from "../services/receipt-verify"
-import { decodeSerbiaQrUrl, fetchVendorName } from "../services/serbia-qr"
+import { decodeSerbiaQrUrl, fetchVendorInfo } from "../services/serbia-qr"
 import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
 import { trackSpend } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
@@ -79,7 +79,11 @@ async function runReceiptTx(
         pointsEarned: params.totalPoints,
         status: params.status,
         verifiedAt: params.status === "VERIFIED" ? new Date() : null,
-        ...params.record,
+        receiptHash:      params.record.receiptHash      ?? null,
+        receiptNumber:    params.record.receiptNumber    ?? null,
+        receiptImageUrl:  params.record.receiptImageUrl  ?? null,
+        ocrRawData:       params.record.ocrRawData       ?? Prisma.JsonNull,
+        ocrConfidence:    params.record.ocrConfidence    ?? null,
       },
     })
 
@@ -327,7 +331,7 @@ export const transactionRouter = router({
         record: {
           receiptHash,
           receiptImageUrl: input.imageUrl,
-          ocrRawData: (input.ocrRawData as Prisma.InputJsonValue | undefined) ?? Prisma.JsonNull,
+          ocrRawData: (input.ocrRawData as Prisma.InputJsonValue) ?? Prisma.JsonNull,
           ocrConfidence: input.ocrConfidence ?? null,
         },
       })
@@ -381,17 +385,27 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "CONFLICT", message: "This receipt has already been scanned." })
       }
 
-      // 5. Fetch vendor name from PURS (best-effort, non-blocking)
-      const vendorName = await fetchVendorName(qr.verificationUrl) ?? qr.requestedBy
+      // 5. Fetch vendor name + PIB from PURS (best-effort, non-blocking)
+      const vendorInfo = await fetchVendorInfo(qr.verificationUrl)
+      const vendorName = vendorInfo.name ?? qr.requestedBy
 
       // 6. Per-vendor velocity check
       await checkVendorVelocity(ctx.userId, vendorName)
 
-      // 7. Try to match to a known venue
-      const matchedVenue = await ctx.db.venue.findFirst({
-        where: { name: { contains: vendorName, mode: "insensitive" } },
-        select: { id: true },
-      })
+      // 7. Try to match to a known venue (by name or by partner PIB)
+      const [matchedVenue, partnerMerchant] = await Promise.all([
+        ctx.db.venue.findFirst({
+          where: { name: { contains: vendorName, mode: "insensitive" } },
+          select: { id: true, isPartner: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true },
+        }),
+        // PIB match: if the receipt belongs to a registered PULSE partner
+        vendorInfo.pib
+          ? ctx.db.merchant.findFirst({
+              where: { taxId: vendorInfo.pib, status: "ACTIVE" },
+              include: { venues: { where: { isPartner: true }, take: 1, select: { id: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true } } },
+            })
+          : Promise.resolve(null),
+      ])
 
       // 8. Load user
       const user = await ctx.db.user.findUnique({
@@ -407,20 +421,38 @@ export const transactionRouter = router({
       })
       if (!user) throw new TRPCError({ code: "NOT_FOUND" })
 
-      // 9. Calculate points
+      // 9. Calculate points — partner rate if PIB matches, otherwise scan rate
       const needsManualReview = qr.totalRsd > RECEIPT_MANUAL_REVIEW_THRESHOLD
       const stepMult = stepMultiplier(user.stepsToday)
+
+      // Resolve partner venue: prefer name-matched, fall back to PIB-matched
+      const partnerVenue = matchedVenue?.isPartner
+        ? matchedVenue
+        : partnerMerchant?.venues[0] ?? null
+
+      const isPartnerReceipt = !!partnerVenue
       const pointsEarned = needsManualReview
         ? 0
-        : Math.floor(qr.totalRsd * SCAN_POINTS_PER_CURRENCY * stepMult)
+        : isPartnerReceipt && partnerVenue?.pointsPerCurrency
+          ? Math.floor(calculatePartnerPoints(
+              qr.totalRsd,
+              partnerVenue.pointsPerCurrency,
+              partnerVenue.boostMultiplier,
+              partnerVenue.boostUntil,
+            ) * stepMult)
+          : Math.floor(qr.totalRsd * SCAN_POINTS_PER_CURRENCY * stepMult)
 
       const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
       const totalPoints = pointsEarned + streak.milestoneBonus
 
+      const resolvedVenueId = partnerVenue
+        ? (matchedVenue?.isPartner ? matchedVenue.id : partnerMerchant?.venues[0]?.id ?? null)
+        : (matchedVenue?.id ?? null)
+
       // 10. DB transaction
       const result = await runReceiptTx(ctx.db, {
         userId: ctx.userId,
-        venueId: matchedVenue?.id ?? null,
+        venueId: resolvedVenueId,
         amount: qr.totalRsd,
         currency: "RSD",
         totalPoints,
@@ -434,7 +466,9 @@ export const transactionRouter = router({
             requestedBy: qr.requestedBy,
             signedBy: qr.signedBy,
             vendorName,
+            vendorPib: vendorInfo.pib,
             verificationUrl: qr.verificationUrl,
+            isPartnerReceipt,
           },
         },
       })

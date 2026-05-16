@@ -32,7 +32,7 @@ function buildSummary(st: WizardState): string {
     `🔗 *Соцсети/сайт:* ${st.social || "не указано"}\n` +
     `📞 *Телефон:* ${st.phone}\n` +
     `📧 *Email:* ${st.email}\n` +
-    `🪪 *PIB/ИНН:* ${st.taxId || "не указан"}\n` +
+    `🪪 *PIB:* ${st.taxId || "не указан"}\n` +
     `⭐ *Ставка:* ${rateLabel}`
   )
 }
@@ -144,16 +144,40 @@ export const registerScene = new Scenes.WizardScene<Context>(
     return ctx.wizard.next()
   },
 
-  // ── Шаг 7: email → ставка ────────────────────────────────
+  // ── Шаг 7: email → PIB ───────────────────────────────────
   async (ctx) => {
     if (!ctx.message || !("text" in ctx.message)) return
     s(ctx).email = ctx.message.text.trim().toLowerCase()
+
+    await ctx.reply(
+      `*Шаг 8/9* — PIB (налоговый номер, 9 цифр)?\n\n` +
+      `_Нужен для автоматического распознавания ваших чеков в приложении_`,
+      { parse_mode: "Markdown", ...kb([["⏭ Пропустить"]]) }
+    )
+    return ctx.wizard.next()
+  },
+
+  // ── Шаг 8: PIB → ставка ──────────────────────────────────
+  async (ctx) => {
+    if (!ctx.message || !("text" in ctx.message)) return
+    const text = ctx.message.text.trim()
+
+    if (text !== "⏭ Пропустить") {
+      const digits = text.replace(/\D/g, "")
+      if (digits.length < 8 || digits.length > 13) {
+        await ctx.reply("PIB должен содержать 8–13 цифр. Введите снова или нажмите «⏭ Пропустить».")
+        return
+      }
+      s(ctx).taxId = digits
+    } else {
+      s(ctx).taxId = ""
+    }
     s(ctx).awaitingCustomRate = false
 
     await ctx.reply(
-      `*Шаг 8/8* — Ставка начисления баллов?\n\n` +
+      `*Шаг 9/9* — Ставка начисления баллов?\n\n` +
       `Клиент получает баллы за каждую покупку у вас.\n` +
-      `Чем выше ставка — тем привлекательнее для клиентов.`,
+      `Чем выше ставка — тем привлекательнее для клиентов.\n`,
       {
         parse_mode: "Markdown",
         ...kb([
