@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Animated, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
+import { Animated, ActivityIndicator, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
 import { AyooLogo } from "../src/components/AyooLogo"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
@@ -10,6 +10,7 @@ import { setLocale } from "../src/lib/i18n"
 import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
+import { uploadAvatarFile } from "../src/lib/storage"
 import type { SupportedLocale } from "@pulse/shared"
 
 type Step = 0 | 1 | 2
@@ -52,14 +53,40 @@ function StatusScreen({ theme, title, desc, button, onPress }: {
   )
 }
 
-// Read gift token from Telegram start_param (e.g. gift_TOKEN123)
-function readTgGiftToken(): string | undefined {
+function getTgStartParam(): string | undefined {
   try {
     // @ts-expect-error — injected by Telegram
-    const startParam = window?.Telegram?.WebApp?.initDataUnsafe?.start_param as string | undefined
-    if (startParam?.startsWith("gift_")) return startParam.slice(5)
+    return window?.Telegram?.WebApp?.initDataUnsafe?.start_param as string | undefined
   } catch {}
   return undefined
+}
+
+function readTgGiftToken(): string | undefined {
+  const p = getTgStartParam()
+  return p?.startsWith("gift_") ? p.slice(5) : undefined
+}
+
+function readTgReferralCode(): string | undefined {
+  const p = getTgStartParam()
+  if (!p || p.startsWith("gift_")) return undefined
+  return p.length === 6 ? p : undefined
+}
+
+function getTgUserName(): string | undefined {
+  try {
+    // @ts-expect-error — injected by Telegram
+    return window?.Telegram?.WebApp?.initDataUnsafe?.user?.first_name as string | undefined
+  } catch {}
+  return undefined
+}
+
+function getTgUserId(): string {
+  try {
+    // @ts-expect-error — injected by Telegram
+    const id = window?.Telegram?.WebApp?.initDataUnsafe?.user?.id
+    if (id) return String(id)
+  } catch {}
+  return `anon_${Date.now()}`
 }
 
 // ── Telegram onboarding (4 steps) ────────────────────────────
@@ -76,6 +103,7 @@ function TelegramOnboarding() {
   const signOut = useAuth((s) => s.signOut)
 
   const [giftToken] = useState<string | undefined>(readTgGiftToken)
+  const [referralCode] = useState<string | undefined>(readTgReferralCode)
   const [authTimedOut, setAuthTimedOut] = useState(false)
   useEffect(() => {
     if (!hydrated || token) return
@@ -88,17 +116,24 @@ function TelegramOnboarding() {
   const updateProfile = trpc.user.updateProfile.useMutation()
 
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0)
-  const [displayName, setDisplayName] = useState("")
+  const [displayName, setDisplayName] = useState(() => getTgUserName() ?? "")
   const [birthday, setBirthday] = useState("")
   const [avatarColor, setAvatarColor] = useState(0)
+  const [avatarUri, setAvatarUri] = useState<string | null>(null) // local preview URI
+  const [avatarUploadUrl, setAvatarUploadUrl] = useState<string | null>(null) // uploaded URL
+  const [avatarUploading, setAvatarUploading] = useState(false)
   const [consent, setConsent] = useState(false)
   const [consentError, setConsentError] = useState(false)
-  const [referralCode, setReferralCode] = useState("")
   const currentLng = (i18n.language ?? "en") as SupportedLocale
   const userName = me.data?.name ?? ""
   const referralLink = me.data?.referralCode
     ? `https://t.me/ayoo_loyalty_bot?start=${me.data.referralCode}`
     : ""
+
+  // Pre-fill name from server once loaded (fallback if Telegram SDK not injected yet)
+  useEffect(() => {
+    if (userName && !displayName) setDisplayName(userName)
+  }, [userName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!me.data?.language) return
@@ -109,6 +144,33 @@ function TelegramOnboarding() {
   async function changeLanguage(lng: SupportedLocale) {
     await setLocale(lng)
     updateProfile.mutate({ language: lng.toUpperCase() as "EN" | "RU" | "SR" })
+  }
+
+  async function pickPhoto() {
+    if (Platform.OS !== "web") return
+    return new Promise<void>((resolve) => {
+      const input = document.createElement("input")
+      input.type = "file"
+      input.accept = "image/jpeg,image/png,image/webp"
+      input.onchange = async () => {
+        const file = input.files?.[0]
+        if (!file) { resolve(); return }
+        const localUrl = URL.createObjectURL(file)
+        setAvatarUri(localUrl)
+        setAvatarUploading(true)
+        try {
+          const ownerKey = getTgUserId()
+          const uploaded = await uploadAvatarFile(file, ownerKey)
+          setAvatarUploadUrl(uploaded)
+        } catch {
+          setAvatarUri(null) // revert on error
+        } finally {
+          setAvatarUploading(false)
+        }
+        resolve()
+      }
+      input.click()
+    })
   }
 
   async function finish() {
@@ -123,14 +185,15 @@ function TelegramOnboarding() {
         language: lng,
         consentGiven: true,
         ...(isoDate ? { birthday: isoDate } : {}),
-        ...(referralCode.length === 6 ? { referralCode } : {}),
+        ...(referralCode ? { referralCode } : {}),
         ...(giftToken ? { giftToken } : {}),
       })
     } catch (e: unknown) {
       const code = (e as { data?: { code?: string } })?.data?.code
       if (code !== "CONFLICT") throw e
     }
-    updateProfile.mutate({ avatarUrl: `color:${avatarColor}` })
+    const finalAvatarUrl = avatarUploadUrl ?? `color:${avatarColor}`
+    updateProfile.mutate({ avatarUrl: finalAvatarUrl })
     setStep(3)
   }
 
@@ -180,8 +243,9 @@ function TelegramOnboarding() {
       setBirthday={setBirthday}
       avatarColor={avatarColor}
       setAvatarColor={setAvatarColor}
-      referralCode={referralCode}
-      setReferralCode={(v) => setReferralCode(cleanReferralCode(v))}
+      avatarUri={avatarUri}
+      avatarUploading={avatarUploading}
+      onPickPhoto={pickPhoto}
       consent={consent}
       setConsent={(v) => { setConsent(v); if (v) setConsentError(false) }}
       consentError={consentError}
@@ -380,20 +444,21 @@ function TgProfileStep({
   displayName, setDisplayName, userName,
   birthday, setBirthday,
   avatarColor, setAvatarColor,
-  referralCode, setReferralCode,
+  avatarUri, avatarUploading, onPickPhoto,
   consent, setConsent, consentError,
   isPending, onBack, onFinish,
 }: {
   displayName: string; setDisplayName: (v: string) => void; userName: string
   birthday: string; setBirthday: (v: string) => void
   avatarColor: number; setAvatarColor: (i: number) => void
-  referralCode: string; setReferralCode: (v: string) => void
+  avatarUri: string | null; avatarUploading: boolean; onPickPhoto: () => void
   consent: boolean; setConsent: (v: boolean) => void; consentError: boolean
   isPending: boolean; onBack: () => void; onFinish: () => void
 }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
   const initials = (displayName || userName || "?").slice(0, 2).toUpperCase()
+  const selectedColor = AVATAR_COLORS[avatarColor] ?? AVATAR_COLORS[0]
 
   return (
     <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -406,27 +471,39 @@ function TgProfileStep({
           <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
             {t("profileTitle", "Tell us about you")}
           </Text>
-          <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 24 }]}>
+          <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 28 }]}>
             {t("profileSubtitle", "Takes 30 seconds")}
           </Text>
 
-          {/* Avatar picker */}
-          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 12 }]}>
-            {t("chooseAvatar", "Choose avatar").toUpperCase()}
-          </Text>
-          <View style={s.avatarRow}>
-            {AVATAR_COLORS.map((color, i) => (
-              <Pressable key={color} onPress={() => setAvatarColor(i)}
-                style={[s.avatarCircle, { backgroundColor: color }, i === avatarColor && s.avatarCircleActive]}>
-                {i === avatarColor && (
-                  <Text style={[s.avatarInitials, { fontFamily: fonts.bodyBold }]}>{initials}</Text>
-                )}
-              </Pressable>
-            ))}
+          {/* Avatar preview + photo button */}
+          <View style={{ alignItems: "center", marginBottom: 24 }}>
+            <Pressable onPress={onPickPhoto} style={s.avatarPreviewWrap}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={s.avatarPreviewPhoto} />
+              ) : (
+                <View style={[s.avatarPreviewCircle, { backgroundColor: selectedColor }]}>
+                  <Text style={[s.avatarPreviewInitials, { fontFamily: fonts.bodyBold }]}>{initials}</Text>
+                </View>
+              )}
+              <View style={s.avatarCameraBtn}>
+                {avatarUploading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={{ color: "#fff", fontSize: 14 }}>📷</Text>
+                }
+              </View>
+            </Pressable>
+
+            {/* Color picker row */}
+            <View style={[s.avatarRow, { marginTop: 16 }]}>
+              {AVATAR_COLORS.map((color, i) => (
+                <Pressable key={color} onPress={() => setAvatarColor(i)}
+                  style={[s.avatarCircle, { backgroundColor: color }, i === avatarColor && s.avatarCircleActive]} />
+              ))}
+            </View>
           </View>
 
           {/* Nickname */}
-          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginTop: 20, marginBottom: 6 }]}>
+          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
             {t("yourNickname", "Your nickname").toUpperCase()}
           </Text>
           <NeuInset style={{ marginBottom: 6 }}>
@@ -435,7 +512,7 @@ function TgProfileStep({
               onChangeText={setDisplayName}
               placeholder={userName || "friend"}
               placeholderTextColor={theme.textMuted}
-              autoCapitalize="none"
+              autoCapitalize="words"
               style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
             />
           </NeuInset>
@@ -458,26 +535,9 @@ function TgProfileStep({
               style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
             />
           </NeuInset>
-          <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 16 }]}>
+          <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 20 }]}>
             {t("birthdayHint", "We'll surprise you on your birthday 🎂")}
           </Text>
-
-          {/* Referral code */}
-          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
-            {t("referralCode", "Referral code").toUpperCase()}
-            <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional")}</Text>
-          </Text>
-          <NeuInset style={{ marginBottom: 20 }}>
-            <TextInput
-              value={referralCode}
-              onChangeText={setReferralCode}
-              placeholder="ABC123"
-              placeholderTextColor={theme.textMuted}
-              autoCapitalize="characters"
-              maxLength={6}
-              style={[s.input, { color: theme.text, fontFamily: fonts.body, letterSpacing: 3 }]}
-            />
-          </NeuInset>
 
           {/* Consent */}
           <Pressable onPress={() => setConsent(!consent)} style={s.consentRow}>
@@ -496,7 +556,7 @@ function TgProfileStep({
 
           <View style={{ height: 24 }} />
 
-          <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending}
+          <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending || avatarUploading}
             style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
             {isPending
               ? <ActivityIndicator color={colors.ink} />
@@ -1095,16 +1155,30 @@ const s = StyleSheet.create({
   },
 
   // Avatar
+  avatarPreviewWrap: { position: "relative", width: 88, height: 88 },
+  avatarPreviewCircle: {
+    width: 88, height: 88, borderRadius: 44,
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarPreviewPhoto: { width: 88, height: 88, borderRadius: 44 },
+  avatarPreviewInitials: { color: "#fff", fontSize: 28 },
+  avatarCameraBtn: {
+    position: "absolute", bottom: 0, right: 0,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 2, borderColor: "#fff",
+  },
   avatarRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 4 },
   avatarCircle: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 36, height: 36, borderRadius: 18,
     alignItems: "center", justifyContent: "center",
   },
   avatarCircleActive: {
     borderWidth: 3,
     borderColor: "#fff",
     shadowColor: "#fff",
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
     elevation: 4,

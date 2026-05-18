@@ -52,3 +52,17 @@ async function uploadImage(bucket: string, localUri: string, userId: string): Pr
 
 export const uploadReceiptImage = (localUri: string, userId: string) => uploadImage("receipts", localUri, userId)
 export const uploadCheckinImage = (localUri: string, userId: string) => uploadImage("checkins", localUri, userId)
+
+/** Web-only: upload a File object (from <input type="file">) to the avatars bucket. */
+export async function uploadAvatarFile(file: File, ownerKey: string): Promise<string> {
+  const supabase = getSupabase()
+  const ext = file.type.includes("png") ? "png" : "jpg"
+  const path = `${ownerKey}/avatar.${ext}`
+  const { error } = await supabase.storage.from("avatars").upload(path, file, {
+    contentType: file.type || "image/jpeg",
+    upsert: true,
+  })
+  if (error) throw new Error(`Avatar upload failed: ${error.message}`)
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path)
+  return data.publicUrl
+}
