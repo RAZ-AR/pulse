@@ -56,8 +56,8 @@ export default function ScanScreen() {
     setPhase({ kind: "submitting" })
 
     try {
-      // 1. PULSE offer QR: pulse://offer/<token>
-      const offerMatch = data.match(/^pulse:\/\/offer\/(.+)$/)
+      // 1. ayoo offer QR: ayoo://offer/<token>
+      const offerMatch = data.match(/^ayoo:\/\/offer\/(.+)$/)
       if (offerMatch) {
         const token = offerMatch[1]!
         const res = await redeemOfferMutation.mutateAsync({ token })
@@ -77,7 +77,7 @@ export default function ScanScreen() {
       // 3. Неизвестный QR
       Alert.alert(
         t("unknownQr", "Unknown QR code"),
-        t("unknownQrDesc", "This QR is not a PULSE offer or a Serbian fiscal receipt.")
+        t("unknownQrDesc", "This QR is not an ayoo offer or a Serbian fiscal receipt.")
       )
       setPhase({ kind: "camera", mode: "qr" })
     } catch (e) {
@@ -248,7 +248,7 @@ function CameraPhase({
       <View style={[s.center, { padding: 24 }]}>
         <Text style={[s.dialogTitle, { color: theme.text }]}>{t("cameraNeeded", "Camera access needed")}</Text>
         <Text style={[s.dialogText, { color: theme.textSecondary }]}>
-          {t("cameraNeededDesc", "PULSE needs your camera to scan receipts.")}
+          {t("cameraNeededDesc", "ayoo needs your camera to scan receipts.")}
         </Text>
         <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>

@@ -21,7 +21,7 @@
   "referralCount": "{count, plural, one {# prijatelj pozvan} few {# prijatelja pozvana} other {# prijatelja pozvano}}",
   "referralsCount": "{{count}} pozvanih prijatelja",
   "share": "Podeli",
-  "shareMessage": "Pridruži mi se na PULSE — mesta se takmiče kursom bodova. Iskoristi moj kod {{code}} i dobićeš 50 dobrodošlica bodova: pulse.app/r/{{code}}",
+  "shareMessage": "Pridruži mi se na ayoo — mesta se takmiče kursom bodova. Iskoristi moj kod {{code}} i dobićeš 50 dobrodošlica bodova: ayoo.app/r/{{code}}",
   "friendsReferred": "POZVANI PRIJATELJI",
   "active": "aktivni",
   "howItWorks": "Kako funkcioniše",

@@ -3,8 +3,8 @@ import { Providers } from "../src/components/providers"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "PULSE Merchant",
-  description: "Manage your PULSE loyalty program",
+  title: "ayoo Merchant",
+  description: "Manage your ayoo loyalty program",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

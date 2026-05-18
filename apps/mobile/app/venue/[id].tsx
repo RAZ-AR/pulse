@@ -80,7 +80,7 @@ function sourceLabel(venue: DetailVenue) {
   if (venue.sourceLabel) return venue.sourceLabel
   if (venue.sourceProvider === "google_maps") return "Google Maps public profile"
   if (venue.sourceProvider) return `${venue.sourceProvider} public profile`
-  return "PULSE partner profile"
+  return "ayoo partner profile"
 }
 
 export default function VenueDetailScreen() {

@@ -70,7 +70,7 @@ export const checkinRouter = router({
       // 5. Points + streak
       const user = await ctx.db.user.findUnique({
         where: { id: ctx.userId },
-        select: { currentStreak: true, longestStreak: true, lastCheckinAt: true, pushToken: true },
+        select: { currentStreak: true, longestStreak: true, lastCheckinAt: true, pushToken: true, language: true },
       })
       if (!user) throw new TRPCError({ code: "NOT_FOUND" })
 
@@ -138,12 +138,28 @@ export const checkinRouter = router({
       })
 
       // Push notification (best-effort, after tx)
+      const lang = user.language ?? "EN"
       if (result.newBadges.length > 0) {
-        void sendPushToUser(user.pushToken, "New badge!", `You earned: ${result.newBadges.join(", ")}`)
+        const [title, body] = lang === "RU"
+          ? ["🏅 Новый значок!", `Ты получил: ${result.newBadges.join(", ")}`]
+          : lang === "SR"
+          ? ["🏅 Nova značka!", `Zaradio si: ${result.newBadges.join(", ")}`]
+          : ["🏅 New badge!", `You earned: ${result.newBadges.join(", ")}`]
+        void sendPushToUser(user.pushToken, title, body)
       } else if (streak.milestoneBonus > 0) {
-        void sendPushToUser(user.pushToken, `${streak.currentStreak}-day streak!`, `+${streak.milestoneBonus} bonus points`)
+        const [title, body] = lang === "RU"
+          ? [`${streak.currentStreak} дней подряд!`, `+${streak.milestoneBonus} бонусных баллов`]
+          : lang === "SR"
+          ? [`${streak.currentStreak} dana zaredom!`, `+${streak.milestoneBonus} bonus bodova`]
+          : [`${streak.currentStreak}-day streak!`, `+${streak.milestoneBonus} bonus points`]
+        void sendPushToUser(user.pushToken, title, body)
       } else {
-        void sendPushToUser(user.pushToken, "Checked in!", `+${totalPoints} pts at ${venue.name}`)
+        const [title, body] = lang === "RU"
+          ? ["Чекин!", `+${totalPoints} баллов в ${venue.name}`]
+          : lang === "SR"
+          ? ["Čekin!", `+${totalPoints} bodova u ${venue.name}`]
+          : ["Checked in!", `+${totalPoints} pts at ${venue.name}`]
+        void sendPushToUser(user.pushToken, title, body)
       }
 
       return {

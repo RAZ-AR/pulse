@@ -1,5 +1,5 @@
 {
-  "appName": "PULSE",
+  "appName": "ayoo",
   "tagline": "Loyalty that competes for you",
   "loading": "Loading...",
   "saving": "Saving...",
@@ -69,7 +69,7 @@
   "sentToday": "sent today",
   "dailyLimit": "daily limit",
   "findFriend": "Find your friend",
-  "giftHint": "Enter their 6-character referral code from their PULSE profile",
+  "giftHint": "Enter their 6-character referral code from their ayoo profile",
   "referralCode": "Referral code",
   "invalidCode": "Enter a 6-character code",
   "notFound": "User not found",
@@ -88,7 +88,6 @@
   "giftSent": "Gift sent!",
   "remainingToday": "remaining to gift today",
   "sendMore": "Send more",
-
   "activeBalance": "active balance",
   "earnedThisWeek": "earned\nthis week",
   "spentThisWeek": "spent\nthis week",
@@ -105,7 +104,6 @@
   "partnerOffersSub": "Scan QR at venue · earn bonus pts",
   "findOnMap": "Find on Map",
   "seeAll": "See all",
-
   "historyTitle": "History",
   "filterAll": "All",
   "filterEarned": "Earned",
@@ -114,9 +112,8 @@
   "metricLifetime": "lifetime",
   "metricSpent": "spent",
   "noHistoryYet": "No point activity yet",
-
   "unknownQr": "Unknown QR code",
-  "unknownQrDesc": "This QR is not a PULSE offer or a Serbian fiscal receipt.",
+  "unknownQrDesc": "This QR is not an ayoo offer or a Serbian fiscal receipt.",
   "scanFailed": "Scan failed",
   "invalidAmount": "Enter a valid amount",
   "invalidVendor": "Enter a vendor name",
@@ -126,7 +123,7 @@
   "readingReceipt": "Reading receipt…",
   "submitting": "Submitting…",
   "cameraNeeded": "Camera access needed",
-  "cameraNeededDesc": "PULSE needs your camera to scan receipts.",
+  "cameraNeededDesc": "ayoo needs your camera to scan receipts.",
   "grantAccess": "Grant access",
   "frameQrHint": "Point at the QR code on the receipt",
   "framingHint": "Position the receipt in the frame",
@@ -139,5 +136,15 @@
   "confirmAndEarn": "Confirm and earn points",
   "pendingReview": "Pending review",
   "pointsAwarded": "Points awarded!",
-  "largeReceiptReview": "Large receipts go through manual review. You'll see the points soon."
+  "largeReceiptReview": "Large receipts go through manual review. You'll see the points soon.",
+  "challengeDone": "✓ Done",
+  "daysLeft": "{{n}}d left",
+  "tapToJoin": "Tap to join →",
+  "myChallenges": "Mine",
+  "availableChallenges": "Available",
+  "noJoined": "No active challenges",
+  "noJoinedDesc": "Pick one from Available to start earning bonus points",
+  "browseAvailable": "Browse available",
+  "noAvailable": "All caught up!",
+  "noAvailableDesc": "You've joined every active challenge."
 }

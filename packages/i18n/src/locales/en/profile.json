@@ -21,7 +21,7 @@
   "referralCount": "{count, plural, one {# friend referred} other {# friends referred}}",
   "referralsCount": "{{count}} friends referred",
   "share": "Share",
-  "shareMessage": "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}",
+  "shareMessage": "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.app/r/{{code}}",
   "friendsReferred": "FRIENDS REFERRED",
   "active": "active",
   "howItWorks": "How it works",

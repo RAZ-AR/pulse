@@ -1,5 +1,5 @@
 {
-  "appName": "PULSE",
+  "appName": "ayoo",
   "tagline": "Лояльность, которая борется за тебя",
   "loading": "Загрузка...",
   "saving": "Сохранение...",
@@ -69,7 +69,7 @@
   "sentToday": "отправлено сегодня",
   "dailyLimit": "дневной лимит",
   "findFriend": "Найди друга",
-  "giftHint": "Введи 6-символьный реферальный код из профиля PULSE",
+  "giftHint": "Введи 6-символьный реферальный код из профиля ayoo",
   "referralCode": "Реферальный код",
   "invalidCode": "Введи 6-символьный код",
   "notFound": "Пользователь не найден",
@@ -88,7 +88,6 @@
   "giftSent": "Подарок отправлен!",
   "remainingToday": "осталось для подарков сегодня",
   "sendMore": "Отправить еще",
-
   "activeBalance": "активный баланс",
   "earnedThisWeek": "заработано\nза неделю",
   "spentThisWeek": "потрачено\nза неделю",
@@ -105,7 +104,6 @@
   "partnerOffersSub": "Сканируй QR в заведении · бонусные баллы",
   "findOnMap": "Найти на карте",
   "seeAll": "Все",
-
   "historyTitle": "История",
   "filterAll": "Все",
   "filterEarned": "Заработано",
@@ -114,9 +112,8 @@
   "metricLifetime": "за всё время",
   "metricSpent": "потрачено",
   "noHistoryYet": "Активности пока нет",
-
   "unknownQr": "Неизвестный QR-код",
-  "unknownQrDesc": "Этот QR не является офертой PULSE или сербским фискальным чеком.",
+  "unknownQrDesc": "Этот QR не является офертой ayoo или сербским фискальным чеком.",
   "scanFailed": "Ошибка сканирования",
   "invalidAmount": "Введите корректную сумму",
   "invalidVendor": "Введите название заведения",
@@ -126,7 +123,7 @@
   "readingReceipt": "Читаем чек…",
   "submitting": "Отправка…",
   "cameraNeeded": "Нужен доступ к камере",
-  "cameraNeededDesc": "PULSE нужна камера для сканирования чеков.",
+  "cameraNeededDesc": "ayoo нужна камера для сканирования чеков.",
   "grantAccess": "Разрешить",
   "frameQrHint": "Наведите на QR-код на чеке",
   "framingHint": "Разместите чек в кадре",
@@ -139,5 +136,15 @@
   "confirmAndEarn": "Подтвердить и получить баллы",
   "pendingReview": "На проверке",
   "pointsAwarded": "Баллы начислены!",
-  "largeReceiptReview": "Большие чеки проверяются вручную. Баллы появятся скоро."
+  "largeReceiptReview": "Большие чеки проверяются вручную. Баллы появятся скоро.",
+  "challengeDone": "✓ Готово",
+  "daysLeft": "{{n}}д осталось",
+  "tapToJoin": "Нажми чтобы вступить →",
+  "myChallenges": "Мои",
+  "availableChallenges": "Доступные",
+  "noJoined": "Нет активных заданий",
+  "noJoinedDesc": "Выбери из доступных и зарабатывай бонусные баллы",
+  "browseAvailable": "Смотреть доступные",
+  "noAvailable": "Всё выполнено!",
+  "noAvailableDesc": "Ты вступил во все активные задания."
 }

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { AyooLogo } from "../../src/components/AyooLogo"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -40,6 +41,14 @@ function ratingLabel(rating: number | null | undefined, reviews: number | null |
 
 function initials(name: string | null | undefined) {
   return (name ?? "P").slice(0, 1).toUpperCase()
+}
+
+const AVATAR_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899", "#EF4444", "#F59E0B", "#10B981", "#6366F1", "#0EA5E9"]
+
+function getAvatarColor(avatarUrl: string | null | undefined): string | null {
+  if (!avatarUrl?.startsWith("color:")) return null
+  const idx = parseInt(avatarUrl.slice(6), 10)
+  return AVATAR_COLORS[idx] ?? null
 }
 
 function userTier(points: number) {
@@ -103,7 +112,7 @@ export default function HomeScreen() {
       <View style={[s.topBar, isRainbow && s.topBarRainbow]}>
         <CircleButton label="+" onPress={() => router.push("/earn")} isRainbow={isRainbow} />
         <View style={s.helloBlock}>
-          <Text style={[s.kicker, { color: theme.textMuted, fontFamily: fonts.bodyBold }]}>PULSE</Text>
+          <AyooLogo width={60} height={35} />
           <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
@@ -134,11 +143,19 @@ export default function HomeScreen() {
         <ProgressOrb points={lifetimePoints} tier={tier} progress={progress} />
 
         <View style={s.profileRow}>
-          <LavaLampSurface style={s.profileAvatar}>
-            <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy }]}>
-              {initials(me.data?.name)}
-            </Text>
-          </LavaLampSurface>
+          {getAvatarColor(me.data?.avatarUrl) ? (
+            <View style={[s.profileAvatar, { backgroundColor: getAvatarColor(me.data?.avatarUrl)! }]}>
+              <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
+                {initials(me.data?.name)}
+              </Text>
+            </View>
+          ) : (
+            <LavaLampSurface style={s.profileAvatar}>
+              <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy }]}>
+                {initials(me.data?.name)}
+              </Text>
+            </LavaLampSurface>
+          )}
           <View style={s.profileMain}>
             <Text style={[s.profileName, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
               {fmt(total)} pts

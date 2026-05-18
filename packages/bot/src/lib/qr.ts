@@ -1,8 +1,8 @@
 import QRCode from "qrcode"
 
-/** Генерирует PNG буфер QR кода для PULSE offer */
+/** Генерирует PNG буфер QR кода для ayoo offer */
 export async function generateOfferQr(token: string): Promise<Buffer> {
-  const url = `pulse://offer/${token}`
+  const url = `ayoo://offer/${token}`
   return QRCode.toBuffer(url, {
     errorCorrectionLevel: "M",
     width: 400,

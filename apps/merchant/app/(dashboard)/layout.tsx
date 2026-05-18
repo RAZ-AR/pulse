@@ -4,7 +4,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar — expanded in Tier 1 step 4 */}
       <aside className="w-64 bg-white border-r border-[#E5E7EB] flex flex-col">
         <div className="px-6 py-5 border-b border-[#E5E7EB]">
-          <span className="text-lg font-bold text-[#0F1115] font-display">PULSE</span>
+          <span className="text-lg font-bold text-[#0F1115] font-display">ayoo</span>
           <span className="ml-2 text-xs text-[#6B7280] font-medium uppercase tracking-wide">Merchant</span>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">

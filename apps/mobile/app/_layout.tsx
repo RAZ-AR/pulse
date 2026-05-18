@@ -90,7 +90,7 @@ function AuthGate() {
     } else if (demoMode) {
       attempted.current = true
       demoSignIn.mutateAsync({
-        email: "demo@pulse.app",
+        email: "demo@ayoo.app",
         name: "Demo User",
         homeCity: "Belgrade",
         language: "EN",

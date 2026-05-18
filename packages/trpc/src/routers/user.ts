@@ -47,6 +47,7 @@ export const userRouter = router({
         referralCode: true,
         referredById: true,
         onboardingDone: true,
+        birthday: true,
         createdAt: true,
       },
     })
@@ -99,6 +100,8 @@ export const userRouter = router({
         referralCode: OptionalReferralCode,
         deviceFingerprint: z.string().max(256).optional(),
         giftToken: z.string().optional(),
+        birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        consentGiven: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -141,6 +144,8 @@ export const userRouter = router({
             name: input.name,
             ...(input.language !== undefined ? { language: input.language } : {}),
             onboardingDone: true,
+            ...(input.birthday ? { birthday: new Date(input.birthday) } : {}),
+            ...(input.consentGiven ? { consentGivenAt: new Date() } : {}),
             ...(input.deviceFingerprint !== undefined ? { deviceFingerprint: input.deviceFingerprint } : {}),
             ...(referrerId ? { referredById: referrerId } : {}),
             ...(referrerId ? { earnedPoints: { increment: REFERRAL_SIGNUP_POINTS } } : {}),
@@ -187,13 +192,16 @@ export const userRouter = router({
       if (referrerId) {
         const referrer = await ctx.db.user.findUnique({
           where: { id: referrerId },
-          select: { pushToken: true },
+          select: { pushToken: true, language: true },
         })
-        void sendPushToUser(
-          referrer?.pushToken,
-          "🎉 Реферал присоединился!",
-          `Ваш друг ${input.name ?? "Someone"} зарегистрировался по вашей ссылке. +${REFERRAL_SIGNUP_POINTS} pts!`,
-        )
+        const lang = referrer?.language ?? "EN"
+        const friendName = input.name ?? "Someone"
+        const [title, body] = lang === "RU"
+          ? ["🎉 Друг присоединился к ayoo!", `${friendName} зарегистрировался по твоей ссылке. +${REFERRAL_SIGNUP_POINTS} pts!`]
+          : lang === "SR"
+          ? ["🎉 Prijatelj se pridružio ayoo!", `${friendName} se registrovao putem tvog linka. +${REFERRAL_SIGNUP_POINTS} pts!`]
+          : ["🎉 A friend joined ayoo!", `${friendName} signed up with your referral link. +${REFERRAL_SIGNUP_POINTS} pts!`]
+        void sendPushToUser(referrer?.pushToken, title, body)
       }
 
       return {
@@ -210,11 +218,12 @@ export const userRouter = router({
         homeCity: z.string().max(100).trim().optional(),
         language: z.enum(["EN", "RU", "SR"]).optional(),
         avatarUrl: z.string().url().optional(),
+        birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         onboardingDone: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { name, homeCity, language, avatarUrl, onboardingDone } = input
+      const { name, homeCity, language, avatarUrl, birthday, onboardingDone } = input
       return ctx.db.user.update({
         where: { id: ctx.userId },
         data: {
@@ -222,6 +231,7 @@ export const userRouter = router({
           ...(homeCity !== undefined ? { homeCity } : {}),
           ...(language !== undefined ? { language } : {}),
           ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+          ...(birthday !== undefined ? { birthday: new Date(birthday) } : {}),
           ...(onboardingDone !== undefined ? { onboardingDone } : {}),
         },
         select: { id: true, name: true, homeCity: true, language: true, avatarUrl: true },

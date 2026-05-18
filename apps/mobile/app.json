@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "PULSE",
-    "slug": "pulse",
+    "name": "ayoo",
+    "slug": "ayoo",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -30,13 +30,13 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow PULSE to use your location to show nearby partner venues."
+          "locationAlwaysAndWhenInUsePermission": "Allow ayoo to use your location to show nearby partner venues."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow PULSE to use the camera to scan receipts and check in at venues."
+          "cameraPermission": "Allow ayoo to use the camera to scan receipts and check in at venues."
         }
       ],
       [

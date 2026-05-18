@@ -152,7 +152,7 @@ export default function EarnScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.txTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>
-                    {tx.venue?.name ?? "PULSE"}
+                    {tx.venue?.name ?? "ayoo"}
                   </Text>
                   <Text style={[s.txDate, { color: theme.textSecondary }]}>
                     {new Date(tx.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}

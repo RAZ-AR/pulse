@@ -103,7 +103,7 @@ export default function RedeemPage() {
               className="w-full px-4 py-3 border border-[#D1D5DB] rounded-xl text-[#0F1115] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#0F1115]"
             />
             <p className="mt-2 text-xs text-[#9CA3AF]">
-              Code is shown to the customer in their PULSE app after redemption
+              Code is shown to the customer in their ayoo app after redemption
             </p>
             <button
               onClick={handleSubmit}

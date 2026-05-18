@@ -124,8 +124,14 @@ async function runReceiptTx(
 /** Sends a push notification for newly earned badges. Best-effort, fire-and-forget. */
 async function notifyBadges(db: typeof PrismaDb, userId: string, newBadges: string[]) {
   if (newBadges.length === 0) return
-  const u = await db.user.findUnique({ where: { id: userId }, select: { pushToken: true } })
-  void sendPushToUser(u?.pushToken, "🏅 New badge!", `You earned: ${newBadges.join(", ")}`)
+  const u = await db.user.findUnique({ where: { id: userId }, select: { pushToken: true, language: true } })
+  const lang = u?.language ?? "EN"
+  const [title, body] = lang === "RU"
+    ? ["🏅 Новый значок!", `Ты получил: ${newBadges.join(", ")}`]
+    : lang === "SR"
+    ? ["🏅 Nova značka!", `Zaradio si: ${newBadges.join(", ")}`]
+    : ["🏅 New badge!", `You earned: ${newBadges.join(", ")}`]
+  void sendPushToUser(u?.pushToken, title, body)
 }
 
 // ── Router ────────────────────────────────────────────────────

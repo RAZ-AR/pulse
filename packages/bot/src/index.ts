@@ -3,6 +3,7 @@ import { db } from "./lib/db"
 import { registerScene } from "./scenes/register"
 import { newOfferScene } from "./scenes/new-offer"
 import { acceptPaymentScene } from "./scenes/accept-payment"
+import { runBirthdayBonus } from "./lib/birthday-cron"
 import type { Merchant } from "@pulse/db"
 
 // ── Типы контекста ────────────────────────────────────────
@@ -75,6 +76,29 @@ bot.use(async (ctx, next) => {
   return next()
 })
 
+// ── Helpers ───────────────────────────────────────────────
+
+function botLang(code: string | undefined): "ru" | "sr" | "en" {
+  if (!code) return "en"
+  if (code.startsWith("ru")) return "ru"
+  if (code.startsWith("sr") || code.startsWith("bs") || code.startsWith("hr")) return "sr"
+  return "en"
+}
+
+const WELCOME = {
+  ru: (name: string) => `👋 Привет, ${name}!\n\nДобро пожаловать в *ayoo* — программа лояльности, где заведения соревнуются за тебя баллами.\n\n🎁 Тебя ждут *500 приветственных баллов* — открой приложение, чтобы активировать их!`,
+  sr: (name: string) => `👋 Zdravo, ${name}!\n\nDobrodošao u *ayoo* — program lojalnosti gde mesta se takmiče za tebe bodovima.\n\n🎁 Čeka te *500 dobrodošlica bodova* — otvori aplikaciju da ih aktiviraš!`,
+  en: (name: string) => `👋 Hi, ${name}!\n\nWelcome to *ayoo* — a loyalty app where venues compete for you with points.\n\n🎁 *500 welcome points* are waiting for you — open the app to activate them!`,
+}
+
+const OPEN_BTN = { ru: "🚀 Открыть ayoo", sr: "🚀 Otvori ayoo", en: "🚀 Open ayoo" }
+
+const WELCOME_BACK = {
+  ru: (name: string) => `👋 С возвращением, ${name}! Открой приложение, чтобы посмотреть свои баллы.`,
+  sr: (name: string) => `👋 Dobrodošao nazad, ${name}! Otvori aplikaciju da vidiš svoje bodove.`,
+  en: (name: string) => `👋 Welcome back, ${name}! Open the app to check your points.`,
+}
+
 // ── /start ────────────────────────────────────────────────
 
 bot.start(async (ctx) => {
@@ -91,16 +115,25 @@ bot.start(async (ctx) => {
     })
 
     if (!user || !user.onboardingDone) {
-      // New user — redirect to Mini App with start_param so onboarding handles it
-      const miniAppUrl = process.env.MINI_APP_URL ?? "https://t.me/pulse_loyalty_bot/app"
-      await ctx.reply(
-        `🎁 Тебе подарили баллы PULSE!\n\n` +
-        `Открой приложение, чтобы получить их:\n${miniAppUrl}?startapp=gift_${token}`
-      )
+      const miniAppUrl = process.env.MINI_APP_URL ?? "https://t.me/ayoo_loyalty_bot/app"
+      const lang = botLang(ctx.from.language_code)
+      const giftTexts = {
+        ru: "🎁 Тебе подарили баллы ayoo! Открой приложение, чтобы получить их.",
+        sr: "🎁 Poklonili su ti ayoo bodove! Otvori aplikaciju da ih preuzmеš.",
+        en: "🎁 Someone gifted you ayoo points! Open the app to claim them.",
+      }
+      await ctx.reply(giftTexts[lang], {
+        reply_markup: {
+          inline_keyboard: [[{
+            text: OPEN_BTN[lang],
+            web_app: { url: `${miniAppUrl}?startapp=gift_${token}` },
+          }]],
+        },
+      })
       return
     }
 
-    // Existing PULSE user — claim directly
+    // Existing ayoo user — claim directly
     const link = await db.giftLink.findUnique({
       where: { token },
       select: { id: true, senderId: true, amount: true, status: true, expiresAt: true },
@@ -147,19 +180,37 @@ bot.start(async (ctx) => {
       })
     })
 
-    await ctx.reply(`🎁 Отлично! *+${link.amount} баллов* зачислено на твой счёт PULSE!`, { parse_mode: "Markdown" })
+    await ctx.reply(`🎁 Отлично! *+${link.amount} баллов* зачислено на твой счёт ayoo!`, { parse_mode: "Markdown" })
     return
   }
 
-  // ── Partner flow ──────────────────────────────────────────
+  // ── User welcome (non-merchant flow) ─────────────────────
   const merchant = ctx.merchantData
 
   if (!merchant) {
-    await ctx.reply(
-      `👋 Привет! Это партнёрский бот PULSE.\n\n` +
-      `Хотите участвовать в программе лояльности и привлекать новых клиентов?\n\n` +
-      `Нажмите /register чтобы начать регистрацию.`
-    )
+    const miniAppUrl = process.env.MINI_APP_URL ?? "https://t.me/ayoo_loyalty_bot/app"
+    const firstName = ctx.from.first_name ?? "friend"
+    const lang = botLang(ctx.from.language_code)
+    const telegramId = String(ctx.from.id)
+
+    const user = await db.user.findUnique({
+      where: { telegramId },
+      select: { onboardingDone: true },
+    })
+
+    const text = user?.onboardingDone
+      ? WELCOME_BACK[lang](firstName)
+      : WELCOME[lang](firstName)
+
+    await ctx.reply(text, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[{
+          text: OPEN_BTN[lang],
+          web_app: { url: miniAppUrl },
+        }]],
+      },
+    })
     return
   }
 
@@ -301,11 +352,11 @@ bot.action(/^topup_(\d+)$/, async (ctx): Promise<void> => {
   }
 
   const iban = process.env.COMPANY_IBAN ?? "RS35105008123456789"
-  const ref = `PULSE-${merchant.id.slice(-6).toUpperCase()}`
+  const ref = `AYOO-${merchant.id.slice(-6).toUpperCase()}`
   await ctx.editMessageText(
     `✅ *Заявка принята!*\n\n` +
     `Переведите *${pkg.rsd.toLocaleString()} RSD* по реквизитам:\n\n` +
-    `🏦 Назначение: PULSE Points\n` +
+    `🏦 Назначение: ayoo Points\n` +
     `📋 IBAN: \`${iban}\`\n` +
     `🔖 Позив на број: \`${ref}\`\n\n` +
     `После подтверждения оплаты мы зачислим *${pkg.pts.toLocaleString()} pts* на ваш баланс в течение 24 часов.`,
@@ -385,7 +436,7 @@ bot.command("admin", async (ctx): Promise<void> => {
       await ctx.telegram.sendMessage(
         merchant.telegramChatId,
         `🎉 *Ваш аккаунт активирован!*\n\n` +
-        `Добро пожаловать в PULSE Partners, *${merchant.name}*!\n` +
+        `Добро пожаловать в ayoo Partners, *${merchant.name}*!\n` +
         `На вашем балансе ${WELCOME_BALANCE} стартовых баллов.\n\n` +
         `Создайте первую акцию: /newoffer`,
         { parse_mode: "Markdown" }
@@ -442,7 +493,7 @@ bot.command("admin", async (ctx): Promise<void> => {
     if (merchant.telegramChatId) {
       await ctx.telegram.sendMessage(
         merchant.telegramChatId,
-        `❌ К сожалению, ваша заявка на участие в PULSE Partners не была одобрена.\n\nЕсть вопросы? Напишите @pulse_support`,
+        `❌ К сожалению, ваша заявка на участие в ayoo Partners не была одобрена.\n\nЕсть вопросы? Напишите @ayoo_support`,
       )
     }
 
@@ -488,6 +539,20 @@ bot.command("admin", async (ctx): Promise<void> => {
 
 // ── Запуск (только при прямом вызове, не при импорте) ────────
 
+function scheduleDailyAt(hour: number, minute: number, task: () => void) {
+  function msUntilNext() {
+    const now = new Date()
+    const next = new Date(now)
+    next.setHours(hour, minute, 0, 0)
+    if (next <= now) next.setDate(next.getDate() + 1)
+    return next.getTime() - now.getTime()
+  }
+  setTimeout(function run() {
+    task()
+    setTimeout(run, msUntilNext())
+  }, msUntilNext())
+}
+
 export function startBot() {
   const webhookUrl = process.env.BOT_WEBHOOK_URL
 
@@ -500,6 +565,11 @@ export function startBot() {
       console.log("[bot] Started in polling mode")
     })
   }
+
+  // Run birthday bonus daily at 09:00 server time
+  scheduleDailyAt(9, 0, () => {
+    runBirthdayBonus(db).catch((e) => console.error("[birthday-cron] error:", e))
+  })
 
   process.once("SIGINT", () => bot.stop("SIGINT"))
   process.once("SIGTERM", () => bot.stop("SIGTERM"))

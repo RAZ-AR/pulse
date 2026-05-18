@@ -289,7 +289,7 @@ function CameraPhase({
       <Centered>
         <Text style={[s.title, { color: theme.text }]}>{t("cameraNeeded", "Camera access needed")}</Text>
         <Text style={[s.subtitle, { color: theme.textSecondary }]}>
-          {t("cameraNeededDesc", "PULSE needs your camera to verify check-ins.")}
+          {t("cameraNeededDesc", "ayoo needs your camera to verify check-ins.")}
         </Text>
         <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>

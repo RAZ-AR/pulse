@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
-import { Animated, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { Animated, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
+import { AyooLogo } from "../src/components/AyooLogo"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
@@ -61,7 +62,11 @@ function readTgGiftToken(): string | undefined {
   return undefined
 }
 
-// ── Telegram onboarding (2 steps: welcome → city) ────────────
+// ── Telegram onboarding (4 steps) ────────────────────────────
+// step 0: service description
+// step 1: welcome coupon + animation
+// step 2: profile (nickname, birthday, avatar, consent)
+// step 3: invite friends
 function TelegramOnboarding() {
   const theme = useTheme()
   const { t, i18n } = useTranslation("auth")
@@ -70,20 +75,7 @@ function TelegramOnboarding() {
   const { token, hydrated } = useAuth()
   const signOut = useAuth((s) => s.signOut)
 
-  // Gift token from TG start_param — read once on mount
   const [giftToken] = useState<string | undefined>(readTgGiftToken)
-
-  // Wait for the AuthGate to finish TG sign-in before asking the server who we are.
-  // Without this guard `me` fires with an empty/stale token → 401 → "Open via Telegram"
-  // error screen even though the sign-in is still in flight. Use retry:false so a
-  // bad token surfaces the recovery UI in <1s instead of after 3 exponential retries.
-  const me = trpc.user.me.useQuery(undefined, {
-    enabled: hydrated && Boolean(token),
-    retry: false,
-  })
-
-  // If hydration completed but the AuthGate hasn't produced a token within 6s,
-  // something is stuck (e.g. tgSignIn rejected initData). Surface a recovery UI.
   const [authTimedOut, setAuthTimedOut] = useState(false)
   useEffect(() => {
     if (!hydrated || token) return
@@ -91,28 +83,27 @@ function TelegramOnboarding() {
     return () => clearTimeout(id)
   }, [hydrated, token])
 
-  const completeOnboarding = trpc.user.completeOnboarding.useMutation({
-    onSuccess: () => utils.user.me.invalidate(),
-  })
+  const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token), retry: false })
+  const completeOnboarding = trpc.user.completeOnboarding.useMutation({ onSuccess: () => utils.user.me.invalidate() })
   const updateProfile = trpc.user.updateProfile.useMutation()
 
-  const [step, setStep] = useState<0 | 1>(0)
-  const [homeCity, setHomeCity] = useState(DEFAULT_CITY.name)
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0)
   const [displayName, setDisplayName] = useState("")
+  const [birthday, setBirthday] = useState("")
+  const [avatarColor, setAvatarColor] = useState(0)
+  const [consent, setConsent] = useState(false)
+  const [consentError, setConsentError] = useState(false)
   const [referralCode, setReferralCode] = useState("")
   const currentLng = (i18n.language ?? "en") as SupportedLocale
-
   const userName = me.data?.name ?? ""
+  const referralLink = me.data?.referralCode
+    ? `https://t.me/ayoo_loyalty_bot?start=${me.data.referralCode}`
+    : ""
 
-  // Sync i18n with the language Telegram sent us (language_code in initData).
-  // This fires once when me.data loads, ensuring the UI is in the user's language
-  // even before they visit profile settings.
   useEffect(() => {
     if (!me.data?.language) return
     const lang = me.data.language.toLowerCase() as SupportedLocale
-    if (i18n.language !== lang) {
-      setLocale(lang).catch(() => {})
-    }
+    if (i18n.language !== lang) setLocale(lang).catch(() => {})
   }, [me.data?.language]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function changeLanguage(lng: SupportedLocale) {
@@ -121,134 +112,126 @@ function TelegramOnboarding() {
   }
 
   async function finish() {
+    if (!consent) { setConsentError(true); return }
     const nameToSave = (displayName.trim() || userName || "").trim()
     if (!nameToSave) return
     const lng = (i18n.language ?? "en").toUpperCase() as "EN" | "RU" | "SR"
+    const isoDate = parseBirthday(birthday)
     try {
       await completeOnboarding.mutateAsync({
         name: nameToSave,
         language: lng,
+        consentGiven: true,
+        ...(isoDate ? { birthday: isoDate } : {}),
         ...(referralCode.length === 6 ? { referralCode } : {}),
         ...(giftToken ? { giftToken } : {}),
       })
     } catch (e: unknown) {
-      // CONFLICT = onboarding already done (e.g. back button race) — just proceed
       const code = (e as { data?: { code?: string } })?.data?.code
       if (code !== "CONFLICT") throw e
     }
-    // homeCity is not part of completeOnboarding — update it separately
-    updateProfile.mutate({ homeCity })
-    router.replace("/(tabs)")
+    updateProfile.mutate({ avatarUrl: `color:${avatarColor}` })
+    setStep(3)
   }
 
-  // Loading: auth store hydrating, or AuthGate is mid TG sign-in.
-  if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) {
-    return <StatusScreen theme={theme} />
-  }
-  // Stuck after 6s with no token — Telegram initData likely stale. Reload regenerates it.
-  if (!token && authTimedOut) {
-    return (
-      <StatusScreen
-        theme={theme}
-        title={t("signInStuck", "Sign-in stuck")}
-        desc={t("signInStuckDesc", "Tap to reload and sign in again.")}
-        button={t("reload", "Reload")}
-        onPress={() => { if (typeof window !== "undefined") window.location.reload() }}
-      />
-    )
-  }
-  // Token rejected by server. Sign out so AuthGate re-fires auto-login on next render.
-  if (me.isError) {
-    return (
-      <StatusScreen
-        theme={theme}
-        title={t("sessionExpired", "Session expired")}
-        desc={t("sessionExpiredDesc", "Tap to sign in again with Telegram.")}
-        button={t("retry", "Try again")}
-        onPress={() => { signOut().catch(() => {}) }}
-      />
-    )
+  async function shareInvite() {
+    if (!referralLink) return
+    try {
+      await Share.share({
+        message: t("shareMessage", "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.app/r/{{code}}", { code: me.data?.referralCode ?? "" }),
+      })
+    } catch { /* cancelled */ }
   }
 
-  // Step 0 is a fullscreen animation — no ScrollView wrapper, manages its own layout
-  if (step === 0) {
-    return (
-      <TgStep0
-        name={userName}
-        displayName={displayName}
-        setDisplayName={setDisplayName}
-        currentLng={currentLng}
-        onChangeLang={changeLanguage}
-        onContinue={() => setStep(1)}
-        {...(giftToken !== undefined ? { giftToken } : {})}
-      />
-    )
-  }
+  function goHome() { router.replace("/(tabs)") }
+
+  if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) return <StatusScreen theme={theme} />
+  if (!token && authTimedOut) return (
+    <StatusScreen theme={theme} title={t("signInStuck")} desc={t("signInStuckDesc")} button={t("reload")}
+      onPress={() => { if (typeof window !== "undefined") window.location.reload() }} />
+  )
+  if (me.isError) return (
+    <StatusScreen theme={theme} title={t("sessionExpired")} desc={t("sessionExpiredDesc")} button={t("retry")}
+      onPress={() => { signOut().catch(() => {}) }} />
+  )
+
+  if (step === 0) return (
+    <TgServiceStep
+      currentLng={currentLng}
+      onChangeLang={changeLanguage}
+      onContinue={() => setStep(1)}
+    />
+  )
+
+  if (step === 1) return (
+    <TgCouponStep
+      name={displayName || userName || ""}
+      giftToken={giftToken}
+      onContinue={() => setStep(2)}
+    />
+  )
+
+  if (step === 2) return (
+    <TgProfileStep
+      displayName={displayName}
+      setDisplayName={setDisplayName}
+      userName={userName}
+      birthday={birthday}
+      setBirthday={setBirthday}
+      avatarColor={avatarColor}
+      setAvatarColor={setAvatarColor}
+      referralCode={referralCode}
+      setReferralCode={(v) => setReferralCode(cleanReferralCode(v))}
+      consent={consent}
+      setConsent={(v) => { setConsent(v); if (v) setConsentError(false) }}
+      consentError={consentError}
+      isPending={completeOnboarding.isPending}
+      onBack={() => setStep(1)}
+      onFinish={finish}
+    />
+  )
 
   return (
-    <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        <TgStep1
-          homeCity={homeCity}
-          setHomeCity={setHomeCity}
-          referralCode={referralCode}
-          setReferralCode={(v) => setReferralCode(cleanReferralCode(v))}
-          isPending={completeOnboarding.isPending}
-          onBack={() => setStep(0)}
-          onFinish={finish}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <TgInviteStep
+      onShare={shareInvite}
+      onSkip={goHome}
+    />
   )
 }
 
-function TgStep0({
-  name, displayName, setDisplayName, currentLng, onChangeLang, onContinue, giftToken,
-}: {
-  name: string
-  displayName: string
-  setDisplayName: (v: string) => void
+// ── Step 0: Service description ───────────────────────────────
+function TgServiceStep({ currentLng, onChangeLang, onContinue }: {
   currentLng: SupportedLocale
   onChangeLang: (lng: SupportedLocale) => void
   onContinue: () => void
-  giftToken?: string
 }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
-  const shownName = displayName || name || "friend"
-
-  // Entrance animations
   const fadeAnim = useRef(new Animated.Value(0)).current
-  const slideAnim = useRef(new Animated.Value(40)).current
-  const badgeScale = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(30)).current
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 550, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start(() => {
-      Animated.spring(badgeScale, { toValue: 1, friction: 5, tension: 55, useNativeDriver: true }).start()
-    })
+    ]).start()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <KeyboardAvoidingView style={s.tgFullScreen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      {/* Full-screen gradient — same dark palette as the app */}
-      <LinearGradient
-        colors={gradients.black as unknown as [string, string, ...string[]]}
-        style={StyleSheet.absoluteFill}
-      />
+  const features = [
+    { icon: "↗", title: t("featureEarn"), desc: t("featureEarnDesc") },
+    { icon: "✦", title: t("featurePartner"), desc: t("featurePartnerDesc") },
+    { icon: "◉", title: t("featureCompete"), desc: t("featureCompeteDesc") },
+  ]
 
-      {/* ── Language switcher in header ─────────────────────── */}
+  return (
+    <View style={[s.tgFullScreen, { backgroundColor: theme.bg }]}>
+      {/* Lang switcher */}
       <View style={s.tgLangHeader}>
         {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => {
           const active = currentLng === lng
           return (
-            <Pressable
-              key={lng}
-              onPress={() => onChangeLang(lng)}
-              style={[s.tgLangChip, active && s.tgLangChipActive]}
-            >
+            <Pressable key={lng} onPress={() => onChangeLang(lng)}
+              style={[s.tgLangChip, active && s.tgLangChipActive]}>
               <Text style={[s.tgLangText, active && s.tgLangTextActive, { fontFamily: fonts.bodyBold }]}>
                 {lng.toUpperCase()}
               </Text>
@@ -257,140 +240,316 @@ function TgStep0({
         })}
       </View>
 
-      {/* ── Animated welcome section ─────────────────────────── */}
       <Animated.View style={[s.tgWelcomeBody, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        {/* Logo orb */}
-        <View style={s.tgLogoOrb}>
-          <Text style={s.tgLogoChar}>P</Text>
+        <AyooLogo width={120} height={70} />
+        <Text style={[s.tgHello, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 16 }]}>
+          {t("serviceTitle", "Welcome to ayoo")}
+        </Text>
+        <Text style={[s.tgTagline, { color: theme.textSecondary }]}>
+          {t("serviceSubtitle")}
+        </Text>
+
+        <View style={{ gap: 12, marginTop: 28, width: "100%" }}>
+          {features.map((f) => (
+            <View key={f.icon} style={[s.featureRow, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+              <View style={s.featureIcon}>
+                <Text style={{ fontSize: 18, color: "#91A1B4" }}>{f.icon}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.featureTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>{f.title}</Text>
+                <Text style={[s.featureDesc, { color: theme.textSecondary }]}>{f.desc}</Text>
+              </View>
+            </View>
+          ))}
         </View>
-
-        {/* Greeting */}
-        <Text style={[s.tgHello, { fontFamily: fonts.displayHeavy }]}>
-          {t("tgWelcome", "Hi, {{name}}! 👋", { name: shownName })}
-        </Text>
-        <Text style={[s.tgTagline, { fontFamily: fonts.body }]}>
-          {t("tgBonus", "500 welcome points are already yours.")}
-        </Text>
-
-        {/* Points badge — gift amount if arrived via share link, else standard +500 */}
-        <Animated.View style={[s.tgBonusBadge, { transform: [{ scale: badgeScale }] }]}>
-          {giftToken ? (
-            <>
-              <Text style={[s.tgBonusPoints, { fontFamily: fonts.displayHeavy }]}>🎁 +500</Text>
-              <Text style={[s.tgBonusSub, { fontFamily: fonts.body }]}>
-                pts приветствие + подарок от друга
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={[s.tgBonusPoints, { fontFamily: fonts.displayHeavy }]}>+500</Text>
-              <Text style={[s.tgBonusSub, { fontFamily: fonts.body }]}>
-                pts · {t("validDays", "valid 90 days")}
-              </Text>
-            </>
-          )}
-        </Animated.View>
       </Animated.View>
 
-      {/* ── Bottom sheet: nickname + continue ────────────────── */}
       <View style={s.tgBottomSheet}>
-        <Text style={[s.label, { color: "rgba(255,255,255,0.55)", fontFamily: fonts.bodyBold }]}>
-          {t("yourNickname", "Your nickname").toUpperCase()}
-        </Text>
-        <View style={s.tgInput}>
-          <TextInput
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder={name || "friend"}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            autoCapitalize="none"
-            style={[s.input, { color: "#fff", fontFamily: fonts.body }]}
-          />
-        </View>
-        <Text style={[s.tgNicknameHint, { fontFamily: fonts.body }]}>
-          {t("nicknameHint", "You can change this later in your profile")}
-        </Text>
-
         <Pressable onPress={onContinue} style={s.tgContinueBtn}>
-          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
-            {t("continue", "Continue →")}
-          </Text>
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("continue", "Continue →")}</Text>
         </Pressable>
       </View>
+    </View>
+  )
+}
+
+// ── Step 1: Welcome coupon ─────────────────────────────────────
+function TgCouponStep({ name, giftToken, onContinue }: {
+  name: string
+  giftToken?: string
+  onContinue: () => void
+}) {
+  const { t } = useTranslation("auth")
+  const cardScale = useRef(new Animated.Value(0)).current
+  const cardOpacity = useRef(new Animated.Value(0)).current
+  const glowAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(200),
+      Animated.parallel([
+        Animated.spring(cardScale, { toValue: 1, friction: 4, tension: 60, useNativeDriver: true }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      ]),
+    ]).start(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+          Animated.timing(glowAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+        ])
+      ).start()
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] })
+
+  return (
+    <View style={s.tgFullScreen}>
+      <LinearGradient colors={["#0F1115", "#1A1F2E"]} style={StyleSheet.absoluteFill} />
+
+      <View style={s.tgWelcomeBody}>
+        <Text style={[s.tgHello, { fontFamily: fonts.displayHeavy, marginBottom: 8 }]}>
+          {t("tgWelcome", "Hi, {{name}}! 👋", { name: name || "friend" })}
+        </Text>
+        <Text style={[s.tgTagline, { marginBottom: 32 }]}>
+          {t("couponSubtitle", "Here is your welcome gift")}
+        </Text>
+
+        {/* Coupon card */}
+        <Animated.View style={{ transform: [{ scale: cardScale }], opacity: cardOpacity, width: "100%" }}>
+          <Animated.View style={[s.couponGlow, { opacity: glowOpacity }]} />
+          <LinearGradient
+            colors={["#1E2D4A", "#0F1D36"]}
+            style={s.couponCard}
+          >
+            {/* Дырки купона */}
+            <View style={s.couponNotchLeft} />
+            <View style={s.couponNotchRight} />
+            <View style={s.couponDivider} />
+
+            <View style={s.couponTop}>
+              <AyooLogo width={80} height={47} />
+              <Text style={[s.couponTitle, { fontFamily: fonts.bodyBold }]}>
+                {t("couponTitle", "Congratulations!")}
+              </Text>
+            </View>
+
+            <View style={s.couponBottom}>
+              <Text style={[s.couponAmount, { fontFamily: fonts.displayHeavy }]}>
+                {giftToken ? "🎁 " : ""}{t("couponAmount", "500")}
+              </Text>
+              <Text style={[s.couponUnit, { fontFamily: fonts.bodyBold }]}>
+                {t("couponUnit", "points")}
+              </Text>
+              <Text style={[s.couponConditions]}>
+                {t("couponConditions", "Valid 90 days · up to 100 pts per transaction")}
+              </Text>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      </View>
+
+      <View style={s.tgBottomSheet}>
+        <Pressable onPress={onContinue} style={s.tgContinueBtn}>
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("couponCTA", "Claim gift →")}</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
+// ── Avatar colors ──────────────────────────────────────────────
+const AVATAR_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899", "#EF4444", "#F59E0B", "#10B981", "#6366F1", "#0EA5E9"]
+
+function parseBirthday(raw: string): string | undefined {
+  // Accepts DD.MM.YYYY or YYYY-MM-DD
+  const parts = raw.includes(".") ? raw.split(".") : raw.split("-")
+  if (raw.includes(".") && parts.length === 3) {
+    const [d, m, y] = parts
+    if (d && m && y && y.length === 4) return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`
+  }
+  if (!raw.includes(".") && parts.length === 3) {
+    const [y, m, d] = parts
+    if (y && y.length === 4 && m && d) return `${y}-${m}-${d}`
+  }
+  return undefined
+}
+
+// ── Step 2: Profile ────────────────────────────────────────────
+function TgProfileStep({
+  displayName, setDisplayName, userName,
+  birthday, setBirthday,
+  avatarColor, setAvatarColor,
+  referralCode, setReferralCode,
+  consent, setConsent, consentError,
+  isPending, onBack, onFinish,
+}: {
+  displayName: string; setDisplayName: (v: string) => void; userName: string
+  birthday: string; setBirthday: (v: string) => void
+  avatarColor: number; setAvatarColor: (i: number) => void
+  referralCode: string; setReferralCode: (v: string) => void
+  consent: boolean; setConsent: (v: boolean) => void; consentError: boolean
+  isPending: boolean; onBack: () => void; onFinish: () => void
+}) {
+  const theme = useTheme()
+  const { t } = useTranslation("auth")
+  const initials = (displayName || userName || "?").slice(0, 2).toUpperCase()
+
+  return (
+    <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+        <View style={s.step}>
+          <Pressable onPress={onBack} style={s.backBtn}>
+            <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>←</Text>
+          </Pressable>
+
+          <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+            {t("profileTitle", "Tell us about you")}
+          </Text>
+          <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 24 }]}>
+            {t("profileSubtitle", "Takes 30 seconds")}
+          </Text>
+
+          {/* Avatar picker */}
+          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 12 }]}>
+            {t("chooseAvatar", "Choose avatar").toUpperCase()}
+          </Text>
+          <View style={s.avatarRow}>
+            {AVATAR_COLORS.map((color, i) => (
+              <Pressable key={color} onPress={() => setAvatarColor(i)}
+                style={[s.avatarCircle, { backgroundColor: color }, i === avatarColor && s.avatarCircleActive]}>
+                {i === avatarColor && (
+                  <Text style={[s.avatarInitials, { fontFamily: fonts.bodyBold }]}>{initials}</Text>
+                )}
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Nickname */}
+          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginTop: 20, marginBottom: 6 }]}>
+            {t("yourNickname", "Your nickname").toUpperCase()}
+          </Text>
+          <NeuInset style={{ marginBottom: 6 }}>
+            <TextInput
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder={userName || "friend"}
+              placeholderTextColor={theme.textMuted}
+              autoCapitalize="none"
+              style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
+            />
+          </NeuInset>
+          <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 16 }]}>
+            {t("nicknameHint", "You can change this later in your profile")}
+          </Text>
+
+          {/* Birthday */}
+          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
+            {t("birthday", "Date of birth").toUpperCase()}
+            <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
+          </Text>
+          <NeuInset style={{ marginBottom: 6 }}>
+            <TextInput
+              value={birthday}
+              onChangeText={setBirthday}
+              placeholder={t("birthdayPlaceholder", "DD.MM.YYYY")}
+              placeholderTextColor={theme.textMuted}
+              keyboardType="numeric"
+              style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
+            />
+          </NeuInset>
+          <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 16 }]}>
+            {t("birthdayHint", "We'll surprise you on your birthday 🎂")}
+          </Text>
+
+          {/* Referral code */}
+          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
+            {t("referralCode", "Referral code").toUpperCase()}
+            <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional")}</Text>
+          </Text>
+          <NeuInset style={{ marginBottom: 20 }}>
+            <TextInput
+              value={referralCode}
+              onChangeText={setReferralCode}
+              placeholder="ABC123"
+              placeholderTextColor={theme.textMuted}
+              autoCapitalize="characters"
+              maxLength={6}
+              style={[s.input, { color: theme.text, fontFamily: fonts.body, letterSpacing: 3 }]}
+            />
+          </NeuInset>
+
+          {/* Consent */}
+          <Pressable onPress={() => setConsent(!consent)} style={s.consentRow}>
+            <View style={[s.checkbox, consent && s.checkboxActive, consentError && s.checkboxError]}>
+              {consent && <Text style={s.checkmark}>✓</Text>}
+            </View>
+            <Text style={[s.consentText, { color: consentError ? "#EF4444" : theme.textSecondary, fontFamily: fonts.body }]}>
+              {t("consentLabel", "I agree to the processing of personal data")}
+            </Text>
+          </Pressable>
+          {consentError && (
+            <Text style={[s.emailHint, { color: "#EF4444", fontFamily: fonts.body, marginTop: 4 }]}>
+              {t("consentRequired", "Please accept to continue")}
+            </Text>
+          )}
+
+          <View style={{ height: 24 }} />
+
+          <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending}
+            style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
+            {isPending
+              ? <ActivityIndicator color={colors.ink} />
+              : <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Get started")}</Text>
+            }
+          </NeuCard>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   )
 }
 
-function TgStep1({
-  homeCity, setHomeCity, referralCode, setReferralCode, isPending, onBack, onFinish,
-}: {
-  homeCity: string
-  setHomeCity: (v: "Belgrade" | "Novi Sad") => void
-  referralCode: string
-  setReferralCode: (v: string) => void
-  isPending: boolean
-  onBack: () => void
-  onFinish: () => void
-}) {
+// ── Step 3: Invite friends ─────────────────────────────────────
+function TgInviteStep({ onShare, onSkip }: { onShare: () => void; onSkip: () => void }) {
   const theme = useTheme()
   const { t } = useTranslation("auth")
+  const cardScale = useRef(new Animated.Value(0.8)).current
+  const fadeAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(cardScale, { toValue: 1, friction: 5, tension: 50, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+    ]).start()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <View style={s.step}>
-      <Pressable onPress={onBack} style={s.backBtn}>
-        <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>← {t("back", "Back")}</Text>
-      </Pressable>
+    <View style={[s.tgFullScreen, { backgroundColor: theme.bg }]}>
+      <Animated.View style={[s.tgWelcomeBody, { opacity: fadeAnim, transform: [{ scale: cardScale }] }]}>
+        <Text style={{ fontSize: 56, marginBottom: 16 }}>🎁</Text>
+        <Text style={[s.tgHello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+          {t("inviteTitle", "Invite friends")}
+        </Text>
+        <Text style={[s.tgTagline, { color: theme.textSecondary, textAlign: "center" }]}>
+          {t("inviteDesc", "You get +100 points for every friend who joins and makes their first purchase.")}
+        </Text>
 
-      <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-        {t("pickYourCity", "Pick your city")}
-      </Text>
-      <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 28 }]}>
-        {t("cityDesc", "We'll show you venues and partners nearby.")}
-      </Text>
+        <View style={[s.inviteCard, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+          <Text style={[s.invitePoints, { fontFamily: fonts.displayHeavy, color: theme.text }]}>+100</Text>
+          <Text style={[s.invitePointsLabel, { color: theme.textSecondary }]}>points per friend</Text>
+        </View>
+      </Animated.View>
 
-      <View style={s.cityRow}>
-        {CITY_OPTIONS.map((city) => {
-          const active = homeCity === city.name
-          return (
-            <Pressable
-              key={city.name}
-              onPress={() => setHomeCity(city.name)}
-              style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
-            >
-              <Text style={[s.cityChipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
-                {city.label}
-              </Text>
-            </Pressable>
-          )
-        })}
+      <View style={s.tgBottomSheet}>
+        <Pressable onPress={onShare} style={s.tgContinueBtn}>
+          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("inviteBtn", "Share invite link")}</Text>
+        </Pressable>
+        <Pressable onPress={onSkip} style={s.skipBtn}>
+          <Text style={[s.skipText, { color: theme.textMuted, fontFamily: fonts.body }]}>
+            {t("inviteSkip", "Skip for now")}
+          </Text>
+        </Pressable>
       </View>
-
-      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginTop: 24 }]}>
-        {t("referralCode", "Referral code").toUpperCase()}
-        <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
-      </Text>
-      <NeuInset style={{ marginBottom: 6 }}>
-        <TextInput
-          value={referralCode}
-          onChangeText={setReferralCode}
-          placeholder="ABC123"
-          placeholderTextColor={theme.textMuted}
-          autoCapitalize="characters"
-          maxLength={6}
-          style={[s.input, { color: theme.text, fontFamily: fonts.body, letterSpacing: 3 }]}
-        />
-      </NeuInset>
-      <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body }]}>
-        {t("referralHint", "Enter a friend's code to earn bonus points")}
-      </Text>
-
-      <View style={{ flex: 1, minHeight: 24 }} />
-
-      <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending} style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
-        {isPending ? <ActivityIndicator color={colors.ink} /> : (
-          <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Let's go!")}</Text>
-        )}
-      </NeuCard>
     </View>
   )
 }
@@ -510,16 +669,10 @@ function Step0({ onPick }: { onPick: (lng: SupportedLocale) => void }) {
   return (
     <View style={s.step}>
       <View style={{ alignItems: "center", marginBottom: 24 }}>
-        <LinearGradient
-          colors={gradients.black as unknown as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[s.logoOrb, theme.shadowGlow]}
-        >
-        <Text style={s.logoChar}>P</Text>
-        </LinearGradient>
-        <Text style={[s.brand, { color: theme.text, fontFamily: fonts.displayHeavy }]}>PULSE</Text>
-        <Text style={[s.tagline, { color: theme.textSecondary }]}>{t("tagline", "Loyalty that competes for you")}</Text>
+        <View style={[s.logoOrb, theme.shadowGlow, { alignItems: "center", justifyContent: "center" }]}>
+          <AyooLogo width={120} height={70} />
+        </View>
+        <Text style={[s.tagline, { color: theme.textSecondary, marginTop: 12 }]}>{t("tagline", "Loyalty that competes for you")}</Text>
       </View>
 
       {/* Feature cards */}
@@ -857,9 +1010,133 @@ const s = StyleSheet.create({
   brand: { fontSize: 36, letterSpacing: 4 },
   tagline: { fontSize: 13, marginTop: 6 },
 
-  featureIcon: { color: "#91A1B4", fontSize: 28, fontWeight: "900", width: 32, textAlign: "center" },
-  featureTitle: { color: colors.ink, fontSize: 14 },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  featureIcon: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: "rgba(145,161,180,0.12)",
+    alignItems: "center", justifyContent: "center",
+  },
+  featureTitle: { fontSize: 14, marginBottom: 2 },
+  featureDesc: { fontSize: 12, lineHeight: 16 },
   featureSub: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
+
+  // Coupon
+  couponGlow: {
+    position: "absolute",
+    top: -20, left: 20, right: 20, bottom: -20,
+    borderRadius: 28,
+    backgroundColor: "#3B82F6",
+  },
+  couponCard: {
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    width: "100%",
+  },
+  couponTop: {
+    alignItems: "center",
+    paddingTop: 28,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+    gap: 10,
+  },
+  couponTitle: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 12,
+    letterSpacing: 2,
+    textTransform: "uppercase" as const,
+  },
+  couponDivider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    marginHorizontal: 0,
+  },
+  couponNotchLeft: {
+    position: "absolute", left: -12, top: "50%" as unknown as number,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: "#0d0d0d",
+  },
+  couponNotchRight: {
+    position: "absolute", right: -12, top: "50%" as unknown as number,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: "#0d0d0d",
+  },
+  couponBottom: {
+    alignItems: "center",
+    paddingTop: 24,
+    paddingBottom: 28,
+    paddingHorizontal: 24,
+    gap: 4,
+  },
+  couponAmount: {
+    color: "#fff",
+    fontSize: 64,
+    lineHeight: 70,
+  },
+  couponUnit: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 16,
+    letterSpacing: 1,
+    textTransform: "uppercase" as const,
+  },
+  couponConditions: {
+    color: "rgba(255,255,255,0.3)",
+    fontSize: 11,
+    textAlign: "center" as const,
+    marginTop: 8,
+  },
+
+  // Avatar
+  avatarRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 4 },
+  avatarCircle: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarCircleActive: {
+    borderWidth: 3,
+    borderColor: "#fff",
+    shadowColor: "#fff",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  avatarInitials: { color: "#fff", fontSize: 14 },
+
+  // Consent
+  consentRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  checkbox: {
+    width: 22, height: 22, borderRadius: 6,
+    borderWidth: 2, borderColor: "rgba(145,161,180,0.4)",
+    alignItems: "center", justifyContent: "center", marginTop: 1,
+  },
+  checkboxActive: { backgroundColor: "#3B82F6", borderColor: "#3B82F6" },
+  checkboxError: { borderColor: "#EF4444" },
+  checkmark: { color: "#fff", fontSize: 14, lineHeight: 16 },
+  consentText: { flex: 1, fontSize: 13, lineHeight: 18 },
+
+  // Invite step
+  inviteCard: {
+    marginTop: 28,
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+  invitePoints: { fontSize: 48, lineHeight: 54 },
+  invitePointsLabel: { fontSize: 13, marginTop: 4 },
+
+  skipBtn: { paddingVertical: 14, alignItems: "center" },
+  skipText: { fontSize: 14 },
 
   label: { fontSize: 11, letterSpacing: 1.2, marginBottom: 8 },
   optional: { fontSize: 11, fontWeight: "500", letterSpacing: 0 },

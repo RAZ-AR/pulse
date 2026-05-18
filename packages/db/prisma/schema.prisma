@@ -41,6 +41,7 @@ enum TransactionType {
   REFERRAL
   CHALLENGE_COMPLETE
   BONUS
+  BIRTHDAY
   GIFT_RECEIVED
   GIFT_SENT
   REWARD_REDEEMED
@@ -139,7 +140,10 @@ model User {
   isPhoneVerified   Boolean @default(false)
 
   // Onboarding state
-  onboardingDone Boolean @default(false)
+  onboardingDone        Boolean   @default(false)
+  birthday              DateTime?
+  consentGivenAt        DateTime?
+  lastBirthdayBonusAt   DateTime?
 
   // Referrals
   referralCode String  @unique

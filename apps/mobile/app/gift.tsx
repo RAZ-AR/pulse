@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native"
 import { Stack, useRouter } from "expo-router"
+import { useTranslation } from "react-i18next"
 import { trpc } from "../src/lib/trpc"
 import { colors, fonts, gradients, neonColors, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
@@ -27,6 +28,7 @@ export default function GiftScreen() {
   const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const router = useRouter()
+  const { t } = useTranslation("gift")
   const utils = trpc.useUtils()
 
   const status = trpc.social.giftStatus.useQuery()
@@ -67,15 +69,15 @@ export default function GiftScreen() {
     setError("")
     const n = parseInt(amount, 10)
     if (Number.isNaN(n) || n < GIFT_MIN_AMOUNT) {
-      setError(`Минимум ${GIFT_MIN_AMOUNT} баллов`)
+      setError(t("errMin", "Minimum {{n}} pts", { n: GIFT_MIN_AMOUNT }))
       return
     }
     if (n > earnedPoints) {
-      setError("Не хватает накопленных баллов")
+      setError(t("errBalance", "Not enough earned points"))
       return
     }
     if (n > remainingDailyLimit) {
-      setError(`Лимит сегодня: ${remainingDailyLimit} баллов`)
+      setError(t("errDailyLimit", "Daily limit: {{n}} pts", { n: remainingDailyLimit }))
       return
     }
     createLink.mutate({
@@ -100,7 +102,7 @@ export default function GiftScreen() {
     <>
       <Stack.Screen options={{
         headerShown: true,
-        title: "Подарить баллы",
+        title: t("title", "Gift points"),
         headerStyle: { backgroundColor: theme.bg },
         headerShadowVisible: false,
         headerTintColor: theme.text,
@@ -115,7 +117,7 @@ export default function GiftScreen() {
             <View style={s.heroTop}>
               <View>
                 <Text style={[s.kicker, { color: isRainbow ? "#1A1A2E" : theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                  ДОСТУПНО ДЛЯ ПОДАРКА
+                  {t("availableToGift", "Available to gift").toUpperCase()}
                 </Text>
                 <Text style={[s.heroValue, { color: isRainbow ? "#1A1A2E" : theme.text, fontFamily: fonts.displayHeavy }]}>
                   {maxGiftNow.toLocaleString()} pts
@@ -123,15 +125,15 @@ export default function GiftScreen() {
               </View>
               <View style={s.limitOrb}>
                 <Text style={[s.limitOrbValue, { fontFamily: fonts.displayHeavy }]}>{remainingDailyLimit}</Text>
-                <Text style={[s.limitOrbLabel, { fontFamily: fonts.bodyBold }]}>осталось</Text>
+                <Text style={[s.limitOrbLabel, { fontFamily: fonts.bodyBold }]}>{t("remaining", "left")}</Text>
               </View>
             </View>
             <View style={s.limitTrack}>
               <View style={[s.limitFill, { width: `${progress * 100}%`, backgroundColor: isRainbow ? neonColors.cyan : "rgba(241,153,227,0.58)" }]} />
             </View>
             <View style={s.heroMeta}>
-              <Text style={[s.metaText, { color: isRainbow ? "#1A1A2E" : theme.textSecondary }]}>{sentToday} pts отправлено сегодня</Text>
-              <Text style={[s.metaText, { color: isRainbow ? "#1A1A2E" : theme.textSecondary }]}>{GIFT_DAILY_LIMIT} pts лимит</Text>
+              <Text style={[s.metaText, { color: isRainbow ? "#1A1A2E" : theme.textSecondary }]}>{sentToday} pts {t("sentToday", "sent today")}</Text>
+              <Text style={[s.metaText, { color: isRainbow ? "#1A1A2E" : theme.textSecondary }]}>{GIFT_DAILY_LIMIT} pts {t("dailyLimit", "daily limit")}</Text>
             </View>
           </LavaLampSurface>
 
@@ -141,35 +143,35 @@ export default function GiftScreen() {
               <LavaLampSurface style={s.doneOrb} contentStyle={s.doneOrbInner} intensity="glass">
                 <Text style={{ fontSize: 52 }}>🎁</Text>
               </LavaLampSurface>
-              <Text style={[s.doneTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>Ссылка создана!</Text>
+              <Text style={[s.doneTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("linkCreated", "Link created!")}</Text>
               <Text style={[s.doneSub, { color: theme.textSecondary }]}>
-                {done.amount} баллов — ссылка открыта в шеринге
+                {done.amount} pts — {t("linkShared", "link opened for sharing")}
               </Text>
               <Text style={[s.doneHint, { color: theme.textSecondary }]}>
-                Баллы зачислятся, когда друг откроет ссылку
+                {t("doneHint", "Points will be credited when your friend opens the link")}
               </Text>
 
               <View style={s.btnRow}>
                 <Pressable onPress={shareAgain} style={{ flex: 1 }}>
                   {isRainbow ? (
                     <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.30} borderRadius={99} style={s.primaryBtn}>
-                      <Text style={[s.ctaText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>Поделиться снова</Text>
+                      <Text style={[s.ctaText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>{t("shareAgain", "Share again")}</Text>
                     </VolumeGradient>
                   ) : (
                     <NeuCard gradient={gradients.pinkBlue} style={s.primaryBtn}>
-                      <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>Поделиться снова</Text>
+                      <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("shareAgain", "Share again")}</Text>
                     </NeuCard>
                   )}
                 </Pressable>
               </View>
               <Pressable onPress={reset} style={s.secondaryPressable}>
-                <Text style={[s.secondaryText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>Отправить ещё</Text>
+                <Text style={[s.secondaryText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{t("sendAnother", "Send another")}</Text>
               </Pressable>
             </View>
           ) : (
             // ── Compose state ─────────────────────────────────────
             <>
-              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>Сколько подарить?</Text>
+              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("howMuch", "How much to gift?")}</Text>
 
               {/* Preset chips */}
               <View style={s.presetRow}>
@@ -203,7 +205,7 @@ export default function GiftScreen() {
 
               {/* Custom amount input */}
               <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                СВОЁ КОЛИЧЕСТВО
+                {t("customAmount", "Custom amount").toUpperCase()}
               </Text>
               <NeuInset style={s.inputWrap}>
                 <TextInput
@@ -212,7 +214,7 @@ export default function GiftScreen() {
                     setAmount(v.replace(/[^0-9]/g, ""))
                     setError("")
                   }}
-                  placeholder={`от ${GIFT_MIN_AMOUNT}`}
+                  placeholder={t("minAmount", "from {{n}}", { n: GIFT_MIN_AMOUNT })}
                   placeholderTextColor={theme.textMuted}
                   keyboardType="number-pad"
                   style={[s.input, { color: theme.text, fontFamily: fonts.displayHeavy }]}
@@ -221,13 +223,13 @@ export default function GiftScreen() {
 
               {/* Optional message */}
               <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                СООБЩЕНИЕ <Text style={s.optional}>· необязательно</Text>
+                {t("message", "Message").toUpperCase()} <Text style={s.optional}>· {t("optional", "optional")}</Text>
               </Text>
               <NeuInset style={s.messageWrap}>
                 <TextInput
                   value={message}
                   onChangeText={setMessage}
-                  placeholder="На кофе завтра ☕"
+                  placeholder={t("messagePlaceholder", "For coffee tomorrow ☕")}
                   placeholderTextColor={theme.textMuted}
                   maxLength={200}
                   multiline
@@ -248,7 +250,7 @@ export default function GiftScreen() {
                     {createLink.isPending ? (
                       <ActivityIndicator color="#FFF" />
                     ) : (
-                      <Text style={[s.ctaText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>🎁  Подарить</Text>
+                      <Text style={[s.ctaText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>🎁  {t("giftBtn", "Gift")}</Text>
                     )}
                   </VolumeGradient>
                 ) : (
@@ -256,14 +258,14 @@ export default function GiftScreen() {
                     {createLink.isPending ? (
                       <ActivityIndicator color={colors.ink} />
                     ) : (
-                      <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>🎁  Подарить</Text>
+                      <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>🎁  {t("giftBtn", "Gift")}</Text>
                     )}
                   </NeuCard>
                 )}
               </Pressable>
 
               <Text style={[s.hint, { color: theme.textSecondary }]}>
-                Откроется Telegram, WhatsApp или другой способ отправки
+                {t("shareHint", "Telegram, WhatsApp or another sharing method will open")}
               </Text>
             </>
           )}
@@ -271,7 +273,7 @@ export default function GiftScreen() {
           {/* ── История отправленных подарков ── */}
           {(history.data?.length ?? 0) > 0 ? (
             <>
-              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 28 }]}>История</Text>
+              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 28 }]}>{t("history", "History")}</Text>
               <View style={s.historyList}>
                 {history.data!.map((link) => {
                   const claimed = link.status === "CLAIMED"
@@ -284,7 +286,7 @@ export default function GiftScreen() {
                         </Text>
                         {link.recipient ? (
                           <Text style={[s.historyMeta, { color: theme.textSecondary }]}>
-                            → {link.recipient.name ?? "пользователь"}
+                            → {link.recipient.name ?? t("unknownUser", "user")}
                           </Text>
                         ) : null}
                         {link.message ? (
@@ -306,7 +308,7 @@ export default function GiftScreen() {
                             : (isRainbow ? neonColors.cyan : "#7FAFC2"),
                           fontFamily: fonts.bodyBold,
                         }]}>
-                          {claimed ? "получен" : expired ? "истёк" : "ждёт"}
+                          {claimed ? t("statusClaimed", "received") : expired ? t("statusExpired", "expired") : t("statusPending", "waiting")}
                         </Text>
                       </View>
                     </View>

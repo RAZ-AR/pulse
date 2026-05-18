@@ -15,6 +15,9 @@ export function calculatePartnerPoints(
   return Math.floor(amount * pointsPerCurrency * multiplier)
 }
 
+// ── Birthday bonus ────────────────────────────────────────────
+export const BIRTHDAY_BONUS_POINTS = 200
+
 // ── Welcome bonus (spec §4.6) ─────────────────────────────────
 export const WELCOME_BONUS_AMOUNT = 500
 export const WELCOME_MAX_PER_TRANSACTION = 100

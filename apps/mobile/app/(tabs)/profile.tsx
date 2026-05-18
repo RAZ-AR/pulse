@@ -13,6 +13,14 @@ import { CITY_OPTIONS } from "../../src/lib/venues"
 import { formatLoyaltyId } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 
+const AVATAR_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899", "#EF4444", "#F59E0B", "#10B981", "#6366F1", "#0EA5E9"]
+
+function getAvatarColor(avatarUrl: string | null | undefined): string | null {
+  if (!avatarUrl?.startsWith("color:")) return null
+  const idx = parseInt(avatarUrl.slice(6), 10)
+  return AVATAR_COLORS[idx] ?? null
+}
+
 const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
   COMMON: gradients.graphite,
   RARE: gradients.black,
@@ -22,7 +30,7 @@ const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = 
 
 const DEMO_PROFILE = {
   id: "demo",
-  email: "demo@pulse.app",
+  email: "demo@ayoo.app",
   name: "Demo User",
   avatarUrl: null,
   homeCity: "Belgrade",
@@ -39,9 +47,10 @@ const DEMO_PROFILE = {
   stepsToday: 8420,
   stepsTotal: 128400,
   cardNumber: "45678",
-  referralCode: "PULSE1",
+  referralCode: "AYOO1",
   referredById: null,
   onboardingDone: true,
+  birthday: null as Date | null,
   createdAt: new Date("2026-01-15T00:00:00.000Z"),
   totalPoints: 1540,
 }
@@ -88,19 +97,36 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
   const [homeCity, setHomeCity] = useState("")
+  const [editBirthday, setEditBirthday] = useState("")
+  const [editAvatarColor, setEditAvatarColor] = useState<number | null>(null)
 
   function startEditing() {
     const current = profile.data ?? (showDemoProfile ? DEMO_PROFILE : null)
     setName(current?.name ?? "")
     setHomeCity(current?.homeCity ?? "")
+    const existingColor = getAvatarColor(current?.avatarUrl ?? null)
+    setEditAvatarColor(existingColor ? AVATAR_COLORS.indexOf(existingColor) : 0)
+    const bd = (current as { birthday?: Date | null } | null)?.birthday
+    if (bd) {
+      const d = new Date(bd)
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, "0")
+      const dd = String(d.getDate()).padStart(2, "0")
+      setEditBirthday(`${yyyy}-${mm}-${dd}`)
+    } else {
+      setEditBirthday("")
+    }
     setEditing(true)
   }
 
   function save() {
+    const isoDate = editBirthday.match(/^\d{4}-\d{2}-\d{2}$/) ? editBirthday : undefined
     updateProfile.mutate(
       {
         ...(name.trim() !== (profile.data?.name ?? "") ? { name: name.trim() } : {}),
         ...(homeCity.trim() !== (profile.data?.homeCity ?? "") ? { homeCity: homeCity.trim() } : {}),
+        ...(isoDate ? { birthday: isoDate } : {}),
+        ...(editAvatarColor !== null ? { avatarUrl: `color:${editAvatarColor}` } : {}),
       },
       { onSuccess: () => setEditing(false) },
     )
@@ -116,7 +142,7 @@ export default function ProfileScreen() {
       await Share.share({
         message: t(
           "shareMessage",
-          "Join me on PULSE — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: pulse.app/r/{{code}}",
+          "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.app/r/{{code}}",
           { code },
         ),
       })
@@ -134,6 +160,7 @@ export default function ProfileScreen() {
   }
 
   const initial = (u.name ?? u.email ?? "?")[0]?.toUpperCase() ?? "?"
+  const avatarBgColor = getAvatarColor(u.avatarUrl)
   const currentLng = (i18n.language as SupportedLocale) ?? "en"
   const badges = myBadges.data ?? (useDemoProfile ? DEMO_BADGES : [])
   const totalPoints = u.totalPoints
@@ -163,7 +190,7 @@ export default function ProfileScreen() {
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
       <View style={s.screenHead}>
         <View>
-          <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>PULSE ID</Text>
+          <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>ayoo ID</Text>
           <Text style={[s.screenTitle, { fontFamily: fonts.displayHeavy }]}>
             {t("personalCabinet", "Personal cabinet")}
           </Text>
@@ -177,7 +204,7 @@ export default function ProfileScreen() {
         <View style={s.heroBlob} />
         <View style={s.heroTop}>
           <View style={s.heroRow}>
-            <View style={s.heroAvatar}>
+            <View style={[s.heroAvatar, avatarBgColor ? { backgroundColor: avatarBgColor } : {}]}>
               <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
             </View>
             <View style={{ flex: 1 }}>
@@ -259,6 +286,12 @@ export default function ProfileScreen() {
           label={t("welcomeLeft", "Welcome left")}
           value={welcomeDaysLeft === null ? "—" : `${welcomeDaysLeft}d`}
         />
+        {u.birthday ? (
+          <AccountTile
+            label={t("birthday", "Birthday")}
+            value={new Date(u.birthday).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+          />
+        ) : null}
       </View>
 
       <SectionTitle title={t("badges", "Badges")} action={t("all", "All")} onPress={() => router.push("/badges")} />
@@ -359,7 +392,20 @@ export default function ProfileScreen() {
                 )
               })}
             </View>
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            <Field label={t("birthday", "Birthday")} value={editBirthday} onChangeText={setEditBirthday} theme={theme} placeholder="YYYY-MM-DD" />
+            <Text style={[s.fieldLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 8 }]}>
+              {t("chooseAvatar", "Avatar color")}
+            </Text>
+            <View style={s.avatarRow}>
+              {AVATAR_COLORS.map((color, i) => (
+                <Pressable
+                  key={color}
+                  onPress={() => setEditAvatarColor(i)}
+                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i ? 2 : 0, borderColor: theme.text }]}
+                />
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
               <Btn label={t("common:cancel", "Cancel")} variant="ghost" onPress={() => setEditing(false)} />
               <Btn
                 label={updateProfile.isPending ? t("common:saving", "Saving…") : t("common:save", "Save")}
@@ -555,8 +601,8 @@ function Row({ label, value, theme, last }: { label: string; value: string; them
 }
 
 function Field({
-  label, value, onChangeText, theme,
-}: { label: string; value: string; onChangeText: (v: string) => void; theme: Theme }) {
+  label, value, onChangeText, theme, placeholder,
+}: { label: string; value: string; onChangeText: (v: string) => void; theme: Theme; placeholder?: string }) {
   return (
     <View style={{ marginBottom: 10 }}>
       <Text style={{ color: theme.textSecondary, fontSize: 11, fontFamily: fonts.bodyBold, letterSpacing: 0.5, marginBottom: 4 }}>
@@ -566,6 +612,7 @@ function Field({
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          placeholder={placeholder}
           style={{ padding: 12, fontSize: 14, color: theme.text, fontFamily: fonts.body }}
           placeholderTextColor={theme.textMuted}
         />
@@ -719,6 +766,10 @@ const s = StyleSheet.create({
   refsCount: { color: colors.ink, fontSize: 12, fontWeight: "700", marginTop: 12 },
   emptyHistory: { padding: 18, alignItems: "center" },
   emptyHistoryText: { fontSize: 13, textAlign: "center" },
+
+  fieldLabel: { fontSize: 11, letterSpacing: 0.5 },
+  avatarRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginBottom: 12 },
+  avatarDot: { width: 32, height: 32, borderRadius: 16 },
 
   cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },

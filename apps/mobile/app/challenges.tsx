@@ -9,12 +9,12 @@ import { NeuCard, GradPill, VolumeGradient } from "../src/components/neu"
 
 const CHALLENGE_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
 
-const TYPE_LABELS: Record<string, string> = {
-  SPEND_AMOUNT: "Spend",
-  VISIT_N_VENUES: "Visit",
-  WALK_STEPS: "Steps",
-  COMBO: "Combo",
-  STREAK: "Streak",
+const TYPE_ICON: Record<string, string> = {
+  VISIT_N_VENUES: "⌖",
+  STREAK: "✓",
+  WALK_STEPS: "◦",
+  SPEND_AMOUNT: "□",
+  COMBO: "◈",
 }
 
 type Tab = "mine" | "available"
@@ -80,6 +80,7 @@ export default function ChallengesScreen() {
                     completed={uc.isCompleted}
                     sponsorName={uc.challenge.venue?.name ?? null}
                     onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: uc.challengeId } })}
+                    t={t}
                   />
                 )
               })
@@ -109,6 +110,7 @@ export default function ChallengesScreen() {
                   daysLeft={daysLeft(c.endDate)}
                   sponsorName={c.venue?.name ?? null}
                   onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: c.id } })}
+                  t={t}
                 />
               )
             })
@@ -120,7 +122,7 @@ export default function ChallengesScreen() {
 }
 
 function ChallengeCard({
-  grad, type, title, description, pointsReward, progress, total, pct, daysLeft, completed, sponsorName, onPress,
+  grad, type, title, description, pointsReward, progress, total, pct, daysLeft, completed, sponsorName, onPress, t,
 }: {
   grad: readonly [string, string, ...string[]]
   type: string
@@ -134,6 +136,7 @@ function ChallengeCard({
   completed?: boolean
   sponsorName?: string | null
   onPress: () => void
+  t: (key: string, fallback: string, opts?: Record<string, unknown>) => string
 }) {
   return (
     <NeuCard gradient={grad} onPress={onPress} style={ss.card}>
@@ -141,7 +144,7 @@ function ChallengeCard({
       <View style={ss.cardHead}>
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={ss.icon}>
-            <Text style={ss.iconText}>{type === "VISIT_N_VENUES" ? "⌖" : type === "STREAK" ? "✓" : type === "WALK_STEPS" ? "◦" : "□"}</Text>
+            <Text style={ss.iconText}>{TYPE_ICON[type] ?? "□"}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[ss.title, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{title}</Text>
@@ -163,14 +166,14 @@ function ChallengeCard({
             <Text style={ss.progressText}>{progress ?? 0} / {total}</Text>
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
               {sponsorName ? <GradPill label={sponsorName} gradient={gradients.gold} /> : null}
-          <Text style={ss.daysLeft}>{completed ? "✓ Done" : `${daysLeft}d left`}</Text>
+              <Text style={ss.daysLeft}>{completed ? t("challengeDone", "✓ Done") : t("daysLeft", "{{n}}d left", { n: daysLeft })}</Text>
             </View>
           </View>
         </>
       ) : (
         <View style={[ss.cardFoot, { marginTop: 6 }]}>
           {sponsorName ? <GradPill label={sponsorName} gradient={gradients.gold} /> : <View />}
-          <Text style={ss.daysLeft}>{daysLeft}d left · Tap to join →</Text>
+          <Text style={ss.daysLeft}>{t("daysLeft", "{{n}}d left", { n: daysLeft })} · {t("tapToJoin", "Tap to join →")}</Text>
         </View>
       )}
     </NeuCard>

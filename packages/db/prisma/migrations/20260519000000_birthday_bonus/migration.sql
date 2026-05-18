@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "lastBirthdayBonusAt" TIMESTAMP(3);
+ALTER TYPE "TransactionType" ADD VALUE 'BIRTHDAY';

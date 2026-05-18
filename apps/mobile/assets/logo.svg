@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Слой_2" data-name="Слой 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 171.15 100">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+        font-family: Bounded-Black, Bounded;
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .cls-2 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-3 {
+        letter-spacing: -.04em;
+      }
+    </style>
+  </defs>
+  <g id="_Слой_1-2" data-name="Слой 1">
+    <ellipse cx="163.42" cy="50" rx="7.73" ry="50"/>
+    <circle cx="50" cy="50" r="50"/>
+    <ellipse cx="127.84" cy="50" rx="27.84" ry="50"/>
+    <text class="cls-1" transform="translate(4.66 59.71)"><tspan class="cls-2" x="0" y="0">a</tspan><tspan class="cls-3" x="20.44" y="0">y</tspan><tspan x="42.31" y="0">oo</tspan></text>
+  </g>
+</svg>
