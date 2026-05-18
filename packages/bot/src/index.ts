@@ -126,7 +126,7 @@ bot.start(async (ctx) => {
         reply_markup: {
           inline_keyboard: [[{
             text: OPEN_BTN[lang],
-            web_app: { url: `${miniAppUrl}?startapp=gift_${token}` },
+            url: `${miniAppUrl}?startapp=gift_${token}`,
           }]],
         },
       })
@@ -207,7 +207,7 @@ bot.start(async (ctx) => {
       reply_markup: {
         inline_keyboard: [[{
           text: OPEN_BTN[lang],
-          web_app: { url: miniAppUrl },
+          url: miniAppUrl,
         }]],
       },
     })

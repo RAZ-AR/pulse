@@ -1,7 +1,11 @@
 import { bot } from "@pulse/bot"
 
 export async function POST(req: Request) {
-  const body = await req.json()
-  await bot.handleUpdate(body)
+  try {
+    const body = await req.json()
+    await bot.handleUpdate(body)
+  } catch (e) {
+    console.error("[bot] handleUpdate error:", e)
+  }
   return new Response("ok")
 }
