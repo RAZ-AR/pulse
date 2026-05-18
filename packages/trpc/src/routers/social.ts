@@ -4,7 +4,7 @@ import { router, protectedProcedure } from "../trpc"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT, GIFT_LINK_EXPIRY_DAYS } from "@pulse/shared"
 import { sendPushToUser } from "../services/push"
 
-const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "pulse_loyalty_bot"
+const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "ayoo_loyalty_bot"
 
 export const socialRouter = router({
   giftStatus: protectedProcedure.query(async ({ ctx }) => {
@@ -222,7 +222,7 @@ export const socialRouter = router({
         amount: link.amount,
         expiresAt: link.expiresAt,
         shareUrl: `https://t.me/${BOT_USERNAME}?start=gift_${link.token}`,
-        shareText: `Я дарю тебе ${input.amount} баллов PULSE! Открой ссылку, чтобы получить их: https://t.me/${BOT_USERNAME}?start=gift_${link.token}`,
+        shareText: `I'm gifting you ${input.amount} ayoo points! Open the link to claim them: https://t.me/${BOT_USERNAME}?start=gift_${link.token}`,
       }
     }),
 
