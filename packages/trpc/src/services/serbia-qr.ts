@@ -25,7 +25,8 @@ export function decodeSerbiaQrUrl(url: string): SerbiaQrData {
 
   const bytes = base64ToBytes(decodeURIComponent(vl))
 
-  if (bytes.length < 572 || bytes.length > 848) {
+  // Minimum: 41 bytes data + 16 bytes MD5 hash. Real receipts range ~400-900 bytes.
+  if (bytes.length < 57 || bytes.length > 2000) {
     throw new Error(`Invalid payload length: ${bytes.length}`)
   }
 
