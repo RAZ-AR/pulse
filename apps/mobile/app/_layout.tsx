@@ -8,14 +8,7 @@ import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
 import { trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
-
-// Telegram Mini App injects window.Telegram.WebApp synchronously before any
-// script runs. If it's not there, we're not in a Mini App — full stop.
-function getTg(): { initData: string } | null {
-  if (typeof window === "undefined") return null
-  // @ts-expect-error – injected by Telegram native client
-  return window.Telegram?.WebApp ?? null
-}
+import { IS_TELEGRAM, getTgWebApp, getTgInitData } from "../src/lib/telegram"
 
 function PushRegistrar() {
   const me = trpc.user.me.useQuery()
@@ -64,8 +57,8 @@ function AuthGate() {
   const tgSignIn = trpc.auth.signInWithTelegram.useMutation()
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
 
-  const tg = getTg()
-  const telegramMode = !!tg
+  const tg = getTgWebApp()
+  const telegramMode = IS_TELEGRAM
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
   const onAuthRoute = segments[0] === "onboarding"
   const attempted = useRef(false)
@@ -82,9 +75,10 @@ function AuthGate() {
   // the recovery UI in onboarding offers a hard reload.
   useEffect(() => {
     if (!hydrated || !navReady || token || attempted.current) return
-    if (telegramMode && tg?.initData) {
+    const initData = getTgInitData()
+    if (telegramMode && initData) {
       attempted.current = true
-      tgSignIn.mutateAsync({ initData: tg.initData })
+      tgSignIn.mutateAsync({ initData })
         .then((r) => signIn(r.token))
         .catch(noop)
     } else if (demoMode) {
@@ -110,8 +104,9 @@ function AuthGate() {
     if (!hydrated || !navReady) return
     if (!token) {
       // Email flow: nothing auto-signs us in, push to /onboarding.
-      // TG/demo flow: stay put; sign-in effect is running.
-      if (!telegramMode && !demoMode && !onAuthRoute) router.replace("/onboarding")
+      // All unauthenticated users go to /onboarding.
+      // IS_TELEGRAM is captured at module load so the hash isn't lost on redirect.
+      if (!onAuthRoute) router.replace("/onboarding")
       return
     }
     if (!me.data) return

@@ -7,7 +7,9 @@
     "start": "expo start",
     "ios": "expo start --ios",
     "android": "expo start --android",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:web": "EXPO_PUBLIC_API_URL=https://pulse-api-razars-projects.vercel.app expo export --platform web --clear && node scripts/post-build-web.js",
+    "deploy:web": "npm run build:web && node scripts/deploy-web.js"
   },
   "dependencies": {
     "@expo-google-fonts/space-grotesk": "^0.2.3",

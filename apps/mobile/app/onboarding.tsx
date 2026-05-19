@@ -11,6 +11,7 @@ import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import { uploadAvatarFile } from "../src/lib/storage"
+import { IS_TELEGRAM, getTgUser, getTgStartParam as getTgParam } from "../src/lib/telegram"
 import type { SupportedLocale } from "@pulse/shared"
 
 type Step = 0 | 1 | 2
@@ -53,40 +54,24 @@ function StatusScreen({ theme, title, desc, button, onPress }: {
   )
 }
 
-function getTgStartParam(): string | undefined {
-  try {
-    // @ts-expect-error — injected by Telegram
-    return window?.Telegram?.WebApp?.initDataUnsafe?.start_param as string | undefined
-  } catch {}
-  return undefined
-}
-
 function readTgGiftToken(): string | undefined {
-  const p = getTgStartParam()
+  const p = getTgParam()
   return p?.startsWith("gift_") ? p.slice(5) : undefined
 }
 
 function readTgReferralCode(): string | undefined {
-  const p = getTgStartParam()
+  const p = getTgParam()
   if (!p || p.startsWith("gift_")) return undefined
   return p.length === 6 ? p : undefined
 }
 
 function getTgUserName(): string | undefined {
-  try {
-    // @ts-expect-error — injected by Telegram
-    return window?.Telegram?.WebApp?.initDataUnsafe?.user?.first_name as string | undefined
-  } catch {}
-  return undefined
+  return getTgUser()?.first_name as string | undefined
 }
 
 function getTgUserId(): string {
-  try {
-    // @ts-expect-error — injected by Telegram
-    const id = window?.Telegram?.WebApp?.initDataUnsafe?.user?.id
-    if (id) return String(id)
-  } catch {}
-  return `anon_${Date.now()}`
+  const id = getTgUser()?.id
+  return id ? String(id) : `anon_${Date.now()}`
 }
 
 // ── Telegram onboarding (4 steps) ────────────────────────────
@@ -526,14 +511,37 @@ function TgProfileStep({
             <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
           </Text>
           <NeuInset style={{ marginBottom: 6 }}>
-            <TextInput
-              value={birthday}
-              onChangeText={setBirthday}
-              placeholder={t("birthdayPlaceholder", "DD.MM.YYYY")}
-              placeholderTextColor={theme.textMuted}
-              keyboardType="numeric"
-              style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
-            />
+            {Platform.OS === "web" ? (
+              <input
+                type="date"
+                value={birthday}
+                onChange={(e) => setBirthday((e.target as HTMLInputElement).value)}
+                max={new Date().toISOString().split("T")[0]}
+                min="1924-01-01"
+                style={{
+                  width: "100%",
+                  height: 44,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  padding: "0 14px",
+                  fontSize: 15,
+                  color: birthday ? theme.text : theme.textMuted,
+                  fontFamily: fonts.body,
+                  boxSizing: "border-box",
+                  cursor: "pointer",
+                } as React.CSSProperties}
+              />
+            ) : (
+              <TextInput
+                value={birthday}
+                onChangeText={setBirthday}
+                placeholder={t("birthdayPlaceholder", "DD.MM.YYYY")}
+                placeholderTextColor={theme.textMuted}
+                keyboardType="numeric"
+                style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
+              />
+            )}
           </NeuInset>
           <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 20 }]}>
             {t("birthdayHint", "We'll surprise you on your birthday 🎂")}
@@ -614,15 +622,9 @@ function TgInviteStep({ onShare, onSkip }: { onShare: () => void; onSkip: () => 
   )
 }
 
-// Telegram Mini App injects window.Telegram.WebApp synchronously — one check.
-function isTelegramMiniApp(): boolean {
-  // @ts-expect-error – injected by Telegram native client
-  return typeof window !== "undefined" && !!window.Telegram?.WebApp
-}
-
 export default function OnboardingScreen() {
   const theme = useTheme()
-  return isTelegramMiniApp() ? <TelegramOnboarding /> : <EmailOnboarding theme={theme} />
+  return IS_TELEGRAM ? <TelegramOnboarding /> : <EmailOnboarding theme={theme} />
 }
 
 function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
