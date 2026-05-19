@@ -71,16 +71,24 @@ function AuthGate() {
     staleTime: 0,
   })
 
-  // 1) Auto sign-in (TG or demo). Fires once per page lifetime — if it fails,
-  // the recovery UI in onboarding offers a hard reload.
+  // 1) Auto sign-in (TG or demo). Retries once on failure (Vercel cold start).
   useEffect(() => {
     if (!hydrated || !navReady || token || attempted.current) return
     const initData = getTgInitData()
     if (telegramMode && initData) {
       attempted.current = true
-      tgSignIn.mutateAsync({ initData })
-        .then((r) => signIn(r.token))
-        .catch(noop)
+      const trySignIn = () =>
+        tgSignIn.mutateAsync({ initData })
+          .then((r) => signIn(r.token))
+          .catch(() => {
+            // Retry once after 3s — handles Vercel cold start timeout
+            setTimeout(() => {
+              tgSignIn.mutateAsync({ initData })
+                .then((r) => signIn(r.token))
+                .catch(noop)
+            }, 3000)
+          })
+      trySignIn()
     } else if (demoMode) {
       attempted.current = true
       demoSignIn.mutateAsync({

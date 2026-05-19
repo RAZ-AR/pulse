@@ -41,9 +41,9 @@ function StatusScreen({ theme, title, desc, button, onPress }: {
           {button ? (
             <Pressable
               onPress={onPress}
-              style={{ marginTop: 24, backgroundColor: theme.text, borderRadius: 99, paddingHorizontal: 28, paddingVertical: 14 }}
+              style={{ marginTop: 24, backgroundColor: colors.skySolid, borderRadius: 99, paddingHorizontal: 32, paddingVertical: 14 }}
             >
-              <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{button}</Text>
+              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>{button}</Text>
             </Pressable>
           ) : null}
         </>
@@ -92,7 +92,8 @@ function TelegramOnboarding() {
   const [authTimedOut, setAuthTimedOut] = useState(false)
   useEffect(() => {
     if (!hydrated || token) return
-    const id = setTimeout(() => setAuthTimedOut(true), 6000)
+    // 15s timeout — Vercel cold starts can take 5-10s
+    const id = setTimeout(() => setAuthTimedOut(true), 15000)
     return () => clearTimeout(id)
   }, [hydrated, token])
 
