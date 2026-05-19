@@ -17,7 +17,16 @@ type Phase =
   | { kind: "scanning"; imageUrl: string }
   | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number }
   | { kind: "submitting" }
-  | { kind: "done"; pointsEarned: number; vendorName?: string; totalRsd?: number; offerTitle?: string }
+  | {
+      kind: "done"
+      pointsEarned: number
+      streakBonus?: number
+      vendorName?: string
+      totalRsd?: number
+      offerTitle?: string
+      needsManualReview?: boolean
+      date?: string
+    }
 
 type OcrFields = {
   vendor: string
@@ -85,7 +94,15 @@ export default function ScanScreen() {
       if (data.includes("suf.purs.gov.rs")) {
         const res = await scanQrMutation.mutateAsync({ qrUrl: data })
         utils.user.me.invalidate()
-        setPhase({ kind: "done", pointsEarned: res.pointsEarned, vendorName: res.vendorName ?? undefined, totalRsd: res.totalRsd })
+        setPhase({
+          kind: "done",
+          pointsEarned: res.pointsEarned,
+          streakBonus: res.streakBonus ?? undefined,
+          vendorName: res.vendorName ?? undefined,
+          totalRsd: res.totalRsd,
+          needsManualReview: res.needsManualReview,
+          date: res.date ?? undefined,
+        })
         return
       }
 
@@ -231,9 +248,12 @@ export default function ScanScreen() {
         ) : (
           <DonePhase
             pointsEarned={phase.pointsEarned}
-            {...(phase.vendorName !== undefined ? { vendorName: phase.vendorName } : {})}
-            {...(phase.totalRsd !== undefined ? { totalRsd: phase.totalRsd } : {})}
-            {...(phase.offerTitle !== undefined ? { offerTitle: phase.offerTitle } : {})}
+            streakBonus={phase.streakBonus}
+            vendorName={phase.vendorName}
+            totalRsd={phase.totalRsd}
+            offerTitle={phase.offerTitle}
+            needsManualReview={phase.needsManualReview}
+            date={phase.date}
             onClose={() => router.back()}
             theme={theme}
             isRainbow={isRainbow}
@@ -380,42 +400,109 @@ function ConfirmPhase({
 }
 
 function DonePhase({
-  pointsEarned, vendorName, totalRsd, offerTitle, onClose, theme, isRainbow,
+  pointsEarned, streakBonus, vendorName, totalRsd, offerTitle,
+  needsManualReview, date, onClose, theme, isRainbow,
 }: {
   pointsEarned: number
+  streakBonus?: number
   vendorName?: string
   totalRsd?: number
   offerTitle?: string
+  needsManualReview?: boolean
+  date?: string
   onClose: () => void
   theme: ReturnType<typeof useTheme>
   isRainbow?: boolean
 }) {
   const { t } = useTranslation("common")
-  const isManualReview = pointsEarned === 0
+  const isPending = needsManualReview || pointsEarned === 0
+  const accentColor = isRainbow ? neonColors.green : colors.mint
+  const formattedDate = date
+    ? new Date(date).toLocaleDateString("sr-RS", { day: "2-digit", month: "short", year: "numeric" })
+    : null
+
   return (
     <View style={[s.center, { padding: 24 }]}>
-      <Text style={s.doneIcon}>{isManualReview ? "🕓" : "✓"}</Text>
-      <Text style={[s.doneTitle, { color: theme.text }]}>
-        {isManualReview ? t("pendingReview", "Pending review") : t("pointsAwarded", "Points awarded!")}
+      {/* Status icon */}
+      <View style={[s.doneIconWrap, { backgroundColor: isPending ? "#FFF8E7" : "#E8FFF4" }]}>
+        <Text style={s.doneIcon}>{isPending ? "🕓" : "✅"}</Text>
+      </View>
+
+      <Text style={[s.doneTitle, { color: theme.text, marginTop: 16 }]}>
+        {isPending ? t("pendingReview", "Pending review") : t("pointsAwarded", "Points awarded!")}
       </Text>
-      {offerTitle ? (
-        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 4 }]}>{offerTitle}</Text>
+
+      {/* Receipt card */}
+      {(vendorName || offerTitle || totalRsd) ? (
+        <View style={[s.receiptCard, { backgroundColor: theme.card ?? "#F9FBFF", borderColor: theme.border }]}>
+          {offerTitle ? (
+            <Text style={[s.receiptVendor, { color: theme.text }]}>{offerTitle}</Text>
+          ) : vendorName ? (
+            <Text style={[s.receiptVendor, { color: theme.text }]}>{vendorName}</Text>
+          ) : null}
+
+          {totalRsd ? (
+            <Text style={[s.receiptAmount, { color: theme.textSecondary }]}>
+              {totalRsd.toLocaleString("sr-RS")} RSD
+            </Text>
+          ) : null}
+
+          {formattedDate ? (
+            <Text style={[s.receiptDate, { color: theme.textMuted ?? theme.textSecondary }]}>
+              {formattedDate}
+            </Text>
+          ) : null}
+
+          {/* Divider */}
+          <View style={[s.receiptDivider, { borderColor: theme.border }]} />
+
+          {/* Points row */}
+          {isPending ? (
+            <Text style={[s.receiptReviewText, { color: theme.textSecondary }]}>
+              {t("largeReceiptReview", "Large receipts go through manual review. Points will appear soon.")}
+            </Text>
+          ) : (
+            <View style={s.receiptPointsRows}>
+              <View style={s.receiptPointsRow}>
+                <Text style={[s.receiptPointsLabel, { color: theme.textSecondary }]}>
+                  {t("receiptPoints", "Receipt")}
+                </Text>
+                <Text style={[s.receiptPointsValue, { color: accentColor }]}>
+                  +{pointsEarned - (streakBonus ?? 0)} pts
+                </Text>
+              </View>
+              {streakBonus ? (
+                <View style={s.receiptPointsRow}>
+                  <Text style={[s.receiptPointsLabel, { color: theme.textSecondary }]}>
+                    🔥 {t("streakBonus", "Streak bonus")}
+                  </Text>
+                  <Text style={[s.receiptPointsValue, { color: accentColor }]}>
+                    +{streakBonus} pts
+                  </Text>
+                </View>
+              ) : null}
+              <View style={[s.receiptPointsRow, s.receiptTotalRow]}>
+                <Text style={[s.receiptTotalLabel, { color: theme.text }]}>
+                  {t("total", "Total")}
+                </Text>
+                <Text style={[s.receiptTotalValue, { color: accentColor }]}>
+                  +{pointsEarned} pts
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      ) : !isPending ? (
+        <Text style={[s.donePoints, { color: accentColor }]}>+{pointsEarned} pts</Text>
       ) : null}
-      {vendorName ? (
-        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 4 }]}>{vendorName}</Text>
-      ) : null}
-      {totalRsd ? (
-        <Text style={[s.doneSub, { color: theme.textSecondary }]}>{totalRsd.toLocaleString()} RSD</Text>
-      ) : null}
-      {isManualReview ? (
-        <Text style={[s.doneSub, { color: theme.textSecondary, marginTop: 8 }]}>
-          {t("largeReceiptReview", "Large receipts go through manual review. You'll see the points soon.")}
+
+      <Pressable
+        onPress={onClose}
+        style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : colors.skySolid, marginTop: 24, paddingHorizontal: 48 }]}
+      >
+        <Text style={{ color: isRainbow ? theme.text : "#FFF", fontWeight: "700", fontSize: 16 }}>
+          {t("done", "Done")}
         </Text>
-      ) : (
-        <Text style={[s.donePoints, { color: isRainbow ? neonColors.green : colors.mint }]}>+{pointsEarned} pts</Text>
-      )}
-      <Pressable onPress={onClose} style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF", marginTop: 24 }]}>
-        <Text style={{ color: theme.text, fontWeight: "700" }}>{t("done", "Done")}</Text>
       </Pressable>
     </View>
   )
@@ -480,8 +567,28 @@ const s = StyleSheet.create({
   btn: { padding: 14, borderRadius: 99, alignItems: "center" },
   dialogTitle: { fontSize: 26, fontWeight: "800", marginBottom: 8, textAlign: "center" },
   dialogText: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
-  doneIcon: { fontSize: 64, marginBottom: 12 },
-  doneTitle: { fontSize: 31, lineHeight: 34, fontWeight: "800" },
-  doneSub: { fontSize: 14, textAlign: "center" },
+  doneIconWrap: { width: 80, height: 80, borderRadius: 40, justifyContent: "center", alignItems: "center" },
+  doneIcon: { fontSize: 40 },
+  doneTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, textAlign: "center" },
   donePoints: { fontSize: 32, fontWeight: "800", marginTop: 12 },
+  receiptCard: {
+    width: "100%",
+    marginTop: 20,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    gap: 4,
+  },
+  receiptVendor: { fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  receiptAmount: { fontSize: 15 },
+  receiptDate: { fontSize: 12, marginTop: 2 },
+  receiptDivider: { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 14 },
+  receiptPointsRows: { gap: 8 },
+  receiptPointsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  receiptTotalRow: { marginTop: 4, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.08)" },
+  receiptPointsLabel: { fontSize: 14 },
+  receiptPointsValue: { fontSize: 14, fontWeight: "700" },
+  receiptTotalLabel: { fontSize: 16, fontWeight: "700" },
+  receiptTotalValue: { fontSize: 22, fontWeight: "800" },
+  receiptReviewText: { fontSize: 13, lineHeight: 18, textAlign: "center" },
 })
