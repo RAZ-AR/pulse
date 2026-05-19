@@ -80,12 +80,26 @@ function AuthGate() {
       const trySignIn = () =>
         tgSignIn.mutateAsync({ initData })
           .then((r) => signIn(r.token))
-          .catch(() => {
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err)
+            if (typeof window !== "undefined") {
+              try { window.localStorage.setItem("_auth_err", msg) } catch { /* ignore */ }
+            }
             // Retry once after 3s — handles Vercel cold start timeout
             setTimeout(() => {
               tgSignIn.mutateAsync({ initData })
-                .then((r) => signIn(r.token))
-                .catch(noop)
+                .then((r) => {
+                  if (typeof window !== "undefined") {
+                    try { window.localStorage.removeItem("_auth_err") } catch { /* ignore */ }
+                  }
+                  signIn(r.token)
+                })
+                .catch((err2: unknown) => {
+                  const msg2 = err2 instanceof Error ? err2.message : String(err2)
+                  if (typeof window !== "undefined") {
+                    try { window.localStorage.setItem("_auth_err", `retry: ${msg2}`) } catch { /* ignore */ }
+                  }
+                })
             }, 3000)
           })
       trySignIn()
