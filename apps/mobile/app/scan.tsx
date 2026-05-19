@@ -17,7 +17,7 @@ type Phase =
   | { kind: "scanning"; imageUrl: string }
   | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number }
   | { kind: "submitting" }
-  | { kind: "error"; message: string; mode: Mode }
+  | { kind: "error"; message: string; mode: Mode; alreadyScanned?: boolean }
   | {
       kind: "done"
       pointsEarned: number
@@ -62,7 +62,11 @@ export default function ScanScreen() {
 
   // ── Show error (works in both native and Telegram WebView) ──
   function showError(title: string, message: string, mode: Mode = "qr") {
-    setPhase({ kind: "error", message: `${title}\n\n${message}`, mode })
+    const alreadyScanned =
+      message.toLowerCase().includes("already been scanned") ||
+      message.toLowerCase().includes("already scanned") ||
+      message.includes("CONFLICT")
+    setPhase({ kind: "error", message: alreadyScanned ? "" : `${title}\n\n${message}`, mode, alreadyScanned })
   }
 
   // ── Telegram native QR scanner ───────────────────────────
@@ -255,6 +259,7 @@ export default function ScanScreen() {
         ) : phase.kind === "error" ? (
           <ErrorPhase
             message={phase.message}
+            alreadyScanned={phase.alreadyScanned}
             onRetry={() => setPhase({ kind: "camera", mode: phase.mode })}
             theme={theme}
           />
@@ -415,13 +420,37 @@ function ConfirmPhase({
 // ── ErrorPhase ────────────────────────────────────────────────
 
 function ErrorPhase({
-  message, onRetry, theme,
+  message, alreadyScanned, onRetry, theme,
 }: {
   message: string
+  alreadyScanned?: boolean
   onRetry: () => void
   theme: ReturnType<typeof useTheme>
 }) {
   const { t } = useTranslation("common")
+
+  if (alreadyScanned) {
+    return (
+      <View style={[s.center, { padding: 28 }]}>
+        <Text style={{ fontSize: 64, marginBottom: 16 }}>🧾</Text>
+        <Text style={[s.doneTitle, { color: theme.text, textAlign: "center", marginBottom: 12 }]}>
+          {t("receiptAlreadyScanned", "Receipt already used")}
+        </Text>
+        <Text style={[{ color: theme.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 28 }]}>
+          {t("receiptAlreadyScannedDesc", "This receipt has already been scanned and points were awarded. Each receipt can only be used once.")}
+        </Text>
+        <Pressable
+          onPress={onRetry}
+          style={[s.btn, { backgroundColor: colors.skySolid, paddingHorizontal: 40 }]}
+        >
+          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
+            {t("scanAnother", "Scan another receipt")}
+          </Text>
+        </Pressable>
+      </View>
+    )
+  }
+
   return (
     <View style={[s.center, { padding: 28 }]}>
       <Text style={{ fontSize: 52, marginBottom: 12 }}>⚠️</Text>
