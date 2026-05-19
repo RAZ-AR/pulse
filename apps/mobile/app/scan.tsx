@@ -7,6 +7,7 @@ import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
 import { colors, neonColors, fonts, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
+import { IS_TELEGRAM, getTgWebApp } from "../src/lib/telegram"
 
 type Mode = "qr" | "photo"
 
@@ -48,6 +49,20 @@ export default function ScanScreen() {
   const confirmMutation = trpc.transaction.confirmReceipt.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
+
+  // ── Telegram native QR scanner ───────────────────────────
+  function openTelegramQrScanner() {
+    const tg = getTgWebApp()
+    if (!tg?.showScanQrPopup) {
+      Alert.alert("QR", "QR scanning not available in this Telegram version")
+      return
+    }
+    tg.showScanQrPopup({ text: "Point at the QR code on the receipt" }, (data: string) => {
+      tg.closeScanQrPopup()
+      handleQrScanned(data)
+      return true // close popup after first scan
+    })
+  }
 
   // ── QR scan — роутер по типу QR ──────────────────────────
 
@@ -184,15 +199,19 @@ export default function ScanScreen() {
               </Pressable>
             </View>
 
-            <CameraPhase
-              mode={phase.mode}
-              permission={permission}
-              requestPermission={requestPermission}
-              cameraRef={cameraRef}
-              onCapture={handleCapture}
-              onQrScanned={handleQrScanned}
-              theme={theme}
-            />
+            {IS_TELEGRAM && phase.mode === "qr" ? (
+              <TelegramQrPhase onPress={openTelegramQrScanner} theme={theme} t={t} />
+            ) : (
+              <CameraPhase
+                mode={phase.mode}
+                permission={permission}
+                requestPermission={requestPermission}
+                cameraRef={cameraRef}
+                onCapture={handleCapture}
+                onQrScanned={handleQrScanned}
+                theme={theme}
+              />
+            )}
           </>
         ) : phase.kind === "uploading" || phase.kind === "scanning" ? (
           <LoadingPhase
@@ -222,6 +241,33 @@ export default function ScanScreen() {
         )}
       </View>
     </>
+  )
+}
+
+// ── TelegramQrPhase — uses Telegram native scanner ───────────
+
+function TelegramQrPhase({
+  onPress, theme, t,
+}: {
+  onPress: () => void
+  theme: ReturnType<typeof useTheme>
+  t: (key: string, fallback: string) => string
+}) {
+  return (
+    <View style={[s.center, { padding: 32, gap: 20 }]}>
+      <Text style={{ fontSize: 72 }}>📷</Text>
+      <Text style={[s.dialogTitle, { color: theme.text, fontSize: 22 }]}>
+        {t("scanQrCode", "Scan QR code")}
+      </Text>
+      <Text style={[s.dialogText, { color: theme.textSecondary }]}>
+        {t("tapToScanQr", "Tap the button below to open the camera and scan the QR code from your receipt.")}
+      </Text>
+      <Pressable onPress={onPress} style={[s.btn, { backgroundColor: colors.skySolid, paddingHorizontal: 32 }]}>
+        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
+          {t("openCamera", "Open camera")}
+        </Text>
+      </Pressable>
+    </View>
   )
 }
 
