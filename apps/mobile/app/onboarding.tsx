@@ -90,7 +90,6 @@ function TelegramOnboarding() {
   const [giftToken] = useState<string | undefined>(readTgGiftToken)
   const [referralCode] = useState<string | undefined>(readTgReferralCode)
   const [authTimedOut, setAuthTimedOut] = useState(false)
-  const [authError, setAuthError] = useState<string | null>(null)
   useEffect(() => {
     if (!hydrated || token) return
     // 15s timeout — Vercel cold starts can take 5-10s
@@ -196,21 +195,10 @@ function TelegramOnboarding() {
   function goHome() { router.replace("/(tabs)") }
 
   if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) return <StatusScreen theme={theme} />
-  if (!token && authTimedOut) {
-    const isBrowser = typeof window !== "undefined"
-    const tgWebApp = isBrowser ? (window as any).Telegram?.WebApp : null
-    const initDataPreview = tgWebApp?.initData ? tgWebApp.initData.slice(0, 80) : "EMPTY"
-    const storedErr = isBrowser ? (window.localStorage.getItem("_auth_err") ?? "") : ""
-    const debugInfo = [
-      `IS_TELEGRAM: ${IS_TELEGRAM}`,
-      `initData: ${initDataPreview}`,
-      storedErr ? `Error: ${storedErr}` : "No error captured",
-    ].join("\n")
-    return (
-      <StatusScreen theme={theme} title={t("signInStuck")} desc={debugInfo} button={t("reload")}
-        onPress={() => { if (isBrowser) window.location.reload() }} />
-    )
-  }
+  if (!token && authTimedOut) return (
+    <StatusScreen theme={theme} title={t("signInStuck")} desc={t("signInStuckDesc")} button={t("reload")}
+      onPress={() => { if (typeof window !== "undefined") window.location.reload() }} />
+  )
   if (me.isError) return (
     <StatusScreen theme={theme} title={t("sessionExpired")} desc={t("sessionExpiredDesc")} button={t("retry")}
       onPress={() => { signOut().catch(() => {}) }} />
