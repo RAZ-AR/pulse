@@ -17,6 +17,7 @@ type Phase =
   | { kind: "scanning"; imageUrl: string }
   | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number }
   | { kind: "submitting" }
+  | { kind: "error"; message: string; mode: Mode }
   | {
       kind: "done"
       pointsEarned: number
@@ -59,24 +60,33 @@ export default function ScanScreen() {
     onSuccess: () => utils.user.me.invalidate(),
   })
 
+  // ── Show error (works in both native and Telegram WebView) ──
+  function showError(title: string, message: string, mode: Mode = "qr") {
+    setPhase({ kind: "error", message: `${title}\n\n${message}`, mode })
+  }
+
   // ── Telegram native QR scanner ───────────────────────────
   function openTelegramQrScanner() {
     const tg = getTgWebApp()
     if (!tg?.showScanQrPopup) {
-      Alert.alert("QR", "QR scanning not available in this Telegram version")
+      showError("Ошибка", "QR scanning not available in this Telegram version")
       return
     }
-    tg.showScanQrPopup({ text: "Point at the QR code on the receipt" }, (data: string) => {
-      tg.closeScanQrPopup()
-      handleQrScanned(data)
-      return true // close popup after first scan
-    })
+    // Reset any stale scan state
+    setPhase({ kind: "camera", mode: "qr" })
+    setTimeout(() => {
+      tg.showScanQrPopup({ text: "Point at the QR code on the receipt" }, (data: string) => {
+        tg.closeScanQrPopup?.()
+        void handleQrScanned(data)
+        return true
+      })
+    }, 50)
   }
 
   // ── QR scan — роутер по типу QR ──────────────────────────
 
   async function handleQrScanned(data: string) {
-    if (phase.kind !== "camera") return
+    if (phase.kind === "submitting" || phase.kind === "done") return
     setPhase({ kind: "submitting" })
 
     try {
@@ -106,15 +116,14 @@ export default function ScanScreen() {
         return
       }
 
-      // 3. Неизвестный QR
-      Alert.alert(
+      // 3. Unknown QR — show what was scanned so user can report
+      showError(
         t("unknownQr", "Unknown QR code"),
-        t("unknownQrDesc", "This QR is not an ayoo offer or a Serbian fiscal receipt.")
+        t("unknownQrDesc", "This QR is not a Serbian fiscal receipt.\n\nScanned: ") + data.slice(0, 80)
       )
-      setPhase({ kind: "camera", mode: "qr" })
     } catch (e) {
-      Alert.alert(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e))
-      setPhase({ kind: "camera", mode: "qr" })
+      const msg = e instanceof Error ? e.message : String(e)
+      showError(t("scanFailed", "Scan failed"), msg)
     }
   }
 
@@ -147,8 +156,7 @@ export default function ScanScreen() {
         },
       })
     } catch (e) {
-      Alert.alert(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e))
-      setPhase({ kind: "camera", mode: "photo" })
+      showError(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e), "photo")
     }
   }
 
@@ -156,7 +164,7 @@ export default function ScanScreen() {
     if (phase.kind !== "confirm") return
     const amount = parseFloat(phase.ocr.amount)
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert(t("invalidAmount", "Enter a valid amount"))
+      showError(t("invalidAmount", "Enter a valid amount"), "")
       return
     }
     if (!phase.ocr.vendor.trim()) {
@@ -177,8 +185,7 @@ export default function ScanScreen() {
       })
       setPhase({ kind: "done", pointsEarned: res.pointsEarned })
     } catch (e) {
-      Alert.alert(t("submitFailed", "Submit failed"), e instanceof Error ? e.message : String(e))
-      setPhase({ kind: "confirm", imageUrl: phase.imageUrl, receiptHash: phase.receiptHash, confidence: phase.confidence, ocr: phase.ocr })
+      showError(t("submitFailed", "Submit failed"), e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -245,6 +252,12 @@ export default function ScanScreen() {
           />
         ) : phase.kind === "submitting" ? (
           <LoadingPhase label={t("submitting", "Submitting…")} theme={theme} />
+        ) : phase.kind === "error" ? (
+          <ErrorPhase
+            message={phase.message}
+            onRetry={() => setPhase({ kind: "camera", mode: phase.mode })}
+            theme={theme}
+          />
         ) : (
           <DonePhase
             pointsEarned={phase.pointsEarned}
@@ -396,6 +409,37 @@ function ConfirmPhase({
         <Text style={{ color: theme.text, fontWeight: "700" }}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
       </Pressable>
     </ScrollView>
+  )
+}
+
+// ── ErrorPhase ────────────────────────────────────────────────
+
+function ErrorPhase({
+  message, onRetry, theme,
+}: {
+  message: string
+  onRetry: () => void
+  theme: ReturnType<typeof useTheme>
+}) {
+  const { t } = useTranslation("common")
+  return (
+    <View style={[s.center, { padding: 28 }]}>
+      <Text style={{ fontSize: 52, marginBottom: 12 }}>⚠️</Text>
+      <Text style={[s.doneTitle, { color: theme.text, marginBottom: 12 }]}>
+        {t("scanFailed", "Scan failed")}
+      </Text>
+      <View style={[s.receiptCard, { backgroundColor: theme.card ?? "#FFF5F5", borderColor: "#FFD0D0" }]}>
+        <Text style={{ color: theme.text, fontSize: 13, lineHeight: 18 }}>{message}</Text>
+      </View>
+      <Pressable
+        onPress={onRetry}
+        style={[s.btn, { backgroundColor: colors.skySolid, marginTop: 24, paddingHorizontal: 40 }]}
+      >
+        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
+          {t("tryAgain", "Try again")}
+        </Text>
+      </Pressable>
+    </View>
   )
 }
 
