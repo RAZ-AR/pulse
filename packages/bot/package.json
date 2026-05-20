@@ -5,8 +5,14 @@
   "main": "./src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:partner": "tsx watch src/partner.ts",
     "start": "tsx src/index.ts",
+    "start:partner": "tsx src/partner.ts",
     "build": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./partner": "./src/partner.ts"
   },
   "dependencies": {
     "@pulse/db": "workspace:*",

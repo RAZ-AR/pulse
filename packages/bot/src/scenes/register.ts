@@ -1,5 +1,5 @@
 import { Scenes } from "telegraf"
-import type { Context, WizardState } from "../index"
+import type { Context, WizardState } from "../types"
 import { db } from "../lib/db"
 
 const s = (ctx: Context) => ctx.wizard.state as WizardState
@@ -35,6 +35,14 @@ function buildSummary(st: WizardState): string {
     `🪪 *PIB:* ${st.taxId || "не указан"}\n` +
     `⭐ *Ставка:* ${rateLabel}`
   )
+}
+
+function mapCategory(category: string): "CAFE" | "RESTAURANT" | "RETAIL" | "OTHER" {
+  const normalized = category.toLowerCase()
+  if (normalized.includes("каф")) return "CAFE"
+  if (normalized.includes("ресторан") || normalized.includes("бар")) return "RESTAURANT"
+  if (normalized.includes("магаз")) return "RETAIL"
+  return "OTHER"
 }
 
 // ── Scene ─────────────────────────────────────────────────────
@@ -250,17 +258,41 @@ export const registerScene = new Scenes.WizardScene<Context>(
       return ctx.scene.leave()
     }
 
-    await db.merchant.create({
-      data: {
-        name:           st.name,
-        address:        `${st.city}, ${st.address}`,
-        taxId:          st.taxId || null,
-        email:          st.email,
-        phone:          st.phone || null,
-        telegramChatId: chatId,
-        status:         "PENDING",
-        pointsBalance:  0,
-      },
+    await db.$transaction(async (tx) => {
+      const merchant = await tx.merchant.create({
+        data: {
+          name:           st.name,
+          address:        `${st.city}, ${st.address}`,
+          taxId:          st.taxId || null,
+          email:          st.email,
+          phone:          st.phone || null,
+          telegramChatId: chatId,
+          status:         "PENDING",
+          pointsBalance:  0,
+        },
+      })
+
+      await tx.venue.create({
+        data: {
+          name: st.name,
+          category: mapCategory(st.category),
+          description: st.social ? `Registered via ayoo_partner: ${st.social}` : "Registered via ayoo_partner",
+          address: st.address,
+          city: st.city,
+          country: "Serbia",
+          lat: 0,
+          lng: 0,
+          photos: [],
+          ownerId: merchant.id,
+          isPartner: true,
+          partnerSince: new Date(),
+          pointsPerCurrency: st.preferredRate,
+          currency: "RSD",
+          phone: st.phone || null,
+          website: st.social && !st.social.startsWith("@") ? st.social : null,
+          instagram: st.social?.startsWith("@") ? st.social : null,
+        },
+      })
     })
 
     await ctx.reply(

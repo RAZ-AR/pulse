@@ -1,5 +1,5 @@
 import { Scenes } from "telegraf"
-import type { Context, WizardState } from "../index"
+import type { Context, WizardState } from "../types"
 import { db } from "../lib/db"
 
 const s = (ctx: Context) => ctx.wizard.state as WizardState
