@@ -4,8 +4,8 @@ import { PrismaClient } from "@pulse/db"
 const db = new PrismaClient()
 
 async function run() {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN
-  if (!botToken) return Response.json({ error: "No bot token" }, { status: 500 })
+  const botToken = process.env.PARTNER_TELEGRAM_BOT_TOKEN
+  if (!botToken) return Response.json({ error: "No partner bot token" }, { status: 500 })
 
   const now = new Date()
   const weekFromNow = new Date(now.getTime() + 7 * 24 * 3600 * 1000)
