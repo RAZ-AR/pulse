@@ -187,7 +187,7 @@ function TelegramOnboarding() {
     if (!referralLink) return
     try {
       await Share.share({
-        message: t("shareMessage", "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.app/r/{{code}}", { code: me.data?.referralCode ?? "" }),
+        message: t("shareMessage", "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.space/r/{{code}}", { code: me.data?.referralCode ?? "" }),
       })
     } catch { /* cancelled */ }
   }

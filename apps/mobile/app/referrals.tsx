@@ -28,7 +28,7 @@ export default function ReferralsScreen() {
       await Share.share({
         message: t(
           "shareMessage",
-          "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.app/r/{{code}}",
+          "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.space/r/{{code}}",
           { code },
         ),
       })

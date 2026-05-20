@@ -106,7 +106,7 @@ function AuthGate() {
     } else if (demoMode) {
       attempted.current = true
       demoSignIn.mutateAsync({
-        email: "demo@ayoo.app",
+        email: "demo@ayoo.space",
         name: "Demo User",
         homeCity: "Belgrade",
         language: "EN",

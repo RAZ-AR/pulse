@@ -30,7 +30,7 @@ const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = 
 
 const DEMO_PROFILE = {
   id: "demo",
-  email: "demo@ayoo.app",
+  email: "demo@ayoo.space",
   name: "Demo User",
   avatarUrl: null,
   homeCity: "Belgrade",
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
       await Share.share({
         message: t(
           "shareMessage",
-          "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.app/r/{{code}}",
+          "Join me on ayoo — venues compete on the points rate they give. Use my code {{code}} to get 50 welcome points: ayoo.space/r/{{code}}",
           { code },
         ),
       })
