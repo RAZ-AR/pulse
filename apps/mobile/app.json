@@ -5,14 +5,14 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "scheme": "pulse",
+    "scheme": "ayoo",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.pulse.app"
+      "bundleIdentifier": "com.ayoo.app"
     },
     "android": {
-      "package": "com.pulse.app",
+      "package": "com.ayoo.app",
       "adaptiveIcon": {
         "backgroundColor": "#0F1115"
       },

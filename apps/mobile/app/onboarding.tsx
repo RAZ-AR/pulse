@@ -659,7 +659,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
   }
 
   function skipEmail() {
-    setEmail("") // will be filled by backend as guest_xxx@pulse.app
+    setEmail("") // will be filled by backend as guest_xxx@ayoo.space
     setStep(2)
   }
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Deploy dist/ to Vercel and update ayoo-app.vercel.app alias
+// Deploy dist/ to Vercel and update app.ayoo.space alias
 const { execSync } = require("child_process")
 const https = require("https")
 const fs = require("fs")
 
 const TEAM = "team_OaJPAnzFHgtpCemoxyHEh6ol"
 const DIST_PROJECT_ID = "prj_NRiA3fzgFRfJqxYw9T16jZs5qc9p"
-const ALIAS = "ayoo-app.vercel.app"
+const ALIAS = "app.ayoo.space"
 
 function getToken() {
   const authPath = require("os").homedir() + "/Library/Application Support/com.vercel.cli/auth.json"

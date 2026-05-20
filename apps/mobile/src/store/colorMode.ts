@@ -3,7 +3,7 @@ import { Platform } from "react-native"
 
 type ColorMode = "pastel" | "rainbow"
 
-const KEY = "pulse_color_mode"
+const KEY = "ayoo_color_mode"
 
 function loadMode(): ColorMode {
   if (Platform.OS === "web") {

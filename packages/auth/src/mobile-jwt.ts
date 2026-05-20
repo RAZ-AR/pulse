@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from "jose"
 
 const ALGORITHM = "HS256"
-const ISSUER = "pulse-mobile"
+const ISSUER = "ayoo-mobile"
 const TOKEN_TTL = "30d"
 
 function getSecret(): Uint8Array {

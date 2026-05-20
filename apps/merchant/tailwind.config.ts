@@ -27,7 +27,7 @@ const config: Config = {
           secondary: "#6B7280",
         },
         // Brand accents (used sparingly in merchant)
-        pulse: {
+        ayoo: {
           pink: "#FF4D8F",
           blue: "#3DBEFF",
           green: "#1FE3A0",

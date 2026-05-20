@@ -52,7 +52,7 @@ export const authRouter = router({
       const tgUser = JSON.parse(userRaw) as { id: number; first_name: string; last_name?: string; username?: string }
 
       const telegramId = String(tgUser.id)
-      const syntheticEmail = `tg_${telegramId}@pulse.app`
+      const syntheticEmail = `tg_${telegramId}@ayoo.space`
       const name = tgUser.username ?? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ")
 
       const tgLang = (params.get("user") ? (JSON.parse(params.get("user")!) as { language_code?: string }).language_code : undefined) ?? "en"
@@ -130,7 +130,7 @@ export const authRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // If no email provided, generate a guest synthetic email (user can add real email in profile later)
-      const email = input.email ?? `guest_${crypto.randomUUID().replace(/-/g, "")}@pulse.app`
+      const email = input.email ?? `guest_${crypto.randomUUID().replace(/-/g, "")}@ayoo.space`
 
       // Find or create user
       type AuthUser = { id: string; email: string; onboardingDone: boolean; name: string | null; language: "EN" | "RU" | "SR" }

@@ -1,5 +1,5 @@
 /**
- * PULSE design system — two modes:
+ * ayoo design system — two modes:
  *  pastel  — soft unicorn-neumorphic (default)
  *  rainbow — neon vivid dark mode, inspired by gradient orb/pill references
  */

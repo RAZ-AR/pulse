@@ -1,6 +1,6 @@
-# PULSE Backend
+# ayoo Backend
 
-PULSE is a next-generation loyalty platform where venues publicly compete on their points exchange rate to attract customers. Users earn points anywhere (via receipt scan) or at partner venues (10× better rate), and spend them only at partners.
+ayoo is a next-generation loyalty platform where venues publicly compete on their points exchange rate to attract customers. Users earn points anywhere (via receipt scan) or at partner venues (10× better rate), and spend them only at partners.
 
 This monorepo contains the **API** (tRPC, for the mobile app) and the **Merchant Web App** (Next.js dashboard for venue owners).
 
@@ -27,7 +27,7 @@ This monorepo contains the **API** (tRPC, for the mobile app) and the **Merchant
 ## Project structure
 
 ```
-pulse-backend/
+ayoo-backend/
 ├── apps/
 │   ├── api/          # Next.js — tRPC handler for mobile app (port 3000)
 │   └── merchant/     # Next.js — Merchant Web App (port 3001)
@@ -51,7 +51,7 @@ pulse-backend/
 
 ```bash
 git clone <repo>
-cd pulse-backend
+cd ayoo-backend
 pnpm install
 ```
 
@@ -114,8 +114,8 @@ Two separate Vercel projects, both pointing to this monorepo:
 
 | Project | Root directory | Environment |
 |---|---|---|
-| `pulse-api` | `apps/api` | `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, ... |
-| `pulse-merchant` | `apps/merchant` | `DATABASE_URL`, `MERCHANT_AUTH_SECRET`, ... |
+| `ayoo-api` | `apps/api` | `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, ... |
+| `ayoo-merchant` | `apps/merchant` | `DATABASE_URL`, `MERCHANT_AUTH_SECRET`, ... |
 
 Add all variables from `.env.example` to each project's Vercel dashboard.
 

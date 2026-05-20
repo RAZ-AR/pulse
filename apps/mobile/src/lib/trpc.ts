@@ -8,7 +8,7 @@ import type { AppRouter } from "@pulse/trpc/server"
 
 export const trpc = createTRPCReact<AppRouter>()
 
-const TOKEN_KEY = "pulse.session.token"
+const TOKEN_KEY = "ayoo.session.token"
 
 export async function getSessionToken(): Promise<string | null> {
   if (Platform.OS === "web") {

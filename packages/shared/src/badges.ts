@@ -36,7 +36,7 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     code: "welcome",
     name: "Welcome aboard",
-    description: "Joined PULSE",
+    description: "Joined ayoo",
     iconUrl: "🎉",
     rarity: "COMMON",
     predicate: () => true, // anyone passing the badge check after signup gets it

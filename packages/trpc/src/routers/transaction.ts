@@ -404,7 +404,7 @@ export const transactionRouter = router({
           where: { name: { contains: vendorName, mode: "insensitive" } },
           select: { id: true, isPartner: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true },
         }),
-        // PIB match: if the receipt belongs to a registered PULSE partner
+        // PIB match: if the receipt belongs to a registered ayoo partner
         vendorInfo.pib
           ? ctx.db.merchant.findFirst({
               where: { taxId: vendorInfo.pib, status: "ACTIVE" },

@@ -32,7 +32,7 @@ import srVenue from "@pulse/i18n/locales/sr/venue.json"
 import srTransactions from "@pulse/i18n/locales/sr/transactions.json"
 import srGift from "@pulse/i18n/locales/sr/gift.json"
 
-const LOCALE_KEY = "pulse.locale"
+const LOCALE_KEY = "ayoo.locale"
 const SUPPORTED: SupportedLocale[] = ["en", "ru", "sr"]
 
 function detectLocale(): SupportedLocale {

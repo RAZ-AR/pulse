@@ -9,15 +9,15 @@ import { hash } from "bcryptjs"
 import { db } from "./client"
 import { BADGE_DEFINITIONS } from "@pulse/shared"
 
-const MERCHANT_EMAIL = "armen@pulse.app"
-const MERCHANT_PASSWORD = "pulse-dev-2024!" // change before production
+const MERCHANT_EMAIL = "armen@ayoo.space"
+const MERCHANT_PASSWORD = "ayoo-dev-2024!" // change before production
 
 // pointsPerCurrency = 1 / RSD_per_point
 // Willow/JAN: 1 point per 125 RSD → 0.008
 const WILLOW_JAN_RATE = 1 / 125
 
 async function seed() {
-  console.log("🌱 Seeding PULSE database…\n")
+  console.log("🌱 Seeding ayoo database…\n")
 
   // ── Badges (idempotent upsert by code) ───────────────────────
   for (const def of BADGE_DEFINITIONS) {
@@ -254,7 +254,7 @@ async function seed() {
     create: {
       id: "challenge_spend_2k",
       title: "Big spender",
-      description: "Spend 2,000 RSD at PULSE partners this month and earn 100 bonus points.",
+      description: "Spend 2,000 RSD at ayoo partners this month and earn 100 bonus points.",
       type: "SPEND_AMOUNT",
       rules: { threshold: 2000 },
       pointsReward: 100,

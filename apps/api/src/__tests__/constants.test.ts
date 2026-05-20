@@ -8,7 +8,7 @@ import {
   WELCOME_EXPIRY_DAYS,
 } from "@pulse/shared"
 
-describe("PULSE constants", () => {
+describe("ayoo constants", () => {
   it("partner rate is 10x scan rate", () => {
     expect(SCAN_RATE_RATIO).toBe(10)
   })

@@ -139,7 +139,7 @@ export const venueRouter = router({
         .slice(0, input.limit)
     }),
 
-  // The PULSE core: venues competing by points rate — partners sorted by generosity
+  // The ayoo core: venues competing by points rate — partners sorted by generosity
   rateLeaderboard: publicProcedure
     .input(
       z.object({
