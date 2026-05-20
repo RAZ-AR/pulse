@@ -326,7 +326,7 @@ function TgServiceStep({ currentLng, onChangeLang, onContinue }: {
 // ── Step 1: Welcome coupon ─────────────────────────────────────
 function TgCouponStep({ name, giftToken, onContinue }: {
   name: string
-  giftToken?: string
+  giftToken?: string | undefined
   onContinue: () => void
 }) {
   const { t } = useTranslation("auth")

@@ -26,6 +26,8 @@ function daysLeft(end: Date | string): number {
 export default function ChallengesScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
+  const tx = (key: string, fallback: string, opts?: Record<string, unknown>) =>
+    opts ? t(key, fallback, opts) : t(key, fallback)
   const router = useRouter()
   const [tab, setTab] = useState<Tab>("mine")
 
@@ -80,7 +82,7 @@ export default function ChallengesScreen() {
                     completed={uc.isCompleted}
                     sponsorName={uc.challenge.venue?.name ?? null}
                     onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: uc.challengeId } })}
-                    t={t}
+                    t={tx}
                   />
                 )
               })
@@ -110,7 +112,7 @@ export default function ChallengesScreen() {
                   daysLeft={daysLeft(c.endDate)}
                   sponsorName={c.venue?.name ?? null}
                   onPress={() => router.push({ pathname: "/challenge/[id]", params: { id: c.id } })}
-                  t={t}
+                  t={tx}
                 />
               )
             })

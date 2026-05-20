@@ -21,12 +21,12 @@ type Phase =
   | {
       kind: "done"
       pointsEarned: number
-      streakBonus?: number
-      vendorName?: string
-      totalRsd?: number
-      offerTitle?: string
-      needsManualReview?: boolean
-      date?: string
+      streakBonus?: number | undefined
+      vendorName?: string | undefined
+      totalRsd?: number | undefined
+      offerTitle?: string | undefined
+      needsManualReview?: boolean | undefined
+      date?: string | undefined
     }
 
 type OcrFields = {
@@ -423,7 +423,7 @@ function ErrorPhase({
   message, alreadyScanned, onRetry, theme,
 }: {
   message: string
-  alreadyScanned?: boolean
+  alreadyScanned?: boolean | undefined
   onRetry: () => void
   theme: ReturnType<typeof useTheme>
 }) {
@@ -457,7 +457,7 @@ function ErrorPhase({
       <Text style={[s.doneTitle, { color: theme.text, marginBottom: 12 }]}>
         {t("scanFailed", "Scan failed")}
       </Text>
-      <View style={[s.receiptCard, { backgroundColor: theme.card ?? "#FFF5F5", borderColor: "#FFD0D0" }]}>
+      <View style={[s.receiptCard, { backgroundColor: theme.surface, borderColor: "#FFD0D0" }]}>
         <Text style={{ color: theme.text, fontSize: 13, lineHeight: 18 }}>{message}</Text>
       </View>
       <Pressable
@@ -477,12 +477,12 @@ function DonePhase({
   needsManualReview, date, onClose, theme, isRainbow,
 }: {
   pointsEarned: number
-  streakBonus?: number
-  vendorName?: string
-  totalRsd?: number
-  offerTitle?: string
-  needsManualReview?: boolean
-  date?: string
+  streakBonus?: number | undefined
+  vendorName?: string | undefined
+  totalRsd?: number | undefined
+  offerTitle?: string | undefined
+  needsManualReview?: boolean | undefined
+  date?: string | undefined
   onClose: () => void
   theme: ReturnType<typeof useTheme>
   isRainbow?: boolean
@@ -507,7 +507,7 @@ function DonePhase({
 
       {/* Receipt card */}
       {(vendorName || offerTitle || totalRsd) ? (
-        <View style={[s.receiptCard, { backgroundColor: theme.card ?? "#F9FBFF", borderColor: theme.border }]}>
+        <View style={[s.receiptCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           {offerTitle ? (
             <Text style={[s.receiptVendor, { color: theme.text }]}>{offerTitle}</Text>
           ) : vendorName ? (

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import path from "path"
 
 const config: NextConfig = {
   transpilePackages: [
@@ -8,6 +9,7 @@ const config: NextConfig = {
     "@pulse/shared",
     "@pulse/trpc",
   ],
+  outputFileTracingRoot: path.join(__dirname, "../../"),
 }
 
 export default config
