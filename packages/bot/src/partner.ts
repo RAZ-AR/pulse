@@ -53,6 +53,8 @@ partnerBot.start(async (ctx) => {
     return
   }
 
+  const miniAppUrl = process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini"
+
   await ctx.reply(
     `👋 С возвращением, *${merchant.name}*!\n\n` +
     `💎 Ваш баланс: *${merchant.pointsBalance} баллов*\n\n` +
@@ -61,7 +63,14 @@ partnerBot.start(async (ctx) => {
     `/balance — баланс\n` +
     `/topup — пополнить баланс\n` +
     `/redeem — принять оплату баллами`,
-    { parse_mode: "Markdown" }
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "📷 Открыть ayoo Partner App", web_app: { url: miniAppUrl } },
+        ]],
+      },
+    }
   )
 })
 

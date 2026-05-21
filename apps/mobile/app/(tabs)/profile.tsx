@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
+import QRCode from "react-native-qrcode-svg"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
@@ -327,6 +328,16 @@ export default function ProfileScreen() {
         </Text>
         <Text style={[s.referralCode, { fontFamily: fonts.displayHeavy }]}>{u.referralCode}</Text>
         <Text style={s.referralHint}>{t("referralHintShort", "Friends +50 · You +100 after first buy")}</Text>
+        {/* QR code for merchant to scan */}
+        <View style={s.qrWrap}>
+          <QRCode
+            value={`ayoo://user/${u.referralCode}`}
+            size={160}
+            color="#0f1115"
+            backgroundColor="rgba(255,255,255,0.95)"
+          />
+          <Text style={s.qrHint}>{t("qrHint", "Show to merchant to earn / pay with points")}</Text>
+        </View>
         <View style={s.referralBtns}>
           <Pressable
             onPress={() => shareReferral(u.referralCode)}
@@ -760,6 +771,8 @@ const s = StyleSheet.create({
   referralLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5, fontWeight: "700", marginBottom: 8 },
   referralCode: { color: colors.ink, fontSize: 25, letterSpacing: 4 },
   referralHint: { color: "#91A1B4", fontSize: 11, marginTop: 8, textAlign: "center" },
+  qrWrap: { alignItems: "center", marginTop: 16, padding: 12, backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 20 },
+  qrHint: { color: "#91A1B4", fontSize: 11, marginTop: 8, textAlign: "center" },
   referralBtns: { flexDirection: "row", gap: 10, marginTop: 14 },
   referralBtnInner: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
   referralBtnText: { color: colors.ink, fontSize: 13 },

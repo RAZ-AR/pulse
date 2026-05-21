@@ -461,4 +461,114 @@ export const merchantRouter = router({
       if (checkins.length > input.limit) nextCursor = checkins.pop()!.id
       return { checkins, nextCursor }
     }),
+
+  /**
+   * Look up a customer by their referral code (shown as QR in the mobile app).
+   * Returns name + current points balance — shown to merchant before confirming transaction.
+   */
+  resolveCustomer: merchantProcedure
+    .input(z.object({ referralCode: z.string().min(1).max(20) }))
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { referralCode: input.referralCode.toUpperCase().trim() },
+        select: {
+          id: true,
+          name: true,
+          earnedPoints: true,
+          welcomePoints: true,
+          avatarUrl: true,
+        },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Customer not found" })
+      return {
+        userId: user.id,
+        name: user.name ?? "Customer",
+        totalPoints: user.earnedPoints + user.welcomePoints,
+        avatarUrl: user.avatarUrl,
+      }
+    }),
+
+  /**
+   * Deduct points from a customer as payment.
+   * Used when customer pays with ayoo points at the venue.
+   * Anti-fraud: checks balance, ownership, partner status, and daily redemption limit.
+   */
+  redeemPoints: merchantProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        venueId: z.string(),
+        points: z.number().int().positive().max(100_000),
+        description: z.string().max(200).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // 1. Verify venue belongs to this merchant and is an active partner
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: input.venueId, ownerId: ctx.merchantId },
+        select: { id: true, name: true, isPartner: true },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND", message: "Venue not found" })
+      if (!venue.isPartner) throw new TRPCError({ code: "BAD_REQUEST", message: "Venue is not an active partner" })
+
+      // 2. Load customer balance
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+        select: { id: true, name: true, earnedPoints: true, welcomePoints: true },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Customer not found" })
+
+      const totalBalance = user.earnedPoints + user.welcomePoints
+      if (totalBalance < input.points) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Insufficient points. Balance: ${totalBalance}, requested: ${input.points}`,
+        })
+      }
+
+      // 3. Anti-fraud: max 5 redemptions per customer per venue per day
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+      const todayRedemptions = await ctx.db.transaction.count({
+        where: {
+          userId: input.userId,
+          venueId: input.venueId,
+          type: "REWARD_REDEEMED",
+          createdAt: { gte: todayStart },
+        },
+      })
+      if (todayRedemptions >= 5) {
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Daily redemption limit reached for this customer" })
+      }
+
+      // 4. Deduct points: earnedPoints first, then welcomePoints
+      const earnedDeduct = Math.min(input.points, user.earnedPoints)
+      const welcomeDeduct = input.points - earnedDeduct
+
+      await ctx.db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: input.userId },
+          data: {
+            earnedPoints: { decrement: earnedDeduct },
+            welcomePoints: { decrement: welcomeDeduct },
+          },
+        })
+        await tx.transaction.create({
+          data: {
+            userId: input.userId,
+            venueId: input.venueId,
+            type: "REWARD_REDEEMED",
+            pointsEarned: -input.points,
+            status: "VERIFIED",
+            verifiedAt: new Date(),
+          },
+        })
+      })
+
+      return {
+        success: true,
+        pointsDeducted: input.points,
+        newBalance: totalBalance - input.points,
+        customerName: user.name ?? "Customer",
+      }
+    }),
 })
