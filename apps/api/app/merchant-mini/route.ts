@@ -1,38 +1,12 @@
-/* eslint-disable @next/next/no-sync-scripts */
-import type { Metadata } from "next"
+/**
+ * GET /merchant-mini
+ *
+ * Serves the Telegram Merchant Mini App as a plain HTML response,
+ * bypassing Next.js layout/rendering entirely.
+ * Scripts load synchronously in order: TG SDK → React → ReactDOM → App.
+ */
 
-export const metadata: Metadata = {
-  title: "ayoo Partner",
-  description: "ayoo merchant mini app",
-}
-
-export default function MerchantMiniPage() {
-  return (
-    <html lang="ru">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <script src="https://telegram.org/js/telegram-web-app.js" />
-        <style dangerouslySetInnerHTML={{ __html: BASE_STYLES }} />
-      </head>
-      <body>
-        <div id="root" />
-        {/* Inline React app — no build step needed, runs from CDN */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-window.__API_BASE__ = "${process.env.NEXT_PUBLIC_API_URL ?? "https://api.ayoo.space"}";
-`,
-          }}
-        />
-        <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossOrigin="anonymous" />
-        <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossOrigin="anonymous" />
-        <script dangerouslySetInnerHTML={{ __html: APP_SCRIPT }} />
-      </body>
-    </html>
-  )
-}
-
-// ─── Inline CSS ────────────────────────────────────────────────────────────────
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://api.ayoo.space"
 
 const BASE_STYLES = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,8 +17,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 button { cursor: pointer; border: none; outline: none; }
 input  { outline: none; border: none; }
 `
-
-// ─── Inline React App ──────────────────────────────────────────────────────────
 
 const APP_SCRIPT = `
 (function() {
@@ -90,7 +62,7 @@ async function trpcMutate(token, proc, input) {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 async function telegramAuth() {
   const initData = tg?.initData;
-  if (!initData) throw new Error('Open this app inside Telegram');
+  if (!initData) throw new Error('Откройте приложение через Telegram');
   const res = await fetch(API + '/api/merchant-tg-auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -162,7 +134,6 @@ function AmountInput({ value, onChange, currency }) {
 
 // ── Screens ───────────────────────────────────────────────────────────────────
 
-// Loading / Error splash
 function Splash({ msg, isError }) {
   return React.createElement('div', {
     style: {
@@ -178,7 +149,6 @@ function Splash({ msg, isError }) {
   );
 }
 
-// Venue selection
 function VenueScreen({ merchant, onSelect }) {
   const venues = merchant.venues;
   return React.createElement('div', { style: { padding: 20 } },
@@ -186,12 +156,12 @@ function VenueScreen({ merchant, onSelect }) {
       React.createElement('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 4 } },
         '🏪 ' + merchant.name),
       React.createElement('div', { style: { fontSize: 14, color: C.hint } },
-        'Select a venue to start')
+        'Выберите заведение')
     ),
     venues.length === 0
       ? React.createElement(Card, null,
           React.createElement('div', { style: { color: C.hint, textAlign: 'center', fontSize: 14 } },
-            'No active venues. Contact ayoo support.'))
+            'Нет активных заведений. Обратитесь в поддержку ayoo.'))
       : venues.map(v =>
           React.createElement(Card, { key: v.id, style: { cursor: 'pointer' } },
             React.createElement('button', {
@@ -206,7 +176,7 @@ function VenueScreen({ merchant, onSelect }) {
                 React.createElement('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } },
                   v.pointsPerCurrency
                     ? '1 ' + (v.currency || 'RSD') + ' = ' + v.pointsPerCurrency + ' pts'
-                    : 'Rate not set')
+                    : 'Ставка не установлена')
               ),
               React.createElement('div', { style: { fontSize: 22 } }, '›')
             )
@@ -215,10 +185,8 @@ function VenueScreen({ merchant, onSelect }) {
   );
 }
 
-// Main action screen
 function ActionScreen({ token, merchant, venue, onBack }) {
-  const [mode, setMode] = useState('home'); // home | scan | confirm-earn | confirm-redeem | result
-  const [code, setCode] = useState('');
+  const [mode, setMode] = useState('home');
   const [manualCode, setManualCode] = useState('');
   const [customer, setCustomer] = useState(null);
   const [amount, setAmount] = useState('');
@@ -229,30 +197,27 @@ function ActionScreen({ token, merchant, venue, onBack }) {
 
   function reset() {
     setMode('home');
-    setCode(''); setManualCode('');
+    setManualCode('');
     setCustomer(null); setAmount(''); setPoints('');
     setError(''); setResult(null);
   }
 
-  // Scan customer QR (contains referralCode)
   function scanQr() {
     if (tg?.showScanQrPopup) {
-      tg.showScanQrPopup({ text: 'Scan customer ayoo QR code' }, raw => {
+      tg.showScanQrPopup({ text: 'Отсканируйте QR-код клиента ayoo' }, raw => {
         tg.closeScanQrPopup?.();
-        // referralCode is plain text or in format ayoo://user/CODE
         const match = raw.match(/ayoo:\\/\\/user\\/([A-Z0-9]+)/i) || raw.match(/^([A-Z0-9]{4,12})$/i);
         if (match) resolveCode(match[1]);
-        else { setError('Not a valid ayoo customer QR'); setMode('home'); }
+        else { setError('Неверный QR-код ayoo'); setMode('home'); }
         return true;
       });
     } else {
-      setMode('scan');
+      setError('Сканер QR недоступен — введите код вручную');
     }
   }
 
   async function resolveCode(referralCode) {
-    setError('');
-    setLoading(true);
+    setError(''); setLoading(true);
     try {
       const data = await trpcQuery(token, 'merchant.resolveCustomer',
         { referralCode: referralCode.toUpperCase() });
@@ -261,12 +226,9 @@ function ActionScreen({ token, merchant, venue, onBack }) {
     } catch (e) {
       setError(e.message);
       setMode('home');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
-  // Award points (partner purchase)
   async function awardPoints() {
     if (!amount || parseFloat(amount) <= 0) return;
     setLoading(true); setError('');
@@ -279,18 +241,14 @@ function ActionScreen({ token, merchant, venue, onBack }) {
       });
       setResult({ type: 'earn', points: res.pointsEarned, newBalance: null, name: customer.name });
       setMode('result');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
   }
 
-  // Redeem points (customer pays with points)
   async function redeemPoints() {
     const pts = parseInt(points);
     if (!pts || pts <= 0) return;
-    if (pts > customer.totalPoints) { setError('Insufficient points'); return; }
+    if (pts > customer.totalPoints) { setError('Недостаточно баллов'); return; }
     setLoading(true); setError('');
     try {
       const res = await trpcMutate(token, 'merchant.redeemPoints', {
@@ -300,23 +258,14 @@ function ActionScreen({ token, merchant, venue, onBack }) {
       });
       setResult({ type: 'redeem', points: pts, newBalance: res.newBalance, name: customer.name });
       setMode('result');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  if (loading) return React.createElement(Splash, { msg: 'Загрузка…' });
 
-  if (loading) return React.createElement(Splash, { msg: 'Loading…' });
-
-  // Header
   const Header = React.createElement('div', {
-    style: {
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '16px 20px 8px', marginBottom: 4,
-    },
+    style: { display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px 8px', marginBottom: 4 },
   },
     React.createElement('button', {
       onClick: mode === 'home' ? onBack : reset,
@@ -328,15 +277,14 @@ function ActionScreen({ token, merchant, venue, onBack }) {
     )
   );
 
-  // ── HOME ──
   if (mode === 'home') return React.createElement('div', { style: { padding: '0 0 32px' } },
     Header,
     React.createElement('div', { style: { padding: '0 20px' } },
       error && React.createElement('div', {
         style: { background: '#fee2e2', color: C.danger, borderRadius: 12, padding: '10px 14px', marginBottom: 12, fontSize: 13 },
       }, error),
-      React.createElement(Btn, { label: '📷 Scan Customer QR', onClick: scanQr }),
-      React.createElement('div', { style: { textAlign: 'center', color: C.hint, fontSize: 13, margin: '12px 0' } }, 'or enter code manually'),
+      React.createElement(Btn, { label: '📷 Сканировать QR клиента', onClick: scanQr }),
+      React.createElement('div', { style: { textAlign: 'center', color: C.hint, fontSize: 13, margin: '12px 0' } }, 'или введите код вручную'),
       React.createElement('div', { style: { display: 'flex', gap: 8 } },
         React.createElement('input', {
           value: manualCode,
@@ -356,16 +304,12 @@ function ActionScreen({ token, merchant, venue, onBack }) {
     )
   );
 
-  // ── CHOOSE ACTION ──
   if (mode === 'choose-action') return React.createElement('div', { style: { padding: '0 0 32px' } },
     Header,
     React.createElement('div', { style: { padding: '0 20px' } },
       React.createElement(Card, null,
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
-          React.createElement('div', { style: { fontSize: 40 } },
-            customer.avatarUrl
-              ? React.createElement('img', { src: customer.avatarUrl, style: { width: 48, height: 48, borderRadius: '50%' } })
-              : '👤'),
+          React.createElement('div', { style: { fontSize: 40 } }, '👤'),
           React.createElement('div', null,
             React.createElement('div', { style: { fontWeight: 800, fontSize: 18 } }, customer.name),
             React.createElement('div', { style: { fontSize: 15, color: C.accent, fontWeight: 700, marginTop: 2 } },
@@ -376,25 +320,19 @@ function ActionScreen({ token, merchant, venue, onBack }) {
       React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 } },
         React.createElement('button', {
           onClick: () => setMode('confirm-earn'),
-          style: {
-            background: C.bgSec, borderRadius: 18, padding: '20px 12px',
-            textAlign: 'center', border: '2px solid transparent',
-          },
+          style: { background: C.bgSec, borderRadius: 18, padding: '20px 12px', textAlign: 'center', border: '2px solid transparent' },
         },
           React.createElement('div', { style: { fontSize: 36, marginBottom: 8 } }, '➕'),
-          React.createElement('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Award Points'),
-          React.createElement('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'Customer bought something')
+          React.createElement('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Начислить'),
+          React.createElement('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'Клиент сделал покупку')
         ),
         React.createElement('button', {
-          onClick: () => customer.totalPoints > 0 ? setMode('confirm-redeem') : setError('Customer has no points'),
-          style: {
-            background: C.bgSec, borderRadius: 18, padding: '20px 12px',
-            textAlign: 'center', border: '2px solid transparent',
-          },
+          onClick: () => customer.totalPoints > 0 ? setMode('confirm-redeem') : setError('У клиента нет баллов'),
+          style: { background: C.bgSec, borderRadius: 18, padding: '20px 12px', textAlign: 'center', border: '2px solid transparent' },
         },
           React.createElement('div', { style: { fontSize: 36, marginBottom: 8 } }, '💸'),
-          React.createElement('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Redeem Points'),
-          React.createElement('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'Customer pays with pts')
+          React.createElement('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Списать'),
+          React.createElement('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'Клиент платит баллами')
         )
       ),
       error && React.createElement('div', {
@@ -403,19 +341,16 @@ function ActionScreen({ token, merchant, venue, onBack }) {
     )
   );
 
-  // ── CONFIRM EARN ──
   if (mode === 'confirm-earn') return React.createElement('div', { style: { padding: '0 0 32px' } },
     Header,
     React.createElement('div', { style: { padding: '0 20px' } },
-      React.createElement('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 4 } }, '➕ Award Points'),
+      React.createElement('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 4 } }, '➕ Начислить баллы'),
       React.createElement('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } },
-        'Enter purchase amount for ' + customer.name),
-      React.createElement(AmountInput, {
-        value: amount, onChange: setAmount, currency: venue.currency || 'RSD',
-      }),
+        'Сумма покупки — ' + customer.name),
+      React.createElement(AmountInput, { value: amount, onChange: setAmount, currency: venue.currency || 'RSD' }),
       amount && parseFloat(amount) > 0 && venue.pointsPerCurrency &&
         React.createElement(Card, null,
-          React.createElement('div', { style: { fontSize: 14, color: C.hint } }, 'Points to award'),
+          React.createElement('div', { style: { fontSize: 14, color: C.hint } }, 'Будет начислено'),
           React.createElement('div', { style: { fontSize: 28, fontWeight: 800, color: C.green } },
             '+' + Math.floor(parseFloat(amount) * venue.pointsPerCurrency) + ' pts')
         ),
@@ -423,30 +358,23 @@ function ActionScreen({ token, merchant, venue, onBack }) {
         style: { background: '#fee2e2', color: C.danger, borderRadius: 12, padding: '10px 14px', marginBottom: 12, fontSize: 13 },
       }, error),
       React.createElement(Btn, {
-        label: 'Confirm Purchase', onClick: awardPoints,
+        label: 'Подтвердить покупку', onClick: awardPoints,
         disabled: !amount || parseFloat(amount) <= 0,
       })
     )
   );
 
-  // ── CONFIRM REDEEM ──
   if (mode === 'confirm-redeem') return React.createElement('div', { style: { padding: '0 0 32px' } },
     Header,
     React.createElement('div', { style: { padding: '0 20px' } },
-      React.createElement('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 4 } }, '💸 Redeem Points'),
+      React.createElement('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 4 } }, '💸 Списать баллы'),
       React.createElement('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } },
-        customer.name + ' has ' + customer.totalPoints.toLocaleString() + ' pts'),
+        customer.name + ' — ' + customer.totalPoints.toLocaleString() + ' pts'),
       React.createElement('div', { style: { position: 'relative', marginBottom: 16 } },
         React.createElement('input', {
-          type: 'number',
-          inputMode: 'numeric',
-          value: points,
-          onChange: e => setPoints(e.target.value),
-          placeholder: '0',
-          style: {
-            width: '100%', fontSize: 32, fontWeight: 800,
-            padding: '14px 70px 14px 16px', background: C.bgSec, borderRadius: 14, color: C.text,
-          },
+          type: 'number', inputMode: 'numeric', value: points,
+          onChange: e => setPoints(e.target.value), placeholder: '0',
+          style: { width: '100%', fontSize: 32, fontWeight: 800, padding: '14px 70px 14px 16px', background: C.bgSec, borderRadius: 14, color: C.text },
         }),
         React.createElement('span', {
           style: { position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: C.hint },
@@ -454,46 +382,38 @@ function ActionScreen({ token, merchant, venue, onBack }) {
       ),
       parseInt(points) > customer.totalPoints &&
         React.createElement('div', { style: { color: C.danger, fontSize: 13, marginBottom: 12 } },
-          '⚠️ Exceeds balance of ' + customer.totalPoints + ' pts'),
+          '⚠️ Превышает баланс ' + customer.totalPoints + ' pts'),
       error && React.createElement('div', {
         style: { background: '#fee2e2', color: C.danger, borderRadius: 12, padding: '10px 14px', marginBottom: 12, fontSize: 13 },
       }, error),
       React.createElement(Btn, {
-        label: 'Confirm Redemption', onClick: redeemPoints,
-        color: '#7c3aed',
+        label: 'Подтвердить списание', onClick: redeemPoints, color: '#7c3aed',
         disabled: !points || parseInt(points) <= 0 || parseInt(points) > customer.totalPoints,
       })
     )
   );
 
-  // ── RESULT ──
   if (mode === 'result' && result) return React.createElement('div', {
-    style: {
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', minHeight: '60vh', padding: '0 24px', textAlign: 'center',
-    },
+    style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '0 24px', textAlign: 'center' },
   },
-    React.createElement('div', { style: { fontSize: 72, marginBottom: 16 } },
-      result.type === 'earn' ? '✅' : '💜'),
+    React.createElement('div', { style: { fontSize: 72, marginBottom: 16 } }, result.type === 'earn' ? '✅' : '💜'),
     React.createElement('div', { style: { fontSize: 24, fontWeight: 800, marginBottom: 8 } },
-      result.type === 'earn' ? 'Points Awarded!' : 'Points Redeemed!'),
+      result.type === 'earn' ? 'Баллы начислены!' : 'Баллы списаны!'),
     React.createElement('div', { style: { fontSize: 44, fontWeight: 900, color: result.type === 'earn' ? C.green : '#7c3aed', marginBottom: 8 } },
       (result.type === 'earn' ? '+' : '-') + result.points + ' pts'),
     React.createElement('div', { style: { fontSize: 15, color: C.hint, marginBottom: 32 } }, result.name),
     result.newBalance !== null &&
       React.createElement('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } },
-        'New balance: ' + result.newBalance.toLocaleString() + ' pts'),
-    React.createElement(Btn, { label: 'Next Customer', onClick: reset })
+        'Новый баланс: ' + result.newBalance.toLocaleString() + ' pts'),
+    React.createElement(Btn, { label: 'Следующий клиент', onClick: reset })
   );
 
   return null;
 }
 
-// ── Root App ──────────────────────────────────────────────────────────────────
-
 function App() {
-  const [state, setState] = useState('loading'); // loading | error | venue | action
-  const [auth, setAuth] = useState(null); // { token, merchant }
+  const [state, setState] = useState('loading');
+  const [auth, setAuth] = useState(null);
   const [venue, setVenue] = useState(null);
   const [errMsg, setErrMsg] = useState('');
 
@@ -501,37 +421,60 @@ function App() {
     tg?.ready();
     tg?.expand();
     telegramAuth()
-      .then(data => { setAuth(data); setState(data.merchant.venues.length === 1 ? 'action-direct' : 'venue'); })
+      .then(data => {
+        setAuth(data);
+        if (data.merchant.venues.length === 1) {
+          setVenue(data.merchant.venues[0]);
+          setState('action');
+        } else {
+          setState('venue');
+        }
+      })
       .catch(e => { setErrMsg(e.message); setState('error'); });
   }, []);
 
-  // If only one venue, skip venue selection
-  useEffect(() => {
-    if (state === 'action-direct' && auth) {
-      setVenue(auth.merchant.venues[0]);
-      setState('action');
-    }
-  }, [state, auth]);
-
-  if (state === 'loading') return React.createElement(Splash, { msg: 'Authenticating…' });
-  if (state === 'error') return React.createElement(Splash, { msg: errMsg, isError: true });
-  if (state === 'venue') return React.createElement(VenueScreen, {
+  if (state === 'loading') return React.createElement(Splash, { msg: 'Авторизация…' });
+  if (state === 'error')   return React.createElement(Splash, { msg: errMsg, isError: true });
+  if (state === 'venue')   return React.createElement(VenueScreen, {
     merchant: auth.merchant,
     onSelect: v => { setVenue(v); setState('action'); },
   });
-  if (state === 'action') return React.createElement(ActionScreen, {
-    token: auth.token,
-    merchant: auth.merchant,
-    venue,
+  if (state === 'action')  return React.createElement(ActionScreen, {
+    token: auth.token, merchant: auth.merchant, venue,
     onBack: () => { setVenue(null); setState(auth.merchant.venues.length === 1 ? 'venue' : 'venue'); },
   });
   return null;
 }
-
-// ── Mount ─────────────────────────────────────────────────────────────────────
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(App));
 
 })();
 `
+
+export async function GET() {
+  const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ayoo Partner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>${BASE_STYLES}</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>window.__API_BASE__ = "${API_BASE}";</script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script>${APP_SCRIPT}</script>
+</body>
+</html>`
+
+  return new Response(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-cache",
+    },
+  })
+}
