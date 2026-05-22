@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
     if (!merchant) {
       return NextResponse.json(
-        { error: "Merchant not found or not approved. Contact ayoo support." },
+        { error: `Аккаунт не найден или не активирован. Ваш Telegram ID: ${telegramId}` },
         { status: 403 },
       )
     }
