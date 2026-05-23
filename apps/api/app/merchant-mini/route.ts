@@ -149,6 +149,94 @@ function ErrBox(props) {
   }, '⚠️ ' + props.msg);
 }
 
+// ── Address autocomplete (Nominatim OSM) ─────────────────────────
+function AddressInput(props) {
+  var value = props.value, onChange = props.onChange, city = props.city, onSelect = props.onSelect;
+  var sugState = useState([]); var suggestions = sugState[0]; var setSuggestions = sugState[1];
+  var openState = useState(false); var open = openState[0]; var setOpen = openState[1];
+  var busyState = useState(false); var busy = busyState[0]; var setBusy = busyState[1];
+  var timer = useRef(null);
+
+  function search(q) {
+    clearTimeout(timer.current);
+    if (!q || q.length < 3) { setSuggestions([]); setOpen(false); return; }
+    timer.current = setTimeout(async function() {
+      setBusy(true);
+      try {
+        var qStr = q + (city ? ', ' + city : '') + ', Serbia';
+        var url = 'https://nominatim.openstreetmap.org/search'
+          + '?q=' + encodeURIComponent(qStr)
+          + '&format=json&limit=6&addressdetails=1&countrycodes=rs';
+        var res = await fetch(url);
+        var data = await res.json();
+        var items = [];
+        for (var i = 0; i < data.length; i++) {
+          var a = data[i].address || {};
+          var road = a.road || a.pedestrian || a.street || a.neighbourhood || '';
+          var num  = a.house_number || '';
+          var addr = road + (num ? ', ' + num : '');
+          var cityName = a.city || a.town || a.suburb || a.village || '';
+          if (addr.length > 0) items.push({ addr: addr, city: cityName });
+        }
+        // deduplicate by addr
+        var seen = {}; var uniq = [];
+        for (var j = 0; j < items.length; j++) {
+          if (!seen[items[j].addr]) { seen[items[j].addr] = true; uniq.push(items[j]); }
+        }
+        setSuggestions(uniq);
+        setOpen(uniq.length > 0);
+      } catch(e) {}
+      finally { setBusy(false); }
+    }, 500);
+  }
+
+  return h('div', { style: { position: 'relative' } },
+    h('div', { style: { position: 'relative' } },
+      h(TxtInput, {
+        value: value,
+        onChange: function(v) { onChange(v); search(v); },
+        placeholder: 'Улица и номер',
+        style: { paddingRight: busy ? 40 : 16 },
+      }),
+      busy && h('div', {
+        style: {
+          position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+          fontSize: 12, color: C.hint, pointerEvents: 'none',
+        },
+      }, '…')
+    ),
+    open && suggestions.length > 0 && h('div', {
+      style: {
+        position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+        background: C.white, borderRadius: 14,
+        boxShadow: '0 6px 24px rgba(0,0,0,0.13)',
+        zIndex: 200, overflow: 'hidden',
+        maxHeight: 220, overflowY: 'auto',
+      },
+    },
+      suggestions.map(function(s, idx) {
+        return h('button', {
+          key: s.addr + idx,
+          onClick: function() {
+            onChange(s.addr);
+            onSelect && onSelect(s);
+            setSuggestions([]); setOpen(false);
+          },
+          style: {
+            width: '100%', textAlign: 'left', padding: '12px 14px',
+            background: 'none', border: 'none', cursor: 'pointer', display: 'block',
+            borderBottom: idx < suggestions.length - 1 ? '1px solid ' + C.border : 'none',
+            fontSize: 14, lineHeight: 1.4,
+          },
+        },
+          h('div', { style: { fontWeight: 600 } }, s.addr),
+          s.city && h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, s.city)
+        );
+      })
+    )
+  );
+}
+
 // ── Splash ────────────────────────────────────────────────────────
 function Splash(props) {
   return h('div', {
@@ -280,13 +368,21 @@ function RegisterScreen(props) {
     );
   }
 
-  // Step 3: address
+  // Step 3: address with autocomplete
   function step3() {
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Адрес'),
       h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 8'),
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Например: ул. Кнеза Михаила 12'),
-      h(TxtInput, { value: form.address, onChange: function(v) { set('address', v); }, placeholder: 'Улица и номер' }),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Начните вводить — появятся подсказки'),
+      h(AddressInput, {
+        value: form.address,
+        onChange: function(v) { set('address', v); },
+        city: form.city,
+        onSelect: function(s) {
+          set('address', s.addr);
+          if (s.city && !form.city) set('city', s.city);
+        },
+      }),
       h('div', { style: { height: 16 } }),
       h(Btn, { label: 'Далее →', disabled: !form.address.trim(), onClick: function() { if (form.address.trim()) setStep(4); } })
     );
