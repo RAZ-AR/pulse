@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No Telegram ID" }, { status: 400 })
     }
 
-    if (!name || !category || !city || !address || !phone || !email) {
+    if (!name || !category || !city || !address || !email) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -81,6 +81,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Already registered" }, { status: 409 })
     }
 
+    // Social links from form
+    const socials = body.socials ?? {}
+
+    // Logo: base64 data URL (max ~200KB after browser resize)
+    const logoUrl: string | null = body.logoUrl ?? null
+
     // Create merchant + venue in transaction
     await db.$transaction(async (tx) => {
       const merchant = await tx.merchant.create({
@@ -89,10 +95,10 @@ export async function POST(req: Request) {
           address: `${city}, ${address.trim()}`,
           taxId: taxId?.trim() || null,
           email: email.toLowerCase().trim(),
-          phone: phone?.trim() || null,
           telegramChatId: telegramId,
           status: "PENDING",
           pointsBalance: 0,
+          logoUrl,
         },
       })
 
@@ -112,7 +118,12 @@ export async function POST(req: Request) {
           partnerSince: new Date(),
           pointsPerCurrency,
           currency: "RSD",
-          phone: phone?.trim() || null,
+          phone: socials.phone?.trim() || null,
+          website: socials.website?.trim() || null,
+          instagram: socials.instagram?.trim() || null,
+          tiktok: socials.tiktok?.trim() || null,
+          telegram: socials.telegram?.trim() || null,
+          googleMapsUrl: socials.googleMapsUrl?.trim() || null,
         },
       })
     })
@@ -130,7 +141,9 @@ export async function POST(req: Request) {
             `🆕 Новая заявка (Mini App)\n\n` +
             `🏪 ${name} (${category})\n` +
             `📍 ${city}, ${address}\n` +
-            `📞 ${phone}\n📧 ${email}\n` +
+            `📧 ${email}\n` +
+            (socials.phone ? `📞 ${socials.phone}\n` : '') +
+            (socials.instagram ? `📸 ${socials.instagram}\n` : '') +
             `🪪 PIB: ${taxId || "—"}\n⭐ ${rateLabel}\n` +
             `TG: ${telegramId}\n\n/admin activate ${telegramId}`,
         }),

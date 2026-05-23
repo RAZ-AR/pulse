@@ -273,6 +273,26 @@ function PendingScreen() {
 }
 
 // ── Registration flow ─────────────────────────────────────────────
+// ── Image resize to base64 (logo upload) ─────────────────────────
+function resizeImageToBase64(file, maxPx, quality, callback) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      var scale = Math.min(1, maxPx / Math.max(w, h));
+      var cw = Math.round(w * scale), ch = Math.round(h * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, cw, ch);
+      callback(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 var CATEGORIES = [
   { label: '☕ Кафе', value: 'CAFE' },
   { label: '🍽 Ресторан', value: 'RESTAURANT' },
@@ -290,7 +310,11 @@ var RATES = [
 function RegisterScreen(props) {
   var onSuccess = props.onSuccess;
   var stepState = useState(0); var step = stepState[0]; var setStep = stepState[1];
-  var formState = useState({ name: '', category: '', city: '', address: '', phone: '', email: '', taxId: '', rate: 0.008 });
+  var formState = useState({
+    name: '', category: '', city: '', address: '', email: '', taxId: '', rate: 0.008,
+    socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
+    logoUrl: '', logoPreview: '',
+  });
   var form = formState[0]; var setForm = formState[1];
   var customCityState = useState(''); var customCity = customCityState[0]; var setCustomCity = customCityState[1];
   var showCustomCityState = useState(false); var showCustomCity = showCustomCityState[0]; var setShowCustomCity = showCustomCityState[1];
@@ -368,11 +392,13 @@ function RegisterScreen(props) {
     );
   }
 
-  // Step 3: address with autocomplete
+  // Step 3: address with autocomplete + house number validation
   function step3() {
+    var hasNum = /\d/.test(form.address);
+    var canNext = form.address.trim().length > 3 && hasNum;
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Адрес'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 8'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 9'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Начните вводить — появятся подсказки'),
       h(AddressInput, {
         value: form.address,
@@ -383,19 +409,49 @@ function RegisterScreen(props) {
           if (s.city && !form.city) set('city', s.city);
         },
       }),
+      form.address.trim().length > 3 && !hasNum && h('div', {
+        style: { marginTop: 8, fontSize: 13, color: '#D97706', padding: '8px 12px', background: '#FFFBEB', borderRadius: 10 },
+      }, '⚠️ Укажите номер дома (например: Кнеза Михаила, 12)'),
       h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !form.address.trim(), onClick: function() { if (form.address.trim()) setStep(4); } })
+      h(Btn, { label: 'Далее →', disabled: !canNext, onClick: function() { if (canNext) setStep(4); } })
     );
   }
 
-  // Step 4: phone
+  // Step 4: socials (all optional)
   function step4() {
+    function setSocial(key, val) {
+      setForm(function(f) {
+        var s = Object.assign({}, f.socials); s[key] = val;
+        return Object.assign({}, f, { socials: s });
+      });
+    }
+    var fields = [
+      { key: 'instagram',    icon: '📸', label: 'Instagram', placeholder: '@mycafe или instagram.com/mycafe' },
+      { key: 'tiktok',       icon: '🎵', label: 'TikTok',    placeholder: '@mycafe или tiktok.com/@mycafe' },
+      { key: 'telegram',     icon: '✈️',  label: 'Telegram',  placeholder: '@mycafe или t.me/mycafe' },
+      { key: 'website',      icon: '🌐', label: 'Сайт',      placeholder: 'mycafe.rs' },
+      { key: 'googleMapsUrl',icon: '📍', label: 'Google Maps',placeholder: 'Ссылка на точку в Google Maps' },
+      { key: 'phone',        icon: '📞', label: 'Телефон',   placeholder: '+381 63 123456' },
+    ];
     return h('div', { style: { padding: '0 20px' } },
-      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Телефон'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 5 из 8'),
-      h(TxtInput, { value: form.phone, onChange: function(v) { set('phone', v); }, placeholder: '+381 63 123456', type: 'tel' }),
-      h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !form.phone.trim(), onClick: function() { if (form.phone.trim()) setStep(5); } })
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Соцсети и контакты'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 5 из 9'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20 } }, 'Всё необязательно — заполните что есть'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        fields.map(function(f) {
+          return h('div', { key: f.key },
+            h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 4 } }, f.icon + ' ' + f.label),
+            h(TxtInput, {
+              value: form.socials[f.key],
+              onChange: function(v) { setSocial(f.key, v); },
+              placeholder: f.placeholder,
+              type: f.key === 'phone' ? 'tel' : 'text',
+            })
+          );
+        })
+      ),
+      h('div', { style: { height: 20 } }),
+      h(Btn, { label: 'Далее →', onClick: function() { setStep(5); } })
     );
   }
 
@@ -403,7 +459,7 @@ function RegisterScreen(props) {
   function step5() {
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Email'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 6 из 8'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 6 из 9'),
       h(TxtInput, { value: form.email, onChange: function(v) { set('email', v); }, placeholder: 'cafe@example.rs', type: 'email' }),
       h('div', { style: { height: 16 } }),
       h(Btn, { label: 'Далее →', disabled: !form.email.includes('@'), onClick: function() { if (form.email.includes('@')) setStep(6); } })
@@ -414,7 +470,7 @@ function RegisterScreen(props) {
   function step6() {
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'ПИБ (PIB)'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 7 из 8'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 7 из 9'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Налоговый номер — для распознавания чеков (необязательно)'),
       h(TxtInput, { value: form.taxId, onChange: function(v) { set('taxId', v); }, placeholder: '123456789', inputMode: 'numeric', maxLength: 13 }),
       h('div', { style: { height: 16 } }),
@@ -443,7 +499,7 @@ function RegisterScreen(props) {
     );
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Ставка баллов'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 8 из 8'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 8 из 9'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Сколько баллов клиент получает за 1000 RSD'),
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
         RATES.map(function(r) {
@@ -469,19 +525,74 @@ function RegisterScreen(props) {
     );
   }
 
-  // Step 8: confirmation
+  // Step 8: logo upload (optional)
   function step8() {
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Логотип'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 9 из 9'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20 } }, 'Необязательно — можно добавить позже'),
+      // Preview or upload zone
+      h('label', {
+        style: {
+          display: 'block', cursor: 'pointer',
+          border: '2px dashed ' + C.border, borderRadius: 20,
+          padding: 24, textAlign: 'center',
+          background: form.logoPreview ? 'transparent' : C.white,
+          position: 'relative', overflow: 'hidden',
+          minHeight: 160,
+        },
+      },
+        form.logoPreview
+          ? h('img', {
+              src: form.logoPreview,
+              style: { width: 120, height: 120, objectFit: 'cover', borderRadius: 16, display: 'block', margin: '0 auto' },
+            })
+          : h('div', null,
+              h('div', { style: { fontSize: 48, marginBottom: 10 } }, '🖼'),
+              h('div', { style: { fontWeight: 600, fontSize: 15 } }, 'Нажмите для выбора фото'),
+              h('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'JPG, PNG, WEBP — до 5 МБ')
+            ),
+        h('input', {
+          type: 'file', accept: 'image/*',
+          style: { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' },
+          onChange: function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+            resizeImageToBase64(file, 512, 0.75, function(b64) {
+              setForm(function(f) { return Object.assign({}, f, { logoUrl: b64, logoPreview: b64 }); });
+            });
+          },
+        })
+      ),
+      form.logoPreview && h('button', {
+        onClick: function() { setForm(function(f) { return Object.assign({}, f, { logoUrl: '', logoPreview: '' }); }); },
+        style: { marginTop: 10, fontSize: 13, color: C.red, background: 'none', border: 'none', cursor: 'pointer' },
+      }, '✕ Удалить'),
+      h('div', { style: { height: 20 } }),
+      h('div', { style: { display: 'flex', gap: 10 } },
+        h(Btn, { label: 'Пропустить', outline: true, small: true, onClick: function() { setStep(9); } }),
+        h(Btn, { label: 'Далее →', small: true, onClick: function() { setStep(9); } })
+      )
+    );
+  }
+
+  // Step 9: confirmation
+  function step9() {
+    var hasSocials = Object.values(form.socials).some(function(v) { return v && v.trim(); });
     var rows = [
       ['🏪 Заведение', form.name],
       ['📍 Город', form.city],
       ['🗺 Адрес', form.address],
-      ['📞 Телефон', form.phone],
       ['📧 Email', form.email],
       ['🪪 ПИБ', form.taxId || 'не указан'],
       ['⭐ Ставка', Math.round(form.rate * 1000) + ' pts / 1000 RSD'],
     ];
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 16 } }, 'Проверьте данные'),
+      // Logo preview
+      form.logoPreview && h('div', { style: { textAlign: 'center', marginBottom: 14 } },
+        h('img', { src: form.logoPreview, style: { width: 72, height: 72, objectFit: 'cover', borderRadius: 16 } })
+      ),
       h(Card, { bg: C.cream },
         rows.map(function(row) {
           return h('div', {
@@ -491,6 +602,15 @@ function RegisterScreen(props) {
             h('div', { style: { fontSize: 13, color: C.hint, flexShrink: 0 } }, row[0]),
             h('div', { style: { fontSize: 13, fontWeight: 600, textAlign: 'right', marginLeft: 8 } }, row[1])
           );
+        })
+      ),
+      hasSocials && h(Card, { bg: C.sky, style: { marginTop: 0 } },
+        h('div', { style: { fontSize: 13, fontWeight: 700, marginBottom: 8 } }, 'Соцсети'),
+        Object.entries(form.socials).map(function(entry) {
+          var k = entry[0], v = entry[1];
+          if (!v || !v.trim()) return null;
+          var icons = { instagram: '📸', tiktok: '🎵', telegram: '✈️', website: '🌐', googleMapsUrl: '📍', phone: '📞' };
+          return h('div', { key: k, style: { fontSize: 12, marginBottom: 2 } }, (icons[k] || '') + ' ' + v);
         })
       ),
       h(ErrBox, { msg: error }),
@@ -512,10 +632,11 @@ function RegisterScreen(props) {
           category: form.category,
           city: form.city,
           address: form.address.trim(),
-          phone: form.phone.trim(),
           email: form.email.trim().toLowerCase(),
           taxId: form.taxId.trim(),
           rate: form.rate,
+          socials: form.socials,
+          logoUrl: form.logoUrl || null,
         }),
       });
       var json = await res.json();
@@ -528,7 +649,7 @@ function RegisterScreen(props) {
     }
   }
 
-  var stepFns = [step0, step1, step2, step3, step4, step5, step6, step7, step8];
+  var stepFns = [step0, step1, step2, step3, step4, step5, step6, step7, step8, step9];
   var currentFn = stepFns[step];
 
   return h('div', { style: { background: C.bg, minHeight: '100vh' } },
@@ -541,7 +662,7 @@ function RegisterScreen(props) {
       h('div', { style: { flex: 1 } },
         h('div', { style: { fontSize: 12, color: C.hint, marginBottom: 4 } }, 'ayoo Partner — Регистрация'),
         h('div', { style: { height: 4, background: C.border, borderRadius: 2 } },
-          h('div', { style: { height: 4, background: C.accent, borderRadius: 2, width: (((step + 1) / 9) * 100) + '%', transition: 'width .3s' } })
+          h('div', { style: { height: 4, background: C.accent, borderRadius: 2, width: (Math.min(1, (step + 1) / 10) * 100) + '%', transition: 'width .3s' } })
         )
       )
     ),

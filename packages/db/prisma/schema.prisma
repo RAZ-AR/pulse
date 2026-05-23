@@ -229,6 +229,9 @@ model Merchant {
   // Points balance (funded by redemptions, used to create offers)
   pointsBalance  Int          @default(0)
 
+  // Branding
+  logoUrl String?
+
   venues       Venue[]
   importLogs   VenueImportLog[]
   offers       Offer[]
@@ -284,6 +287,9 @@ model Venue {
   phone            String?
   website          String?
   instagram        String?
+  tiktok           String?
+  telegram         String?
+  googleMapsUrl    String?
   openingHoursText String?
   specialOffers    Json?
 
