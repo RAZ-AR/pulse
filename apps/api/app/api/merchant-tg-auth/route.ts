@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
     // Find merchant by Telegram ID
     const merchant = await db.merchant.findFirst({
-      where: { telegramChatId: telegramId, status: "ACTIVE" },
+      where: { telegramChatId: telegramId },
       include: {
         venues: {
           where: { isPartner: true },
@@ -76,14 +76,21 @@ export async function POST(req: Request) {
       },
     })
 
+    // Not registered at all
     if (!merchant) {
-      return NextResponse.json(
-        { error: "Аккаунт не найден или не активирован. Обратитесь в поддержку ayoo." },
-        { status: 403 },
-      )
+      return NextResponse.json({
+        status: "unregistered",
+        telegramId,
+        firstName: tgUser.first_name,
+      })
     }
 
-    // Sign JWT with merchantId
+    // Registered but awaiting activation
+    if (merchant.status !== "ACTIVE") {
+      return NextResponse.json({ status: "pending", telegramId })
+    }
+
+    // Active — sign JWT
     const token = await new SignJWT({ merchantId: merchant.id })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
@@ -91,6 +98,7 @@ export async function POST(req: Request) {
       .sign(JWT_SECRET)
 
     return NextResponse.json({
+      status: "active",
       token,
       merchant: {
         id: merchant.id,

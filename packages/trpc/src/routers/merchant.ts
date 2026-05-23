@@ -463,6 +463,64 @@ export const merchantRouter = router({
     }),
 
   /**
+   * Lightweight dashboard for the Mini App home screen.
+   * Returns today's stats + active rewards in a single query.
+   */
+  miniDashboard: merchantProcedure
+    .input(z.object({ venueId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: input.venueId, ownerId: ctx.merchantId },
+        select: { id: true, name: true, pointsPerCurrency: true, currency: true },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND" })
+
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+
+      const [todayStats, activeRewards] = await Promise.all([
+        ctx.db.transaction.aggregate({
+          where: { venueId: input.venueId, type: "PARTNER_PURCHASE", createdAt: { gte: todayStart } },
+          _sum: { pointsEarned: true },
+          _count: { _all: true },
+        }),
+        ctx.db.reward.findMany({
+          where: { venueId: input.venueId, isActive: true },
+          select: { id: true, title: true, pointsCost: true, redeemedCount: true },
+          orderBy: { pointsCost: "asc" },
+        }),
+      ])
+
+      return {
+        today: {
+          transactions: todayStats._count._all,
+          pointsIssued: todayStats._sum.pointsEarned ?? 0,
+        },
+        activeRewards,
+        venue,
+      }
+    }),
+
+  /**
+   * List all rewards for a venue (active and inactive).
+   */
+  listRewards: merchantProcedure
+    .input(z.object({ venueId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: input.venueId, ownerId: ctx.merchantId },
+        select: { id: true },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND" })
+
+      return ctx.db.reward.findMany({
+        where: { venueId: input.venueId },
+        select: { id: true, title: true, description: true, pointsCost: true, isActive: true, redeemedCount: true },
+        orderBy: [{ isActive: "desc" }, { pointsCost: "asc" }],
+      })
+    }),
+
+  /**
    * Look up a customer by their referral code (shown as QR in the mobile app).
    * Returns name + current points balance — shown to merchant before confirming transaction.
    */
