@@ -6,7 +6,7 @@
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://api.ayoo.space"
-const MINI_APP_VERSION = "address-v3"
+const MINI_APP_VERSION = "cabinet-v1"
 
 const BASE_STYLES = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -918,76 +918,156 @@ function RewardsTab(props) {
   var token = props.token, venue = props.venue;
   var rewardsState = useState([]); var rewards = rewardsState[0]; var setRewards = rewardsState[1];
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1];
-  var addingState = useState(false); var adding = addingState[0]; var setAdding = addingState[1];
-  var formState = useState({ title: '', description: '', pointsCost: '' });
+  // mode: 'list' | 'add' | 'edit'
+  var modeState = useState('list'); var mode = modeState[0]; var setMode = modeState[1];
+  var formState = useState({ title: '', description: '', pointsCost: '', isActive: true });
   var form = formState[0]; var setForm = formState[1];
+  var editingIdState = useState(null); var editingId = editingIdState[0]; var setEditingId = editingIdState[1];
   var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1];
   var errorState = useState(''); var error = errorState[0]; var setError = errorState[1];
+  var confirmDeleteState = useState(false); var confirmDelete = confirmDeleteState[0]; var setConfirmDelete = confirmDeleteState[1];
 
   function loadRewards() {
     setLoading(true);
     trpcQuery(token, 'merchant.listRewards', { venueId: venue.id })
-      .then(setRewards)
-      .catch(function() {})
-      .finally(function() { setLoading(false); });
+      .then(setRewards).catch(function() {}).finally(function() { setLoading(false); });
   }
   useEffect(function() { loadRewards(); }, [venue.id]);
 
-  async function toggleReward(id, current) {
-    try {
-      await trpcMutate(token, 'merchant.updateReward', { rewardId: id, isActive: !current });
-      loadRewards();
-    } catch(e) {}
+  function openAdd() {
+    setForm({ title: '', description: '', pointsCost: '', isActive: true });
+    setEditingId(null); setError(''); setConfirmDelete(false); setMode('add');
   }
+
+  function openEdit(r) {
+    setForm({ title: r.title, description: r.description || '', pointsCost: String(r.pointsCost), isActive: r.isActive });
+    setEditingId(r.id); setError(''); setConfirmDelete(false); setMode('edit');
+  }
+
+  function closeForm() { setMode('list'); setError(''); setConfirmDelete(false); }
+
+  function setField(k, v) { setForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
 
   async function createReward() {
     if (!form.title.trim() || !form.pointsCost) return;
     setSaving(true); setError('');
     try {
       await trpcMutate(token, 'merchant.createReward', {
-        venueId: venue.id,
-        title: form.title.trim(),
+        venueId: venue.id, title: form.title.trim(),
         description: form.description.trim() || undefined,
         pointsCost: parseInt(form.pointsCost),
       });
-      setForm({ title: '', description: '', pointsCost: '' });
-      setAdding(false);
-      loadRewards();
+      closeForm(); loadRewards();
     } catch(e) { setError(e.message); }
     finally { setSaving(false); }
   }
 
-  if (adding) return h('div', { style: { padding: '0 16px' } },
-    h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 } },
-      h('button', { onClick: function() { setAdding(false); setError(''); }, style: { fontSize: 22, cursor: 'pointer' } }, '←'),
-      h('div', { style: { fontSize: 20, fontWeight: 800 } }, 'Новая акция')
-    ),
-    h('div', { style: { marginBottom: 10 } },
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Название'),
-      h(TxtInput, { value: form.title, onChange: function(v) { setForm(function(f) { return Object.assign({}, f, { title: v }); }); }, placeholder: 'Кофе в подарок' })
-    ),
-    h('div', { style: { marginBottom: 10 } },
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Описание (необязательно)'),
-      h(TxtInput, { value: form.description, onChange: function(v) { setForm(function(f) { return Object.assign({}, f, { description: v }); }); }, placeholder: 'При покупке от 500 RSD' })
-    ),
-    h('div', { style: { marginBottom: 20 } },
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Стоимость в баллах'),
-      h(TxtInput, { value: form.pointsCost, onChange: function(v) { setForm(function(f) { return Object.assign({}, f, { pointsCost: v }); }); }, placeholder: '1000', inputMode: 'numeric' })
-    ),
-    h(ErrBox, { msg: error }),
-    h(Btn, { label: saving ? 'Сохранение…' : 'Создать акцию', disabled: saving || !form.title.trim() || !form.pointsCost, onClick: createReward })
-  );
+  async function saveEdit() {
+    if (!form.title.trim() || !form.pointsCost || !editingId) return;
+    setSaving(true); setError('');
+    try {
+      await trpcMutate(token, 'merchant.updateReward', {
+        rewardId: editingId,
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        pointsCost: parseInt(form.pointsCost),
+        isActive: form.isActive,
+      });
+      closeForm(); loadRewards();
+    } catch(e) { setError(e.message); }
+    finally { setSaving(false); }
+  }
 
+  async function deleteReward() {
+    if (!editingId) return;
+    setSaving(true); setError('');
+    try {
+      await trpcMutate(token, 'merchant.deleteReward', { rewardId: editingId });
+      closeForm(); loadRewards();
+    } catch(e) { setError(e.message); }
+    finally { setSaving(false); }
+  }
+
+  // ── Add / Edit form ───────────────────────────────────────
+  if (mode === 'add' || mode === 'edit') {
+    var isEdit = mode === 'edit';
+    return h('div', { style: { padding: '0 16px' } },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 } },
+        h('button', { onClick: closeForm, style: { fontSize: 22, cursor: 'pointer', background: 'none', border: 'none' } }, '←'),
+        h('div', { style: { fontSize: 20, fontWeight: 800 } }, isEdit ? 'Редактировать акцию' : 'Новая акция')
+      ),
+
+      h('div', { style: { marginBottom: 10 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Название *'),
+        h(TxtInput, { value: form.title, onChange: function(v) { setField('title', v); }, placeholder: 'Кофе в подарок' })
+      ),
+      h('div', { style: { marginBottom: 10 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Описание (необязательно)'),
+        h(TxtInput, { value: form.description, onChange: function(v) { setField('description', v); }, placeholder: 'При покупке от 500 RSD' })
+      ),
+      h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Стоимость в баллах *'),
+        h(TxtInput, { value: form.pointsCost, onChange: function(v) { setField('pointsCost', v.replace(/\D/g, '')); }, placeholder: '1000', inputMode: 'numeric' })
+      ),
+
+      // Active toggle (edit only)
+      isEdit && h('div', {
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: C.white, borderRadius: 14, border: '1.5px solid ' + C.border, marginBottom: 16 },
+      },
+        h('div', null,
+          h('div', { style: { fontWeight: 600 } }, 'Акция активна'),
+          h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, form.isActive ? 'Видна клиентам' : 'Скрыта от клиентов')
+        ),
+        h('button', {
+          onClick: function() { setField('isActive', !form.isActive); },
+          style: {
+            width: 50, height: 28, borderRadius: 99, border: 'none', cursor: 'pointer',
+            background: form.isActive ? C.green : C.hint, position: 'relative', transition: 'background .2s',
+          },
+        },
+          h('div', {
+            style: {
+              position: 'absolute', top: 3, width: 22, height: 22, borderRadius: 99, background: '#fff',
+              transition: 'left .2s', left: form.isActive ? 25 : 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            },
+          })
+        )
+      ),
+
+      h(ErrBox, { msg: error }),
+      h(Btn, {
+        label: saving ? 'Сохранение…' : (isEdit ? '✅ Сохранить' : 'Создать акцию'),
+        disabled: saving || !form.title.trim() || !form.pointsCost,
+        onClick: isEdit ? saveEdit : createReward,
+      }),
+
+      // Delete (edit only)
+      isEdit && h('div', { style: { marginTop: 16 } },
+        !confirmDelete
+          ? h('button', {
+              onClick: function() { setConfirmDelete(true); },
+              style: { width: '100%', padding: '12px', background: '#FEF2F2', color: C.red, borderRadius: 14, border: '1.5px solid #FECACA', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
+            }, '🗑 Удалить акцию')
+          : h('div', null,
+              h('div', { style: { fontSize: 13, color: C.red, textAlign: 'center', marginBottom: 8 } }, 'Подтвердить удаление?'),
+              h('div', { style: { display: 'flex', gap: 8 } },
+                h(Btn, { label: 'Отмена', outline: true, small: true, onClick: function() { setConfirmDelete(false); } }),
+                h(Btn, { label: saving ? '…' : 'Удалить', color: C.red, small: true, disabled: saving, onClick: deleteReward })
+              )
+            )
+      ),
+      h('div', { style: { height: 16 } })
+    );
+  }
+
+  // ── List ─────────────────────────────────────────────────
   return h('div', { style: { padding: '0 16px' } },
     h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 } },
       h('div', { style: { fontSize: 20, fontWeight: 800 } }, 'Акции'),
       h('button', {
-        onClick: function() { setAdding(true); },
-        style: {
-          background: C.accent, color: '#fff', borderRadius: 99, border: 'none',
-          width: 36, height: 36, fontSize: 22, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        },
+        onClick: openAdd,
+        style: { background: C.accent, color: '#fff', borderRadius: 99, border: 'none', width: 36, height: 36, fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
       }, '+')
     ),
     loading
@@ -1001,21 +1081,26 @@ function RewardsTab(props) {
             )
           )
         : rewards.map(function(r) {
-            return h(Card, { key: r.id },
+            return h(Card, { key: r.id, style: { cursor: 'pointer' } },
               h('div', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 } },
-                h('div', { style: { flex: 1 } },
-                  h('div', { style: { fontWeight: 700, fontSize: 16 } }, r.title),
-                  r.description && h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, r.description),
-                  h('div', { style: { fontSize: 13, color: C.accent, fontWeight: 600, marginTop: 4 } },
-                    r.pointsCost.toLocaleString() + ' pts · ' + r.redeemedCount + ' использований')
-                ),
+                // Info — tap to edit
                 h('button', {
-                  onClick: function() { toggleReward(r.id, r.isActive); },
-                  style: {
-                    padding: '6px 12px', borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0,
-                    background: r.isActive ? C.green : C.hint, color: '#fff',
-                    fontSize: 12, fontWeight: 700,
+                  onClick: function() { openEdit(r); },
+                  style: { flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
+                },
+                  h('div', { style: { fontWeight: 700, fontSize: 15 } }, r.title),
+                  r.description && h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, r.description),
+                  h('div', { style: { fontSize: 13, marginTop: 4 } },
+                    h('span', { style: { color: C.accent, fontWeight: 600 } }, r.pointsCost.toLocaleString() + ' pts'),
+                    h('span', { style: { color: C.hint } }, ' · ' + r.redeemedCount + ' исп. · ✏️')
+                  )
+                ),
+                // Active toggle
+                h('button', {
+                  onClick: async function() {
+                    try { await trpcMutate(token, 'merchant.updateReward', { rewardId: r.id, isActive: !r.isActive }); loadRewards(); } catch(e) {}
                   },
+                  style: { padding: '6px 12px', borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0, background: r.isActive ? C.green : '#ccc', color: '#fff', fontSize: 12, fontWeight: 700 },
                 }, r.isActive ? 'Вкл' : 'Откл')
               )
             );
@@ -1241,41 +1326,171 @@ function ScanTab(props) {
 
 // ── Profile Tab ───────────────────────────────────────────────────
 function ProfileTab(props) {
-  var merchant = props.merchant, venue = props.venue, onBack = props.onBack;
+  var merchant = props.merchant, venue = props.venue, onBack = props.onBack,
+      token = props.token, onVenueUpdated = props.onVenueUpdated;
+  var modeState = useState('view'); var mode = modeState[0]; var setMode = modeState[1];
+  var editState = useState(null); var editForm = editState[0]; var setEditForm = editState[1];
+  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1];
+  var errorState = useState(''); var error = errorState[0]; var setError = errorState[1];
+  var loadingEditState = useState(false); var loadingEdit = loadingEditState[0]; var setLoadingEdit = loadingEditState[1];
+
+  function openEdit() {
+    setLoadingEdit(true); setError('');
+    trpcQuery(token, 'merchant.venueSettings', { venueId: venue.id })
+      .then(function(data) {
+        setEditForm({
+          name:         data.name         || '',
+          city:         data.city         || '',
+          address:      data.address      || '',
+          rate:         data.pointsPerCurrency ? String(Math.round(data.pointsPerCurrency * 1000)) : '8',
+          phone:        data.phone        || '',
+          instagram:    data.instagram    || '',
+          tiktok:       data.tiktok       || '',
+          telegram:     data.telegram     || '',
+          website:      data.website      || '',
+          googleMapsUrl:data.googleMapsUrl|| '',
+        });
+        setMode('edit');
+      })
+      .catch(function() { setError('Не удалось загрузить данные'); })
+      .finally(function() { setLoadingEdit(false); });
+  }
+
+  function setField(k, v) { setEditForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
+
+  async function saveEdit() {
+    if (!editForm) return;
+    var pts = parseInt(editForm.rate);
+    if (!editForm.name.trim() || isNaN(pts) || pts < 1) {
+      setError('Заполните обязательные поля'); return;
+    }
+    setSaving(true); setError('');
+    try {
+      var updated = await trpcMutate(token, 'merchant.updateVenueMini', {
+        venueId: venue.id,
+        name:          editForm.name.trim(),
+        city:          editForm.city.trim(),
+        address:       editForm.address.trim(),
+        pointsPerCurrency: pts / 1000,
+        phone:         editForm.phone.trim()         || null,
+        instagram:     editForm.instagram.trim()     || null,
+        tiktok:        editForm.tiktok.trim()        || null,
+        telegram:      editForm.telegram.trim()      || null,
+        website:       editForm.website.trim()       || null,
+        googleMapsUrl: editForm.googleMapsUrl.trim() || null,
+      });
+      onVenueUpdated && onVenueUpdated(updated);
+      setMode('view');
+    } catch(e) { setError(e.message); }
+    finally { setSaving(false); }
+  }
+
+  // ── Edit mode ─────────────────────────────────────────────
+  if (mode === 'edit' && editForm) {
+    var contactFields = [
+      { key: 'phone',         icon: '📞', label: 'Телефон',    type: 'tel'  },
+      { key: 'instagram',     icon: '📸', label: 'Instagram',  type: 'text' },
+      { key: 'tiktok',        icon: '🎵', label: 'TikTok',     type: 'text' },
+      { key: 'telegram',      icon: '✈️',  label: 'Telegram',   type: 'text' },
+      { key: 'website',       icon: '🌐', label: 'Сайт',       type: 'url'  },
+      { key: 'googleMapsUrl', icon: '📍', label: 'Google Maps', type: 'url' },
+    ];
+    return h('div', { style: { padding: '0 16px' } },
+      // header
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 } },
+        h('button', { onClick: function() { setMode('view'); setError(''); }, style: { fontSize: 22, cursor: 'pointer', background: 'none', border: 'none' } }, '←'),
+        h('div', { style: { fontSize: 20, fontWeight: 800 } }, 'Редактировать')
+      ),
+
+      // Basic
+      h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Основное'),
+      h('div', { style: { marginBottom: 10 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 4 } }, 'Название *'),
+        h(TxtInput, { value: editForm.name, onChange: function(v) { setField('name', v); }, placeholder: 'Кафе Белград' })
+      ),
+      h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 } },
+        h('div', null,
+          h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 4 } }, 'Город'),
+          h(TxtInput, { value: editForm.city, onChange: function(v) { setField('city', v); }, placeholder: 'Белград' })
+        ),
+        h('div', null,
+          h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 4 } }, 'Адрес'),
+          h(TxtInput, { value: editForm.address, onChange: function(v) { setField('address', v); }, placeholder: 'ул. Главная, 1' })
+        )
+      ),
+
+      // Rate
+      h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Ставка баллов'),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 } },
+        h(TxtInput, { value: editForm.rate, onChange: function(v) { setField('rate', v.replace(/\D/g, '')); }, placeholder: '8', inputMode: 'numeric', style: { maxWidth: 100 } }),
+        h('div', { style: { fontSize: 14, color: C.hint } }, 'баллов за 1000 RSD')
+      ),
+
+      // Contacts
+      h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Контакты'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 } },
+        contactFields.map(function(f) {
+          return h('div', { key: f.key },
+            h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 4 } }, f.icon + ' ' + f.label),
+            h(TxtInput, { value: editForm[f.key], onChange: function(v) { setField(f.key, v); }, placeholder: '', type: f.type })
+          );
+        })
+      ),
+
+      h(ErrBox, { msg: error }),
+      h(Btn, { label: saving ? 'Сохранение…' : '✅ Сохранить изменения', disabled: saving || !editForm.name.trim(), onClick: saveEdit }),
+      h('div', { style: { height: 16 } })
+    );
+  }
+
+  // ── View mode ─────────────────────────────────────────────
   return h('div', { style: { padding: '0 16px' } },
     h('div', { style: { fontSize: 20, fontWeight: 800, marginBottom: 16 } }, 'Профиль'),
+
+    // Merchant card
     h(Card, { bg: C.lavender },
-      merchant.logoUrl
-        ? h('img', { src: merchant.logoUrl, style: { width: 56, height: 56, objectFit: 'cover', borderRadius: 14, marginBottom: 8, display: 'block' } })
-        : h('div', { style: { fontSize: 36, marginBottom: 8 } }, '🏪'),
-      h('div', { style: { fontSize: 20, fontWeight: 800 } }, merchant.name),
-      h('div', {
-        style: { display: 'inline-block', marginTop: 8, padding: '4px 12px', background: C.green, color: '#fff', borderRadius: 99, fontSize: 12, fontWeight: 700 },
-      }, '✅ Активный партнёр')
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+        merchant.logoUrl
+          ? h('img', { src: merchant.logoUrl, style: { width: 52, height: 52, objectFit: 'cover', borderRadius: 12 } })
+          : h('div', { style: { fontSize: 40 } }, '🏪'),
+        h('div', null,
+          h('div', { style: { fontSize: 18, fontWeight: 800 } }, merchant.name),
+          h('div', { style: { display: 'inline-block', marginTop: 4, padding: '2px 10px', background: C.green, color: '#fff', borderRadius: 99, fontSize: 11, fontWeight: 700 } }, '✅ Активный партнёр')
+        )
+      )
     ),
+
+    // Venue info
     h(Card, null,
-      h('div', { style: { fontWeight: 700, marginBottom: 12 } }, 'Текущее заведение'),
+      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 } },
+        h('div', { style: { fontWeight: 700 } }, 'Заведение'),
+        h('button', {
+          onClick: openEdit,
+          disabled: loadingEdit,
+          style: { background: C.lavender, color: C.accent, border: 'none', borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+        }, loadingEdit ? '…' : '✏️ Изменить')
+      ),
       [
-        ['📍 Название', venue.name],
-        ['🏙 Город', venue.city || '—'],
-        ['⭐ Ставка', venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) + ' pts / 1000 ' + (venue.currency || 'RSD') : 'Не установлена'],
+        ['🏪', venue.name],
+        ['🏙', venue.city || '—'],
+        ['📍', venue.address || '—'],
+        ['⭐', venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) + ' pts / 1000 ' + (venue.currency || 'RSD') : 'Не установлена'],
       ].map(function(row) {
         return h('div', {
           key: row[0],
-          style: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid ' + C.border },
+          style: { display: 'flex', gap: 10, padding: '7px 0', borderBottom: '1px solid ' + C.border, alignItems: 'flex-start' },
         },
-          h('div', { style: { fontSize: 14, color: C.hint } }, row[0]),
-          h('div', { style: { fontSize: 14, fontWeight: 600 } }, row[1])
+          h('div', { style: { fontSize: 15, flexShrink: 0, width: 22 } }, row[0]),
+          h('div', { style: { fontSize: 14, fontWeight: 500, flex: 1 } }, row[1])
         );
-      })
+      }),
+      error && h(ErrBox, { msg: error })
     ),
+
+    // Switch venue / support
     onBack && merchant.venues && merchant.venues.length > 1 && h('button', {
       onClick: onBack,
-      style: {
-        width: '100%', padding: '13px', background: C.lavender,
-        color: C.accent, borderRadius: 14, border: 'none', fontWeight: 700,
-        fontSize: 15, cursor: 'pointer', marginBottom: 12,
-      },
+      style: { width: '100%', padding: '13px', background: C.lavender, color: C.accent, borderRadius: 14, border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 12 },
     }, '🔄 Сменить заведение'),
     h('div', { style: { padding: '14px 16px', background: C.cream, borderRadius: 14, textAlign: 'center' } },
       h('div', { style: { fontSize: 13, color: C.hint } }, 'Поддержка'),
@@ -1627,7 +1842,8 @@ var DOCK = [
 ];
 
 function MainApp(props) {
-  var token = props.token, merchant = props.merchant, venue = props.venue, onBack = props.onBack;
+  var token = props.token, merchant = props.merchant, venue = props.venue,
+      onBack = props.onBack, onVenueUpdated = props.onVenueUpdated;
   var tabState = useState('home'); var tab = tabState[0]; var setTab = tabState[1];
 
   var content = tab === 'home'
@@ -1636,7 +1852,7 @@ function MainApp(props) {
     ? h(RewardsTab, { token: token, venue: venue })
     : tab === 'scan'
     ? h(ScanTab, { token: token, venue: venue })
-    : h(ProfileTab, { merchant: merchant, venue: venue, onBack: onBack });
+    : h(ProfileTab, { merchant: merchant, venue: venue, onBack: onBack, token: token, onVenueUpdated: onVenueUpdated });
 
   // Top bar with venue name + back to venue list
   var topBar = h('div', {
@@ -1758,6 +1974,20 @@ function App() {
     merchant: authData.merchant,
     venue: venue,
     onBack: function() { setState('venue'); },
+    onVenueUpdated: function(updatedVenue) {
+      // update local venue state
+      setVenue(updatedVenue);
+      // also update the venues array inside authData so VenuePicker stays fresh
+      setAuthData(function(d) {
+        return Object.assign({}, d, {
+          merchant: Object.assign({}, d.merchant, {
+            venues: d.merchant.venues.map(function(v) {
+              return v.id === updatedVenue.id ? updatedVenue : v;
+            }),
+          }),
+        });
+      });
+    },
   });
   return null;
 }

@@ -552,6 +552,89 @@ export const merchantRouter = router({
    * Anti-fraud: checks balance, ownership, partner status, and daily redemption limit.
    */
   /**
+   * Full venue settings — called when partner opens the Edit screen.
+   */
+  venueSettings: merchantProcedure
+    .input(z.object({ venueId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: input.venueId, ownerId: ctx.merchantId },
+        select: {
+          id: true, name: true, city: true, address: true,
+          pointsPerCurrency: true, currency: true,
+          phone: true, instagram: true, tiktok: true,
+          telegram: true, website: true, googleMapsUrl: true,
+        },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND" })
+      return venue
+    }),
+
+  /**
+   * Update editable venue fields from the Mini App.
+   */
+  updateVenueMini: merchantProcedure
+    .input(z.object({
+      venueId: z.string(),
+      name: z.string().min(1).max(100).optional(),
+      city: z.string().min(1).optional(),
+      address: z.string().min(1).optional(),
+      pointsPerCurrency: z.number().positive().optional(),
+      phone: z.string().nullable().optional(),
+      instagram: z.string().nullable().optional(),
+      tiktok: z.string().nullable().optional(),
+      telegram: z.string().nullable().optional(),
+      website: z.string().nullable().optional(),
+      googleMapsUrl: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { venueId, ...fields } = input
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: venueId, ownerId: ctx.merchantId },
+        select: { id: true },
+      })
+      if (!venue) throw new TRPCError({ code: "NOT_FOUND" })
+
+      // Build update object with only defined keys
+      const data: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(fields)) {
+        if (v !== undefined) data[k] = v === "" ? null : v
+      }
+      return ctx.db.venue.update({
+        where: { id: venueId },
+        data,
+        select: {
+          id: true, name: true, category: true, city: true, address: true,
+          pointsPerCurrency: true, currency: true,
+          phone: true, instagram: true, tiktok: true,
+          telegram: true, website: true, googleMapsUrl: true,
+        },
+      })
+    }),
+
+  /**
+   * Delete a reward. If it has used redemptions, deactivate instead.
+   */
+  deleteReward: merchantProcedure
+    .input(z.object({ rewardId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const reward = await ctx.db.reward.findFirst({
+        where: { id: input.rewardId, venue: { ownerId: ctx.merchantId } },
+        select: { id: true },
+      })
+      if (!reward) throw new TRPCError({ code: "NOT_FOUND" })
+
+      const usedCount = await ctx.db.redemption.count({
+        where: { rewardId: input.rewardId, status: "USED" },
+      })
+      if (usedCount > 0) {
+        // Has history — just deactivate
+        return ctx.db.reward.update({ where: { id: input.rewardId }, data: { isActive: false } })
+      }
+      return ctx.db.reward.delete({ where: { id: input.rewardId } })
+    }),
+
+  /**
    * Add a new venue from the Mini App (authenticated partner).
    * Lighter than the public registration endpoint — uses JWT, no initData needed.
    */
