@@ -366,7 +366,24 @@ function Splash(props) {
 }
 
 // ── Pending screen ────────────────────────────────────────────────
-function PendingScreen() {
+function PendingScreen(props) {
+  var onActive = props.onActive;
+  var checkingState = useState(false); var checking = checkingState[0]; var setChecking = checkingState[1];
+  var msgState = useState(''); var msg = msgState[0]; var setMsg = msgState[1];
+
+  function checkStatus() {
+    setChecking(true); setMsg('');
+    doAuth().then(function(data) {
+      if (data.status === 'active') {
+        onActive && onActive(data);
+      } else {
+        setMsg('Заявка ещё на проверке. Попробуйте позже.');
+      }
+    }).catch(function() {
+      setMsg('Не удалось проверить. Попробуйте ещё раз.');
+    }).finally(function() { setChecking(false); });
+  }
+
   return h('div', {
     style: {
       display: 'flex', flexDirection: 'column',
@@ -378,9 +395,31 @@ function PendingScreen() {
     h('div', { style: { fontSize: 64 } }, '⏳'),
     h('div', { style: { fontSize: 24, fontWeight: 800 } }, 'Заявка на проверке'),
     h('div', { style: { fontSize: 15, color: C.hint, maxWidth: 280, lineHeight: 1.6, marginTop: 4 } },
-      'Проверим данные и активируем аккаунт в течение 24 часов. Вы получите уведомление в боте.'),
-    h('div', { style: { marginTop: 16, padding: '12px 20px', background: C.lavender, borderRadius: 14 } },
-      h('div', { style: { fontSize: 13, color: C.accent, fontWeight: 600 } }, 'Вопросы? @ayoo_support'))
+      'Мы проверим данные и активируем аккаунт. Вы получите уведомление в Telegram.'),
+    h('div', { style: { width: '100%', maxWidth: 280, marginTop: 8 } },
+      h('div', {
+        style: {
+          padding: '14px 16px', background: C.lavender, borderRadius: 14,
+          marginBottom: 10, textAlign: 'left',
+        },
+      },
+        h('div', { style: { fontSize: 13, fontWeight: 700, color: C.accent, marginBottom: 6 } }, 'Что происходит:'),
+        ['✅ Заявка получена', '🔍 Проверка данных (до 24ч)', '🚀 Активация аккаунта'].map(function(t) {
+          return h('div', { key: t, style: { fontSize: 13, color: C.hint, marginBottom: 3 } }, t);
+        })
+      ),
+      msg && h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 10, padding: '10px 14px', background: C.cream, borderRadius: 12 } }, msg),
+      h('button', {
+        onClick: checkStatus, disabled: checking,
+        style: {
+          width: '100%', padding: '13px', background: checking ? C.hint : C.accent,
+          color: '#fff', borderRadius: 14, border: 'none', fontWeight: 700, fontSize: 15,
+          cursor: checking ? 'not-allowed' : 'pointer', marginBottom: 10,
+        },
+      }, checking ? 'Проверяем…' : '🔄 Проверить статус'),
+      h('div', { style: { fontSize: 13, color: C.hint } }, 'Вопросы? ',
+        h('span', { style: { color: C.accent, fontWeight: 600 } }, '@ayoo_support'))
+    )
   );
 }
 
@@ -423,7 +462,7 @@ function RegisterScreen(props) {
   var onSuccess = props.onSuccess;
   var stepState = useState(0); var step = stepState[0]; var setStep = stepState[1];
   var formState = useState({
-    name: '', category: '', city: '', address: '', email: '', taxId: '', rate: 0.008,
+    name: '', category: '', city: '', address: '', taxId: '', rate: 0.008,
     socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
     logoUrl: '', logoPreview: '', sourcePlaceId: '', lat: null, lng: null, addressSelected: false,
   });
@@ -516,7 +555,7 @@ function RegisterScreen(props) {
     }
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Адрес'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 9 · ' + APP_VERSION),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 8 · ' + APP_VERSION),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Начните вводить — появятся подсказки'),
       h(AddressInput, {
         value: form.address,
@@ -574,7 +613,7 @@ function RegisterScreen(props) {
     ];
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Соцсети и контакты'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 5 из 9'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 5 из 8'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20 } }, 'Всё необязательно — заполните что есть'),
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
         fields.map(function(f) {
@@ -594,34 +633,23 @@ function RegisterScreen(props) {
     );
   }
 
-  // Step 5: email
-  function step5() {
-    return h('div', { style: { padding: '0 20px' } },
-      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Email'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 6 из 9'),
-      h(TxtInput, { value: form.email, onChange: function(v) { set('email', v); }, placeholder: 'cafe@example.rs', type: 'email' }),
-      h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !form.email.includes('@'), onClick: function() { if (form.email.includes('@')) setStep(6); } })
-    );
-  }
-
-  // Step 6: tax id (optional)
-  function step6() {
+  // Step 5: tax id (optional)
+  function step5pib() {
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'ПИБ (PIB)'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 7 из 9'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 6 из 8'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Налоговый номер — для распознавания чеков (необязательно)'),
       h(TxtInput, { value: form.taxId, onChange: function(v) { set('taxId', v); }, placeholder: '123456789', inputMode: 'numeric', maxLength: 13 }),
       h('div', { style: { height: 16 } }),
       h('div', { style: { display: 'flex', gap: 10 } },
-        h(Btn, { label: 'Пропустить', outline: true, small: true, onClick: function() { set('taxId', ''); setStep(7); } }),
-        h(Btn, { label: 'Далее →', small: true, onClick: function() { setStep(7); } })
+        h(Btn, { label: 'Пропустить', outline: true, small: true, onClick: function() { set('taxId', ''); setStep(6); } }),
+        h(Btn, { label: 'Далее →', small: true, onClick: function() { setStep(6); } })
       )
     );
   }
 
-  // Step 7: rate
-  function step7() {
+  // Step 6: rate
+  function step6rate() {
     if (showCustomRate) return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Своя ставка'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Баллов за 1000 RSD (от 1 до 100)'),
@@ -632,19 +660,19 @@ function RegisterScreen(props) {
         disabled: !customRate || isNaN(parseInt(customRate)) || parseInt(customRate) < 1 || parseInt(customRate) > 100,
         onClick: function() {
           var pts = parseInt(customRate);
-          if (pts >= 1 && pts <= 100) { set('rate', pts / 1000); setStep(8); }
+          if (pts >= 1 && pts <= 100) { set('rate', pts / 1000); setStep(7); }
         },
       })
     );
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Ставка баллов'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 8 из 9'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 7 из 8'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Сколько баллов клиент получает за 1000 RSD'),
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
         RATES.map(function(r) {
           return h('button', {
             key: r.label,
-            onClick: function() { set('rate', r.value); setStep(8); },
+            onClick: function() { set('rate', r.value); setStep(7); },
             style: Object.assign({}, btnStyle, { padding: 16 }),
           },
             h('div', { style: { fontSize: 16, fontWeight: 700 } }, r.label),
@@ -664,11 +692,12 @@ function RegisterScreen(props) {
     );
   }
 
-  // Step 8: logo upload (optional)
-  function step8() {
+
+  // Step 7: logo upload (optional)
+  function step7logo() {
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Логотип'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 9 из 9'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 8 из 8'),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20 } }, 'Необязательно — можно добавить позже'),
       // Preview or upload zone
       h('label', {
@@ -709,20 +738,19 @@ function RegisterScreen(props) {
       }, '✕ Удалить'),
       h('div', { style: { height: 20 } }),
       h('div', { style: { display: 'flex', gap: 10 } },
-        h(Btn, { label: 'Пропустить', outline: true, small: true, onClick: function() { setStep(9); } }),
-        h(Btn, { label: 'Далее →', small: true, onClick: function() { setStep(9); } })
+        h(Btn, { label: 'Пропустить', outline: true, small: true, onClick: function() { setStep(8); } }),
+        h(Btn, { label: 'Далее →', small: true, onClick: function() { setStep(8); } })
       )
     );
   }
 
-  // Step 9: confirmation
-  function step9() {
+  // Step 8: confirmation
+  function step8confirm() {
     var hasSocials = Object.values(form.socials).some(function(v) { return v && v.trim(); });
     var rows = [
       ['🏪 Заведение', form.name],
       ['📍 Город', form.city],
       ['🗺 Адрес', form.address],
-      ['📧 Email', form.email],
       ['🪪 ПИБ', form.taxId || 'не указан'],
       ['⭐ Ставка', Math.round(form.rate * 1000) + ' pts / 1000 RSD'],
     ];
@@ -771,7 +799,6 @@ function RegisterScreen(props) {
           category: form.category,
           city: form.city,
           address: form.address.trim(),
-          email: form.email.trim().toLowerCase(),
           taxId: form.taxId.trim(),
           rate: form.rate,
           socials: form.socials,
@@ -791,7 +818,7 @@ function RegisterScreen(props) {
     }
   }
 
-  var stepFns = [step0, step1, step2, step3, step4, step5, step6, step7, step8, step9];
+  var stepFns = [step0, step1, step2, step3, step4, step5pib, step6rate, step7logo, step8confirm];
   var currentFn = stepFns[step];
 
   return h('div', { style: { background: C.bg, minHeight: '100vh' } },
@@ -804,7 +831,7 @@ function RegisterScreen(props) {
       h('div', { style: { flex: 1 } },
         h('div', { style: { fontSize: 12, color: C.hint, marginBottom: 4 } }, 'ayoo Partner — Регистрация'),
         h('div', { style: { height: 4, background: C.border, borderRadius: 2 } },
-          h('div', { style: { height: 4, background: C.accent, borderRadius: 2, width: (Math.min(1, (step + 1) / 10) * 100) + '%', transition: 'width .3s' } })
+          h('div', { style: { height: 4, background: C.accent, borderRadius: 2, width: (Math.min(1, (step + 1) / 9) * 100) + '%', transition: 'width .3s' } })
         )
       )
     ),
@@ -1214,22 +1241,24 @@ function ScanTab(props) {
 
 // ── Profile Tab ───────────────────────────────────────────────────
 function ProfileTab(props) {
-  var merchant = props.merchant, venue = props.venue;
+  var merchant = props.merchant, venue = props.venue, onBack = props.onBack;
   return h('div', { style: { padding: '0 16px' } },
     h('div', { style: { fontSize: 20, fontWeight: 800, marginBottom: 16 } }, 'Профиль'),
     h(Card, { bg: C.lavender },
-      h('div', { style: { fontSize: 36, marginBottom: 8 } }, '🏪'),
+      merchant.logoUrl
+        ? h('img', { src: merchant.logoUrl, style: { width: 56, height: 56, objectFit: 'cover', borderRadius: 14, marginBottom: 8, display: 'block' } })
+        : h('div', { style: { fontSize: 36, marginBottom: 8 } }, '🏪'),
       h('div', { style: { fontSize: 20, fontWeight: 800 } }, merchant.name),
       h('div', {
         style: { display: 'inline-block', marginTop: 8, padding: '4px 12px', background: C.green, color: '#fff', borderRadius: 99, fontSize: 12, fontWeight: 700 },
-      }, 'Активный партнёр')
+      }, '✅ Активный партнёр')
     ),
     h(Card, null,
-      h('div', { style: { fontWeight: 700, marginBottom: 12 } }, 'Заведение'),
+      h('div', { style: { fontWeight: 700, marginBottom: 12 } }, 'Текущее заведение'),
       [
         ['📍 Название', venue.name],
+        ['🏙 Город', venue.city || '—'],
         ['⭐ Ставка', venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) + ' pts / 1000 ' + (venue.currency || 'RSD') : 'Не установлена'],
-        ['💱 Валюта', venue.currency || 'RSD'],
       ].map(function(row) {
         return h('div', {
           key: row[0],
@@ -1240,6 +1269,14 @@ function ProfileTab(props) {
         );
       })
     ),
+    onBack && merchant.venues && merchant.venues.length > 1 && h('button', {
+      onClick: onBack,
+      style: {
+        width: '100%', padding: '13px', background: C.lavender,
+        color: C.accent, borderRadius: 14, border: 'none', fontWeight: 700,
+        fontSize: 15, cursor: 'pointer', marginBottom: 12,
+      },
+    }, '🔄 Сменить заведение'),
     h('div', { style: { padding: '14px 16px', background: C.cream, borderRadius: 14, textAlign: 'center' } },
       h('div', { style: { fontSize: 13, color: C.hint } }, 'Поддержка'),
       h('div', { style: { fontSize: 15, fontWeight: 700, color: C.accent, marginTop: 4 } }, '@ayoo_support')
@@ -1247,27 +1284,49 @@ function ProfileTab(props) {
   );
 }
 
-// ── Venue picker (multiple venues) ────────────────────────────────
+// ── Venue picker ──────────────────────────────────────────────────
+var CAT_ICONS = { CAFE: '☕', RESTAURANT: '🍽', RETAIL: '🛍', SERVICE: '💈', OTHER: '📦' };
+
 function VenuePicker(props) {
   var merchant = props.merchant, onSelect = props.onSelect;
-  return h('div', { style: { padding: '20px 16px', background: C.bg, minHeight: '100vh' } },
-    h('div', { style: { fontSize: 24, fontWeight: 800, marginBottom: 4 } }, merchant.name),
-    h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Выберите заведение'),
-    merchant.venues.map(function(v) {
-      return h(Card, { key: v.id, style: { cursor: 'pointer' } },
-        h('button', {
+  return h('div', { style: { background: C.bg, minHeight: '100vh' } },
+    // Header
+    h('div', { style: { padding: '24px 20px 8px' } },
+      merchant.logoUrl
+        ? h('img', { src: merchant.logoUrl, style: { width: 52, height: 52, borderRadius: 14, objectFit: 'cover', marginBottom: 10, display: 'block' } })
+        : h('div', { style: { fontSize: 44, marginBottom: 6 } }, '🏪'),
+      h('div', { style: { fontSize: 22, fontWeight: 800 } }, merchant.name),
+      h('div', { style: { fontSize: 14, color: C.hint, marginTop: 2 } }, 'Выберите заведение для работы')
+    ),
+    h('div', { style: { padding: '12px 16px' } },
+      merchant.venues.map(function(v) {
+        return h('button', {
+          key: v.id,
           onClick: function() { onSelect(v); },
-          style: { width: '100%', background: 'none', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' },
+          style: {
+            width: '100%', background: C.white, border: 'none', cursor: 'pointer',
+            borderRadius: 18, padding: '16px', marginBottom: 10,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+            display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+          },
         },
-          h('div', null,
-            h('div', { style: { fontWeight: 700, fontSize: 16 } }, v.name),
-            v.pointsPerCurrency && h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } },
+          h('div', {
+            style: {
+              width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+              background: C.lavender, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 24,
+            },
+          }, CAT_ICONS[v.category] || '🏪'),
+          h('div', { style: { flex: 1, minWidth: 0 } },
+            h('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 2 } }, v.name),
+            h('div', { style: { fontSize: 13, color: C.hint } }, v.city + (v.address ? ' · ' + v.address : '')),
+            v.pointsPerCurrency && h('div', { style: { fontSize: 12, color: C.accent, fontWeight: 600, marginTop: 3 } },
               Math.round(v.pointsPerCurrency * 1000) + ' pts / 1000 ' + (v.currency || 'RSD'))
           ),
-          h('div', { style: { fontSize: 22, color: C.hint } }, '›')
-        )
-      );
-    })
+          h('div', { style: { fontSize: 20, color: C.hint, flexShrink: 0 } }, '›')
+        );
+      })
+    )
   );
 }
 
@@ -1280,7 +1339,7 @@ var DOCK = [
 ];
 
 function MainApp(props) {
-  var token = props.token, merchant = props.merchant, venue = props.venue;
+  var token = props.token, merchant = props.merchant, venue = props.venue, onBack = props.onBack;
   var tabState = useState('home'); var tab = tabState[0]; var setTab = tabState[1];
 
   var content = tab === 'home'
@@ -1289,10 +1348,36 @@ function MainApp(props) {
     ? h(RewardsTab, { token: token, venue: venue })
     : tab === 'scan'
     ? h(ScanTab, { token: token, venue: venue })
-    : h(ProfileTab, { merchant: merchant, venue: venue });
+    : h(ProfileTab, { merchant: merchant, venue: venue, onBack: onBack });
+
+  // Top bar with venue name + back to venue list
+  var topBar = h('div', {
+    style: {
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '14px 16px 0',
+    },
+  },
+    merchant.venues && merchant.venues.length > 1
+      ? h('button', {
+          onClick: onBack,
+          style: { fontSize: 20, color: C.hint, background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', flexShrink: 0 },
+        }, '‹')
+      : null,
+    h('div', {
+      onClick: merchant.venues && merchant.venues.length > 1 ? onBack : undefined,
+      style: {
+        flex: 1,
+        cursor: merchant.venues && merchant.venues.length > 1 ? 'pointer' : 'default',
+      },
+    },
+      h('div', { style: { fontSize: 11, color: C.hint, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Заведение'),
+      h('div', { style: { fontSize: 15, fontWeight: 700, color: C.text } }, venue.name)
+    )
+  );
 
   return h('div', { style: { background: C.bg, minHeight: '100vh', paddingBottom: 72 } },
-    h('div', { style: { paddingTop: 16 } }, content),
+    topBar,
+    h('div', { style: { paddingTop: 8 } }, content),
     h('div', {
       style: {
         position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -1338,14 +1423,11 @@ function App() {
         setState('pending');
       } else if (data.status === 'active') {
         setAuthData(data);
-        if (data.merchant.venues.length === 1) {
-          setVenue(data.merchant.venues[0]);
-          setState('main');
-        } else if (data.merchant.venues.length === 0) {
-          setErrMsg('Нет активных заведений. Обратитесь в поддержку ayoo.');
+        if (data.merchant.venues.length === 0) {
+          setErrMsg('Нет активных заведений. Обратитесь в поддержку @ayoo_support');
           setState('error');
         } else {
-          setState('venue');
+          setState('venue'); // always show venue list first
         }
       } else {
         setErrMsg(data.error || 'Неизвестная ошибка');
@@ -1354,15 +1436,25 @@ function App() {
     }).catch(function(e) { setErrMsg(e.message); setState('error'); });
   }, []);
 
+  function activateFromPending(data) {
+    setAuthData(data);
+    setState(data.merchant.venues.length > 0 ? 'venue' : 'error');
+  }
+
   if (state === 'loading')  return h(Splash, { msg: 'Загрузка ayoo Partner…' });
   if (state === 'error')    return h(Splash, { msg: errMsg, isError: true });
-  if (state === 'pending')  return h(PendingScreen, null);
+  if (state === 'pending')  return h(PendingScreen, { onActive: activateFromPending });
   if (state === 'register') return h(RegisterScreen, { onSuccess: function() { setState('pending'); } });
   if (state === 'venue')    return h(VenuePicker, {
     merchant: authData.merchant,
     onSelect: function(v) { setVenue(v); setState('main'); },
   });
-  if (state === 'main')     return h(MainApp, { token: authData.token, merchant: authData.merchant, venue: venue });
+  if (state === 'main')     return h(MainApp, {
+    token: authData.token,
+    merchant: authData.merchant,
+    venue: venue,
+    onBack: function() { setState('venue'); },
+  });
   return null;
 }
 

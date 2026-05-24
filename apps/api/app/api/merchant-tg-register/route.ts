@@ -36,7 +36,7 @@ function toVenueCategory(c: string): "CAFE" | "RESTAURANT" | "RETAIL" | "SERVICE
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { initData, name, category, city, address, email, taxId, rate } = body
+    const { initData, name, category, city, address, taxId, rate } = body
 
     if (!initData || typeof initData !== "string") {
       return NextResponse.json({ error: "initData required" }, { status: 400 })
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No Telegram ID" }, { status: 400 })
     }
 
-    if (!name || !category || !city || !address || !email) {
+    if (!name || !category || !city || !address) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -77,9 +77,9 @@ export async function POST(req: Request) {
     const lng = typeof body.lng === "number" ? body.lng : 0
     const sourcePlaceId = typeof body.sourcePlaceId === "string" ? body.sourcePlaceId.trim() : ""
 
-    // Check for existing registration
+    // Check for existing registration by Telegram ID
     const existing = await db.merchant.findFirst({
-      where: { OR: [{ telegramChatId: telegramId }, { email: email.toLowerCase().trim() }] },
+      where: { telegramChatId: telegramId },
     })
     if (existing) {
       return NextResponse.json({ error: "Already registered" }, { status: 409 })
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
           name: name.trim(),
           address: `${city}, ${address.trim()}`,
           taxId: taxId?.trim() || null,
-          email: email.toLowerCase().trim(),
+          email: null,          // email not collected at registration
           telegramChatId: telegramId,
           status: "PENDING",
           pointsBalance: 0,
@@ -160,7 +160,6 @@ export async function POST(req: Request) {
             `🆕 Новая заявка (Mini App)\n\n` +
             `🏪 ${name} (${category})\n` +
             `📍 ${city}, ${address}\n` +
-            `📧 ${email}\n` +
             (socials.phone ? `📞 ${socials.phone}\n` : '') +
             (socials.instagram ? `📸 ${socials.instagram}\n` : '') +
             `🪪 PIB: ${taxId || "—"}\n⭐ ${rateLabel}\n` +
