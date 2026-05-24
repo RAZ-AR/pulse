@@ -380,6 +380,96 @@ partnerBot.command("admin", async (ctx): Promise<void> => {
   )
 })
 
+// ── Inline-кнопки заявок (только для админа) ──────────────────────
+
+const WELCOME_BALANCE_NEW = 500
+
+function isAdmin(ctx: Context): boolean {
+  const adminId = process.env.ADMIN_CHAT_ID
+  return Boolean(adminId && String(ctx.chat?.id) === adminId)
+}
+
+async function findMerchantByTgId(telegramId: string) {
+  return db.merchant.findFirst({ where: { telegramChatId: telegramId } })
+}
+
+// ✅ Принять
+partnerBot.action(/^approve_(.+)$/, async (ctx): Promise<void> => {
+  if (!isAdmin(ctx)) { await ctx.answerCbQuery("❌ Нет доступа"); return }
+  const telegramId = ctx.match[1]!.trim()
+  const merchant = await findMerchantByTgId(telegramId)
+  if (!merchant) { await ctx.answerCbQuery("Партнёр не найден"); return }
+  if (merchant.status === "ACTIVE") {
+    await ctx.editMessageReplyMarkup(undefined)
+    await ctx.answerCbQuery("Уже активен")
+    return
+  }
+
+  await db.merchant.update({
+    where: { id: merchant.id },
+    data: { status: "ACTIVE", pointsBalance: { increment: WELCOME_BALANCE_NEW } },
+  })
+
+  const miniAppUrl = process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini"
+  if (merchant.telegramChatId) {
+    await ctx.telegram.sendMessage(
+      merchant.telegramChatId,
+      `🎉 *Добро пожаловать в ayoo Partners, ${merchant.name}!*\n\n` +
+      `Ваш аккаунт активирован. На балансе ${WELCOME_BALANCE_NEW} стартовых баллов.\n\n` +
+      `Откройте приложение партнёра и начните работу 👇`,
+      {
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [[
+            { text: "📷 Открыть ayoo Partner App", web_app: { url: miniAppUrl } },
+          ]],
+        },
+      }
+    )
+  }
+
+  await ctx.editMessageText(
+    `✅ *${merchant.name}* — активирован (+${WELCOME_BALANCE_NEW} pts)\nTG: \`${telegramId}\``,
+    { parse_mode: "Markdown" }
+  )
+  await ctx.answerCbQuery(`✅ ${merchant.name} активирован!`)
+})
+
+// ❌ Отклонить
+partnerBot.action(/^reject_(.+)$/, async (ctx): Promise<void> => {
+  if (!isAdmin(ctx)) { await ctx.answerCbQuery("❌ Нет доступа"); return }
+  const telegramId = ctx.match[1]!.trim()
+  const merchant = await findMerchantByTgId(telegramId)
+  if (!merchant) { await ctx.answerCbQuery("Партнёр не найден"); return }
+
+  await db.merchant.update({ where: { id: merchant.id }, data: { status: "SUSPENDED" } })
+
+  if (merchant.telegramChatId) {
+    await ctx.telegram.sendMessage(
+      merchant.telegramChatId,
+      `❌ К сожалению, ваша заявка на участие в ayoo Partners не была одобрена.\n\nЕсть вопросы? Напишите @ayoo_support`
+    )
+  }
+
+  await ctx.editMessageText(
+    `🗑 *${merchant.name}* — отклонён\nTG: \`${telegramId}\``,
+    { parse_mode: "Markdown" }
+  )
+  await ctx.answerCbQuery(`🗑 Заявка отклонена`)
+})
+
+// ⏸ Подождать
+partnerBot.action(/^hold_(.+)$/, async (ctx): Promise<void> => {
+  if (!isAdmin(ctx)) { await ctx.answerCbQuery("❌ Нет доступа"); return }
+  const telegramId = ctx.match[1]!.trim()
+  const merchant = await findMerchantByTgId(telegramId)
+  if (!merchant) { await ctx.answerCbQuery("Партнёр не найден"); return }
+
+  // Remove buttons but keep message — merchant stays PENDING
+  await ctx.editMessageReplyMarkup(undefined)
+  await ctx.answerCbQuery(`⏸ Отложено. Заявка ${merchant.name} остаётся в ожидании.`)
+})
+
 // ── Запуск (только при прямом вызове, не при импорте) ────────
 
 export function startPartnerBot() {

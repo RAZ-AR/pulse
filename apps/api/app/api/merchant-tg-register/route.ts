@@ -147,7 +147,7 @@ export async function POST(req: Request) {
       }
     })
 
-    // Notify admin
+    // Notify admin with inline action buttons
     const adminId = process.env.ADMIN_CHAT_ID
     if (adminId && botToken) {
       const rateLabel = `${Math.round(pointsPerCurrency * 1000)} pts / 1000 RSD`
@@ -156,14 +156,23 @@ export async function POST(req: Request) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: adminId,
+          parse_mode: "Markdown",
           text:
-            `🆕 Новая заявка (Mini App)\n\n` +
-            `🏪 ${name} (${category})\n` +
+            `🆕 *Новая заявка (Mini App)*\n\n` +
+            `🏪 *${name}* (${category})\n` +
             `📍 ${city}, ${address}\n` +
-            (socials.phone ? `📞 ${socials.phone}\n` : '') +
-            (socials.instagram ? `📸 ${socials.instagram}\n` : '') +
-            `🪪 PIB: ${taxId || "—"}\n⭐ ${rateLabel}\n` +
-            `TG: ${telegramId}\n\n/admin activate ${telegramId}`,
+            (socials.phone ? `📞 ${socials.phone}\n` : "") +
+            (socials.instagram ? `📸 ${socials.instagram}\n` : "") +
+            `🪪 PIB: ${taxId || "—"}\n` +
+            `⭐ ${rateLabel}\n` +
+            `TG: \`${telegramId}\``,
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "✅ Принять",   callback_data: `approve_${telegramId}` },
+              { text: "❌ Отклонить", callback_data: `reject_${telegramId}` },
+              { text: "⏸ Подождать", callback_data: `hold_${telegramId}` },
+            ]],
+          },
         }),
       }).catch(() => {})
     }
