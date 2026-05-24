@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       include: {
         venues: {
           where: { isPartner: true },
-          select: { id: true, name: true, pointsPerCurrency: true, currency: true },
+          select: { id: true, name: true, category: true, city: true, address: true, pointsPerCurrency: true, currency: true },
           orderBy: { name: "asc" },
         },
       },
@@ -103,6 +103,7 @@ export async function POST(req: Request) {
       merchant: {
         id: merchant.id,
         name: merchant.name,
+        logoUrl: merchant.logoUrl ?? null,
         venues: merchant.venues,
       },
     })

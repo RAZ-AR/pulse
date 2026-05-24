@@ -551,6 +551,64 @@ export const merchantRouter = router({
    * Used when customer pays with ayoo points at the venue.
    * Anti-fraud: checks balance, ownership, partner status, and daily redemption limit.
    */
+  /**
+   * Add a new venue from the Mini App (authenticated partner).
+   * Lighter than the public registration endpoint — uses JWT, no initData needed.
+   */
+  addVenueMini: merchantProcedure
+    .input(z.object({
+      name: z.string().min(1).max(100),
+      category: z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "OTHER"]),
+      city: z.string().min(1),
+      address: z.string().min(1),
+      pointsPerCurrency: z.number().positive(),
+      currency: z.string().default("RSD"),
+      lat: z.number().default(0),
+      lng: z.number().default(0),
+      sourcePlaceId: z.string().optional(),
+      logoUrl: z.string().optional(),
+      socials: z.object({
+        instagram: z.string().optional(),
+        tiktok: z.string().optional(),
+        telegram: z.string().optional(),
+        website: z.string().optional(),
+        googleMapsUrl: z.string().optional(),
+        phone: z.string().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { name, category, city, address, pointsPerCurrency, currency, lat, lng,
+              sourcePlaceId, logoUrl, socials } = input
+
+      // Update merchant logo if provided
+      if (logoUrl) {
+        await ctx.db.merchant.update({
+          where: { id: ctx.merchantId },
+          data: { logoUrl },
+        })
+      }
+
+      const venue = await ctx.db.venue.create({
+        data: {
+          name, category, city, address, country: "Serbia",
+          lat, lng, photos: [],
+          ownerId: ctx.merchantId,
+          isPartner: true, partnerSince: new Date(),
+          pointsPerCurrency, currency,
+          ...(sourcePlaceId ? { sourceProvider: "google_maps", sourcePlaceId } : {}),
+          phone:         socials?.phone?.trim()         || null,
+          website:       socials?.website?.trim()       || null,
+          instagram:     socials?.instagram?.trim()     || null,
+          tiktok:        socials?.tiktok?.trim()        || null,
+          telegram:      socials?.telegram?.trim()      || null,
+          googleMapsUrl: socials?.googleMapsUrl?.trim() || null,
+        },
+        select: { id: true, name: true, category: true, city: true, address: true,
+                  pointsPerCurrency: true, currency: true },
+      })
+      return venue
+    }),
+
   redeemPoints: merchantProcedure
     .input(
       z.object({

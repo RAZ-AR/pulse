@@ -1288,15 +1288,28 @@ function ProfileTab(props) {
 var CAT_ICONS = { CAFE: '☕', RESTAURANT: '🍽', RETAIL: '🛍', SERVICE: '💈', OTHER: '📦' };
 
 function VenuePicker(props) {
-  var merchant = props.merchant, onSelect = props.onSelect;
+  var merchant = props.merchant, onSelect = props.onSelect, onAddVenue = props.onAddVenue;
   return h('div', { style: { background: C.bg, minHeight: '100vh' } },
     // Header
-    h('div', { style: { padding: '24px 20px 8px' } },
-      merchant.logoUrl
-        ? h('img', { src: merchant.logoUrl, style: { width: 52, height: 52, borderRadius: 14, objectFit: 'cover', marginBottom: 10, display: 'block' } })
-        : h('div', { style: { fontSize: 44, marginBottom: 6 } }, '🏪'),
-      h('div', { style: { fontSize: 22, fontWeight: 800 } }, merchant.name),
-      h('div', { style: { fontSize: 14, color: C.hint, marginTop: 2 } }, 'Выберите заведение для работы')
+    h('div', { style: { padding: '24px 20px 8px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' } },
+      h('div', null,
+        merchant.logoUrl
+          ? h('img', { src: merchant.logoUrl, style: { width: 52, height: 52, borderRadius: 14, objectFit: 'cover', marginBottom: 10, display: 'block' } })
+          : h('div', { style: { fontSize: 44, marginBottom: 6 } }, '🏪'),
+        h('div', { style: { fontSize: 22, fontWeight: 800 } }, merchant.name),
+        h('div', { style: { fontSize: 14, color: C.hint, marginTop: 2 } }, 'Выберите заведение для работы')
+      ),
+      // Add venue button
+      h('button', {
+        onClick: onAddVenue,
+        style: {
+          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+          background: C.accent, color: '#fff', border: 'none',
+          fontSize: 28, cursor: 'pointer', marginTop: 4,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 10px rgba(91,76,245,0.3)',
+        },
+      }, '+')
     ),
     h('div', { style: { padding: '12px 16px' } },
       merchant.venues.map(function(v) {
@@ -1319,7 +1332,7 @@ function VenuePicker(props) {
           }, CAT_ICONS[v.category] || '🏪'),
           h('div', { style: { flex: 1, minWidth: 0 } },
             h('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 2 } }, v.name),
-            h('div', { style: { fontSize: 13, color: C.hint } }, v.city + (v.address ? ' · ' + v.address : '')),
+            h('div', { style: { fontSize: 13, color: C.hint } }, (v.city || '') + (v.address ? ' · ' + v.address : '')),
             v.pointsPerCurrency && h('div', { style: { fontSize: 12, color: C.accent, fontWeight: 600, marginTop: 3 } },
               Math.round(v.pointsPerCurrency * 1000) + ' pts / 1000 ' + (v.currency || 'RSD'))
           ),
@@ -1327,6 +1340,281 @@ function VenuePicker(props) {
         );
       })
     )
+  );
+}
+
+// ── Add Venue Screen ──────────────────────────────────────────────
+function AddVenueScreen(props) {
+  var token = props.token, onBack = props.onBack, onSuccess = props.onSuccess;
+  var stepState = useState(0); var step = stepState[0]; var setStep = stepState[1];
+  var formState = useState({
+    name: '', category: '', city: '', address: '',
+    rate: 0.008, socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
+    logoUrl: '', logoPreview: '', sourcePlaceId: '', lat: null, lng: null, addressSelected: false,
+  });
+  var form = formState[0]; var setForm = formState[1];
+  var customCityState = useState(''); var customCity = customCityState[0]; var setCustomCity = customCityState[1];
+  var showCustomCityState = useState(false); var showCustomCity = showCustomCityState[0]; var setShowCustomCity = showCustomCityState[1];
+  var customRateState = useState(''); var customRate = customRateState[0]; var setCustomRate = customRateState[1];
+  var showCustomRateState = useState(false); var showCustomRate = showCustomRateState[0]; var setShowCustomRate = showCustomRateState[1];
+  var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1];
+  var errorState = useState(''); var error = errorState[0]; var setError = errorState[1];
+
+  function set(key, val) { setForm(function(f) { var n = Object.assign({}, f); n[key] = val; return n; }); }
+
+  var btnStyle = {
+    padding: '14px 16px', background: C.white,
+    borderRadius: 14, border: '1.5px solid ' + C.border,
+    fontSize: 16, textAlign: 'left', cursor: 'pointer',
+    display: 'block', width: '100%',
+  };
+
+  // av0: venue name
+  function av0() {
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Название'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 1 из 7'),
+      h(TxtInput, { value: form.name, onChange: function(v) { set('name', v); }, placeholder: 'Например: Кафе Белград' }),
+      h('div', { style: { height: 16 } }),
+      h(Btn, { label: 'Далее →', disabled: !form.name.trim(), onClick: function() { if (form.name.trim()) setStep(1); } })
+    );
+  }
+
+  // av1: category
+  function av1() {
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Тип заведения'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 2 из 7'),
+      h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
+        CATEGORIES.map(function(c) {
+          return h('button', {
+            key: c.label,
+            onClick: function() { set('category', c.value); setStep(2); },
+            style: { padding: '16px 10px', background: C.white, borderRadius: 14, border: '1.5px solid ' + C.border, fontSize: 15, fontWeight: 600, cursor: 'pointer' },
+          }, c.label);
+        })
+      )
+    );
+  }
+
+  // av2: city
+  function av2() {
+    if (showCustomCity) return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Ваш город'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Шаг 3 из 7'),
+      h(TxtInput, { value: customCity, onChange: setCustomCity, placeholder: 'Название города' }),
+      h('div', { style: { height: 16 } }),
+      h(Btn, { label: 'Далее →', disabled: !customCity.trim(), onClick: function() { if (customCity.trim()) { set('city', customCity.trim()); setStep(3); } } })
+    );
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Город'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 16 } }, 'Шаг 3 из 7'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        CITIES.map(function(c) {
+          return h('button', { key: c, onClick: function() { set('city', c); setStep(3); }, style: btnStyle }, c);
+        }).concat([
+          h('button', { key: 'other', onClick: function() { setShowCustomCity(true); }, style: Object.assign({}, btnStyle, { color: C.accent }) }, '✏️ Другой город'),
+        ])
+      )
+    );
+  }
+
+  // av3: address
+  function av3() {
+    var canNext = form.address.trim().length > 3;
+    function acceptTyped() {
+      if (!canNext) return;
+      setForm(function(f) { return Object.assign({}, f, { address: f.address.trim(), addressSelected: true }); });
+      setStep(4);
+    }
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Адрес'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 7'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Начните вводить — появятся подсказки'),
+      h(AddressInput, {
+        value: form.address,
+        city: form.city,
+        onChange: function(v) { setForm(function(f) { return Object.assign({}, f, { address: v, addressSelected: false }); }); },
+        onSelect: function(s) {
+          setForm(function(f) {
+            var soc = Object.assign({}, f.socials);
+            if (s.googleMapsUrl) soc.googleMapsUrl = s.googleMapsUrl;
+            return Object.assign({}, f, { address: s.addr, addressSelected: true, city: s.city && !f.city ? s.city : f.city, socials: soc, sourcePlaceId: s.placeId || f.sourcePlaceId, lat: typeof s.lat === 'number' ? s.lat : f.lat, lng: typeof s.lng === 'number' ? s.lng : f.lng });
+          });
+        },
+      }),
+      form.address.trim().length > 3 && !form.addressSelected && h('button', {
+        onClick: acceptTyped,
+        style: { width: '100%', marginTop: 10, padding: '12px 14px', background: C.lavender, color: C.accent, borderRadius: 14, fontSize: 14, fontWeight: 700, textAlign: 'left' },
+      }, 'Использовать введённый адрес'),
+      h('div', { style: { height: 16 } }),
+      h(Btn, { label: 'Далее →', disabled: !canNext, onClick: acceptTyped })
+    );
+  }
+
+  // av4: socials (optional)
+  function av4() {
+    function setSocial(key, val) {
+      setForm(function(f) { var s = Object.assign({}, f.socials); s[key] = val; return Object.assign({}, f, { socials: s }); });
+    }
+    var fields = [
+      { key: 'instagram', icon: '📸', label: 'Instagram', placeholder: '@mycafe' },
+      { key: 'tiktok',    icon: '🎵', label: 'TikTok',    placeholder: '@mycafe' },
+      { key: 'telegram',  icon: '✈️',  label: 'Telegram',  placeholder: '@mycafe' },
+      { key: 'website',   icon: '🌐', label: 'Сайт',      placeholder: 'mycafe.rs' },
+      { key: 'googleMapsUrl', icon: '📍', label: 'Google Maps', placeholder: 'Ссылка' },
+      { key: 'phone',     icon: '📞', label: 'Телефон',   placeholder: '+381 63 …' },
+    ];
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Соцсети'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 5 из 7'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20 } }, 'Всё необязательно'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        fields.map(function(f) {
+          return h('div', { key: f.key },
+            h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 4 } }, f.icon + ' ' + f.label),
+            h(TxtInput, { value: form.socials[f.key], onChange: function(v) { setSocial(f.key, v); }, placeholder: f.placeholder, type: f.key === 'phone' ? 'tel' : 'text' })
+          );
+        })
+      ),
+      h('div', { style: { height: 20 } }),
+      h(Btn, { label: 'Далее →', onClick: function() { setStep(5); } })
+    );
+  }
+
+  // av5: rate
+  function av5() {
+    if (showCustomRate) return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Своя ставка'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Баллов за 1000 RSD (от 1 до 100)'),
+      h(TxtInput, { value: customRate, onChange: setCustomRate, placeholder: '10', inputMode: 'numeric' }),
+      h('div', { style: { height: 16 } }),
+      h(Btn, { label: 'Далее →', disabled: !customRate || isNaN(parseInt(customRate)) || parseInt(customRate) < 1 || parseInt(customRate) > 100,
+        onClick: function() { var pts = parseInt(customRate); if (pts >= 1 && pts <= 100) { set('rate', pts / 1000); setStep(6); } } })
+    );
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Ставка баллов'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 6 из 7'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Сколько баллов клиент получает за 1000 RSD'),
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        RATES.map(function(r) {
+          return h('button', { key: r.label, onClick: function() { set('rate', r.value); setStep(6); }, style: Object.assign({}, btnStyle, { padding: 16 }) },
+            h('div', { style: { fontSize: 16, fontWeight: 700 } }, r.label),
+            h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, r.sub)
+          );
+        }).concat([
+          h('button', { key: 'custom', onClick: function() { setShowCustomRate(true); }, style: Object.assign({}, btnStyle, { padding: 16 }) },
+            h('div', { style: { fontSize: 16, fontWeight: 700, color: C.accent } }, '✏️ Своя ставка'),
+            h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, 'Введите число баллов за 1000 RSD')
+          ),
+        ])
+      )
+    );
+  }
+
+  // av6: logo (optional)
+  function av6() {
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Логотип'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 7 из 7'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20 } }, 'Необязательно'),
+      h('label', {
+        style: { display: 'block', cursor: 'pointer', border: '2px dashed ' + C.border, borderRadius: 20, padding: 24, textAlign: 'center', background: form.logoPreview ? 'transparent' : C.white, position: 'relative', overflow: 'hidden', minHeight: 140 },
+      },
+        form.logoPreview
+          ? h('img', { src: form.logoPreview, style: { width: 100, height: 100, objectFit: 'cover', borderRadius: 14, display: 'block', margin: '0 auto' } })
+          : h('div', null, h('div', { style: { fontSize: 40, marginBottom: 8 } }, '🖼'), h('div', { style: { fontWeight: 600, fontSize: 14 } }, 'Нажмите для выбора')),
+        h('input', { type: 'file', accept: 'image/*', style: { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' },
+          onChange: function(e) { var file = e.target.files && e.target.files[0]; if (!file) return; resizeImageToBase64(file, 512, 0.75, function(b64) { setForm(function(f) { return Object.assign({}, f, { logoUrl: b64, logoPreview: b64 }); }); }); }
+        })
+      ),
+      form.logoPreview && h('button', { onClick: function() { setForm(function(f) { return Object.assign({}, f, { logoUrl: '', logoPreview: '' }); }); }, style: { marginTop: 8, fontSize: 13, color: C.red, background: 'none', border: 'none', cursor: 'pointer' } }, '✕ Удалить'),
+      h('div', { style: { height: 20 } }),
+      h('div', { style: { display: 'flex', gap: 10 } },
+        h(Btn, { label: 'Пропустить', outline: true, small: true, onClick: function() { setStep(7); } }),
+        h(Btn, { label: 'Далее →', small: true, onClick: function() { setStep(7); } })
+      )
+    );
+  }
+
+  // av7: confirm
+  function av7() {
+    var hasSocials = Object.values(form.socials).some(function(v) { return v && v.trim(); });
+    return h('div', { style: { padding: '0 20px' } },
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 16 } }, 'Проверьте данные'),
+      form.logoPreview && h('div', { style: { textAlign: 'center', marginBottom: 14 } },
+        h('img', { src: form.logoPreview, style: { width: 64, height: 64, objectFit: 'cover', borderRadius: 14 } })
+      ),
+      h(Card, { bg: C.cream },
+        [
+          ['🏪 Название',  form.name],
+          ['📍 Город',     form.city],
+          ['🗺 Адрес',     form.address],
+          ['⭐ Ставка',    Math.round(form.rate * 1000) + ' pts / 1000 RSD'],
+        ].map(function(row) {
+          return h('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' } },
+            h('div', { style: { fontSize: 13, color: C.hint, flexShrink: 0 } }, row[0]),
+            h('div', { style: { fontSize: 13, fontWeight: 600, textAlign: 'right', marginLeft: 8 } }, row[1])
+          );
+        })
+      ),
+      hasSocials && h(Card, { bg: C.sky, style: { marginTop: 0 } },
+        Object.entries(form.socials).map(function(entry) {
+          var k = entry[0], v = entry[1];
+          if (!v || !v.trim()) return null;
+          var icons = { instagram: '📸', tiktok: '🎵', telegram: '✈️', website: '🌐', googleMapsUrl: '📍', phone: '📞' };
+          return h('div', { key: k, style: { fontSize: 12, marginBottom: 2 } }, (icons[k] || '') + ' ' + v);
+        })
+      ),
+      h(ErrBox, { msg: error }),
+      h(Btn, { label: loading ? 'Добавление…' : '✅ Добавить заведение', disabled: loading, onClick: submitVenue }),
+      h('div', { style: { height: 8 } }),
+      h(Btn, { label: '← Изменить', outline: true, small: true, onClick: function() { setError(''); setStep(0); } })
+    );
+  }
+
+  async function submitVenue() {
+    setLoading(true); setError('');
+    try {
+      var venue = await trpcMutate(token, 'merchant.addVenueMini', {
+        name: form.name.trim(),
+        category: form.category,
+        city: form.city,
+        address: form.address.trim(),
+        pointsPerCurrency: form.rate,
+        currency: 'RSD',
+        lat: form.lat || 0,
+        lng: form.lng || 0,
+        sourcePlaceId: form.sourcePlaceId || undefined,
+        logoUrl: form.logoUrl || undefined,
+        socials: form.socials,
+      });
+      onSuccess(venue);
+    } catch(e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  var avSteps = [av0, av1, av2, av3, av4, av5, av6, av7];
+
+  return h('div', { style: { background: C.bg, minHeight: '100vh' } },
+    // Header
+    h('div', { style: { padding: '16px 20px 8px', display: 'flex', alignItems: 'center', gap: 12 } },
+      h('button', {
+        onClick: function() { step > 0 ? setStep(function(s) { return s - 1; }) : onBack(); },
+        style: { fontSize: 22, color: C.text, padding: '0 4px', cursor: 'pointer', background: 'none', border: 'none' },
+      }, '←'),
+      h('div', { style: { flex: 1 } },
+        h('div', { style: { fontSize: 12, color: C.hint, marginBottom: 4 } }, 'Добавить заведение'),
+        h('div', { style: { height: 4, background: C.border, borderRadius: 2 } },
+          h('div', { style: { height: 4, background: C.accent, borderRadius: 2, width: (Math.min(1, (step + 1) / 8) * 100) + '%', transition: 'width .3s' } })
+        )
+      )
+    ),
+    h('div', { style: { height: 20 } }),
+    avSteps[step] && avSteps[step]()
   );
 }
 
@@ -1448,6 +1736,22 @@ function App() {
   if (state === 'venue')    return h(VenuePicker, {
     merchant: authData.merchant,
     onSelect: function(v) { setVenue(v); setState('main'); },
+    onAddVenue: function() { setState('addVenue'); },
+  });
+  if (state === 'addVenue') return h(AddVenueScreen, {
+    token: authData.token,
+    onBack: function() { setState('venue'); },
+    onSuccess: function(newVenue) {
+      // append new venue locally and go back to picker
+      setAuthData(function(d) {
+        return Object.assign({}, d, {
+          merchant: Object.assign({}, d.merchant, {
+            venues: d.merchant.venues.concat([newVenue]),
+          }),
+        });
+      });
+      setState('venue');
+    },
   });
   if (state === 'main')     return h(MainApp, {
     token: authData.token,
