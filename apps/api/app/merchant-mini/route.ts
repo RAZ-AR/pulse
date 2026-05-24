@@ -6,6 +6,7 @@
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://api.ayoo.space"
+const MINI_APP_VERSION = "address-v3"
 
 const BASE_STYLES = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -20,7 +21,6 @@ button { cursor: pointer; border: none; outline: none; background: none; }
 input  { outline: none; border: none; font-family: inherit; }
 `
 
-/* eslint-disable @next/next/no-sync-scripts */
 const APP_SCRIPT = `
 (function() {
 'use strict';
@@ -29,6 +29,7 @@ var useEffect = React.useEffect;
 var useRef = React.useRef;
 var h = React.createElement;
 var API = window.__API_BASE__;
+var APP_VERSION = window.__MINI_APP_VERSION__;
 var tg = window.Telegram && window.Telegram.WebApp;
 
 // ── Colors ────────────────────────────────────────────────────────
@@ -156,6 +157,78 @@ function AddressInput(props) {
   var openState = useState(false); var open = openState[0]; var setOpen = openState[1];
   var busyState = useState(false); var busy = busyState[0]; var setBusy = busyState[1];
   var timer = useRef(null);
+  var cityAliases = {
+    'Белград': 'Beograd',
+    'Нови-Сад': 'Novi Sad',
+    'Ниш': 'Nis',
+    'Суботица': 'Subotica',
+    'Крагуевац': 'Kragujevac',
+  };
+
+  function cityForSearch(name) {
+    return cityAliases[name] || name || '';
+  }
+
+  function typedHouseNumber(text) {
+    var match = String(text || '').match(/[0-9]+[a-zA-Zа-яА-Я]?/);
+    return match ? match[0] : '';
+  }
+
+  function hasHouseNumber(text) {
+    return /[0-9]/.test(String(text || ''));
+  }
+
+  function mergeTypedHouseNumber(addr, original) {
+    if (hasHouseNumber(addr)) return addr;
+    var num = typedHouseNumber(original);
+    return num ? (addr.replace(/[, ]+$/, '') + ', ' + num) : addr;
+  }
+
+  function manualSuggestion(q) {
+    return {
+      addr: q.trim(),
+      city: city,
+      full: q.trim(),
+      source: 'manual',
+    };
+  }
+
+  function formatSuggestion(item, fallbackNumber) {
+    var a = item.address || {};
+    var road = a.road || a.pedestrian || a.street || a.footway || a.neighbourhood || a.suburb || '';
+    var num = a.house_number || fallbackNumber || '';
+    var addr = road ? road + (num ? ', ' + num : '') : '';
+    var displayParts = String(item.display_name || '').split(',').map(function(p) { return p.trim(); }).filter(Boolean);
+    if (!addr && displayParts.length > 0) addr = displayParts.slice(0, 2).join(', ');
+    var cityName = a.city || a.town || a.municipality || a.suburb || a.village || city;
+    return addr ? { addr: addr, city: cityName, full: item.display_name || '' } : null;
+  }
+
+  async function googleSuggestions(q, searchCity) {
+    var typedNumber = typedHouseNumber(q);
+    var url = API + '/api/places/autocomplete'
+      + '?input=' + encodeURIComponent(q)
+      + (searchCity ? '&city=' + encodeURIComponent(searchCity) : '');
+    var res = await fetch(url);
+    if (!res.ok) return [];
+    var json = await res.json();
+    return (json.predictions || []).map(function(p) {
+      return {
+        addr: mergeTypedHouseNumber(p.mainText || p.description, q),
+        city: p.secondaryText || searchCity,
+        full: p.description,
+        placeId: p.placeId,
+        typedNumber: typedNumber,
+        source: 'google',
+      };
+    });
+  }
+
+  async function googleDetails(placeId) {
+    var res = await fetch(API + '/api/places/details?placeId=' + encodeURIComponent(placeId));
+    if (!res.ok) return null;
+    return await res.json();
+  }
 
   function search(q) {
     clearTimeout(timer.current);
@@ -163,21 +236,39 @@ function AddressInput(props) {
     timer.current = setTimeout(async function() {
       setBusy(true);
       try {
-        var qStr = q + (city ? ', ' + city : '') + ', Serbia';
-        var url = 'https://nominatim.openstreetmap.org/search'
-          + '?q=' + encodeURIComponent(qStr)
-          + '&format=json&limit=6&addressdetails=1&countrycodes=rs';
-        var res = await fetch(url);
-        var data = await res.json();
+        var searchCity = cityForSearch(city);
+        var fallbackNumber = typedHouseNumber(q);
+        if (hasHouseNumber(q)) {
+          setSuggestions([manualSuggestion(q)]);
+          setOpen(true);
+        }
+        var googleItems = await googleSuggestions(q, searchCity);
+        if (googleItems.length > 0) {
+          var itemsWithManual = hasHouseNumber(q) ? [manualSuggestion(q)].concat(googleItems) : googleItems;
+          setSuggestions(itemsWithManual);
+          setOpen(true);
+          return;
+        }
+        var base = 'https://nominatim.openstreetmap.org/search'
+          + '?format=json&limit=8&addressdetails=1&countrycodes=rs&accept-language=sr,en,ru';
+        var urls = [
+          base + '&street=' + encodeURIComponent(q) + (searchCity ? '&city=' + encodeURIComponent(searchCity) : '') + '&country=Serbia',
+          base + '&q=' + encodeURIComponent(q + (searchCity ? ', ' + searchCity : '') + ', Serbia'),
+        ];
+        var data = [];
+        for (var u = 0; u < urls.length; u++) {
+          var res = await fetch(urls[u]);
+          if (!res.ok) continue;
+          var part = await res.json();
+          data = data.concat(part || []);
+          if (data.length >= 6) break;
+        }
         var items = [];
         for (var i = 0; i < data.length; i++) {
-          var a = data[i].address || {};
-          var road = a.road || a.pedestrian || a.street || a.neighbourhood || '';
-          var num  = a.house_number || '';
-          var addr = road + (num ? ', ' + num : '');
-          var cityName = a.city || a.town || a.suburb || a.village || '';
-          if (addr.length > 0) items.push({ addr: addr, city: cityName });
+          var item = formatSuggestion(data[i], fallbackNumber);
+          if (item) items.push(item);
         }
+        if (hasHouseNumber(q)) items.unshift(manualSuggestion(q));
         // deduplicate by addr
         var seen = {}; var uniq = [];
         for (var j = 0; j < items.length; j++) {
@@ -217,9 +308,28 @@ function AddressInput(props) {
       suggestions.map(function(s, idx) {
         return h('button', {
           key: s.addr + idx,
-          onClick: function() {
-            onChange(s.addr);
-            onSelect && onSelect(s);
+          onClick: async function() {
+            var picked = s;
+            if (s.placeId) {
+              var details = await googleDetails(s.placeId);
+              if (details) {
+                var detailAddress = details.address || s.addr;
+                if (s.typedNumber && !hasHouseNumber(detailAddress)) {
+                  detailAddress = mergeTypedHouseNumber(detailAddress, s.typedNumber);
+                }
+                picked = Object.assign({}, s, {
+                  addr: mergeTypedHouseNumber(detailAddress, value),
+                  city: details.city || s.city,
+                  full: details.formattedAddress || s.full,
+                  googleMapsUrl: details.googleMapsUrl || '',
+                  lat: details.lat,
+                  lng: details.lng,
+                  placeId: details.placeId || s.placeId,
+                });
+              }
+            }
+            onChange(picked.addr);
+            onSelect && onSelect(picked);
             setSuggestions([]); setOpen(false);
           },
           style: {
@@ -230,7 +340,9 @@ function AddressInput(props) {
           },
         },
           h('div', { style: { fontWeight: 600 } }, s.addr),
-          s.city && h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, s.city)
+          s.city && h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, s.city),
+          s.source === 'google' && h('div', { style: { fontSize: 11, color: C.accent, marginTop: 3 } }, 'Google Places'),
+          s.source === 'manual' && h('div', { style: { fontSize: 11, color: C.accent, marginTop: 3 } }, 'Использовать этот адрес')
         );
       })
     )
@@ -313,7 +425,7 @@ function RegisterScreen(props) {
   var formState = useState({
     name: '', category: '', city: '', address: '', email: '', taxId: '', rate: 0.008,
     socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
-    logoUrl: '', logoPreview: '',
+    logoUrl: '', logoPreview: '', sourcePlaceId: '', lat: null, lng: null, addressSelected: false,
   });
   var form = formState[0]; var setForm = formState[1];
   var customCityState = useState(''); var customCity = customCityState[0]; var setCustomCity = customCityState[1];
@@ -392,28 +504,55 @@ function RegisterScreen(props) {
     );
   }
 
-  // Step 3: address with autocomplete + house number validation
+  // Step 3: address with autocomplete
   function step3() {
-    var hasNum = /\d/.test(form.address);
-    var canNext = form.address.trim().length > 3 && hasNum;
+    var canNext = form.address.trim().length > 3;
+    function acceptTypedAddress() {
+      if (!canNext) return;
+      setForm(function(f) {
+        return Object.assign({}, f, { address: f.address.trim(), addressSelected: true });
+      });
+      setStep(4);
+    }
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Адрес'),
-      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 9'),
+      h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 4 из 9 · ' + APP_VERSION),
       h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Начните вводить — появятся подсказки'),
       h(AddressInput, {
         value: form.address,
-        onChange: function(v) { set('address', v); },
+        onChange: function(v) {
+          setForm(function(f) {
+            return Object.assign({}, f, { address: v, addressSelected: false });
+          });
+        },
         city: form.city,
         onSelect: function(s) {
-          set('address', s.addr);
-          if (s.city && !form.city) set('city', s.city);
+          setForm(function(f) {
+            var socials = Object.assign({}, f.socials);
+            if (s.googleMapsUrl) socials.googleMapsUrl = s.googleMapsUrl;
+            return Object.assign({}, f, {
+              address: s.addr,
+              addressSelected: true,
+              city: s.city && !f.city ? s.city : f.city,
+              socials: socials,
+              sourcePlaceId: s.placeId || f.sourcePlaceId,
+              lat: typeof s.lat === 'number' ? s.lat : f.lat,
+              lng: typeof s.lng === 'number' ? s.lng : f.lng,
+            });
+          });
         },
       }),
-      form.address.trim().length > 3 && !hasNum && h('div', {
-        style: { marginTop: 8, fontSize: 13, color: '#D97706', padding: '8px 12px', background: '#FFFBEB', borderRadius: 10 },
-      }, '⚠️ Укажите номер дома (например: Кнеза Михаила, 12)'),
+      form.address.trim().length > 3 && !form.addressSelected && h('button', {
+        onClick: acceptTypedAddress,
+        style: {
+          width: '100%', marginTop: 10, padding: '12px 14px',
+          background: C.lavender, color: C.accent,
+          borderRadius: 14, fontSize: 14, fontWeight: 700,
+          textAlign: 'left',
+        },
+      }, 'Использовать введённый адрес'),
       h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !canNext, onClick: function() { if (canNext) setStep(4); } })
+      h(Btn, { label: 'Далее →', disabled: !canNext, onClick: acceptTypedAddress })
     );
   }
 
@@ -637,6 +776,9 @@ function RegisterScreen(props) {
           rate: form.rate,
           socials: form.socials,
           logoUrl: form.logoUrl || null,
+          sourcePlaceId: form.sourcePlaceId || null,
+          lat: form.lat,
+          lng: form.lng,
         }),
       });
       var json = await res.json();
@@ -1242,7 +1384,7 @@ export async function GET() {
 </head>
 <body>
   <div id="root"></div>
-  <script>window.__API_BASE__ = "${API_BASE}";</script>
+  <script>window.__API_BASE__ = "${API_BASE}"; window.__MINI_APP_VERSION__ = "${MINI_APP_VERSION}";</script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
   <script>${APP_SCRIPT}</script>
@@ -1252,7 +1394,7 @@ export async function GET() {
   return new Response(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-store, max-age=0",
     },
   })
 }

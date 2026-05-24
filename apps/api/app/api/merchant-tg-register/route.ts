@@ -36,7 +36,7 @@ function toVenueCategory(c: string): "CAFE" | "RESTAURANT" | "RETAIL" | "SERVICE
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { initData, name, category, city, address, phone, email, taxId, rate } = body
+    const { initData, name, category, city, address, email, taxId, rate } = body
 
     if (!initData || typeof initData !== "string") {
       return NextResponse.json({ error: "initData required" }, { status: 400 })
@@ -73,12 +73,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid rate" }, { status: 400 })
     }
 
+    const lat = typeof body.lat === "number" ? body.lat : 0
+    const lng = typeof body.lng === "number" ? body.lng : 0
+    const sourcePlaceId = typeof body.sourcePlaceId === "string" ? body.sourcePlaceId.trim() : ""
+
     // Check for existing registration
     const existing = await db.merchant.findFirst({
       where: { OR: [{ telegramChatId: telegramId }, { email: email.toLowerCase().trim() }] },
     })
     if (existing) {
       return NextResponse.json({ error: "Already registered" }, { status: 409 })
+    }
+
+    const existingVenue = sourcePlaceId
+      ? await db.venue.findUnique({
+          where: { sourceProvider_sourcePlaceId: { sourceProvider: "google_maps", sourcePlaceId } },
+          select: { id: true, ownerId: true },
+        })
+      : null
+    if (existingVenue?.ownerId) {
+      return NextResponse.json({ error: "This venue is already registered" }, { status: 409 })
     }
 
     // Social links from form
@@ -102,30 +116,35 @@ export async function POST(req: Request) {
         },
       })
 
-      await tx.venue.create({
-        data: {
+      const venueData = {
           name: name.trim(),
           category: toVenueCategory(category),
           description: "Registered via ayoo Partner Mini App",
           address: address.trim(),
           city: city.trim(),
           country: "Serbia",
-          lat: 0,
-          lng: 0,
+          lat,
+          lng,
           photos: [],
           ownerId: merchant.id,
           isPartner: true,
           partnerSince: new Date(),
           pointsPerCurrency,
           currency: "RSD",
+          ...(sourcePlaceId ? { sourceProvider: "google_maps", sourcePlaceId } : {}),
           phone: socials.phone?.trim() || null,
           website: socials.website?.trim() || null,
           instagram: socials.instagram?.trim() || null,
           tiktok: socials.tiktok?.trim() || null,
           telegram: socials.telegram?.trim() || null,
           googleMapsUrl: socials.googleMapsUrl?.trim() || null,
-        },
-      })
+      }
+
+      if (existingVenue) {
+        await tx.venue.update({ where: { id: existingVenue.id }, data: venueData })
+      } else {
+        await tx.venue.create({ data: venueData })
+      }
     })
 
     // Notify admin
