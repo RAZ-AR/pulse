@@ -85,28 +85,25 @@ export async function POST(req: Request) {
       })
     }
 
-    // Registered but awaiting activation
-    if (merchant.status !== "ACTIVE") {
-      return NextResponse.json({ status: "pending", telegramId })
-    }
-
-    // Active — sign JWT
+    // Sign JWT for any registered merchant (PENDING can still add venues)
     const token = await new SignJWT({ merchantId: merchant.id })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime(JWT_EXPIRY)
       .sign(JWT_SECRET)
 
-    return NextResponse.json({
-      status: "active",
-      token,
-      merchant: {
-        id: merchant.id,
-        name: merchant.name,
-        logoUrl: merchant.logoUrl ?? null,
-        venues: merchant.venues,
-      },
-    })
+    const merchantPayload = {
+      id: merchant.id,
+      name: merchant.name,
+      logoUrl: merchant.logoUrl ?? null,
+      venues: merchant.venues,
+    }
+
+    if (merchant.status !== "ACTIVE") {
+      return NextResponse.json({ status: "pending", telegramId, token, merchant: merchantPayload })
+    }
+
+    return NextResponse.json({ status: "active", token, merchant: merchantPayload })
   } catch (err) {
     console.error("merchant-tg-auth error:", err)
     return NextResponse.json({ error: "Internal error" }, { status: 500 })

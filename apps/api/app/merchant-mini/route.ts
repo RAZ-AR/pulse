@@ -6,7 +6,7 @@
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://api.ayoo.space"
-const MINI_APP_VERSION = "cabinet-v1"
+const MINI_APP_VERSION = "cabinet-v2"
 
 const BASE_STYLES = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -367,7 +367,7 @@ function Splash(props) {
 
 // ── Pending screen ────────────────────────────────────────────────
 function PendingScreen(props) {
-  var onActive = props.onActive;
+  var onActive = props.onActive, token = props.token, onAddVenue = props.onAddVenue;
   var checkingState = useState(false); var checking = checkingState[0]; var setChecking = checkingState[1];
   var msgState = useState(''); var msg = msgState[0]; var setMsg = msgState[1];
 
@@ -396,12 +396,9 @@ function PendingScreen(props) {
     h('div', { style: { fontSize: 24, fontWeight: 800 } }, 'Заявка на проверке'),
     h('div', { style: { fontSize: 15, color: C.hint, maxWidth: 280, lineHeight: 1.6, marginTop: 4 } },
       'Мы проверим данные и активируем аккаунт. Вы получите уведомление в Telegram.'),
-    h('div', { style: { width: '100%', maxWidth: 280, marginTop: 8 } },
+    h('div', { style: { width: '100%', maxWidth: 320, marginTop: 8 } },
       h('div', {
-        style: {
-          padding: '14px 16px', background: C.lavender, borderRadius: 14,
-          marginBottom: 10, textAlign: 'left',
-        },
+        style: { padding: '14px 16px', background: C.lavender, borderRadius: 14, marginBottom: 10, textAlign: 'left' },
       },
         h('div', { style: { fontSize: 13, fontWeight: 700, color: C.accent, marginBottom: 6 } }, 'Что происходит:'),
         ['✅ Заявка получена', '🔍 Проверка данных (до 24ч)', '🚀 Активация аккаунта'].map(function(t) {
@@ -417,6 +414,17 @@ function PendingScreen(props) {
           cursor: checking ? 'not-allowed' : 'pointer', marginBottom: 10,
         },
       }, checking ? 'Проверяем…' : '🔄 Проверить статус'),
+      // Add venue button — available even while pending
+      token && h('button', {
+        onClick: onAddVenue,
+        style: {
+          width: '100%', padding: '13px',
+          background: C.white, color: C.accent,
+          border: '1.5px solid ' + C.accent,
+          borderRadius: 14, fontWeight: 700, fontSize: 15,
+          cursor: 'pointer', marginBottom: 10,
+        },
+      }, '➕ Добавить заведение'),
       h('div', { style: { fontSize: 13, color: C.hint } }, 'Вопросы? ',
         h('span', { style: { color: C.accent, fontWeight: 600 } }, '@ayoo_support'))
     )
@@ -1924,6 +1932,7 @@ function App() {
       if (data.status === 'unregistered') {
         setState('register');
       } else if (data.status === 'pending') {
+        setAuthData(data); // save token + merchant even for pending
         setState('pending');
       } else if (data.status === 'active') {
         setAuthData(data);
@@ -1931,7 +1940,7 @@ function App() {
           setErrMsg('Нет активных заведений. Обратитесь в поддержку @ayoo_support');
           setState('error');
         } else {
-          setState('venue'); // always show venue list first
+          setState('venue');
         }
       } else {
         setErrMsg(data.error || 'Неизвестная ошибка');
@@ -1945,27 +1954,44 @@ function App() {
     setState(data.merchant.venues.length > 0 ? 'venue' : 'error');
   }
 
+  // Append a new venue to authData.merchant.venues
+  function appendVenue(newVenue) {
+    setAuthData(function(d) {
+      return Object.assign({}, d, {
+        merchant: Object.assign({}, d.merchant, {
+          venues: d.merchant.venues.concat([newVenue]),
+        }),
+      });
+    });
+  }
+
   if (state === 'loading')  return h(Splash, { msg: 'Загрузка ayoo Partner…' });
   if (state === 'error')    return h(Splash, { msg: errMsg, isError: true });
-  if (state === 'pending')  return h(PendingScreen, { onActive: activateFromPending });
+  if (state === 'pending')  return h(PendingScreen, {
+    onActive: activateFromPending,
+    token: authData && authData.token,
+    onAddVenue: function() { setState('addVenuePending'); },
+  });
   if (state === 'register') return h(RegisterScreen, { onSuccess: function() { setState('pending'); } });
   if (state === 'venue')    return h(VenuePicker, {
     merchant: authData.merchant,
     onSelect: function(v) { setVenue(v); setState('main'); },
     onAddVenue: function() { setState('addVenue'); },
   });
+  // Add venue from pending screen (no dashboard, just back to pending)
+  if (state === 'addVenuePending') return h(AddVenueScreen, {
+    token: authData.token,
+    onBack: function() { setState('pending'); },
+    onSuccess: function(newVenue) {
+      appendVenue(newVenue);
+      setState('pending');
+    },
+  });
   if (state === 'addVenue') return h(AddVenueScreen, {
     token: authData.token,
     onBack: function() { setState('venue'); },
     onSuccess: function(newVenue) {
-      // append new venue locally and go back to picker
-      setAuthData(function(d) {
-        return Object.assign({}, d, {
-          merchant: Object.assign({}, d.merchant, {
-            venues: d.merchant.venues.concat([newVenue]),
-          }),
-        });
-      });
+      appendVenue(newVenue);
       setState('venue');
     },
   });
