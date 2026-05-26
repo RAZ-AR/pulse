@@ -11,7 +11,7 @@ import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import { uploadAvatarFile } from "../src/lib/storage"
-import { IS_TELEGRAM, getTgUser, getTgStartParam as getTgParam } from "../src/lib/telegram"
+import { IS_TELEGRAM, getTgInitData, getTgUser, getTgStartParam as getTgParam } from "../src/lib/telegram"
 import type { SupportedLocale } from "@pulse/shared"
 
 type Step = 0 | 1 | 2
@@ -74,6 +74,15 @@ function getTgUserId(): string {
   return id ? String(id) : `anon_${Date.now()}`
 }
 
+async function waitForTgInitData(): Promise<string | undefined> {
+  for (let i = 0; i < 20; i++) {
+    const initData = getTgInitData()
+    if (initData) return initData
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  return undefined
+}
+
 // ── Telegram onboarding (4 steps) ────────────────────────────
 // step 0: service description
 // step 1: welcome coupon + animation
@@ -85,11 +94,14 @@ function TelegramOnboarding() {
   const router = useRouter()
   const utils = trpc.useUtils()
   const { token, hydrated } = useAuth()
+  const signIn = useAuth((s) => s.signIn)
   const signOut = useAuth((s) => s.signOut)
 
   const [giftToken] = useState<string | undefined>(readTgGiftToken)
   const [referralCode] = useState<string | undefined>(readTgReferralCode)
   const [authTimedOut, setAuthTimedOut] = useState(false)
+  const [authError, setAuthError] = useState("")
+  const authAttempted = useRef(false)
   useEffect(() => {
     if (!hydrated || token) return
     // 15s timeout — Vercel cold starts can take 5-10s
@@ -98,6 +110,7 @@ function TelegramOnboarding() {
   }, [hydrated, token])
 
   const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token), retry: false })
+  const telegramSignIn = trpc.auth.signInWithTelegram.useMutation()
   const completeOnboarding = trpc.user.completeOnboarding.useMutation({ onSuccess: () => utils.user.me.invalidate() })
   const updateProfile = trpc.user.updateProfile.useMutation()
 
@@ -115,6 +128,36 @@ function TelegramOnboarding() {
   const referralLink = me.data?.referralCode
     ? `https://t.me/ayoo_loyalty_bot?start=${me.data.referralCode}`
     : ""
+
+  useEffect(() => {
+    if (!hydrated || token || !IS_TELEGRAM || authAttempted.current) return
+    authAttempted.current = true
+    let cancelled = false
+
+    waitForTgInitData()
+      .then((initData) => {
+        if (cancelled || token) return
+        if (!initData) {
+          setAuthError("Telegram did not provide sign-in data")
+          return
+        }
+        return telegramSignIn.mutateAsync({ initData })
+      })
+      .then((result) => {
+        if (!result || cancelled) return
+        setAuthError("")
+        signIn(result.token).catch(() => setAuthError("Could not save session"))
+      })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e)
+        setAuthError(msg)
+        if (typeof window !== "undefined") {
+          try { window.localStorage.setItem("_auth_err", `onboarding: ${msg}`) } catch { /* ignore */ }
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [hydrated, token, telegramSignIn, signIn])
 
   // Pre-fill name from server once loaded (fallback if Telegram SDK not injected yet)
   useEffect(() => {
@@ -196,7 +239,7 @@ function TelegramOnboarding() {
 
   if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) return <StatusScreen theme={theme} />
   if (!token && authTimedOut) return (
-    <StatusScreen theme={theme} title={t("signInStuck")} desc={t("signInStuckDesc")} button={t("reload")}
+    <StatusScreen theme={theme} title={t("signInStuck")} desc={authError || t("signInStuckDesc")} button={t("reload")}
       onPress={() => { if (typeof window !== "undefined") window.location.reload() }} />
   )
   if (me.isError) return (
