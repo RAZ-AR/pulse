@@ -277,7 +277,8 @@ function TelegramOnboarding() {
     <StatusScreen theme={theme} title={t("signInStuck")} desc={authError || authDebug || t("signInStuckDesc")} button={t("reload")}
       onPress={() => { if (typeof window !== "undefined") window.location.reload() }} />
   )
-  if (me.isError) return (
+  const meErrorCode = (me.error as { data?: { code?: string } } | null)?.data?.code
+  if (me.isError && meErrorCode === "UNAUTHORIZED") return (
     <StatusScreen theme={theme} title={t("sessionExpired")} desc={t("sessionExpiredDesc")} button={t("retry")}
       onPress={() => { signOut().catch(() => {}) }} />
   )

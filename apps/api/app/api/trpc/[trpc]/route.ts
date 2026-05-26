@@ -12,18 +12,22 @@ async function resolveUserId(req: Request): Promise<string | undefined> {
   if (authz?.startsWith("Bearer ")) {
     const token = authz.slice("Bearer ".length).trim()
     const payload = await verifyMobileToken(token)
-    if (payload) return payload.userId
+    return payload?.userId  // return early — don't fall through to NextAuth
   }
 
   // 2. Web (apps/api) — NextAuth cookie session
-  const session = await auth()
-  return session?.user?.id
+  try {
+    const session = await auth()
+    return session?.user?.id
+  } catch {
+    return undefined
+  }
 }
 
 async function createContext(req: Request): Promise<TRPCContext> {
   const [userId, merchantSession] = await Promise.all([
     resolveUserId(req),
-    merchantAuth(),
+    merchantAuth().catch(() => null),  // never crash mobile requests if merchant auth fails
   ])
   const merchantId = (merchantSession as { merchant?: { id: string } } | null)?.merchant?.id
 

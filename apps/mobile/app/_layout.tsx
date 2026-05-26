@@ -116,15 +116,17 @@ function AuthGate() {
     }
   }, [hydrated, navReady, token, telegramMode, demoMode, tg?.initData, demoSignIn, signIn])
 
-  // 2) Drop stale token so onboarding can recover.
+  // 2) Drop stale token only on UNAUTHORIZED (invalid/expired JWT), not on 5xx errors.
   useEffect(() => {
-    if (!me.isError || !token) return
+    if (!me.error || !token) return
+    const code = (me.error as { data?: { code?: string } })?.data?.code
+    if (code !== "UNAUTHORIZED") return
     if (typeof window !== "undefined") {
-      try { window.localStorage.setItem("_auth_err", "Profile request failed after sign-in") } catch { /* ignore */ }
+      try { window.localStorage.setItem("_auth_err", "Session rejected by server") } catch { /* ignore */ }
     }
     attempted.current = false
     signOut().catch(noop)
-  }, [me.isError, token, signOut])
+  }, [me.error, token, signOut])
 
   // 3) Route. Pure function of state — no per-mode branches.
   useEffect(() => {
