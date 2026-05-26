@@ -75,12 +75,31 @@ function getTgUserId(): string {
 }
 
 async function waitForTgInitData(): Promise<string | undefined> {
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     const initData = getTgInitData()
     if (initData) return initData
     await new Promise((resolve) => setTimeout(resolve, 250))
   }
   return undefined
+}
+
+function readStoredAuthError(): string {
+  if (typeof window === "undefined") return ""
+  try {
+    return window.localStorage.getItem("_auth_err") ?? ""
+  } catch {
+    return ""
+  }
+}
+
+function telegramDebugLine(): string {
+  const initData = getTgInitData()
+  const user = getTgUser()
+  return [
+    `tg:${isTelegramRuntime() ? "yes" : "no"}`,
+    `init:${initData ? "yes" : "no"}`,
+    `user:${user?.id ? "yes" : "no"}`,
+  ].join(" · ")
 }
 
 // ── Telegram onboarding (4 steps) ────────────────────────────
@@ -101,11 +120,16 @@ function TelegramOnboarding() {
   const [referralCode] = useState<string | undefined>(readTgReferralCode)
   const [authTimedOut, setAuthTimedOut] = useState(false)
   const [authError, setAuthError] = useState("")
+  const [authDebug, setAuthDebug] = useState("")
   const authAttempted = useRef(false)
+  const lastToken = useRef<string | null>(null)
   useEffect(() => {
     if (!hydrated || token) return
-    // 15s timeout — Vercel cold starts can take 5-10s
-    const id = setTimeout(() => setAuthTimedOut(true), 15000)
+    const id = setTimeout(() => {
+      setAuthDebug(telegramDebugLine())
+      setAuthError((current) => current || readStoredAuthError())
+      setAuthTimedOut(true)
+    }, 25000)
     return () => clearTimeout(id)
   }, [hydrated, token])
 
@@ -132,6 +156,9 @@ function TelegramOnboarding() {
     if (!hydrated || token || !isTelegramRuntime() || authAttempted.current) return
     authAttempted.current = true
     let cancelled = false
+    setAuthTimedOut(false)
+    setAuthError("")
+    setAuthDebug(telegramDebugLine())
 
     waitForTgInitData()
       .then((initData) => {
@@ -145,6 +172,10 @@ function TelegramOnboarding() {
       .then((result) => {
         if (!result || cancelled) return
         setAuthError("")
+        setAuthDebug("token:received")
+        if (typeof window !== "undefined") {
+          try { window.localStorage.removeItem("_auth_err") } catch { /* ignore */ }
+        }
         signIn(result.token).catch(() => setAuthError("Could not save session"))
       })
       .catch((e: unknown) => {
@@ -157,6 +188,11 @@ function TelegramOnboarding() {
 
     return () => { cancelled = true }
   }, [hydrated, token, signIn])
+
+  useEffect(() => {
+    if (lastToken.current && !token) authAttempted.current = false
+    lastToken.current = token
+  }, [token])
 
   // Pre-fill name from server once loaded (fallback if Telegram SDK not injected yet)
   useEffect(() => {
@@ -238,7 +274,7 @@ function TelegramOnboarding() {
 
   if (!hydrated || (!token && !authTimedOut) || (token && me.isLoading)) return <StatusScreen theme={theme} />
   if (!token && authTimedOut) return (
-    <StatusScreen theme={theme} title={t("signInStuck")} desc={authError || t("signInStuckDesc")} button={t("reload")}
+    <StatusScreen theme={theme} title={t("signInStuck")} desc={authError || authDebug || t("signInStuckDesc")} button={t("reload")}
       onPress={() => { if (typeof window !== "undefined") window.location.reload() }} />
   )
   if (me.isError) return (

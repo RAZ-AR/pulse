@@ -11,7 +11,8 @@ import { usePushToken } from "../src/lib/usePushToken"
 import { getTgWebApp, getTgInitData, isTelegramRuntime } from "../src/lib/telegram"
 
 function PushRegistrar() {
-  const me = trpc.user.me.useQuery()
+  const { token } = useAuth()
+  const me = trpc.user.me.useQuery(undefined, { enabled: Boolean(token) })
   usePushToken(me.data?.id)
   return null
 }
@@ -117,7 +118,12 @@ function AuthGate() {
 
   // 2) Drop stale token so onboarding can recover.
   useEffect(() => {
-    if (me.isError && token) signOut().catch(noop)
+    if (!me.isError || !token) return
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("_auth_err", "Profile request failed after sign-in") } catch { /* ignore */ }
+    }
+    attempted.current = false
+    signOut().catch(noop)
   }, [me.isError, token, signOut])
 
   // 3) Route. Pure function of state — no per-mode branches.
