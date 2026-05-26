@@ -6,7 +6,7 @@ import { SafeAreaProvider, initialWindowMetrics } from "react-native-safe-area-c
 import * as Notifications from "expo-notifications"
 import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
-import { trpc } from "../src/lib/trpc"
+import { signInWithTelegramDirect, trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
 import { IS_TELEGRAM, getTgWebApp, getTgInitData } from "../src/lib/telegram"
 
@@ -54,7 +54,6 @@ function AuthGate() {
   const signIn = useAuth((s) => s.signIn)
   const signOut = useAuth((s) => s.signOut)
 
-  const tgSignIn = trpc.auth.signInWithTelegram.useMutation()
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
 
   const tg = getTgWebApp()
@@ -78,7 +77,7 @@ function AuthGate() {
     if (telegramMode && initData) {
       attempted.current = true
       const trySignIn = () =>
-        tgSignIn.mutateAsync({ initData })
+        signInWithTelegramDirect(initData)
           .then((r) => signIn(r.token))
           .catch((err: unknown) => {
             const msg = err instanceof Error ? err.message : String(err)
@@ -87,7 +86,7 @@ function AuthGate() {
             }
             // Retry once after 3s — handles Vercel cold start timeout
             setTimeout(() => {
-              tgSignIn.mutateAsync({ initData })
+              signInWithTelegramDirect(initData)
                 .then((r) => {
                   if (typeof window !== "undefined") {
                     try { window.localStorage.removeItem("_auth_err") } catch { /* ignore */ }
@@ -114,7 +113,7 @@ function AuthGate() {
         .then((r) => signIn(r.token))
         .catch(noop)
     }
-  }, [hydrated, navReady, token, telegramMode, demoMode, tg?.initData, tgSignIn, demoSignIn, signIn])
+  }, [hydrated, navReady, token, telegramMode, demoMode, tg?.initData, demoSignIn, signIn])
 
   // 2) Drop stale token so onboarding can recover.
   useEffect(() => {

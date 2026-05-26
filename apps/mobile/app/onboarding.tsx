@@ -4,7 +4,7 @@ import { AyooLogo } from "../src/components/AyooLogo"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
-import { trpc } from "../src/lib/trpc"
+import { signInWithTelegramDirect, trpc } from "../src/lib/trpc"
 import { useAuth } from "../src/store/auth"
 import { setLocale } from "../src/lib/i18n"
 import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
@@ -110,7 +110,6 @@ function TelegramOnboarding() {
   }, [hydrated, token])
 
   const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token), retry: false })
-  const telegramSignIn = trpc.auth.signInWithTelegram.useMutation()
   const completeOnboarding = trpc.user.completeOnboarding.useMutation({ onSuccess: () => utils.user.me.invalidate() })
   const updateProfile = trpc.user.updateProfile.useMutation()
 
@@ -141,7 +140,7 @@ function TelegramOnboarding() {
           setAuthError("Telegram did not provide sign-in data")
           return
         }
-        return telegramSignIn.mutateAsync({ initData })
+        return signInWithTelegramDirect(initData)
       })
       .then((result) => {
         if (!result || cancelled) return
@@ -157,7 +156,7 @@ function TelegramOnboarding() {
       })
 
     return () => { cancelled = true }
-  }, [hydrated, token, telegramSignIn, signIn])
+  }, [hydrated, token, signIn])
 
   // Pre-fill name from server once loaded (fallback if Telegram SDK not injected yet)
   useEffect(() => {

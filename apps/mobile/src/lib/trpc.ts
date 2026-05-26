@@ -37,13 +37,39 @@ export async function setSessionToken(token: string | null): Promise<void> {
   }
 }
 
-function getApiUrl(): string {
+export function getApiUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL
   if (fromEnv) return fromEnv
   // Fallback to LAN-accessible Expo dev host
   const debuggerHost = Constants.expoConfig?.hostUri?.split(":")[0]
   if (debuggerHost) return `http://${debuggerHost}:3000`
   return "http://localhost:3000"
+}
+
+export async function signInWithTelegramDirect(initData: string): Promise<{ token: string }> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 12_000)
+
+  try {
+    const res = await fetch(`${getApiUrl()}/api/mobile-tg-auth`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData }),
+      signal: controller.signal,
+    })
+    const json = await res.json().catch(() => ({})) as { token?: string; error?: string }
+    if (!res.ok || !json.token) {
+      throw new Error(json.error || `Telegram auth failed (${res.status})`)
+    }
+    return { token: json.token }
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("Telegram auth timed out")
+    }
+    throw e
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export function createTRPCClient() {
