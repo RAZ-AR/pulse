@@ -6,6 +6,19 @@ const token = process.env.TELEGRAM_BOT_TOKEN
 if (!token) throw new Error("TELEGRAM_BOT_TOKEN not set")
 
 const bot = new Telegraf(token)
+const MINI_APP_URL = "https://app.ayoo.space"
+
+function syncMenuButton() {
+  return bot.telegram.setChatMenuButton({
+    menuButton: {
+      type: "web_app",
+      text: "🚀 Open ayoo",
+      web_app: { url: MINI_APP_URL },
+    },
+  })
+}
+
+syncMenuButton().catch((e) => console.error("[bot] setChatMenuButton error:", e))
 
 function botLang(code: string | undefined): "ru" | "sr" | "en" {
   if (!code) return "en"
@@ -31,7 +44,7 @@ const OPEN_BTN = { ru: "🚀 Открыть ayoo", sr: "🚀 Otvori ayoo", en: "
 bot.start(async (ctx) => {
   const payload = ctx.payload?.trim()
   const lang = botLang(ctx.from.language_code)
-  const miniAppUrl = process.env.MINI_APP_URL ?? "https://t.me/ayoo_loyalty_bot/app"
+  const miniAppUrl = MINI_APP_URL
 
   if (payload?.startsWith("gift_")) {
     const token = payload.slice(5)
@@ -143,6 +156,8 @@ function scheduleDailyAt(hour: number, minute: number, task: () => void) {
 
 export function startBot() {
   const webhookUrl = process.env.BOT_WEBHOOK_URL
+
+  syncMenuButton().catch((e) => console.error("[bot] setChatMenuButton error:", e))
 
   if (webhookUrl) {
     bot.telegram.setWebhook(webhookUrl).then(() => {

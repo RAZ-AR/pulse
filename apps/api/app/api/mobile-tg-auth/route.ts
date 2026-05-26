@@ -37,6 +37,19 @@ function verifyTelegramInitData(initData: string, botToken: string) {
   return expectedHash === hash ? params : null
 }
 
+function verifyWithConfiguredBot(initData: string) {
+  const tokens = [
+    process.env.TELEGRAM_BOT_TOKEN,
+    process.env.PARTNER_TELEGRAM_BOT_TOKEN,
+  ].filter((token): token is string => Boolean(token))
+
+  for (const token of tokens) {
+    const params = verifyTelegramInitData(initData, token)
+    if (params) return params
+  }
+  return null
+}
+
 function languageFrom(code: string | undefined) {
   if (code === "ru") return "RU"
   if (code === "sr") return "SR"
@@ -56,11 +69,12 @@ export async function POST(req: Request) {
     const { initData } = await req.json() as { initData?: string }
     if (!initData) return json({ error: "initData required" }, { status: 400 })
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN
-    if (!botToken) return json({ error: "Telegram not configured" }, { status: 500 })
+    if (!process.env.TELEGRAM_BOT_TOKEN && !process.env.PARTNER_TELEGRAM_BOT_TOKEN) {
+      return json({ error: "Telegram not configured" }, { status: 500 })
+    }
 
-    const params = verifyTelegramInitData(initData, botToken)
-    if (!params) return json({ error: "Invalid initData" }, { status: 401 })
+    const params = verifyWithConfiguredBot(initData)
+    if (!params) return json({ error: "Invalid Telegram signature" }, { status: 401 })
 
     const rawUser = params.get("user")
     if (!rawUser) return json({ error: "No user in initData" }, { status: 400 })
