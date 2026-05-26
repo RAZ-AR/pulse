@@ -12,7 +12,9 @@ const hasHash = initialHash.includes("tgWebAppData")
 export const IS_TELEGRAM = hasSdk || hasHash
 
 function getHashParams() {
-  const hash = initialHash.startsWith("#") ? initialHash.slice(1) : initialHash
+  const currentHash = isBrowser ? window.location.hash : ""
+  const source = initialHash.includes("tgWebAppData") ? initialHash : currentHash
+  const hash = source.startsWith("#") ? source.slice(1) : source
   if (!hash) return null
   return new URLSearchParams(hash)
 }
@@ -34,6 +36,13 @@ export function getTgWebApp() {
 
 export function getTgInitData(): string | undefined {
   return getTgWebApp()?.initData || getHashInitData()
+}
+
+export function isTelegramRuntime(): boolean {
+  if (!isBrowser) return false
+  if (getTgInitData()) return true
+  if (getTgWebApp()) return true
+  return navigator.userAgent.includes("Telegram")
 }
 
 export function getTgUser() {

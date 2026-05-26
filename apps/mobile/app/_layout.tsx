@@ -8,7 +8,7 @@ import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
 import { signInWithTelegramDirect, trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
-import { IS_TELEGRAM, getTgWebApp, getTgInitData } from "../src/lib/telegram"
+import { getTgWebApp, getTgInitData, isTelegramRuntime } from "../src/lib/telegram"
 
 function PushRegistrar() {
   const me = trpc.user.me.useQuery()
@@ -57,7 +57,7 @@ function AuthGate() {
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
 
   const tg = getTgWebApp()
-  const telegramMode = IS_TELEGRAM
+  const telegramMode = isTelegramRuntime()
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
   const onAuthRoute = segments[0] === "onboarding"
   const attempted = useRef(false)

@@ -11,7 +11,7 @@ import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import { uploadAvatarFile } from "../src/lib/storage"
-import { IS_TELEGRAM, getTgInitData, getTgUser, getTgStartParam as getTgParam } from "../src/lib/telegram"
+import { getTgInitData, getTgUser, getTgStartParam as getTgParam, isTelegramRuntime } from "../src/lib/telegram"
 import type { SupportedLocale } from "@pulse/shared"
 
 type Step = 0 | 1 | 2
@@ -129,7 +129,7 @@ function TelegramOnboarding() {
     : ""
 
   useEffect(() => {
-    if (!hydrated || token || !IS_TELEGRAM || authAttempted.current) return
+    if (!hydrated || token || !isTelegramRuntime() || authAttempted.current) return
     authAttempted.current = true
     let cancelled = false
 
@@ -667,7 +667,7 @@ function TgInviteStep({ onShare, onSkip }: { onShare: () => void; onSkip: () => 
 
 export default function OnboardingScreen() {
   const theme = useTheme()
-  return IS_TELEGRAM ? <TelegramOnboarding /> : <EmailOnboarding theme={theme} />
+  return isTelegramRuntime() ? <TelegramOnboarding /> : <EmailOnboarding theme={theme} />
 }
 
 function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
