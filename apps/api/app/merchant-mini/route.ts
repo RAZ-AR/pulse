@@ -921,151 +921,404 @@ function HomeTab(props) {
   );
 }
 
-// ── Rewards Tab ───────────────────────────────────────────────────
+// ── Rewards / Offers Tab ─────────────────────────────────────────
+var OFFER_COLORS = [
+  { label: 'Фиолетовый', value: '#5B4CF5' },
+  { label: 'Синий',      value: '#2563EB' },
+  { label: 'Зелёный',    value: '#059669' },
+  { label: 'Оранжевый',  value: '#EA580C' },
+  { label: 'Розовый',    value: '#DB2777' },
+  { label: 'Голубой',    value: '#0891B2' },
+  { label: 'Красный',    value: '#DC2626' },
+  { label: 'Золотой',    value: '#D97706' },
+];
+
+var PERCENT_OPTIONS = [5, 8, 10, 15];
+
+function offerTypeLabel(r) {
+  if (r.offerType === 'PURCHASE_PERCENT') return r.bonusPercent + '% от суммы';
+  if (r.offerType === 'PRODUCT_BONUS')    return (r.productName || 'Продукт') + ' — ' + r.pointsCost + ' pts';
+  return r.pointsCost + ' pts';
+}
+
+function offerStatusColor(r) {
+  if (!r.isActive) return '#ccc';
+  if (r.isPaused)  return '#F59E0B';
+  return C.green;
+}
+function offerStatusLabel(r) {
+  if (!r.isActive) return 'Удалена';
+  if (r.isPaused)  return '⏸ Пауза';
+  return '● Активна';
+}
+
 function RewardsTab(props) {
   var token = props.token, venue = props.venue;
-  var rewardsState = useState([]); var rewards = rewardsState[0]; var setRewards = rewardsState[1];
-  var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1];
-  // mode: 'list' | 'add' | 'edit'
-  var modeState = useState('list'); var mode = modeState[0]; var setMode = modeState[1];
-  var formState = useState({ title: '', description: '', pointsCost: '', isActive: true });
-  var form = formState[0]; var setForm = formState[1];
-  var editingIdState = useState(null); var editingId = editingIdState[0]; var setEditingId = editingIdState[1];
-  var savingState = useState(false); var saving = savingState[0]; var setSaving = savingState[1];
-  var errorState = useState(''); var error = errorState[0]; var setError = errorState[1];
-  var confirmDeleteState = useState(false); var confirmDelete = confirmDeleteState[0]; var setConfirmDelete = confirmDeleteState[1];
+  var rewardsState  = useState([]); var rewards  = rewardsState[0];  var setRewards  = rewardsState[1];
+  var loadingState  = useState(true); var loading = loadingState[0]; var setLoading  = loadingState[1];
+  // mode: 'list' | 'add' | 'edit' | 'view'
+  var modeState     = useState('list'); var mode    = modeState[0];   var setMode     = modeState[1];
+  var selectedState = useState(null);  var selected = selectedState[0]; var setSelected = selectedState[1];
+  var savingState   = useState(false); var saving   = savingState[0]; var setSaving   = savingState[1];
+  var errorState    = useState('');    var error    = errorState[0];   var setError    = errorState[1];
+  var confirmDelState = useState(false); var confirmDel = confirmDelState[0]; var setConfirmDel = confirmDelState[1];
+
+  // Form state
+  var emptyForm = { offerType: 'PURCHASE_PERCENT', title: '', description: '',
+    bonusPercent: 5, productName: '', pointsCost: '', cardColor: '#5B4CF5', endsAt: '' };
+  var formState = useState(emptyForm); var form = formState[0]; var setForm = formState[1];
+  function setField(k, v) { setForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
 
   function loadRewards() {
     setLoading(true);
     trpcQuery(token, 'merchant.listRewards', { venueId: venue.id })
-      .then(setRewards).catch(function() {}).finally(function() { setLoading(false); });
+      .then(function(data) { setRewards(data.filter(function(r) { return r.offerType !== 'REDEEM'; })); })
+      .catch(function() {})
+      .finally(function() { setLoading(false); });
   }
   useEffect(function() { loadRewards(); }, [venue.id]);
 
   function openAdd() {
-    setForm({ title: '', description: '', pointsCost: '', isActive: true });
-    setEditingId(null); setError(''); setConfirmDelete(false); setMode('add');
+    setForm(emptyForm); setError(''); setConfirmDel(false); setMode('add');
+  }
+
+  function openView(r) {
+    setSelected(r); setError(''); setConfirmDel(false); setMode('view');
   }
 
   function openEdit(r) {
-    setForm({ title: r.title, description: r.description || '', pointsCost: String(r.pointsCost), isActive: r.isActive });
-    setEditingId(r.id); setError(''); setConfirmDelete(false); setMode('edit');
+    setForm({
+      offerType:    r.offerType,
+      title:        r.title,
+      description:  r.description || '',
+      bonusPercent: r.bonusPercent || 5,
+      productName:  r.productName || '',
+      pointsCost:   String(r.pointsCost || ''),
+      cardColor:    r.cardColor || '#5B4CF5',
+      endsAt:       r.endsAt ? r.endsAt.substring(0, 10) : '',
+    });
+    setSelected(r); setError(''); setConfirmDel(false); setMode('edit');
   }
 
-  function closeForm() { setMode('list'); setError(''); setConfirmDelete(false); }
+  function closeForm() { setMode('list'); setError(''); setConfirmDel(false); setSelected(null); loadRewards(); }
 
-  function setField(k, v) { setForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
-
-  async function createReward() {
-    if (!form.title.trim() || !form.pointsCost) return;
+  async function saveOffer() {
+    if (!form.title.trim()) return;
+    if (form.offerType === 'PURCHASE_PERCENT' && !form.bonusPercent) return;
+    if (form.offerType === 'PRODUCT_BONUS' && (!form.productName.trim() || !form.pointsCost)) return;
     setSaving(true); setError('');
     try {
-      await trpcMutate(token, 'merchant.createReward', {
-        venueId: venue.id, title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        pointsCost: parseInt(form.pointsCost),
-      });
-      closeForm(); loadRewards();
+      var payload = {
+        venueId:      venue.id,
+        offerType:    form.offerType,
+        title:        form.title.trim(),
+        description:  form.description.trim() || undefined,
+        bonusPercent: form.offerType === 'PURCHASE_PERCENT' ? Number(form.bonusPercent) : undefined,
+        productName:  form.offerType === 'PRODUCT_BONUS'   ? form.productName.trim() : undefined,
+        pointsCost:   form.offerType === 'PRODUCT_BONUS'   ? parseInt(form.pointsCost) : 0,
+        cardColor:    form.cardColor,
+        endsAt:       form.endsAt ? new Date(form.endsAt).toISOString() : undefined,
+      };
+      await trpcMutate(token, 'merchant.createReward', payload);
+      closeForm();
     } catch(e) { setError(e.message); }
     finally { setSaving(false); }
   }
 
   async function saveEdit() {
-    if (!form.title.trim() || !form.pointsCost || !editingId) return;
+    if (!form.title.trim() || !selected) return;
     setSaving(true); setError('');
     try {
       await trpcMutate(token, 'merchant.updateReward', {
-        rewardId: editingId,
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        pointsCost: parseInt(form.pointsCost),
-        isActive: form.isActive,
+        rewardId:     selected.id,
+        title:        form.title.trim(),
+        description:  form.description.trim() || undefined,
+        bonusPercent: form.offerType === 'PURCHASE_PERCENT' ? Number(form.bonusPercent) : undefined,
+        productName:  form.offerType === 'PRODUCT_BONUS'   ? form.productName.trim() : undefined,
+        pointsCost:   form.offerType === 'PRODUCT_BONUS'   ? parseInt(form.pointsCost) : 0,
+        cardColor:    form.cardColor,
+        endsAt:       form.endsAt ? new Date(form.endsAt).toISOString() : null,
       });
-      closeForm(); loadRewards();
+      closeForm();
     } catch(e) { setError(e.message); }
     finally { setSaving(false); }
   }
 
-  async function deleteReward() {
-    if (!editingId) return;
+  async function pauseOffer(id) {
+    try { await trpcMutate(token, 'merchant.pauseOffer', { rewardId: id }); loadRewards(); setMode('list'); }
+    catch(e) { setError(e.message); }
+  }
+
+  async function resumeOffer(id) {
+    try { await trpcMutate(token, 'merchant.resumeOffer', { rewardId: id }); loadRewards(); setMode('list'); }
+    catch(e) { setError(e.message); }
+  }
+
+  async function deleteOffer(id) {
     setSaving(true); setError('');
     try {
-      await trpcMutate(token, 'merchant.deleteReward', { rewardId: editingId });
-      closeForm(); loadRewards();
+      await trpcMutate(token, 'merchant.deleteReward', { rewardId: id });
+      closeForm();
     } catch(e) { setError(e.message); }
     finally { setSaving(false); }
   }
 
-  // ── Add / Edit form ───────────────────────────────────────
+  // ── Offer form (Add / Edit) ───────────────────────────────
   if (mode === 'add' || mode === 'edit') {
     var isEdit = mode === 'edit';
-    return h('div', { style: { padding: '0 16px' } },
+    var canEditContent = !isEdit || !selected || selected.redeemedCount === 0;
+    var formValid = form.title.trim() && (
+      (form.offerType === 'PURCHASE_PERCENT' && form.bonusPercent > 0) ||
+      (form.offerType === 'PRODUCT_BONUS' && form.productName.trim() && form.pointsCost)
+    );
+
+    return h('div', { style: { padding: '0 16px', paddingBottom: 24 } },
+      // Header
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 } },
         h('button', { onClick: closeForm, style: { fontSize: 22, cursor: 'pointer', background: 'none', border: 'none' } }, '←'),
         h('div', { style: { fontSize: 20, fontWeight: 800 } }, isEdit ? 'Редактировать акцию' : 'Новая акция')
       ),
 
-      h('div', { style: { marginBottom: 10 } },
-        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Название *'),
-        h(TxtInput, { value: form.title, onChange: function(v) { setField('title', v); }, placeholder: 'Кофе в подарок' })
-      ),
-      h('div', { style: { marginBottom: 10 } },
-        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Описание (необязательно)'),
-        h(TxtInput, { value: form.description, onChange: function(v) { setField('description', v); }, placeholder: 'При покупке от 500 RSD' })
-      ),
-      h('div', { style: { marginBottom: 16 } },
-        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Стоимость в баллах *'),
-        h(TxtInput, { value: form.pointsCost, onChange: function(v) { setField('pointsCost', v.replace(/\D/g, '')); }, placeholder: '1000', inputMode: 'numeric' })
+      // Edit restriction notice
+      isEdit && !canEditContent && h('div', {
+        style: { background: '#FEF3C7', borderRadius: 12, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#92400E' },
+      }, '⚠️ Акция уже работает — содержание нельзя изменить. Можно только поставить на паузу или удалить.'),
+
+      // Тип акции (only when creating)
+      !isEdit && h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Тип акции'),
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+          h('button', {
+            onClick: function() { setField('offerType', 'PURCHASE_PERCENT'); },
+            style: {
+              padding: '14px 10px', borderRadius: 14, cursor: 'pointer', textAlign: 'center',
+              background: form.offerType === 'PURCHASE_PERCENT' ? C.accent : C.white,
+              color: form.offerType === 'PURCHASE_PERCENT' ? '#fff' : C.text,
+              border: '1.5px solid ' + (form.offerType === 'PURCHASE_PERCENT' ? C.accent : C.border),
+              fontWeight: 600,
+            },
+          },
+            h('div', { style: { fontSize: 22, marginBottom: 4 } }, '📊'),
+            h('div', { style: { fontSize: 13 } }, 'Бонус от суммы'),
+            h('div', { style: { fontSize: 11, marginTop: 2, opacity: 0.7 } }, 'Процент от покупки')
+          ),
+          h('button', {
+            onClick: function() { setField('offerType', 'PRODUCT_BONUS'); },
+            style: {
+              padding: '14px 10px', borderRadius: 14, cursor: 'pointer', textAlign: 'center',
+              background: form.offerType === 'PRODUCT_BONUS' ? C.accent : C.white,
+              color: form.offerType === 'PRODUCT_BONUS' ? '#fff' : C.text,
+              border: '1.5px solid ' + (form.offerType === 'PRODUCT_BONUS' ? C.accent : C.border),
+              fontWeight: 600,
+            },
+          },
+            h('div', { style: { fontSize: 22, marginBottom: 4 } }, '☕'),
+            h('div', { style: { fontSize: 13 } }, 'За продукт'),
+            h('div', { style: { fontSize: 11, marginTop: 2, opacity: 0.7 } }, 'Баллы за позицию')
+          )
+        )
       ),
 
-      // Active toggle (edit only)
-      isEdit && h('div', {
-        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: C.white, borderRadius: 14, border: '1.5px solid ' + C.border, marginBottom: 16 },
-      },
-        h('div', null,
-          h('div', { style: { fontWeight: 600 } }, 'Акция активна'),
-          h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, form.isActive ? 'Видна клиентам' : 'Скрыта от клиентов')
+      // Процент (PURCHASE_PERCENT)
+      form.offerType === 'PURCHASE_PERCENT' && canEditContent && h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Процент клиенту'),
+        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 } },
+          PERCENT_OPTIONS.map(function(p) {
+            return h('button', {
+              key: p,
+              onClick: function() { setField('bonusPercent', p); },
+              style: {
+                padding: '14px 0', borderRadius: 14, cursor: 'pointer', textAlign: 'center',
+                background: form.bonusPercent === p ? C.accent : C.white,
+                color: form.bonusPercent === p ? '#fff' : C.text,
+                border: '1.5px solid ' + (form.bonusPercent === p ? C.accent : C.border),
+                fontWeight: 700, fontSize: 18,
+              },
+            }, p + '%');
+          })
         ),
-        h('button', {
-          onClick: function() { setField('isActive', !form.isActive); },
+        h('div', { style: { fontSize: 12, color: C.hint, marginTop: 8, padding: '8px 12px', background: C.lavender, borderRadius: 10 } },
+          'Клиент получит ' + form.bonusPercent + '% от суммы покупки дополнительно к базовым баллам')
+      ),
+
+      // Продукт + баллы (PRODUCT_BONUS)
+      form.offerType === 'PRODUCT_BONUS' && canEditContent && h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Название продукта *'),
+        h(TxtInput, { value: form.productName, onChange: function(v) { setField('productName', v); }, placeholder: 'Эспрессо, Латте, ...' }),
+        h('div', { style: { height: 10 } }),
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Баллов за покупку *'),
+        h(TxtInput, {
+          value: form.pointsCost,
+          onChange: function(v) { setField('pointsCost', v.replace(/\D/g, '')); },
+          placeholder: '50', inputMode: 'numeric',
+        })
+      ),
+
+      // Название
+      h('div', { style: { marginBottom: 10 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Название акции *'),
+        h(TxtInput, {
+          value: form.title,
+          onChange: function(v) { setField('title', v); },
+          placeholder: form.offerType === 'PURCHASE_PERCENT' ? 'Двойные баллы на выходных' : 'Бонус за эспрессо',
+        })
+      ),
+
+      // Описание
+      h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Описание (необязательно)'),
+        h(TxtInput, {
+          value: form.description,
+          onChange: function(v) { setField('description', v); },
+          placeholder: 'Подробности акции для клиентов',
+        })
+      ),
+
+      // Срок действия
+      h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Срок действия (необязательно)'),
+        h('input', {
+          type: 'date',
+          value: form.endsAt,
+          onChange: function(e) { setField('endsAt', e.target.value); },
+          min: new Date().toISOString().substring(0, 10),
           style: {
-            width: 50, height: 28, borderRadius: 99, border: 'none', cursor: 'pointer',
-            background: form.isActive ? C.green : C.hint, position: 'relative', transition: 'background .2s',
+            width: '100%', padding: '14px 16px',
+            background: C.white, border: '1.5px solid ' + C.border,
+            borderRadius: 14, fontSize: 16, color: form.endsAt ? C.text : C.hint,
+          },
+        })
+      ),
+
+      // Цвет карточки
+      h('div', { style: { marginBottom: 20 } },
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 10 } }, 'Цвет карточки'),
+        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+          OFFER_COLORS.map(function(c) {
+            return h('button', {
+              key: c.value,
+              onClick: function() { setField('cardColor', c.value); },
+              style: {
+                width: 36, height: 36, borderRadius: 99, background: c.value, border: 'none', cursor: 'pointer',
+                boxShadow: form.cardColor === c.value ? '0 0 0 3px #fff, 0 0 0 5px ' + c.value : 'none',
+                transform: form.cardColor === c.value ? 'scale(1.15)' : 'scale(1)',
+                transition: 'transform .15s, box-shadow .15s',
+              },
+            });
+          })
+        ),
+        // Preview card
+        h('div', {
+          style: {
+            marginTop: 14, padding: '14px 16px', borderRadius: 16,
+            background: form.cardColor || C.accent, color: '#fff',
           },
         },
-          h('div', {
-            style: {
-              position: 'absolute', top: 3, width: 22, height: 22, borderRadius: 99, background: '#fff',
-              transition: 'left .2s', left: form.isActive ? 25 : 3,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-            },
-          })
+          h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 4 } },
+            form.offerType === 'PURCHASE_PERCENT' ? '📊 Бонус от суммы' : '☕ За продукт'),
+          h('div', { style: { fontWeight: 700, fontSize: 16 } }, form.title || 'Название акции'),
+          form.description && h('div', { style: { fontSize: 12, opacity: 0.8, marginTop: 2 } }, form.description),
+          h('div', { style: { fontSize: 13, fontWeight: 600, marginTop: 6, opacity: 0.9 } },
+            offerTypeLabel(form))
         )
       ),
 
       h(ErrBox, { msg: error }),
       h(Btn, {
-        label: saving ? 'Сохранение…' : (isEdit ? '✅ Сохранить' : 'Создать акцию'),
-        disabled: saving || !form.title.trim() || !form.pointsCost,
-        onClick: isEdit ? saveEdit : createReward,
+        label: saving ? 'Сохранение…' : (isEdit ? '✅ Сохранить' : '🚀 Запустить акцию'),
+        disabled: saving || !formValid,
+        onClick: isEdit ? saveEdit : saveOffer,
       }),
 
       // Delete (edit only)
-      isEdit && h('div', { style: { marginTop: 16 } },
-        !confirmDelete
+      isEdit && selected && h('div', { style: { marginTop: 12 } },
+        !confirmDel
           ? h('button', {
-              onClick: function() { setConfirmDelete(true); },
+              onClick: function() { setConfirmDel(true); },
               style: { width: '100%', padding: '12px', background: '#FEF2F2', color: C.red, borderRadius: 14, border: '1.5px solid #FECACA', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
             }, '🗑 Удалить акцию')
           : h('div', null,
-              h('div', { style: { fontSize: 13, color: C.red, textAlign: 'center', marginBottom: 8 } }, 'Подтвердить удаление?'),
+              h('div', { style: { fontSize: 13, color: C.red, textAlign: 'center', marginBottom: 8 } }, 'Удалить безвозвратно?'),
               h('div', { style: { display: 'flex', gap: 8 } },
-                h(Btn, { label: 'Отмена', outline: true, small: true, onClick: function() { setConfirmDelete(false); } }),
-                h(Btn, { label: saving ? '…' : 'Удалить', color: C.red, small: true, disabled: saving, onClick: deleteReward })
+                h(Btn, { label: 'Отмена', outline: true, small: true, onClick: function() { setConfirmDel(false); } }),
+                h(Btn, { label: saving ? '…' : 'Удалить', color: C.red, small: true, disabled: saving, onClick: function() { deleteOffer(selected.id); } })
               )
             )
+      )
+    );
+  }
+
+  // ── View mode ─────────────────────────────────────────────
+  if (mode === 'view' && selected) {
+    var r = selected;
+    var bgColor = r.cardColor || C.accent;
+    var canEdit = r.redeemedCount === 0;
+    return h('div', { style: { padding: '0 16px', paddingBottom: 24 } },
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 } },
+        h('button', { onClick: function() { setMode('list'); setSelected(null); }, style: { fontSize: 22, cursor: 'pointer', background: 'none', border: 'none' } }, '←'),
+        h('div', { style: { fontSize: 20, fontWeight: 800 } }, 'Акция')
       ),
-      h('div', { style: { height: 16 } })
+
+      // Card preview
+      h('div', {
+        style: { padding: '18px', borderRadius: 20, background: bgColor, color: '#fff', marginBottom: 16 },
+      },
+        h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 6 } },
+          r.offerType === 'PURCHASE_PERCENT' ? '📊 Бонус от суммы' : '☕ За продукт'),
+        h('div', { style: { fontWeight: 800, fontSize: 20, marginBottom: 4 } }, r.title),
+        r.description && h('div', { style: { fontSize: 13, opacity: 0.85, marginBottom: 8 } }, r.description),
+        h('div', { style: { fontSize: 16, fontWeight: 700 } }, offerTypeLabel(r)),
+        r.endsAt && h('div', { style: { fontSize: 12, opacity: 0.75, marginTop: 6 } },
+          'До ' + new Date(r.endsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }))
+      ),
+
+      // Stats
+      h(Card, null,
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+          h('div', null,
+            h('div', { style: { fontSize: 12, color: C.hint } }, 'Использований'),
+            h('div', { style: { fontSize: 24, fontWeight: 800, color: C.accent } }, r.redeemedCount)
+          ),
+          h('div', { style: { textAlign: 'right' } },
+            h('div', { style: { fontSize: 12, color: C.hint } }, 'Статус'),
+            h('div', { style: { fontSize: 14, fontWeight: 700, color: offerStatusColor(r) } }, offerStatusLabel(r))
+          )
+        )
+      ),
+
+      h(ErrBox, { msg: error }),
+
+      // Actions
+      h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        canEdit && h(Btn, {
+          label: '✏️ Редактировать',
+          outline: true,
+          onClick: function() { openEdit(r); },
+        }),
+        r.isActive && !r.isPaused && h(Btn, {
+          label: '⏸ Поставить на паузу',
+          outline: true,
+          color: '#F59E0B',
+          onClick: function() { pauseOffer(r.id); },
+        }),
+        r.isPaused && h(Btn, {
+          label: '▶️ Возобновить',
+          color: C.green,
+          onClick: function() { resumeOffer(r.id); },
+        }),
+        !confirmDel
+          ? h('button', {
+              onClick: function() { setConfirmDel(true); },
+              style: { width: '100%', padding: '12px', background: '#FEF2F2', color: C.red, borderRadius: 14, border: '1.5px solid #FECACA', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
+            }, '🗑 Удалить акцию')
+          : h('div', null,
+              h('div', { style: { fontSize: 13, color: C.red, textAlign: 'center', marginBottom: 8 } }, 'Удалить безвозвратно?'),
+              h('div', { style: { display: 'flex', gap: 8 } },
+                h(Btn, { label: 'Отмена', outline: true, small: true, onClick: function() { setConfirmDel(false); } }),
+                h(Btn, { label: saving ? '…' : 'Удалить', color: C.red, small: true, disabled: saving, onClick: function() { deleteOffer(r.id); } })
+              )
+            )
+      )
     );
   }
 
@@ -1075,44 +1328,59 @@ function RewardsTab(props) {
       h('div', { style: { fontSize: 20, fontWeight: 800 } }, 'Акции'),
       h('button', {
         onClick: openAdd,
-        style: { background: C.accent, color: '#fff', borderRadius: 99, border: 'none', width: 36, height: 36, fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        style: {
+          background: C.accent, color: '#fff', borderRadius: 99, border: 'none',
+          width: 36, height: 36, fontSize: 22, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        },
       }, '+')
     ),
     loading
       ? h('div', { style: { textAlign: 'center', color: C.hint, padding: 24 } }, '...')
       : rewards.length === 0
-        ? h(Card, { bg: C.cream },
-            h('div', { style: { textAlign: 'center', padding: '20px 0' } },
-              h('div', { style: { fontSize: 40, marginBottom: 10 } }, '🎁'),
-              h('div', { style: { fontWeight: 700 } }, 'Нет акций'),
-              h('div', { style: { fontSize: 13, color: C.hint, marginTop: 4 } }, 'Создайте первую акцию для клиентов')
-            )
+        ? h('div', { style: { textAlign: 'center', padding: '40px 20px' } },
+            h('div', { style: { fontSize: 48, marginBottom: 12 } }, '🎯'),
+            h('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 6 } }, 'Нет акций'),
+            h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 20, lineHeight: 1.5 } },
+              'Создайте акцию чтобы мотивировать клиентов покупать чаще'),
+            h(Btn, { label: '+ Создать первую акцию', onClick: openAdd })
           )
-        : rewards.map(function(r) {
-            return h(Card, { key: r.id, style: { cursor: 'pointer' } },
-              h('div', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 } },
-                // Info — tap to edit
-                h('button', {
-                  onClick: function() { openEdit(r); },
-                  style: { flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
+        : h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+            rewards.map(function(r) {
+              var bg = r.cardColor || C.accent;
+              return h('button', {
+                key: r.id,
+                onClick: function() { openView(r); },
+                style: {
+                  width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer',
+                  padding: '16px', borderRadius: 18,
+                  background: r.isPaused ? 'linear-gradient(135deg, ' + bg + '88, ' + bg + '55)' : bg,
+                  color: '#fff',
+                  opacity: !r.isActive ? 0.5 : 1,
+                  position: 'relative',
                 },
-                  h('div', { style: { fontWeight: 700, fontSize: 15 } }, r.title),
-                  r.description && h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, r.description),
-                  h('div', { style: { fontSize: 13, marginTop: 4 } },
-                    h('span', { style: { color: C.accent, fontWeight: 600 } }, r.pointsCost.toLocaleString() + ' pts'),
-                    h('span', { style: { color: C.hint } }, ' · ' + r.redeemedCount + ' исп. · ✏️')
-                  )
-                ),
-                // Active toggle
-                h('button', {
-                  onClick: async function() {
-                    try { await trpcMutate(token, 'merchant.updateReward', { rewardId: r.id, isActive: !r.isActive }); loadRewards(); } catch(e) {}
+              },
+                // Status chip
+                h('div', {
+                  style: {
+                    position: 'absolute', top: 12, right: 12,
+                    padding: '3px 10px', borderRadius: 99,
+                    background: 'rgba(255,255,255,0.25)',
+                    fontSize: 11, fontWeight: 700,
                   },
-                  style: { padding: '6px 12px', borderRadius: 99, border: 'none', cursor: 'pointer', flexShrink: 0, background: r.isActive ? C.green : '#ccc', color: '#fff', fontSize: 12, fontWeight: 700 },
-                }, r.isActive ? 'Вкл' : 'Откл')
-              )
-            );
-          })
+                }, offerStatusLabel(r)),
+
+                h('div', { style: { fontSize: 11, opacity: 0.75, marginBottom: 4 } },
+                  r.offerType === 'PURCHASE_PERCENT' ? '📊 Бонус от суммы' : '☕ За продукт'),
+                h('div', { style: { fontWeight: 800, fontSize: 17, marginBottom: 2 } }, r.title),
+                h('div', { style: { fontSize: 14, fontWeight: 600, opacity: 0.9, marginTop: 4 } }, offerTypeLabel(r)),
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, fontSize: 12, opacity: 0.75 } },
+                  h('span', null, r.redeemedCount + ' исп.'),
+                  r.endsAt && h('span', null, '· до ' + new Date(r.endsAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }))
+                )
+              );
+            })
+          )
   );
 }
 

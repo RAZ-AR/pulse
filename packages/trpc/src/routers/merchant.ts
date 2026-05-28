@@ -363,12 +363,21 @@ export const merchantRouter = router({
   createReward: merchantProcedure
     .input(
       z.object({
-        venueId: z.string(),
-        title: z.string().min(1).max(100),
-        description: z.string().max(500).optional(),
-        pointsCost: z.number().int().positive(),
-        imageUrl: z.string().url().optional(),
-        stockLimit: z.number().int().positive().optional(),
+        venueId:      z.string(),
+        offerType:    z.enum(["PURCHASE_PERCENT", "PRODUCT_BONUS", "REDEEM"]).default("REDEEM"),
+        title:        z.string().min(1).max(100),
+        description:  z.string().max(500).optional(),
+        // PURCHASE_PERCENT
+        bonusPercent: z.number().positive().optional(),
+        // PRODUCT_BONUS / REDEEM
+        pointsCost:   z.number().int().min(0).default(0),
+        productName:  z.string().max(100).optional(),
+        // Common
+        cardColor:    z.string().optional(),
+        endsAt:       z.string().datetime().optional(),
+        // legacy
+        imageUrl:     z.string().url().optional(),
+        stockLimit:   z.number().int().positive().optional(),
         redemptionType: z.enum(["FULL_FREE", "PERCENT_OFF", "FIXED_AMOUNT_OFF"]).default("FULL_FREE"),
       })
     )
@@ -379,13 +388,18 @@ export const merchantRouter = router({
       if (!venue) throw new TRPCError({ code: "NOT_FOUND" })
       return ctx.db.reward.create({
         data: {
-          venueId: input.venueId,
-          title: input.title,
-          pointsCost: input.pointsCost,
+          venueId:      input.venueId,
+          title:        input.title,
+          pointsCost:   input.pointsCost,
+          offerType:    input.offerType,
+          bonusPercent: input.bonusPercent ?? null,
+          productName:  input.productName ?? null,
+          cardColor:    input.cardColor ?? null,
+          endsAt:       input.endsAt ? new Date(input.endsAt) : null,
           redemptionType: input.redemptionType,
-          description: input.description ?? null,
-          imageUrl: input.imageUrl ?? null,
-          stockLimit: input.stockLimit ?? null,
+          description:  input.description ?? null,
+          imageUrl:     input.imageUrl ?? null,
+          stockLimit:   input.stockLimit ?? null,
         },
       })
     }),
@@ -393,30 +407,68 @@ export const merchantRouter = router({
   updateReward: merchantProcedure
     .input(
       z.object({
-        rewardId: z.string(),
-        title: z.string().min(1).max(100).optional(),
-        description: z.string().max(500).optional(),
-        pointsCost: z.number().int().positive().optional(),
-        isActive: z.boolean().optional(),
-        stockLimit: z.number().int().positive().nullable().optional(),
+        rewardId:     z.string(),
+        title:        z.string().min(1).max(100).optional(),
+        description:  z.string().max(500).optional(),
+        pointsCost:   z.number().int().min(0).optional(),
+        bonusPercent: z.number().positive().optional(),
+        productName:  z.string().max(100).optional(),
+        cardColor:    z.string().nullable().optional(),
+        endsAt:       z.string().datetime().nullable().optional(),
+        isActive:     z.boolean().optional(),
+        stockLimit:   z.number().int().positive().nullable().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { rewardId, title, description, pointsCost, isActive, stockLimit } = input
+      const { rewardId, ...fields } = input
       const reward = await ctx.db.reward.findFirst({
         where: { id: rewardId, venue: { ownerId: ctx.merchantId } },
+        select: { id: true, redeemedCount: true, offerType: true },
       })
       if (!reward) throw new TRPCError({ code: "NOT_FOUND" })
+      // Cannot edit content fields of an offer that's already been used
+      const isContentEdit = fields.title !== undefined || fields.description !== undefined
+        || fields.pointsCost !== undefined || fields.bonusPercent !== undefined
+        || fields.productName !== undefined
+      if (isContentEdit && reward.offerType !== "REDEEM" && reward.redeemedCount > 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot edit an offer that is already running" })
+      }
       return ctx.db.reward.update({
         where: { id: rewardId },
         data: {
-          ...(title !== undefined ? { title } : {}),
-          ...(description !== undefined ? { description: description ?? null } : {}),
-          ...(pointsCost !== undefined ? { pointsCost } : {}),
-          ...(isActive !== undefined ? { isActive } : {}),
-          ...(stockLimit !== undefined ? { stockLimit } : {}),
+          ...(fields.title        !== undefined ? { title: fields.title }               : {}),
+          ...(fields.description  !== undefined ? { description: fields.description ?? null } : {}),
+          ...(fields.pointsCost   !== undefined ? { pointsCost: fields.pointsCost }     : {}),
+          ...(fields.bonusPercent !== undefined ? { bonusPercent: fields.bonusPercent } : {}),
+          ...(fields.productName  !== undefined ? { productName: fields.productName ?? null } : {}),
+          ...(fields.cardColor    !== undefined ? { cardColor: fields.cardColor ?? null } : {}),
+          ...(fields.endsAt       !== undefined ? { endsAt: fields.endsAt ? new Date(fields.endsAt) : null } : {}),
+          ...(fields.isActive     !== undefined ? { isActive: fields.isActive }         : {}),
+          ...(fields.stockLimit   !== undefined ? { stockLimit: fields.stockLimit }     : {}),
         },
       })
+    }),
+
+  pauseOffer: merchantProcedure
+    .input(z.object({ rewardId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const reward = await ctx.db.reward.findFirst({
+        where: { id: input.rewardId, venue: { ownerId: ctx.merchantId } },
+        select: { id: true },
+      })
+      if (!reward) throw new TRPCError({ code: "NOT_FOUND" })
+      return ctx.db.reward.update({ where: { id: input.rewardId }, data: { isPaused: true } })
+    }),
+
+  resumeOffer: merchantProcedure
+    .input(z.object({ rewardId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const reward = await ctx.db.reward.findFirst({
+        where: { id: input.rewardId, venue: { ownerId: ctx.merchantId } },
+        select: { id: true },
+      })
+      if (!reward) throw new TRPCError({ code: "NOT_FOUND" })
+      return ctx.db.reward.update({ where: { id: input.rewardId }, data: { isPaused: false, isActive: true } })
     }),
 
   transactions: merchantProcedure
@@ -516,8 +568,13 @@ export const merchantRouter = router({
 
       return ctx.db.reward.findMany({
         where: { venueId: input.venueId },
-        select: { id: true, title: true, description: true, pointsCost: true, isActive: true, redeemedCount: true },
-        orderBy: [{ isActive: "desc" }, { pointsCost: "asc" }],
+        select: {
+          id: true, title: true, description: true, pointsCost: true,
+          isActive: true, isPaused: true, redeemedCount: true,
+          offerType: true, bonusPercent: true, productName: true,
+          cardColor: true, endsAt: true, createdAt: true,
+        },
+        orderBy: [{ createdAt: "desc" }],
       })
     }),
 

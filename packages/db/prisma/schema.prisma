@@ -418,6 +418,14 @@ model Reward {
   redemptionType RedemptionType @default(FULL_FREE)
   redemptions Redemption[]
 
+  // Offer-type promotions (earning, not spending)
+  offerType    String   @default("REDEEM")  // REDEEM | PURCHASE_PERCENT | PRODUCT_BONUS
+  bonusPercent Float?                        // for PURCHASE_PERCENT: 5 | 8 | 10 | 15
+  productName  String?                       // for PRODUCT_BONUS: "Эспрессо"
+  cardColor    String?                       // hex: "#5B4CF5"
+  endsAt       DateTime?
+  isPaused     Boolean  @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
