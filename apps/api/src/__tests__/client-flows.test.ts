@@ -754,25 +754,25 @@ describe("Сквозной сценарий: Марко — новый клие�
    */
 
   it("День 1: регистрация с реф. кодом → earned = 50", () => {
-    let earned = 0 + REFERRAL_SIGNUP_POINTS
+    const earned = 0 + REFERRAL_SIGNUP_POINTS
     expect(earned).toBe(50)
   })
 
   it("День 1: чекин в кафе → earned = 55", () => {
-    let earned = 50 + CHECKIN_POINTS
+    const earned = 50 + CHECKIN_POINTS
     expect(earned).toBe(55)
   })
 
   it("День 1: партнёрская покупка кофе 500 RSD → earned = 59", () => {
     const partnerPts = calculatePartnerPoints(500, 0.008, null, null) // 4
-    let earned = 55 + partnerPts
+    const earned = 55 + partnerPts
     expect(partnerPts).toBe(4)
     expect(earned).toBe(59)
   })
 
   it("День 1: скан чека супермаркета 2000 RSD → earned = 61", () => {
     const scanPts = Math.floor(2000 * SCAN_POINTS_PER_CURRENCY) // 2
-    let earned = 59 + scanPts
+    const earned = 59 + scanPts
     expect(scanPts).toBe(2)
     expect(earned).toBe(61)
   })
