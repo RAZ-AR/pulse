@@ -36,6 +36,13 @@ partnerBot.use(async (ctx, next) => {
 // ── /start ────────────────────────────────────────────────
 
 partnerBot.start(async (ctx) => {
+  // Deep-link from staff invite: /start staff_<token>
+  const startParam = (ctx.message as { text?: string } | undefined)?.text?.split(" ")[1] ?? ""
+  if (startParam.startsWith("staff_")) {
+    await handleStaffInvite(ctx, startParam.slice("staff_".length))
+    return
+  }
+
   const merchant = ctx.merchantData
 
   if (!merchant) {
@@ -73,6 +80,113 @@ partnerBot.start(async (ctx) => {
     }
   )
 })
+
+// ── Staff invite handler ──────────────────────────────────
+
+async function handleStaffInvite(ctx: Context, token: string): Promise<void> {
+  if (!ctx.chat) return
+
+  const chatId = String(ctx.chat.id)
+  const firstName = (ctx.message as { from?: { first_name?: string } } | undefined)?.from?.first_name
+
+  // Check if already a staff member
+  const existing = await db.staffMember.findUnique({
+    where: { telegramChatId: chatId },
+    include: { venue: { select: { name: true } } },
+  })
+  if (existing) {
+    if (existing.isActive) {
+      await ctx.reply(
+        `✅ Вы уже зарегистрированы как сотрудник *${existing.venue.name}*.\n\nОткройте приложение для сканирования:`,
+        {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "📷 Открыть Scanner", web_app: { url: process.env.STAFF_APP_URL ?? process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini" } },
+            ]],
+          },
+        }
+      )
+    } else {
+      await ctx.reply("❌ Ваш доступ как сотрудника был отозван. Обратитесь к владельцу заведения.")
+    }
+    return
+  }
+
+  // Look up invite
+  const invite = await db.staffInvite.findUnique({
+    where: { token },
+    include: {
+      venue: { select: { id: true, name: true } },
+      merchant: { select: { id: true, name: true } },
+    },
+  })
+
+  if (!invite) {
+    await ctx.reply("❌ Ссылка-приглашение не найдена. Попросите владельца создать новую.")
+    return
+  }
+  if (invite.usedAt) {
+    await ctx.reply("❌ Эта ссылка уже была использована. Попросите владельца создать новую.")
+    return
+  }
+  if (invite.expiresAt < new Date()) {
+    await ctx.reply("❌ Срок действия ссылки истёк. Попросите владельца создать новую.")
+    return
+  }
+
+  // Register staff + mark invite used in one transaction
+  const staff = await db.$transaction(async (tx) => {
+    await tx.staffInvite.update({
+      where: { token },
+      data: { usedAt: new Date() },
+    })
+    return tx.staffMember.create({
+      data: {
+        telegramChatId: chatId,
+        name: firstName ?? null,
+        venueId: invite.venueId,
+        merchantId: invite.merchantId,
+      },
+    })
+  })
+
+  const staffAppUrl = process.env.STAFF_APP_URL ?? process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini"
+
+  await ctx.reply(
+    `🎉 *Добро пожаловать, ${firstName ?? "сотрудник"}!*\n\n` +
+    `Вы добавлены в заведение *${invite.venue.name}* (${invite.merchant.name}).\n\n` +
+    `Вы можете начислять и списывать баллы клиентам. Настройки недоступны — только сканирование.\n\n` +
+    `Откройте приложение:`,
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "📷 Открыть Scanner", web_app: { url: staffAppUrl } },
+        ]],
+      },
+    }
+  )
+
+  // Notify merchant
+  try {
+    const merchant = await db.merchant.findUnique({
+      where: { id: invite.merchantId },
+      select: { telegramChatId: true },
+    })
+    if (merchant?.telegramChatId) {
+      await ctx.telegram.sendMessage(
+        merchant.telegramChatId,
+        `👤 Новый сотрудник подключился к *${invite.venue.name}*:\n` +
+        `${firstName ?? "Без имени"} (ID: \`${staff.id.slice(-6)}\`)\n\n` +
+        `Для отзыва доступа используйте кабинет партнёра.`,
+        { parse_mode: "Markdown" }
+      )
+    }
+  } catch {
+    // non-critical
+  }
+}
 
 // ── /register ─────────────────────────────────────────────
 

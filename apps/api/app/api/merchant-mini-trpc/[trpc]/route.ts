@@ -1,7 +1,9 @@
 /**
- * tRPC handler for the Merchant Mini App.
- * Authenticates via Bearer JWT (issued by /api/merchant-tg-auth).
- * Reuses the same appRouter — merchantProcedure checks ctx.merchantId.
+ * tRPC handler for the Merchant + Staff Mini Apps.
+ * Authenticates via Bearer JWT (issued by /api/merchant-tg-auth or /api/staff-tg-auth).
+ * Reuses the same appRouter:
+ *   - merchantProcedure checks ctx.merchantId
+ *   - scanProcedure checks ctx.merchantId || ctx.staffId
  */
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch"
 import { appRouter } from "@pulse/trpc/server"
@@ -19,6 +21,20 @@ async function createContext(req: Request): Promise<TRPCContext> {
 
   try {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+
+    // Staff JWT: { staffId, venueId, merchantId, role: "staff" }
+    if (payload.role === "staff") {
+      const staffId = payload.staffId as string | undefined
+      if (!staffId) return { db }
+      return {
+        db,
+        staffId,
+        ...(payload.venueId ? { staffVenueId: payload.venueId as string } : {}),
+        ...(payload.merchantId ? { staffMerchantId: payload.merchantId as string } : {}),
+      }
+    }
+
+    // Merchant JWT: { merchantId }
     const merchantId = payload.merchantId as string | undefined
     if (!merchantId) return { db }
     return { db, merchantId }

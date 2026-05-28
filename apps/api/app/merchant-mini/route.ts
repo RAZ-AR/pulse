@@ -1342,6 +1342,55 @@ function ProfileTab(props) {
   var errorState = useState(''); var error = errorState[0]; var setError = errorState[1];
   var loadingEditState = useState(false); var loadingEdit = loadingEditState[0]; var setLoadingEdit = loadingEditState[1];
 
+  // ── Staff state ───────────────────────────────────────────
+  var staffState = useState([]); var staffList = staffState[0]; var setStaffList = staffState[1];
+  var staffLoadingState = useState(false); var staffLoading = staffLoadingState[0]; var setStaffLoading = staffLoadingState[1];
+  var inviteLinkState = useState(''); var inviteLink = inviteLinkState[0]; var setInviteLink = inviteLinkState[1];
+  var inviteLoadingState = useState(false); var inviteLoading = inviteLoadingState[0]; var setInviteLoading = inviteLoadingState[1];
+  var copiedState = useState(false); var copied = copiedState[0]; var setCopied = copiedState[1];
+
+  useEffect(function() {
+    if (mode !== 'view') return;
+    setStaffLoading(true);
+    trpcQuery(token, 'staff.list', { venueId: venue.id })
+      .then(setStaffList)
+      .catch(function() {})
+      .finally(function() { setStaffLoading(false); });
+  }, [venue.id, mode]);
+
+  async function createInvite() {
+    setInviteLoading(true); setInviteLink('');
+    try {
+      var data = await trpcMutate(token, 'staff.createInvite', { venueId: venue.id });
+      setInviteLink(data.inviteUrl);
+    } catch(e) {
+      setError('Не удалось создать ссылку: ' + e.message);
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  async function revokeStaff(staffId, name) {
+    if (!confirm('Отозвать доступ у ' + (name || 'сотрудника') + '?')) return;
+    try {
+      await trpcMutate(token, 'staff.revoke', { staffId: staffId });
+      setStaffList(function(list) { return list.filter(function(s) { return s.id !== staffId; }); });
+    } catch(e) {
+      setError('Ошибка: ' + e.message);
+    }
+  }
+
+  function copyLink() {
+    if (!inviteLink) return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(inviteLink).then(function() {
+        setCopied(true); setTimeout(function() { setCopied(false); }, 2000);
+      });
+    } else if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(inviteLink);
+    }
+  }
+
   function openEdit() {
     setLoadingEdit(true); setError('');
     trpcQuery(token, 'merchant.venueSettings', { venueId: venue.id })
@@ -1493,6 +1542,60 @@ function ProfileTab(props) {
         );
       }),
       error && h(ErrBox, { msg: error })
+    ),
+
+    // ── Сотрудники ────────────────────────────────────────────
+    h(Card, null,
+      // Header row
+      h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 } },
+        h('div', { style: { fontWeight: 700 } }, '👥 Сотрудники'),
+        h('button', {
+          onClick: createInvite,
+          disabled: inviteLoading,
+          style: { background: C.accent, color: '#fff', border: 'none', borderRadius: 10, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: inviteLoading ? 0.6 : 1 },
+        }, inviteLoading ? '…' : '+ Добавить')
+      ),
+
+      // Invite link block
+      inviteLink && h('div', { style: { background: C.lavender, borderRadius: 12, padding: '10px 12px', marginBottom: 12 } },
+        h('div', { style: { fontSize: 12, color: C.hint, marginBottom: 4 } }, 'Отправьте ссылку сотруднику:'),
+        h('div', { style: { fontSize: 12, wordBreak: 'break-all', color: C.accent, fontWeight: 600, marginBottom: 8 } }, inviteLink),
+        h('button', {
+          onClick: copyLink,
+          style: { width: '100%', padding: '10px', background: copied ? C.green : C.accent, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'background .2s' },
+        }, copied ? '✅ Скопировано!' : '📋 Скопировать ссылку')
+      ),
+
+      // Staff list
+      staffLoading
+        ? h('div', { style: { textAlign: 'center', color: C.hint, fontSize: 13, padding: '8px 0' } }, '...')
+        : staffList.length === 0
+          ? h('div', { style: { fontSize: 13, color: C.hint, textAlign: 'center', padding: '8px 0' } },
+              'Сотрудников нет. Нажмите «+ Добавить» чтобы пригласить.'
+            )
+          : h('div', null,
+              staffList.map(function(s, i) {
+                return h('div', {
+                  key: s.id,
+                  style: {
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '9px 0',
+                    borderTop: i > 0 ? '1px solid ' + C.border : 'none',
+                  },
+                },
+                  h('div', null,
+                    h('div', { style: { fontWeight: 600, fontSize: 14 } }, s.name || 'Без имени'),
+                    h('div', { style: { fontSize: 11, color: C.hint, marginTop: 2 } },
+                      'С ' + new Date(s.createdAt).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
+                    )
+                  ),
+                  h('button', {
+                    onClick: function() { revokeStaff(s.id, s.name); },
+                    style: { padding: '5px 12px', background: '#FEF2F2', color: C.red, border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' },
+                  }, 'Отозвать')
+                );
+              })
+            )
     ),
 
     // Switch venue / support

@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
-import { router, merchantProcedure } from "../trpc"
+import { Prisma } from "@pulse/db"
+import { router, merchantProcedure, scanProcedure } from "../trpc"
 
 const WorkingHoursSchema = z.object({
   mon: z.string().optional(),
@@ -524,7 +525,10 @@ export const merchantRouter = router({
    * Look up a customer by their referral code (shown as QR in the mobile app).
    * Returns name + current points balance — shown to merchant before confirming transaction.
    */
-  resolveCustomer: merchantProcedure
+  /**
+   * Accessible by both owner (merchantId) and staff (staffId).
+   */
+  resolveCustomer: scanProcedure
     .input(z.object({ referralCode: z.string().min(1).max(20) }))
     .query(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
@@ -692,7 +696,11 @@ export const merchantRouter = router({
       return venue
     }),
 
-  redeemPoints: merchantProcedure
+  /**
+   * Accessible by both owner (merchantId) and staff (staffId).
+   * Staff can only deduct points at their assigned venue.
+   */
+  redeemPoints: scanProcedure
     .input(
       z.object({
         userId: z.string(),
@@ -702,9 +710,18 @@ export const merchantRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // 1. Verify venue belongs to this merchant and is an active partner
+      // Staff: must operate on their own venue only
+      if (ctx.staffId && ctx.staffVenueId && input.venueId !== ctx.staffVenueId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Staff can only operate on their assigned venue" })
+      }
+
+      // 1. Verify venue — owner check for merchant, staffVenueId match for staff
+      const venueWhere = ctx.merchantId
+        ? { id: input.venueId, ownerId: ctx.merchantId }
+        : { id: input.venueId }
+
       const venue = await ctx.db.venue.findFirst({
-        where: { id: input.venueId, ownerId: ctx.merchantId },
+        where: venueWhere,
         select: { id: true, name: true, isPartner: true },
       })
       if (!venue) throw new TRPCError({ code: "NOT_FOUND", message: "Venue not found" })
@@ -744,13 +761,33 @@ export const merchantRouter = router({
       const welcomeDeduct = input.points - earnedDeduct
 
       await ctx.db.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: input.userId },
+        const redemptionsToday = await tx.transaction.count({
+          where: {
+            userId: input.userId,
+            venueId: input.venueId,
+            type: "REWARD_REDEEMED",
+            createdAt: { gte: todayStart },
+          },
+        })
+        if (redemptionsToday >= 5) {
+          throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Daily redemption limit reached for this customer" })
+        }
+
+        const userUpdate = await tx.user.updateMany({
+          where: {
+            id: input.userId,
+            earnedPoints: { gte: earnedDeduct },
+            welcomePoints: { gte: welcomeDeduct },
+          },
           data: {
             earnedPoints: { decrement: earnedDeduct },
             welcomePoints: { decrement: welcomeDeduct },
           },
         })
+        if (userUpdate.count !== 1) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Insufficient points" })
+        }
+
         await tx.transaction.create({
           data: {
             userId: input.userId,
@@ -761,7 +798,7 @@ export const merchantRouter = router({
             verifiedAt: new Date(),
           },
         })
-      })
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
 
       return {
         success: true,

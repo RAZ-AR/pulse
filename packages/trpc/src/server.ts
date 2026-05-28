@@ -14,6 +14,7 @@ import { socialRouter } from "./routers/social"
 import { leaderboardRouter } from "./routers/leaderboard"
 import { merchantRouter } from "./routers/merchant"
 import { offerRouter } from "./routers/offer"
+import { staffRouter } from "./routers/staff"
 
 export const appRouter = router({
   auth: authRouter,
@@ -29,6 +30,7 @@ export const appRouter = router({
   leaderboard: leaderboardRouter,
   merchant: merchantRouter,
   offer: offerRouter,
+  staff: staffRouter,
 })
 
 export type AppRouter = typeof appRouter

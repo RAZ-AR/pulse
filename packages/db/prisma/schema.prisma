@@ -235,6 +235,8 @@ model Merchant {
   venues       Venue[]
   importLogs   VenueImportLog[]
   offers       Offer[]
+  staffInvites StaffInvite[]
+  staffMembers StaffMember[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -302,6 +304,8 @@ model Venue {
   reviews    Review[]
   challenges Challenge[]
   offers     Offer[]
+  staffInvites StaffInvite[]
+  staffMembers StaffMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -607,4 +611,38 @@ model GiftLink {
 
   @@index([token])
   @@index([senderId])
+}
+
+// ============================================================
+// Staff (сотрудники: могут сканировать QR, не могут менять настройки)
+// ============================================================
+
+model StaffInvite {
+  id         String    @id @default(cuid())
+  token      String    @unique @default(cuid())
+  venueId    String
+  venue      Venue     @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  merchantId String
+  merchant   Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([token])
+  @@index([venueId])
+}
+
+model StaffMember {
+  id             String   @id @default(cuid())
+  telegramChatId String   @unique
+  name           String?
+  venueId        String
+  venue          Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  merchantId     String
+  merchant       Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([venueId])
+  @@index([merchantId])
 }

@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
-import { router, publicProcedure, protectedProcedure, merchantProcedure } from "../trpc"
-import { calcSpend, MIN_REDEEM } from "@pulse/shared"
+import { router, publicProcedure, protectedProcedure, merchantProcedure, scanProcedure } from "../trpc"
+import { calcSpend, MIN_REDEEM, WELCOME_COOLDOWN_HOURS } from "@pulse/shared"
 
 const REDEMPTION_TTL_HOURS = 24
 
@@ -94,6 +94,45 @@ export const rewardRouter = router({
 
       // 4. DB transaction: spend points + create redemption record
       const result = await ctx.db.$transaction(async (tx) => {
+        const stockUpdate = await tx.reward.updateMany({
+          where: {
+            id: reward.id,
+            isActive: true,
+            ...(reward.stockLimit !== null ? { redeemedCount: { lt: reward.stockLimit } } : {}),
+          },
+          data: { redeemedCount: { increment: 1 } },
+        })
+        if (stockUpdate.count !== 1) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Reward is out of stock" })
+        }
+
+        const welcomeCooldownCutoff = new Date(Date.now() - WELCOME_COOLDOWN_HOURS * 3_600_000)
+        const walletUpdate = await tx.user.updateMany({
+          where: {
+            id: ctx.userId,
+            earnedPoints: { gte: spend.fromEarned },
+            welcomePoints: { gte: spend.fromWelcome },
+            ...(spend.fromWelcome > 0
+              ? {
+                  welcomeExpiresAt: { gt: new Date() },
+                  OR: [
+                    { lastWelcomeUsedAt: null },
+                    { lastWelcomeUsedAt: { lte: welcomeCooldownCutoff } },
+                  ],
+                }
+              : {}),
+          },
+          data: {
+            earnedPoints: { decrement: spend.fromEarned },
+            welcomePoints: { decrement: spend.fromWelcome },
+            spentPoints: { increment: reward.pointsCost },
+            ...(spend.fromWelcome > 0 && { lastWelcomeUsedAt: new Date() }),
+          },
+        })
+        if (walletUpdate.count !== 1) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Not enough points to redeem this reward" })
+        }
+
         const redemption = await tx.redemption.create({
           data: {
             userId: ctx.userId,
@@ -102,21 +141,6 @@ export const rewardRouter = router({
             expiresAt,
           },
           select: { id: true, redemptionCode: true, expiresAt: true },
-        })
-
-        await tx.user.update({
-          where: { id: ctx.userId },
-          data: {
-            earnedPoints: { decrement: spend.fromEarned },
-            welcomePoints: { decrement: spend.fromWelcome },
-            spentPoints: { increment: reward.pointsCost },
-            ...(spend.fromWelcome > 0 && { lastWelcomeUsedAt: new Date() }),
-          },
-        })
-
-        await tx.reward.update({
-          where: { id: reward.id },
-          data: { redeemedCount: { increment: 1 } },
         })
 
         await tx.transaction.create({
@@ -148,10 +172,10 @@ export const rewardRouter = router({
     }),
 
   /**
-   * Merchant scans the user's QR code to validate and consume it.
+   * Owner or staff scans the user's QR code to validate and consume it.
    * Verifies ownership, checks expiry, marks as USED.
    */
-  validate: merchantProcedure
+  validate: scanProcedure
     .input(z.object({ redemptionCode: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const redemption = await ctx.db.redemption.findUnique({
@@ -167,7 +191,11 @@ export const rewardRouter = router({
         return { valid: false, reason: "Code not found" } as const
       }
 
-      if (redemption.reward.venue.ownerId !== ctx.merchantId) {
+      // Owner: venue must belong to their merchant account
+      // Staff: venue must be their assigned venue
+      const isOwner = ctx.merchantId && redemption.reward.venue.ownerId === ctx.merchantId
+      const isStaff = ctx.staffId && redemption.reward.venue.id === ctx.staffVenueId
+      if (!isOwner && !isStaff) {
         return { valid: false, reason: "Code does not belong to your venue" } as const
       }
 
@@ -183,10 +211,13 @@ export const rewardRouter = router({
         return { valid: false, reason: "Code has expired" } as const
       }
 
-      await ctx.db.redemption.update({
-        where: { id: redemption.id },
+      const used = await ctx.db.redemption.updateMany({
+        where: { id: redemption.id, status: "ACTIVE", expiresAt: { gt: new Date() } },
         data: { status: "USED", usedAt: new Date() },
       })
+      if (used.count !== 1) {
+        return { valid: false, reason: "Code already used" } as const
+      }
 
       return {
         valid: true,
