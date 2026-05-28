@@ -120,10 +120,10 @@ type AuthResult =
 function resolveMerchantAuthResult(
   merchant: { id: string; status: MerchantStatus } | null,
   telegramId: string,
-): Omit<AuthResult, "token"> {
-  if (!merchant) return { status: "unregistered", telegramId }
-  if (merchant.status !== "ACTIVE") return { status: "pending", telegramId, merchantId: merchant.id, token: "" }
-  return { status: "active", merchantId: merchant.id, token: "" }
+) {
+  if (!merchant) return { status: "unregistered" as const, telegramId }
+  if (merchant.status !== "ACTIVE") return { status: "pending" as const, telegramId, merchantId: merchant.id }
+  return { status: "active" as const, merchantId: merchant.id }
 }
 
 // ─── Логика регистрации (из merchant-tg-register/route.ts) ────────────────────
@@ -303,7 +303,7 @@ describe("1. Telegram initData — HMAC-валидация", () => {
   it("из результата извлекается telegramId", () => {
     const initData = buildValidInitData(BOT_TOKEN, TG_USER_ID)
     const data = validateTelegramInitData(initData, BOT_TOKEN)!
-    const tgUser = JSON.parse(data.user) as { id: number }
+    const tgUser = JSON.parse(data["user"]!) as { id: number }
     expect(String(tgUser.id)).toBe(String(TG_USER_ID))
   })
 
@@ -331,8 +331,8 @@ describe("1. Telegram initData — HMAC-валидация", () => {
     const d1 = buildValidInitData(BOT_TOKEN, 111)
     const d2 = buildValidInitData(BOT_TOKEN, 222)
     // оба валидны, но разные телеграм-ID
-    const u1 = JSON.parse(validateTelegramInitData(d1, BOT_TOKEN)!.user) as { id: number }
-    const u2 = JSON.parse(validateTelegramInitData(d2, BOT_TOKEN)!.user) as { id: number }
+    const u1 = JSON.parse(validateTelegramInitData(d1, BOT_TOKEN)!["user"]!) as { id: number }
+    const u2 = JSON.parse(validateTelegramInitData(d2, BOT_TOKEN)!["user"]!) as { id: number }
     expect(u1.id).not.toBe(u2.id)
   })
 })
@@ -743,7 +743,7 @@ describe("11. Сквозной сценарий: «Кафе Пульс» — п�
   it("Шаг 1b — telegramId корректно извлечён из initData", () => {
     const initData = buildValidInitData(BOT_TOKEN, OWNER_TG_ID)
     const data = validateTelegramInitData(initData, BOT_TOKEN)!
-    const tgUser = JSON.parse(data.user) as { id: number }
+    const tgUser = JSON.parse(data["user"]!) as { id: number }
     expect(String(tgUser.id)).toBe(String(OWNER_TG_ID))
   })
 

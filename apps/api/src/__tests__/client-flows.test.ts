@@ -419,9 +419,9 @@ describe("Трата баллов — просмотр наград и пров�
       { id: "r2", title: "Обед", pointsCost: 300 },
     ]
     const sorted = [...rewards].sort((a, b) => a.pointsCost - b.pointsCost)
-    expect(sorted[0].title).toBe("Кофе")
-    expect(sorted[1].title).toBe("Круассан")
-    expect(sorted[2].title).toBe("Обед")
+    expect(sorted[0]!.title).toBe("Кофе")
+    expect(sorted[1]!.title).toBe("Круассан")
+    expect(sorted[2]!.title).toBe("Обед")
   })
 })
 
@@ -525,7 +525,7 @@ describe("Трата баллов — ограничения и защита", (
     ]
     const visible = rewards.filter(r => r.isActive)
     expect(visible).toHaveLength(1)
-    expect(visible[0].id).toBe("r1")
+    expect(visible[0]!.id).toBe("r1")
   })
 })
 
@@ -639,8 +639,8 @@ describe("Специальные предложения — просмотр к�
       { pointsCost: 200 },
     ]
     const sorted = [...offers].sort((a, b) => a.pointsCost - b.pointsCost)
-    expect(sorted[0].pointsCost).toBe(100)
-    expect(sorted[2].pointsCost).toBe(300)
+    expect(sorted[0]!.pointsCost).toBe(100)
+    expect(sorted[2]!.pointsCost).toBe(300)
   })
 })
 
