@@ -76,6 +76,29 @@ export const rainbowGradients = {
   neonBalance:   ["#FF2D9B", "#00F5FF", "#39FF14"] as const,
 }
 
+// ── Physical Pass color tokens ─────────────────────────────────
+export const pass = {
+  // backgrounds
+  bg:        "#F0EBE1",   // warm cream — screen bg
+  card:      "#FFFFFF",   // white card surface
+  dark:      "#1C2B3A",   // deep navy — pass top, tab bar
+  darkMid:   "#253545",   // slightly lighter navy — secondary surfaces
+  // accents
+  orange:    "#F05A28",   // warm orange — scan CTA, rate chips
+  orangeLight: "#FFF0EB", // tint for orange bg areas
+  mint:      "#C8F0D8",   // light mint — rewards
+  mintDark:  "#2E7D5A",   // dark mint text
+  // text
+  textDark:  "#1C2B3A",   // on cream
+  textMid:   "#5A6B7A",   // secondary on cream
+  textMuted: "#9BAAB8",   // muted on cream
+  textLight: "#FFFFFF",   // on dark navy
+  textFaded: "rgba(255,255,255,0.55)", // muted on dark navy
+  // structure
+  border:    "rgba(28,43,58,0.10)",
+  perf:      "rgba(255,255,255,0.30)", // perforation dash color
+}
+
 // ── Pastel color shorthands ────────────────────────────────────
 export const colors = {
   pink: "#F7D6EA",

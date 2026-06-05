@@ -5,7 +5,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Path, Circle } from "react-native-svg"
 import { LinearGradient } from "expo-linear-gradient"
-import { fonts, useTheme } from "../../src/lib/theme"
+import { fonts, pass, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 
 // ── Layout geometry ────────────────────────────────────────────
@@ -97,8 +97,8 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
     }).start()
   }, [state.index, indX])
 
-  const activeColor   = isRainbow ? "#FFFFFF"                   : "#1A1A2E"
-  const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)"    : "rgba(80,90,110,0.42)"
+  const activeColor   = isRainbow ? "#FFFFFF" : pass.textLight
+  const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)" : "rgba(255,255,255,0.42)"
 
   // На вебе нужен position:fixed чтобы dock прилипал к низу viewport (не к родителю).
   // React Native Web принимает "fixed" в runtime, но TypeScript это не знает.
@@ -183,9 +183,11 @@ function renderDock(props: BottomTabBarProps) {
 // Separate component so TabsLayout itself never re-renders on mode change.
 // This prevents React Navigation from scheduling a re-render of screens.
 function ThemedRoot({ children }: { children: React.ReactNode }) {
+  const { mode } = useColorMode()
   const theme = useTheme()
+  const bg = mode === "rainbow" ? theme.bg : pass.bg
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+    <View style={{ flex: 1, backgroundColor: bg }}>
       {children}
     </View>
   )
@@ -234,18 +236,15 @@ const s = StyleSheet.create({
   },
 
   shellNormal: {
-    // Frosted light glass
-    backgroundColor: "rgba(236,238,244,0.80)",
+    // Physical Pass dark navy dock
+    backgroundColor: pass.dark,
     borderWidth: 1,
-    borderTopColor:    "rgba(255,255,255,0.95)",
-    borderLeftColor:   "rgba(255,255,255,0.88)",
-    borderRightColor:  "rgba(200,208,226,0.50)",
-    borderBottomColor: "rgba(200,208,226,0.55)",
-    shadowColor:    "#8090B0",
-    shadowOffset:   { width: 0, height: 10 },
-    shadowOpacity:  0.22,
-    shadowRadius:   28,
-    elevation:      12,
+    borderColor: "rgba(255,255,255,0.08)",
+    shadowColor: pass.dark,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
   },
 
   shellRainbow: {
@@ -272,13 +271,8 @@ const s = StyleSheet.create({
   },
 
   indNormal: {
-    // White glass droplet
-    backgroundColor:   "rgba(255,255,255,0.90)",
-    borderWidth: 1,
-    borderTopColor:    "rgba(255,255,255,1.0)",
-    borderLeftColor:   "rgba(255,255,255,0.90)",
-    borderRightColor:  "rgba(200,210,232,0.45)",
-    borderBottomColor: "rgba(200,210,232,0.50)",
+    // Orange accent pill
+    backgroundColor: pass.orange,
   },
 
   indRainbow: {
@@ -306,14 +300,13 @@ const s = StyleSheet.create({
     borderBottomColor: "rgba(0,0,0,0.12)",
   },
 
-  // Top highlight line for normal indicator
   normalHighlight: {
     position: "absolute",
     top: 0,
     left: "10%",
     right: "10%",
     height: 1,
-    backgroundColor: "rgba(255,255,255,1.0)",
+    backgroundColor: "rgba(255,255,255,0.35)",
     borderRadius: 1,
   },
 
