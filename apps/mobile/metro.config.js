@@ -39,4 +39,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform)
 }
 
+// Use default (Babel) transform for web — Hermes transform hangs in this monorepo setup
+config.transformer = {
+  ...config.transformer,
+  unstable_transformProfile: "default",
+}
+
 module.exports = config
