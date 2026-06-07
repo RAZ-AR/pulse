@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Stack } from "expo-router"
 import { trpc } from "../src/lib/trpc"
-import { colors, neonColors, useTheme } from "../src/lib/theme"
+import { colors, fonts, neonColors, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
 import { LavaLampSurface } from "../src/components/neu"
 
@@ -88,7 +88,7 @@ const s = StyleSheet.create({
   content: { padding: 18, paddingBottom: 40 },
   hero: { borderRadius: 32, padding: 20, alignItems: "center", marginBottom: 20, overflow: "hidden" },
   heroLabel: { color: "#000000", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },
-  heroValue: { color: colors.ink, fontSize: 44, fontWeight: "800", marginTop: 4 },
+  heroValue: { color: colors.ink, fontSize: 44, fontFamily: fonts.displayHeavy, marginTop: 4 },
   heroDenom: { fontSize: 24, fontWeight: "700", opacity: 0.7 },
   progressTrack: { width: "100%", height: 6, backgroundColor: "rgba(163,177,198,0.18)", borderRadius: 3, marginTop: 12, overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: colors.cyan, borderRadius: 3 },

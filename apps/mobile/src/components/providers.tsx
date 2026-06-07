@@ -38,6 +38,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const style = document.createElement("style")
     style.id = "ayoo-poster-fonts"
     style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Climate+Crisis&display=swap');
+
       html, body, #root {
         font-family: "Helvetica Neue", Arial, SpaceGrotesk_600SemiBold, sans-serif;
         letter-spacing: 0;

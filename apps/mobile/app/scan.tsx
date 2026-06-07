@@ -638,12 +638,12 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, fontWeight: "700", marginBottom: 6, letterSpacing: 0.8 },
   input: { borderWidth: 1, borderRadius: 18, padding: 13, fontSize: 15, backgroundColor: "#FFFFFF" },
   btn: { padding: 14, borderRadius: 99, alignItems: "center" },
-  dialogTitle: { fontSize: 26, fontWeight: "800", marginBottom: 8, textAlign: "center" },
+  dialogTitle: { fontSize: 26, fontFamily: fonts.displayHeavy, marginBottom: 8, textAlign: "center" },
   dialogText: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
   doneIconWrap: { width: 80, height: 80, borderRadius: 40, justifyContent: "center", alignItems: "center" },
   doneIcon: { fontSize: 40 },
   doneTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, textAlign: "center" },
-  donePoints: { fontSize: 32, fontWeight: "800", marginTop: 12 },
+  donePoints: { fontSize: 32, fontFamily: fonts.displayHeavy, marginTop: 12 },
   receiptCard: {
     width: "100%",
     marginTop: 20,
@@ -662,6 +662,6 @@ const s = StyleSheet.create({
   receiptPointsLabel: { fontSize: 14 },
   receiptPointsValue: { fontSize: 14, fontWeight: "700" },
   receiptTotalLabel: { fontSize: 16, fontWeight: "700" },
-  receiptTotalValue: { fontSize: 22, fontWeight: "800" },
+  receiptTotalValue: { fontSize: 22, fontFamily: fonts.displayHeavy },
   receiptReviewText: { fontSize: 13, lineHeight: 18, textAlign: "center" },
 })
