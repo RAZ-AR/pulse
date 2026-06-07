@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -26,6 +26,10 @@ const ticketFonts = {
   body: fonts.body,
   bodyBold: fonts.bodyBold,
 }
+
+const webTextBreak = Platform.OS === "web"
+  ? ({ overflowWrap: "anywhere", wordBreak: "break-word" } as unknown as TextStyle)
+  : null
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -186,9 +190,9 @@ export default function HomeScreen() {
         <View style={s.passTop}>
           <TicketDots />
           <View style={s.passTopRow}>
-            <View>
+            <View style={s.passNameWrap}>
               <Text style={[s.passLabel, { fontFamily: ticketFonts.bodyBold }]}>MEMBER PASS</Text>
-              <Text style={[s.passName, { fontFamily: ticketFonts.display }]} numberOfLines={1}>
+              <Text style={[s.passName, webTextBreak, { fontFamily: ticketFonts.display }]} numberOfLines={2}>
                 {me.data?.name?.split(" ")[0] ?? "AYOO"}
               </Text>
             </View>
@@ -366,7 +370,7 @@ export default function HomeScreen() {
 function SectionHead({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
   return (
     <View style={s.sectionHead}>
-      <Text style={[s.sectionTitle, { fontFamily: ticketFonts.display }]}>{title}</Text>
+      <Text style={[s.sectionTitle, webTextBreak, { fontFamily: ticketFonts.display }]}>{title}</Text>
       <Pressable onPress={onPress} style={s.sectionBtn}>
         <Text style={[s.sectionBtnText, { fontFamily: ticketFonts.bodyBold }]}>{action} →</Text>
       </Pressable>
@@ -531,10 +535,12 @@ const s = StyleSheet.create({
   },
   passTopRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 8,
+    minHeight: 78,
+    paddingRight: 98,
   },
+  passNameWrap: { flex: 1, minWidth: 0 },
   passLabel: {
     color: "rgba(0,0,0,0.62)",
     fontSize: 10,
@@ -543,12 +549,15 @@ const s = StyleSheet.create({
   },
   passName: {
     color: ticketColors.black,
-    fontSize: 42,
-    lineHeight: 40,
+    fontSize: 23,
+    lineHeight: 27,
     letterSpacing: 0,
     textTransform: "uppercase",
   },
   tierBadge: {
+    position: "absolute",
+    right: 0,
+    top: 0,
     backgroundColor: ticketColors.black,
     borderRadius: 4,
     paddingHorizontal: 11,
@@ -711,10 +720,11 @@ const s = StyleSheet.create({
   sectionHead: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 12,
+    gap: 12,
   },
-  sectionTitle: { color: ticketColors.black, fontSize: 23, letterSpacing: 0 },
+  sectionTitle: { color: ticketColors.black, fontSize: 23, lineHeight: 27, letterSpacing: 0, flex: 1, minWidth: 0 },
   sectionBtn: {
     backgroundColor: ticketColors.white,
     borderRadius: 4,
@@ -722,6 +732,7 @@ const s = StyleSheet.create({
     paddingVertical: 6,
     borderWidth: 2,
     borderColor: ticketColors.black,
+    flexShrink: 0,
   },
   sectionBtnText: { color: ticketColors.black, fontSize: 11 },
 
