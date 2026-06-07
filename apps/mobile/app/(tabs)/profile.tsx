@@ -37,7 +37,7 @@ import { CITY_OPTIONS } from "../../src/lib/venues"
 import { formatLoyaltyId } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 
-const AVATAR_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899", "#EF4444", "#F59E0B", "#10B981", "#6366F1", "#0EA5E9"]
+const AVATAR_COLORS = ["#1f71b8", "#ea5b0c", "#B38BC8", "#273AA8", "#806828", "#FFFFFF", "#000000"]
 
 function getAvatarColor(avatarUrl: string | null | undefined): string | null {
   if (!avatarUrl?.startsWith("color:")) return null
@@ -307,7 +307,7 @@ export default function ProfileScreen() {
                   <Text style={[s.passQrBtnText, { fontFamily: fonts.bodyBold }]}>↗ {t("share", "Share")}</Text>
                 </Pressable>
                 <Pressable onPress={() => router.push("/gift")} style={[s.passQrBtn, s.passQrBtnOrange]}>
-                  <Text style={[s.passQrBtnText, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>□ {t("giftPoints", "Gift")}</Text>
+                <Text style={[s.passQrBtnText, s.passQrBtnTextBlue, { fontFamily: fonts.bodyBold }]}>□ {t("giftPoints", "Gift")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -424,7 +424,7 @@ export default function ProfileScreen() {
                     onPress={() => setHomeCity(city.name)}
                     style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
                   >
-                    <Text style={[s.cityChipText, { color: pass.textDark, fontFamily: fonts.bodyBold }]}>
+                    <Text style={[s.cityChipText, { color: active ? pass.textLight : pass.textDark, fontFamily: fonts.bodyBold }]}>
                       {city.label}
                     </Text>
                   </Pressable>
@@ -440,7 +440,7 @@ export default function ProfileScreen() {
                 <Pressable
                   key={color}
                   onPress={() => setEditAvatarColor(i)}
-                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i ? 2 : 0, borderColor: pass.dark }]}
+                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i ? 3 : 2 }]}
                 />
               ))}
             </View>
@@ -469,9 +469,9 @@ export default function ProfileScreen() {
             <Pressable
               key={lng}
               onPress={() => changeLanguage(lng)}
-              style={[s.langChip, { flex: 1, backgroundColor: active ? pass.dark : "#FFFFFF", borderColor: pass.border }]}
+              style={[s.langChip, { flex: 1, backgroundColor: active ? pass.orange : "#FFFFFF", borderColor: pass.border }]}
             >
-              <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold, color: active ? pass.textLight : pass.textMid }]}>
+              <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold, color: active ? pass.textLight : pass.textDark }]}>
                 {lng.toUpperCase()}
               </Text>
             </Pressable>
@@ -480,7 +480,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Sign out */}
-      <Pressable onPress={signOut} style={[s.signOut, { backgroundColor: "rgba(220,38,38,0.07)" }]}>
+      <Pressable onPress={signOut} style={[s.signOut, { backgroundColor: "#FFFFFF" }]}>
         <Text style={[s.signOutText, { fontFamily: fonts.bodyBold }]}>{t("signOut", "Sign out")}</Text>
       </Pressable>
     </ScrollView>
@@ -491,7 +491,7 @@ export default function ProfileScreen() {
 
 function PassStatTile({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <View style={[s.statTile, { backgroundColor: "#FFFFFF", borderColor: pass.border, borderWidth: 1 }]}>
+    <View style={[s.statTile, { backgroundColor: "#FFFFFF", borderColor: pass.border, borderWidth: 3 }]}>
       <Text style={[s.statValue, { color: accent, fontFamily: fonts.displayHeavy }]}>{value}</Text>
       <Text style={[s.statLabel, { color: pass.textMid }]}>{label.toUpperCase()}</Text>
     </View>
@@ -502,17 +502,18 @@ function QuickAction({
   icon, label, sub, tone, onPress,
 }: { icon: string; label: string; sub: string; tone: "orange" | "dark" | "mint" | "white"; onPress: () => void }) {
   const bg = tone === "orange" ? pass.orange
-    : tone === "dark" ? pass.dark
+    : tone === "dark" ? pass.mint
     : tone === "mint" ? pass.mint
     : "#FFFFFF"
-  const iconColor = (tone === "orange" || tone === "dark") ? pass.textLight : pass.textDark
-  const labelColor = (tone === "orange" || tone === "dark") ? pass.textLight : pass.textDark
-  const subColor = (tone === "orange" || tone === "dark") ? pass.textFaded : pass.textMid
+  const isBlue = tone === "orange"
+  const iconColor = pass.textDark
+  const labelColor = isBlue ? pass.textLight : pass.textDark
+  const subColor = isBlue ? pass.textLight : pass.textMid
 
   return (
     <Pressable onPress={onPress} style={s.quickPressable}>
       <View style={[s.quickCard, { backgroundColor: bg }]}>
-        <View style={[s.quickIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+        <View style={s.quickIcon}>
           <Text style={[s.quickIconText, { color: iconColor, fontFamily: fonts.displayHeavy }]}>{icon}</Text>
         </View>
         <Text style={[s.quickLabel, { color: labelColor, fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
@@ -561,7 +562,7 @@ function Field({
       <Text style={{ color: pass.textMid, fontSize: 10, fontFamily: fonts.bodyBold, letterSpacing: 1, marginBottom: 6 }}>
         {label.toUpperCase()}
       </Text>
-      <View style={{ backgroundColor: pass.bg, borderRadius: 10, borderWidth: 1, borderColor: pass.border }}>
+      <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, borderWidth: 2, borderColor: pass.border }}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -577,7 +578,7 @@ function Field({
 function Btn({
   label, onPress, variant = "primary", disabled,
 }: { label: string; onPress: () => void; variant?: "primary" | "ghost"; disabled?: boolean }) {
-  const bg = variant === "primary" ? pass.dark : "#FFFFFF"
+  const bg = variant === "primary" ? pass.orange : "#FFFFFF"
   const textColor = variant === "primary" ? pass.textLight : pass.textDark
   return (
     <Pressable
@@ -586,11 +587,11 @@ function Btn({
       style={{
         flex: 1,
         padding: 12,
-        borderRadius: 10,
+        borderRadius: 6,
         alignItems: "center",
         backgroundColor: bg,
         opacity: disabled ? 0.5 : 1,
-        borderWidth: variant === "ghost" ? 1 : 0,
+        borderWidth: 2,
         borderColor: pass.border,
       }}
     >
@@ -607,118 +608,174 @@ const s = StyleSheet.create({
   // Screen header
   screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   kicker: { color: pass.textMuted, fontSize: 10, letterSpacing: 2 },
-  screenTitle: { color: pass.textDark, fontSize: 28, lineHeight: 32, letterSpacing: -0.5 },
+  screenTitle: { color: pass.textDark, fontSize: 28, lineHeight: 32, letterSpacing: 0 },
   headButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: pass.dark,
+    borderRadius: 6,
+    backgroundColor: pass.orange,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: pass.border,
   },
   headButtonText: { color: pass.textLight, fontSize: 18 },
 
   // Physical Pass Hero
   passHero: { marginBottom: 24 },
   passHeroTop: {
-    backgroundColor: pass.dark,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: pass.mint,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderWidth: 3,
+    borderBottomWidth: 0,
+    borderColor: pass.border,
     padding: 20,
     paddingBottom: 18,
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   passHeroHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 18 },
   passAvatar: {
     width: 54,
     height: 54,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 6,
+    backgroundColor: pass.orange,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: pass.border,
   },
   passAvatarText: { color: pass.textLight, fontSize: 22 },
-  passHeroLabel: { color: pass.textFaded, fontSize: 9, letterSpacing: 2, marginBottom: 3 },
-  passHeroName: { color: pass.textLight, fontSize: 18, lineHeight: 21 },
-  passHeroCity: { color: pass.textFaded, fontSize: 10, letterSpacing: 1.5, marginTop: 2 },
+  passHeroLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 2, marginBottom: 3 },
+  passHeroName: { color: pass.textDark, fontSize: 18, lineHeight: 21 },
+  passHeroCity: { color: pass.textDark, fontSize: 10, letterSpacing: 1.5, marginTop: 2 },
   passRefBadge: {
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
     alignSelf: "flex-start",
+    borderWidth: 2,
+    borderColor: pass.border,
   },
-  passRefBadgeText: { color: pass.textLight, fontSize: 11, letterSpacing: 1.5 },
+  passRefBadgeText: { color: pass.textDark, fontSize: 11, letterSpacing: 1.5 },
   passIdStrip: {
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 16,
+    borderWidth: 2,
+    borderColor: pass.border,
   },
-  passIdLabel: { color: pass.textFaded, fontSize: 9, letterSpacing: 2, marginBottom: 3 },
-  passIdNumber: { color: pass.textLight, fontSize: 16, letterSpacing: 1.5 },
+  passIdLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 2, marginBottom: 3 },
+  passIdNumber: { color: pass.textDark, fontSize: 16, letterSpacing: 1.5 },
   passBalance: { flexDirection: "row", alignItems: "flex-end", gap: 12, marginBottom: 18 },
-  passBalanceLabel: { color: pass.textFaded, fontSize: 9, letterSpacing: 1.5, marginBottom: 4 },
-  passBalanceValue: { color: pass.textLight, fontSize: 52, lineHeight: 52, letterSpacing: -1 },
-  passBalanceSub: { color: pass.textFaded, fontSize: 14, marginBottom: 6 },
+  passBalanceLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 1.5, marginBottom: 4 },
+  passBalanceValue: { color: pass.textDark, fontSize: 52, lineHeight: 52, letterSpacing: 0 },
+  passBalanceSub: { color: pass.textDark, fontSize: 14, marginBottom: 6 },
   passBalanceSplit: { gap: 8 },
   passBalanceChip: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
     minWidth: 72,
+    borderWidth: 2,
+    borderColor: pass.border,
   },
-  passBalanceChipValue: { color: pass.textLight, fontSize: 15, lineHeight: 17 },
-  passBalanceChipLabel: { color: pass.textFaded, fontSize: 8, letterSpacing: 1, marginTop: 2 },
+  passBalanceChipValue: { color: pass.textDark, fontSize: 15, lineHeight: 17 },
+  passBalanceChipLabel: { color: pass.textDark, fontSize: 8, letterSpacing: 1, marginTop: 2 },
   passProgress: { gap: 6 },
   passProgressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    height: 10,
+    borderRadius: 0,
+    backgroundColor: "#FFFFFF",
     overflow: "hidden",
+    borderWidth: 2,
+    borderColor: pass.border,
   },
-  passProgressFill: { height: "100%", backgroundColor: pass.orange, borderRadius: 3 },
-  passProgressLabel: { color: pass.textFaded, fontSize: 9, letterSpacing: 0.5 },
+  passProgressFill: { height: "100%", backgroundColor: pass.orange, borderRadius: 0 },
+  passProgressLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 0.5 },
   passHeroBottom: {
     backgroundColor: "#FFFFFF",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderWidth: 3,
+    borderTopWidth: 0,
+    borderColor: pass.border,
     padding: 16,
     gap: 12,
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   passQrSection: { flexDirection: "row", gap: 14, alignItems: "center" },
   passQrBox: {
     padding: 8,
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 6,
+    borderWidth: 2,
     borderColor: pass.border,
   },
   passQrHint: { color: pass.textMid, fontSize: 12, lineHeight: 16, flex: 1 },
   passQrBtn: {
-    borderRadius: 10,
+    borderRadius: 6,
     paddingHorizontal: 14,
     paddingVertical: 9,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: pass.border,
   },
-  passQrBtnOrange: { backgroundColor: pass.orange, borderWidth: 0 },
+  passQrBtnOrange: { backgroundColor: pass.orange },
   passQrBtnText: { color: pass.textDark, fontSize: 12 },
+  passQrBtnTextBlue: { color: pass.textLight },
 
   // Quick actions
   quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
   quickPressable: { width: "48.5%" },
-  quickCard: { padding: 14, minHeight: 92, borderRadius: 20 },
-  quickIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 9 },
+  quickCard: {
+    padding: 14,
+    minHeight: 92,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 9,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
   quickIconText: { fontSize: 18 },
   quickLabel: { fontSize: 13 },
   quickSub: { fontSize: 11, marginTop: 2 },
 
   // Stats
   statsRow: { flexDirection: "row", gap: 9, marginBottom: 12 },
-  statTile: { flex: 1, padding: 14, minHeight: 72, borderRadius: 18 },
+  statTile: {
+    flex: 1,
+    padding: 14,
+    minHeight: 72,
+    borderRadius: 8,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
   statValue: { fontSize: 21, lineHeight: 23 },
   statLabel: { fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
 
@@ -735,10 +792,12 @@ const s = StyleSheet.create({
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   h2: { color: pass.textDark, fontSize: 22 },
   sectionAction: {
-    backgroundColor: pass.dark,
-    borderRadius: 99,
+    backgroundColor: pass.orange,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    borderWidth: 2,
+    borderColor: pass.border,
   },
   sectionActionText: { color: pass.textLight, fontSize: 11 },
 
@@ -746,21 +805,29 @@ const s = StyleSheet.create({
   infoCard: {
     marginBottom: 18,
     padding: 0,
-    borderRadius: 20,
+    borderRadius: 8,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+    borderWidth: 3,
     borderColor: pass.border,
     overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   accountGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
   accountTile: {
     width: "48.5%",
     padding: 14,
     minHeight: 80,
-    borderRadius: 18,
+    borderRadius: 8,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+    borderWidth: 3,
     borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   accountLabel: { color: pass.textMuted, fontSize: 9, letterSpacing: 0.8 },
   accountValue: { color: pass.textDark, fontSize: 17, marginTop: 8 },
@@ -771,10 +838,14 @@ const s = StyleSheet.create({
     padding: 11,
     alignItems: "center",
     minHeight: 92,
-    borderRadius: 18,
+    borderRadius: 8,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+    borderWidth: 3,
     borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   badgeIcon: { fontSize: 24, marginBottom: 5 },
   badgeName: { color: pass.textDark, fontSize: 12 },
@@ -784,31 +855,37 @@ const s = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
     alignItems: "center",
-    borderRadius: 20,
-    backgroundColor: pass.dark,
+    borderRadius: 8,
+    backgroundColor: pass.orange,
+    borderWidth: 3,
+    borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
-  referralLabel: { color: pass.textFaded, fontSize: 10, letterSpacing: 2, marginBottom: 6 },
+  referralLabel: { color: pass.textLight, fontSize: 10, letterSpacing: 2, marginBottom: 6 },
   referralCode: { color: pass.textLight, fontSize: 26, letterSpacing: 4 },
-  referralHint: { color: pass.textFaded, fontSize: 11, marginTop: 6, textAlign: "center" },
+  referralHint: { color: pass.textLight, fontSize: 11, marginTop: 6, textAlign: "center" },
   refsCount: { color: pass.textLight, fontSize: 12, fontWeight: "700", marginTop: 14 },
   emptyHistory: { padding: 18, alignItems: "center" },
   emptyHistoryText: { fontSize: 13, textAlign: "center" },
 
   fieldLabel: { fontSize: 11, letterSpacing: 0.5 },
   avatarRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginBottom: 12 },
-  avatarDot: { width: 32, height: 32, borderRadius: 16 },
+  avatarDot: { width: 32, height: 32, borderRadius: 4, borderWidth: 2, borderColor: pass.border },
 
   cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },
-  cityChipActive: { backgroundColor: pass.dark },
-  cityChipIdle: { backgroundColor: "rgba(28,43,58,0.07)" },
+  cityChip: { flex: 1, borderRadius: 4, paddingVertical: 10, alignItems: "center", borderWidth: 2, borderColor: pass.border },
+  cityChipActive: { backgroundColor: pass.orange },
+  cityChipIdle: { backgroundColor: "#FFFFFF" },
   cityChipText: { fontSize: 12 },
 
   langRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  langChip: { paddingVertical: 12, borderRadius: 10, alignItems: "center", borderWidth: 1 },
+  langChip: { paddingVertical: 12, borderRadius: 4, alignItems: "center", borderWidth: 2 },
   langChipText: { fontSize: 13 },
   langChipActive: { fontSize: 13 },
 
-  signOut: { padding: 14, borderRadius: 99, alignItems: "center" },
-  signOutText: { color: "#DC2626", fontSize: 14 },
+  signOut: { padding: 14, borderRadius: 6, alignItems: "center", borderWidth: 2, borderColor: pass.border },
+  signOutText: { color: "#000000", fontSize: 14 },
 })

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ActivityIndicator, View } from "react-native"
+import { ActivityIndicator, Text, View } from "react-native"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import {
   useFonts,
@@ -10,7 +10,18 @@ import {
 import { trpc, createTRPCClient } from "../lib/trpc"
 import { initI18n } from "../lib/i18n"
 import { useAuth } from "../store/auth"
-import { useTheme } from "../lib/theme"
+import { fonts, useTheme } from "../lib/theme"
+
+const DefaultText = Text as typeof Text & {
+  defaultProps?: { allowFontScaling?: boolean; style?: unknown }
+}
+
+DefaultText.defaultProps = DefaultText.defaultProps ?? {}
+DefaultText.defaultProps.allowFontScaling = false
+DefaultText.defaultProps.style = [
+  { fontFamily: fonts.body, letterSpacing: 0 },
+  DefaultText.defaultProps.style,
+]
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const theme = useTheme()
@@ -20,6 +31,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }))
   const [trpcClient] = useState(() => createTRPCClient())
   const hydrate = useAuth((s) => s.hydrate)
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    if (document.getElementById("ayoo-poster-fonts")) return
+    const style = document.createElement("style")
+    style.id = "ayoo-poster-fonts"
+    style.textContent = `
+      html, body, #root {
+        font-family: "Helvetica Neue", Arial, SpaceGrotesk_600SemiBold, sans-serif;
+        letter-spacing: 0;
+      }
+      div, span, button, input, textarea {
+        letter-spacing: 0;
+      }
+      [style*="-apple-system"], [style*="system-ui"],
+      div[dir="auto"]:not([style]), span[dir="auto"]:not([style]) {
+        font-family: "Helvetica Neue", Arial, SpaceGrotesk_600SemiBold, sans-serif !important;
+      }
+    `
+    document.head.appendChild(style)
+  }, [])
 
   // Map 800ExtraBold to 700Bold — extra-bold isn't in the @expo-google-fonts package,
   // and 800 is rendered as 700 by RN anyway.

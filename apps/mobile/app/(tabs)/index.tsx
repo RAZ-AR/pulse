@@ -4,8 +4,28 @@ import { AyooLogo } from "../../src/components/AyooLogo"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, pass } from "../../src/lib/theme"
+import { fonts } from "../../src/lib/theme"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
+
+const ticketColors = {
+  black: "#000000",
+  white: "#FFFFFF",
+  bg: "#F5F4F0",
+  blue: "#273AA8",
+  pink: "#ea5b0c",
+  brown: "#806828",
+  teal: "#1f71b8",
+  lavender: "#B38BC8",
+  inkSoft: "rgba(0,0,0,0.62)",
+  whiteSoft: "rgba(255,255,255,0.72)",
+  whiteFaint: "rgba(255,255,255,0.18)",
+}
+
+const ticketFonts = {
+  display: fonts.displayBlack,
+  body: fonts.body,
+  bodyBold: fonts.bodyBold,
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -63,6 +83,26 @@ function BarcodeDecor() {
   )
 }
 
+function TicketDots() {
+  return (
+    <View style={s.dotField} pointerEvents="none">
+      {Array.from({ length: 38 }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            s.dot,
+            {
+              left: `${(i * 23) % 96}%`,
+              top: `${(i * 37) % 92}%`,
+              opacity: i % 3 === 0 ? 0.18 : 0.09,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  )
+}
+
 // ── Main screen ───────────────────────────────────────────────
 
 type RewardItem = {
@@ -113,7 +153,14 @@ export default function HomeScreen() {
     >
       {/* ── Top bar ── */}
       <View style={s.topBar}>
-        <View style={s.cityRow}>
+        <View>
+          <Text style={[s.kicker, { fontFamily: ticketFonts.bodyBold }]}>AYOO MINIAPP</Text>
+          <Text style={[s.screenTitle, { fontFamily: ticketFonts.display }]}>Your pass</Text>
+        </View>
+        <AyooLogo width={66} height={30} />
+      </View>
+
+      <View style={s.cityRow}>
           {CITY_OPTIONS.map((city) => {
             const active = selectedCity.name === city.name
             return (
@@ -122,55 +169,57 @@ export default function HomeScreen() {
                 onPress={() => updateProfile.mutate({ homeCity: city.name })}
                 style={[s.cityPill, active && s.cityPillActive]}
               >
-                <Text style={[s.cityPillText, active && s.cityPillTextActive, { fontFamily: fonts.bodyBold }]}>
+                <Text style={[s.cityPillText, active && s.cityPillTextActive, { fontFamily: ticketFonts.bodyBold }]}>
                   {city.label}
                 </Text>
               </Pressable>
             )
           })}
-        </View>
-        <AyooLogo width={52} height={30} />
         <Pressable onPress={() => router.push("/earn")} style={s.addBtn}>
-          <Text style={[s.addBtnText, { fontFamily: fonts.displayHeavy }]}>+</Text>
+          <Text style={[s.addBtnText, { fontFamily: ticketFonts.display }]}>+</Text>
         </Pressable>
       </View>
 
       {/* ── Member Pass Card ── */}
       <View style={s.passWrapper}>
-        {/* Dark top */}
+        {/* Ticket top */}
         <View style={s.passTop}>
+          <TicketDots />
           <View style={s.passTopRow}>
             <View>
-              <Text style={[s.passLabel, { fontFamily: fonts.bodyBold }]}>MEMBER PASS</Text>
-              <Text style={[s.passName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
-                {me.data?.name?.split(" ")[0] ?? "Welcome"}
+              <Text style={[s.passLabel, { fontFamily: ticketFonts.bodyBold }]}>MEMBER PASS</Text>
+              <Text style={[s.passName, { fontFamily: ticketFonts.display }]} numberOfLines={1}>
+                {me.data?.name?.split(" ")[0] ?? "AYOO"}
               </Text>
             </View>
             <View style={s.tierBadge}>
-              <Text style={s.tierEmoji}>{tier.emoji}</Text>
-              <Text style={[s.tierName, { fontFamily: fonts.bodyBold }]}>{tier.name.toUpperCase()}</Text>
+              <Text style={s.tierEmoji}>#{String(lifetimePoints || 500).slice(0, 4).padStart(4, "0")}</Text>
+              <Text style={[s.tierName, { fontFamily: ticketFonts.bodyBold }]}>{tier.name.toUpperCase()}</Text>
             </View>
           </View>
 
           <View style={s.pointsBlock}>
-            <Text style={[s.pointsNumber, { fontFamily: fonts.displayHeavy }]}>{fmt(total)}</Text>
-            <Text style={[s.pointsLabel, { fontFamily: fonts.bodyBold }]}>POINTS</Text>
+            <Text style={[s.pointsNumber, { fontFamily: ticketFonts.display }]}>{fmt(total)}</Text>
+            <View style={s.pointsSide}>
+              <Text style={[s.pointsLabel, { fontFamily: ticketFonts.bodyBold }]}>POINTS</Text>
+              <Text style={[s.pointsCaption, { fontFamily: ticketFonts.bodyBold }]}>VALID MEMBER CREDIT</Text>
+            </View>
           </View>
 
           <View style={s.statsRow}>
             <View style={s.statChip}>
-              <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{streak}</Text>
-              <Text style={[s.statLabel, { fontFamily: fonts.bodyBold }]}>DAY STREAK</Text>
+              <Text style={[s.statValue, { fontFamily: ticketFonts.display }]}>{streak}</Text>
+              <Text style={[s.statLabel, { fontFamily: ticketFonts.bodyBold }]}>DAY STREAK</Text>
             </View>
             <View style={s.statDivider} />
             <View style={s.statChip}>
-              <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{welcomeDays}</Text>
-              <Text style={[s.statLabel, { fontFamily: fonts.bodyBold }]}>WELCOME LEFT</Text>
+              <Text style={[s.statValue, { fontFamily: ticketFonts.display }]}>{welcomeDays}</Text>
+              <Text style={[s.statLabel, { fontFamily: ticketFonts.bodyBold }]}>WELCOME LEFT</Text>
             </View>
             <View style={s.statDivider} />
             <View style={s.statChip}>
-              <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{activeChallenges.length}</Text>
-              <Text style={[s.statLabel, { fontFamily: fonts.bodyBold }]}>QUESTS</Text>
+              <Text style={[s.statValue, { fontFamily: ticketFonts.display }]}>{activeChallenges.length}</Text>
+              <Text style={[s.statLabel, { fontFamily: ticketFonts.bodyBold }]}>QUESTS</Text>
             </View>
           </View>
         </View>
@@ -180,17 +229,27 @@ export default function HomeScreen() {
 
         {/* Light bottom */}
         <View style={s.passBottom}>
+          <View style={s.memberMeta}>
+            <View>
+              <Text style={[s.metaLabel, { fontFamily: ticketFonts.bodyBold }]}>MEMBER SINCE</Text>
+              <Text style={[s.metaValue, { fontFamily: ticketFonts.bodyBold }]}>06.2026</Text>
+            </View>
+            <View>
+              <Text style={[s.metaLabel, { fontFamily: ticketFonts.bodyBold }]}>WELCOME LEFT</Text>
+              <Text style={[s.metaValue, { fontFamily: ticketFonts.bodyBold }]}>{welcomeDays} DAYS</Text>
+            </View>
+          </View>
+          <BarcodeDecor />
           <View style={s.passActions}>
             <Pressable onPress={() => router.push("/scan")} style={[s.actionBtn, s.actionBtnOrange]}>
               <Text style={s.actionBtnIcon}>⌁</Text>
-              <Text style={[s.actionBtnText, s.actionBtnTextDark, { fontFamily: fonts.bodyBold }]}>{t("scanReceipt")}</Text>
+              <Text style={[s.actionBtnText, s.actionBtnTextDark, { fontFamily: ticketFonts.bodyBold }]}>{t("scanReceipt")}</Text>
             </Pressable>
             <Pressable onPress={() => router.push("/checkin")} style={[s.actionBtn, s.actionBtnDark]}>
               <Text style={s.actionBtnIcon}>⌖</Text>
-              <Text style={[s.actionBtnText, s.actionBtnTextLight, { fontFamily: fonts.bodyBold }]}>{t("checkIn")}</Text>
+              <Text style={[s.actionBtnText, s.actionBtnTextLight, { fontFamily: ticketFonts.bodyBold }]}>{t("checkIn")}</Text>
             </Pressable>
           </View>
-          <BarcodeDecor />
         </View>
       </View>
 
@@ -232,10 +291,10 @@ export default function HomeScreen() {
                 style={s.partnerCard}
               >
                 <View style={s.partnerPts}>
-                  <Text style={[s.partnerPtsNum, { fontFamily: fonts.displayHeavy }]}>+{offer.pointsReward}</Text>
-                  <Text style={[s.partnerPtsLabel, { fontFamily: fonts.bodyBold }]}>pts</Text>
+                  <Text style={[s.partnerPtsNum, { fontFamily: ticketFonts.display }]}>+{offer.pointsReward}</Text>
+                  <Text style={[s.partnerPtsLabel, { fontFamily: ticketFonts.bodyBold }]}>pts</Text>
                 </View>
-                <Text style={[s.partnerTitle, { fontFamily: fonts.bodyBold }]} numberOfLines={2}>{offer.title}</Text>
+                <Text style={[s.partnerTitle, { fontFamily: ticketFonts.bodyBold }]} numberOfLines={2}>{offer.title}</Text>
                 <Text style={s.partnerVenue} numberOfLines={1}>{offer.venue.name}</Text>
               </Pressable>
             ))}
@@ -258,7 +317,7 @@ export default function HomeScreen() {
               onPress={() => setActiveFilterKey(filter.key)}
               style={[s.filterChip, isActive && s.filterChipActive]}
             >
-              <Text style={[s.filterChipText, isActive && s.filterChipTextActive, { fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.filterChipText, isActive && s.filterChipTextActive, { fontFamily: ticketFonts.bodyBold }]}>
                 {filter.label}
               </Text>
             </Pressable>
@@ -275,7 +334,7 @@ export default function HomeScreen() {
         )}
         {!nearby.isLoading && visibleNearby.length === 0 && (
           <View style={s.emptyVenues}>
-            <Text style={[s.emptyText, { fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.emptyText, { fontFamily: ticketFonts.bodyBold }]}>
               {selectedCity.label}: {t("venue:noVenuesYet", "No venues yet")}
             </Text>
           </View>
@@ -305,9 +364,9 @@ export default function HomeScreen() {
 function SectionHead({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
   return (
     <View style={s.sectionHead}>
-      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy }]}>{title}</Text>
+      <Text style={[s.sectionTitle, { fontFamily: ticketFonts.display }]}>{title}</Text>
       <Pressable onPress={onPress} style={s.sectionBtn}>
-        <Text style={[s.sectionBtnText, { fontFamily: fonts.bodyBold }]}>{action} →</Text>
+        <Text style={[s.sectionBtnText, { fontFamily: ticketFonts.bodyBold }]}>{action} →</Text>
       </Pressable>
     </View>
   )
@@ -319,8 +378,8 @@ function OfferTicket({
   return (
     <Pressable onPress={onPress} style={s.offerTicket}>
       <View style={s.offerTop}>
-        <Text style={[s.offerPoints, { fontFamily: fonts.displayHeavy }]}>{points}</Text>
-        <Text style={[s.offerPtsLabel, { fontFamily: fonts.bodyBold }]}>pts</Text>
+        <Text style={[s.offerPoints, { fontFamily: ticketFonts.display }]}>{points}</Text>
+        <Text style={[s.offerPtsLabel, { fontFamily: ticketFonts.bodyBold }]}>pts</Text>
       </View>
       <View style={s.offerPerf}>
         {Array.from({ length: 16 }).map((_, i) => (
@@ -328,9 +387,9 @@ function OfferTicket({
         ))}
       </View>
       <View style={s.offerBottom}>
-        <Text style={[s.offerTitle, { fontFamily: fonts.bodyBold }]} numberOfLines={2}>{title}</Text>
+        <Text style={[s.offerTitle, { fontFamily: ticketFonts.bodyBold }]} numberOfLines={2}>{title}</Text>
         <Text style={s.offerVenue} numberOfLines={1}>{venue}</Text>
-        <Text style={[s.offerCta, { fontFamily: fonts.bodyBold }]}>Open ↗</Text>
+        <Text style={[s.offerCta, { fontFamily: ticketFonts.bodyBold }]}>Open ↗</Text>
       </View>
     </Pressable>
   )
@@ -347,28 +406,28 @@ function VenueRow({
     <Pressable onPress={onPress} style={s.venueRow}>
       <View style={s.venueAccent} />
       <View style={s.venueLogo}>
-        <Text style={[s.venueLogoText, { fontFamily: fonts.displayHeavy }]}>{initials(name)}</Text>
+        <AyooLogo width={40} height={18} />
       </View>
       <View style={s.venueMain}>
         <View style={s.venueTitleRow}>
-          <Text style={[s.venueName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{name}</Text>
+          <Text style={[s.venueName, { fontFamily: ticketFonts.display }]} numberOfLines={1}>{name}</Text>
           <Text style={s.venueArrow}>↗</Text>
         </View>
-        <Text style={[s.venueMeta, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+        <Text style={[s.venueMeta, { fontFamily: ticketFonts.bodyBold }]} numberOfLines={1}>
           {category} · {city}
         </Text>
         <View style={s.venueChips}>
           {rate ? (
             <View style={s.chipOrange}>
-              <Text style={[s.chipOrangeText, { fontFamily: fonts.bodyBold }]}>{rate.toFixed(3)} pts/RSD</Text>
+              <Text style={[s.chipOrangeText, { fontFamily: ticketFonts.bodyBold }]}>{rate.toFixed(3)} pts/RSD</Text>
             </View>
           ) : null}
           <View style={s.chipGray}>
-            <Text style={[s.chipGrayText, { fontFamily: fonts.bodyBold }]}>{distanceLabel(distance)}</Text>
+            <Text style={[s.chipGrayText, { fontFamily: ticketFonts.bodyBold }]}>{distanceLabel(distance)}</Text>
           </View>
           {discount ? (
             <View style={s.chipMint}>
-              <Text style={[s.chipMintText, { fontFamily: fonts.bodyBold }]}>-{discount}%</Text>
+              <Text style={[s.chipMintText, { fontFamily: ticketFonts.bodyBold }]}>-{discount}%</Text>
             </View>
           ) : null}
         </View>
@@ -381,10 +440,10 @@ function VenueSkeleton() {
   return (
     <View style={[s.venueRow, { opacity: 0.35 }]}>
       <View style={s.venueAccent} />
-      <View style={[s.venueLogo, { backgroundColor: "rgba(28,43,58,0.12)" }]} />
+      <View style={[s.venueLogo, { backgroundColor: ticketColors.whiteFaint }]} />
       <View style={{ flex: 1, gap: 8 }}>
-        <View style={{ height: 14, width: "60%", backgroundColor: "rgba(28,43,58,0.08)", borderRadius: 6 }} />
-        <View style={{ height: 10, width: "40%", backgroundColor: "rgba(28,43,58,0.06)", borderRadius: 6 }} />
+        <View style={{ height: 14, width: "60%", backgroundColor: ticketColors.whiteFaint, borderRadius: 6 }} />
+        <View style={{ height: 10, width: "40%", backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 6 }} />
       </View>
     </View>
   )
@@ -393,117 +452,184 @@ function VenueSkeleton() {
 // ── Styles ────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: pass.bg },
-  content: { padding: 18, paddingBottom: 110 },
+  scroll: { flex: 1, backgroundColor: ticketColors.bg },
+  content: { padding: 14, paddingBottom: 118 },
 
   // Top bar
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 14,
+    paddingTop: 2,
   },
-  cityRow: { flexDirection: "row", gap: 6 },
+  kicker: {
+    color: ticketColors.black,
+    fontSize: 10,
+    letterSpacing: 2,
+  },
+  screenTitle: {
+    color: ticketColors.black,
+    fontSize: 28,
+    lineHeight: 31,
+    letterSpacing: 0,
+  },
+  cityRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 14,
+    alignItems: "center",
+  },
   cityPill: {
-    borderRadius: 99,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: "rgba(28,43,58,0.08)",
+    backgroundColor: ticketColors.white,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
   },
-  cityPillActive: { backgroundColor: pass.dark },
-  cityPillText: { fontSize: 11, color: pass.textMid },
-  cityPillTextActive: { color: pass.textLight },
+  cityPillActive: { backgroundColor: ticketColors.teal },
+  cityPillText: { fontSize: 11, color: ticketColors.black },
+  cityPillTextActive: { color: ticketColors.white },
   addBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: pass.dark,
+    marginLeft: "auto",
+    width: 34,
+    height: 34,
+    borderRadius: 6,
+    backgroundColor: ticketColors.pink,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
     alignItems: "center",
     justifyContent: "center",
   },
-  addBtnText: { color: pass.textLight, fontSize: 22, lineHeight: 26 },
+  addBtnText: { color: ticketColors.black, fontSize: 22, lineHeight: 25 },
 
   // Member Pass
-  passWrapper: { marginBottom: 24 },
+  passWrapper: {
+    marginBottom: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: ticketColors.black,
+    shadowColor: ticketColors.black,
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 12,
+  },
 
   passTop: {
-    backgroundColor: pass.dark,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 18,
+    backgroundColor: ticketColors.pink,
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
+    padding: 18,
+    paddingBottom: 20,
+    overflow: "hidden",
   },
   passTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   passLabel: {
-    color: pass.textFaded,
+    color: "rgba(0,0,0,0.62)",
     fontSize: 10,
     letterSpacing: 2,
     marginBottom: 4,
   },
   passName: {
-    color: pass.textLight,
-    fontSize: 22,
-    lineHeight: 26,
+    color: ticketColors.black,
+    fontSize: 42,
+    lineHeight: 40,
+    letterSpacing: 0,
+    textTransform: "uppercase",
   },
   tierBadge: {
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: 14,
-    paddingHorizontal: 12,
+    backgroundColor: ticketColors.black,
+    borderRadius: 4,
+    paddingHorizontal: 11,
     paddingVertical: 8,
     alignItems: "center",
-    gap: 3,
+    minWidth: 76,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
   },
-  tierEmoji: { fontSize: 20 },
-  tierName: { color: pass.textLight, fontSize: 9, letterSpacing: 1.5 },
+  tierEmoji: { fontSize: 12, color: ticketColors.white },
+  tierName: { color: ticketColors.white, fontSize: 9, letterSpacing: 1.4, marginTop: 2 },
 
   pointsBlock: {
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 8,
-    marginBottom: 22,
+    gap: 10,
+    marginBottom: 18,
   },
   pointsNumber: {
-    color: pass.textLight,
-    fontSize: 72,
-    lineHeight: 72,
-    letterSpacing: -2,
+    color: ticketColors.black,
+    fontSize: 88,
+    lineHeight: 86,
+    letterSpacing: 0,
   },
+  pointsSide: { marginBottom: 10, flex: 1 },
   pointsLabel: {
-    color: pass.textFaded,
+    color: ticketColors.black,
     fontSize: 14,
-    letterSpacing: 2,
-    marginBottom: 8,
+    letterSpacing: 2.4,
+  },
+  pointsCaption: {
+    color: "rgba(0,0,0,0.58)",
+    fontSize: 9,
+    letterSpacing: 1.2,
+    marginTop: 3,
   },
 
   statsRow: { flexDirection: "row", alignItems: "center" },
-  statChip: { flex: 1, alignItems: "center" },
-  statDivider: { width: 1, height: 28, backgroundColor: "rgba(255,255,255,0.12)" },
-  statValue: { color: pass.textLight, fontSize: 20, lineHeight: 22 },
+  statChip: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: ticketColors.lavender,
+    borderRadius: 4,
+    paddingVertical: 9,
+    marginHorizontal: 3,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
+  },
+  statDivider: { width: 0, height: 28 },
+  statValue: { color: ticketColors.black, fontSize: 20, lineHeight: 22 },
   statLabel: {
-    color: pass.textFaded,
+    color: "rgba(0,0,0,0.58)",
     fontSize: 8,
     letterSpacing: 1,
     marginTop: 2,
     textAlign: "center",
   },
 
+  dotField: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 1,
+  },
+  dot: {
+    position: "absolute",
+    width: 18,
+    height: 18,
+    borderRadius: 0,
+    backgroundColor: ticketColors.black,
+  },
+
   // Perforation
   perfRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: pass.dark,
+    backgroundColor: ticketColors.pink,
     height: 28,
+    borderTopWidth: 3,
+    borderBottomWidth: 3,
+    borderColor: ticketColors.black,
   },
   perfCutLeft: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: pass.bg,
+    backgroundColor: ticketColors.bg,
     marginLeft: -10,
   },
   perfLineWrap: {
@@ -513,22 +639,37 @@ const s = StyleSheet.create({
     overflow: "hidden",
     justifyContent: "center",
   },
-  perfDash: { width: 6, height: 1, backgroundColor: pass.perf },
+  perfDash: { width: 7, height: 2, backgroundColor: "rgba(0,0,0,0.35)" },
   perfCutRight: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: pass.bg,
+    backgroundColor: ticketColors.bg,
     marginRight: -10,
   },
 
   // Pass bottom
   passBottom: {
-    backgroundColor: "#FFFFFF",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    padding: 16,
+    backgroundColor: ticketColors.white,
+    borderBottomLeftRadius: 9,
+    borderBottomRightRadius: 9,
+    padding: 18,
     gap: 14,
+  },
+  memberMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  metaLabel: {
+    color: "rgba(0,0,0,0.48)",
+    fontSize: 9,
+    letterSpacing: 1.2,
+  },
+  metaValue: {
+    color: ticketColors.black,
+    fontSize: 13,
+    marginTop: 3,
   },
   passActions: { flexDirection: "row", gap: 10 },
   actionBtn: {
@@ -537,25 +678,27 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 13,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
   },
-  actionBtnOrange: { backgroundColor: pass.orange },
-  actionBtnDark: { backgroundColor: pass.dark },
-  actionBtnIcon: { fontSize: 18, color: pass.textLight },
+  actionBtnOrange: { backgroundColor: ticketColors.teal },
+  actionBtnDark: { backgroundColor: ticketColors.black },
+  actionBtnIcon: { fontSize: 18, color: ticketColors.white },
   actionBtnText: { fontSize: 13 },
-  actionBtnTextDark: { color: "#1C2B3A" },
-  actionBtnTextLight: { color: pass.textLight },
+  actionBtnTextDark: { color: ticketColors.white },
+  actionBtnTextLight: { color: ticketColors.white },
 
   // Barcode
   barcode: {
     flexDirection: "row",
     gap: 2,
-    height: 32,
+    height: 44,
     alignItems: "stretch",
-    opacity: 0.18,
+    opacity: 0.92,
   },
-  bar: { backgroundColor: pass.dark, borderRadius: 1 },
+  bar: { backgroundColor: ticketColors.black, borderRadius: 1 },
 
   // Section head
   sectionHead: {
@@ -564,22 +707,26 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  sectionTitle: { color: pass.textDark, fontSize: 18, letterSpacing: -0.3 },
+  sectionTitle: { color: ticketColors.black, fontSize: 23, letterSpacing: 0 },
   sectionBtn: {
-    backgroundColor: pass.dark,
-    borderRadius: 99,
+    backgroundColor: ticketColors.white,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
   },
-  sectionBtnText: { color: pass.textLight, fontSize: 11 },
+  sectionBtnText: { color: ticketColors.black, fontSize: 11 },
 
   // Offer ticket
   ticketRail: { gap: 10, paddingBottom: 20 },
   offerTicket: {
-    width: 148,
-    borderRadius: 18,
+    width: 164,
+    borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: pass.dark,
+    backgroundColor: ticketColors.pink,
+    borderWidth: 3,
+    borderColor: ticketColors.black,
   },
   offerTop: {
     padding: 14,
@@ -588,8 +735,8 @@ const s = StyleSheet.create({
     alignItems: "flex-end",
     gap: 4,
   },
-  offerPoints: { color: pass.textLight, fontSize: 34, lineHeight: 36, letterSpacing: -1 },
-  offerPtsLabel: { color: pass.textFaded, fontSize: 12, marginBottom: 4 },
+  offerPoints: { color: ticketColors.black, fontSize: 40, lineHeight: 40, letterSpacing: 0 },
+  offerPtsLabel: { color: "rgba(0,0,0,0.58)", fontSize: 12, marginBottom: 4 },
   offerPerf: {
     flexDirection: "row",
     gap: 3,
@@ -597,52 +744,54 @@ const s = StyleSheet.create({
     marginVertical: 2,
     overflow: "hidden",
   },
-  offerPerfDash: { width: 6, height: 1, backgroundColor: "rgba(255,255,255,0.20)" },
-  offerBottom: { backgroundColor: "#FFFFFF", padding: 12, gap: 4 },
-  offerTitle: { color: pass.textDark, fontSize: 13, lineHeight: 16 },
-  offerVenue: { color: pass.textMid, fontSize: 11 },
-  offerCta: { color: pass.orange, fontSize: 11, marginTop: 4 },
+  offerPerfDash: { width: 6, height: 2, backgroundColor: "rgba(0,0,0,0.26)" },
+  offerBottom: { backgroundColor: ticketColors.white, padding: 13, gap: 5, borderTopWidth: 3, borderColor: ticketColors.black },
+  offerTitle: { color: ticketColors.black, fontSize: 16, lineHeight: 18 },
+  offerVenue: { color: "rgba(0,0,0,0.58)", fontSize: 11 },
+  offerCta: { color: ticketColors.black, fontSize: 11, marginTop: 4 },
 
   // Partner card
   partnerCard: {
-    width: 140,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    width: 156,
+    backgroundColor: ticketColors.lavender,
+    borderRadius: 8,
     padding: 14,
     gap: 6,
-    borderWidth: 1,
-    borderColor: pass.border,
+    borderWidth: 3,
+    borderColor: ticketColors.black,
   },
   partnerPts: { flexDirection: "row", alignItems: "flex-end", gap: 3 },
-  partnerPtsNum: { color: pass.orange, fontSize: 26, lineHeight: 28 },
-  partnerPtsLabel: { color: pass.orange, fontSize: 11, marginBottom: 2 },
-  partnerTitle: { color: pass.textDark, fontSize: 13, lineHeight: 16 },
-  partnerVenue: { color: pass.textMid, fontSize: 11 },
+  partnerPtsNum: { color: ticketColors.black, fontSize: 30, lineHeight: 30 },
+  partnerPtsLabel: { color: ticketColors.black, fontSize: 11, marginBottom: 2 },
+  partnerTitle: { color: ticketColors.black, fontSize: 14, lineHeight: 17 },
+  partnerVenue: { color: ticketColors.black, fontSize: 11 },
 
   // Filter chips
   filterRail: { gap: 8, paddingBottom: 12 },
   filterChip: {
-    borderRadius: 99,
+    borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: "rgba(28,43,58,0.07)",
+    backgroundColor: ticketColors.white,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
   },
-  filterChipActive: { backgroundColor: pass.dark },
-  filterChipText: { color: pass.textMid, fontSize: 12 },
-  filterChipTextActive: { color: pass.textLight },
+  filterChipActive: { backgroundColor: ticketColors.teal },
+  filterChipText: { color: ticketColors.black, fontSize: 12 },
+  filterChipTextActive: { color: ticketColors.white },
 
   // Venue row
   venueList: { gap: 8 },
   venueRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
+    backgroundColor: ticketColors.white,
+    borderRadius: 8,
     overflow: "hidden",
     padding: 14,
     gap: 12,
-    borderWidth: 1,
-    borderColor: pass.border,
+    borderWidth: 3,
+    borderColor: ticketColors.black,
   },
   venueAccent: {
     position: "absolute",
@@ -650,18 +799,19 @@ const s = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
-    backgroundColor: pass.dark,
+    backgroundColor: ticketColors.brown,
   },
   venueLogo: {
     width: 44,
     height: 44,
-    borderRadius: 12,
-    backgroundColor: pass.dark,
+    borderRadius: 4,
+    backgroundColor: ticketColors.white,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
   },
-  venueLogoText: { color: pass.textLight, fontSize: 18 },
   venueMain: { flex: 1 },
   venueTitleRow: {
     flexDirection: "row",
@@ -669,34 +819,34 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 3,
   },
-  venueName: { color: pass.textDark, fontSize: 15, flex: 1 },
-  venueArrow: { color: pass.textMuted, fontSize: 16 },
-  venueMeta: { color: pass.textMid, fontSize: 11, marginBottom: 7 },
+  venueName: { color: ticketColors.black, fontSize: 17, flex: 1 },
+  venueArrow: { color: ticketColors.black, fontSize: 16 },
+  venueMeta: { color: ticketColors.black, fontSize: 11, marginBottom: 7 },
   venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
 
   chipOrange: {
-    backgroundColor: pass.orangeLight,
-    borderRadius: 6,
+    backgroundColor: ticketColors.pink,
+    borderRadius: 4,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
-  chipOrangeText: { color: pass.orange, fontSize: 10 },
+  chipOrangeText: { color: ticketColors.black, fontSize: 10 },
   chipGray: {
-    backgroundColor: "rgba(28,43,58,0.07)",
-    borderRadius: 6,
+    backgroundColor: ticketColors.lavender,
+    borderRadius: 4,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
-  chipGrayText: { color: pass.textMid, fontSize: 10 },
+  chipGrayText: { color: ticketColors.black, fontSize: 10 },
   chipMint: {
-    backgroundColor: pass.mint,
-    borderRadius: 6,
+    backgroundColor: ticketColors.teal,
+    borderRadius: 4,
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
-  chipMintText: { color: pass.mintDark, fontSize: 10 },
+  chipMintText: { color: ticketColors.white, fontSize: 10 },
 
   // Empty / skeleton
   emptyVenues: { padding: 24, alignItems: "center" },
-  emptyText: { color: pass.textMid, fontSize: 13, textAlign: "center" },
+  emptyText: { color: ticketColors.black, fontSize: 13, textAlign: "center" },
 })

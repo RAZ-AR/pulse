@@ -279,7 +279,7 @@ export default function GiftScreen() {
                   const claimed = link.status === "CLAIMED"
                   const expired = link.status === "EXPIRED"
                   return (
-                    <View key={link.id} style={[s.historyRow, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF" }]}>
+                    <View key={link.id} style={[s.historyRow, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF" }]}>
                       <View style={{ flex: 1 }}>
                         <Text style={[s.historyAmount, { color: claimed ? (isRainbow ? neonColors.green : colors.mint) : theme.text, fontFamily: fonts.displayHeavy }]}>
                           {link.amount} pts
@@ -298,7 +298,7 @@ export default function GiftScreen() {
                           ? (isRainbow ? "rgba(57,255,20,0.12)" : "rgba(178,255,200,0.4)")
                           : expired
                           ? "rgba(163,160,200,0.18)"
-                          : (isRainbow ? "rgba(43,110,255,0.10)" : "rgba(235,254,255,0.8)"),
+                          : (isRainbow ? "rgba(43,110,255,0.10)" : "#FFFFFF"),
                       }]}>
                         <Text style={[s.historyStatusText, {
                           color: claimed
@@ -337,10 +337,10 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.72)",
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.9)",
-    shadowColor: "#A3B1C6", shadowOpacity: 0.26, shadowRadius: 14, shadowOffset: { width: 6, height: 8 },
+    shadowColor: "#000000", shadowOpacity: 0.26, shadowRadius: 14, shadowOffset: { width: 6, height: 8 },
   },
   limitOrbValue: { color: colors.ink, fontSize: 20, lineHeight: 22 },
-  limitOrbLabel: { color: "#91A1B4", fontSize: 10, textTransform: "uppercase" },
+  limitOrbLabel: { color: "#000000", fontSize: 10, textTransform: "uppercase" },
   limitTrack: { height: 18, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.6)", marginTop: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
   limitFill: { height: "100%", borderRadius: 99 },
   heroMeta: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },

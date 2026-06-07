@@ -7,10 +7,9 @@
  * - Gradient cards: LinearGradient + softer purple glow.
  * - Rainbow mode: NeuCard uses grey surface + purple glow; gradient cards use VolumeGradient.
  */
-import { Animated, Easing, Pressable, StyleProp, StyleSheet, View, ViewStyle } from "react-native"
-import { useEffect, useRef } from "react"
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import { gradients, radius, useTheme } from "../lib/theme"
+import { colors, radius, useTheme } from "../lib/theme"
 import { useColorMode } from "../store/colorMode"
 
 type GradientTuple = readonly [string, string, ...string[]]
@@ -83,33 +82,21 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
     return <View style={rainbowWrapper}>{inner}</View>
   }
 
-  // ── Pastel mode ───────────────────────────────────────────────
-  // Highlight rim approximates the top-left light source on neumorphic surfaces.
+  // ── Brutalist mode ───────────────────────────────────────────
   const wrapperStyle: ViewStyle = {
-    borderRadius: r,
-    backgroundColor: gradient ? "transparent" : theme.surface,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.9)",
-    borderLeftColor: "rgba(255,255,255,0.85)",
-    borderRightColor: "rgba(5,6,10,0.04)",
-    borderBottomColor: "rgba(5,6,10,0.05)",
+    borderRadius: 8,
+    backgroundColor: theme.surface,
+    borderWidth: 3,
+    borderColor: theme.border,
     ...shadow,
   }
 
   const Inner = gradient ? (
-    <LinearGradient
-      colors={gradient as unknown as [string, string, ...string[]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[{ borderRadius: r, overflow: "hidden" }, style]}
-    >
+    <View style={[{ borderRadius: 5, backgroundColor: colors.skySolid, overflow: "hidden" }, style]}>
       {children}
-    </LinearGradient>
+    </View>
   ) : (
-    <View style={[{ borderRadius: r, backgroundColor: theme.surface, overflow: "hidden" }, style]}>
+    <View style={[{ borderRadius: 5, backgroundColor: theme.surface, overflow: "hidden" }, style]}>
       {children}
     </View>
   )
@@ -135,16 +122,10 @@ export function NeuInset({ children, style }: NeuInsetProps) {
     <View
       style={[
         {
-          backgroundColor: "rgba(0,0,0,0.04)",
-          borderRadius: radius.sm,
-          borderTopWidth: 1,
-          borderLeftWidth: 1,
-          borderTopColor: "rgba(163,160,200,0.35)",
-          borderLeftColor: "rgba(163,160,200,0.25)",
-          borderBottomWidth: 1,
-          borderRightWidth: 1,
-          borderBottomColor: "rgba(255,255,255,0.7)",
-          borderRightColor: "rgba(255,255,255,0.6)",
+          backgroundColor: "#FFFFFF",
+          borderRadius: 6,
+          borderWidth: 2,
+          borderColor: theme.border,
         },
         style,
       ]}
@@ -162,14 +143,9 @@ type GradPillProps = {
 }
 export function GradPill({ label, gradient, style }: GradPillProps) {
   return (
-    <LinearGradient
-      colors={(gradient ?? (["#FFB3E6", "#B8A9FF", "#89D4FF", "#9DFFDB"] as const)) as unknown as [string, string, ...string[]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[s.pill, style]}
-    >
+    <View style={[s.pill, style]}>
       <PillLabel label={label} />
-    </LinearGradient>
+    </View>
   )
 }
 
@@ -184,7 +160,7 @@ export function LavaLampSurface({
   children,
   style,
   contentStyle,
-  intensity = "solid",
+  intensity: _intensity = "solid",
 }: LavaLampSurfaceProps) {
   const { mode } = useColorMode()
 
@@ -211,93 +187,8 @@ export function LavaLampSurface({
     )
   }
 
-  const spin = useRef(new Animated.Value(0)).current
-  const drift = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    const loops = [
-      Animated.loop(
-        Animated.timing(spin, {
-          toValue: 1,
-          duration: 22000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(drift, {
-            toValue: 1,
-            duration: 11000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(drift, {
-            toValue: 0,
-            duration: 11000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    ]
-    loops.forEach((loop) => loop.start())
-    return () => loops.forEach((loop) => loop.stop())
-  }, [drift, spin])
-
-  const rotate = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  })
-  const moveA = drift.interpolate({ inputRange: [0, 1], outputRange: [-18, 20] })
-  const moveB = drift.interpolate({ inputRange: [0, 1], outputRange: [16, -22] })
-  const colors =
-    intensity === "glass"
-      ? gradients.lavaGlass
-      : gradients.lava
-
   return (
     <View style={[s.lavaRoot, style]}>
-      <LinearGradient
-        colors={colors as unknown as [string, string, ...string[]]}
-        start={{ x: 0, y: 0.15 }}
-        end={{ x: 1, y: 0.9 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          s.lavaBlob,
-          s.lavaBlobPink,
-          { transform: [{ translateX: moveA }, { translateY: moveB }, { rotate }] },
-        ]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          s.lavaBlob,
-          s.lavaBlobBlue,
-          { transform: [{ translateX: moveB }, { translateY: moveA }, { rotate }] },
-        ]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          s.lavaBlob,
-          s.lavaBlobLime,
-          { transform: [{ translateX: moveA }, { translateY: moveA }] },
-        ]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          s.lavaBlob,
-          s.lavaBlobSalmon,
-          { transform: [{ translateX: moveB }, { translateY: moveB }, { rotate }] },
-        ]}
-      />
-      <View pointerEvents="none" style={s.lavaFrost} />
-      <View pointerEvents="none" style={s.lavaSheen} />
       <View style={contentStyle}>{children}</View>
     </View>
   )
@@ -397,12 +288,12 @@ function PillLabel({ label }: { label: string }) {
   return (
     <Text
       style={{
-        color: "#6E7D8E",
+        color: "#FFFFFF",
         fontSize: 10,
         fontWeight: "800",
         letterSpacing: 0.5,
         textTransform: "uppercase",
-        textShadowColor: "rgba(255,255,255,0.9)",
+        textShadowColor: "transparent",
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
       }}
@@ -416,48 +307,21 @@ const s = StyleSheet.create({
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 99,
+    borderRadius: 4,
     alignSelf: "flex-start",
+    backgroundColor: "#1f71b8",
+    borderWidth: 2,
+    borderColor: "#000000",
   },
   lavaRoot: {
     overflow: "hidden",
-    backgroundColor: "#F9FBFF",
-  },
-  lavaBlob: {
-    position: "absolute",
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    opacity: 0.34,
-  },
-  lavaBlobPink: {
-    left: -74,
-    top: -88,
-    backgroundColor: "#F199E3",
-  },
-  lavaBlobBlue: {
-    right: -82,
-    top: -54,
-    backgroundColor: "#85F5F2",
-  },
-  lavaBlobLime: {
-    right: 12,
-    bottom: -116,
-    backgroundColor: "#9FEED3",
-  },
-  lavaBlobSalmon: {
-    left: -42,
-    bottom: -118,
-    backgroundColor: "#D9E1FF",
-  },
-  lavaFrost: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.38)",
-  },
-  lavaSheen: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: "#000000",
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
   },
 })

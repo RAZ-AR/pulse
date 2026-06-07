@@ -60,10 +60,10 @@ export default function RewardsScreen() {
             </Text>
           </View>
           <View style={[s.balanceCell, s.balanceCellLight]}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
+            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
               {welcomePoints}
             </Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>
               {t("common:welcome", "Welcome").toUpperCase()}
             </Text>
           </View>
@@ -152,18 +152,18 @@ function RewardCard({
       <View style={[s.rewardLogo, featured ? s.rewardLogoDark : s.rewardLogoLight]}>
         <Text style={[s.rewardLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
       </View>
-      <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
+      <Text style={[s.rewardTitle, { color: featured ? "#FFFFFF" : colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
         {title}
       </Text>
-      <Text style={[s.rewardVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+      <Text style={[s.rewardVenue, { color: featured ? "#FFFFFF" : "#000000", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
         {venue}
       </Text>
-      {leftLabel ? <Text style={[s.stockHint, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
+      {leftLabel ? <Text style={[s.stockHint, { color: featured ? "#FFFFFF" : colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
       <View style={{ flex: 1 }} />
       <View style={s.rewardFoot}>
         <View>
-          <Text style={[s.rewardCost, { color: colors.ink, fontFamily: fonts.displayHeavy }]}>{points}</Text>
-          <Text style={[s.rewardCostUnit, { color: "#91A1B4" }]}>{ptsLabel}</Text>
+          <Text style={[s.rewardCost, { color: featured ? "#FFFFFF" : colors.ink, fontFamily: fonts.displayHeavy }]}>{points}</Text>
+          <Text style={[s.rewardCostUnit, { color: featured ? "#FFFFFF" : "#000000" }]}>{ptsLabel}</Text>
         </View>
         {canRedeem ? (
           <View style={[s.useBadge, { backgroundColor: "rgba(255,255,255,0.58)" }]}>
@@ -193,33 +193,34 @@ const s = StyleSheet.create({
   expiryText: { fontSize: 13, marginBottom: 3 },
   expirySub: { fontSize: 12 },
 
-  hero: { borderRadius: 32, padding: 18, marginBottom: 14, overflow: "hidden" },
+  hero: { borderRadius: 8, padding: 18, marginBottom: 14, overflow: "hidden" },
   heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
-  kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },
+  kicker: { color: "#000000", fontSize: 11, letterSpacing: 1.8 },
   title: { fontSize: 36, lineHeight: 40 },
-  pointsPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 15, paddingVertical: 10 },
-  pointsPillText: { color: "#91A1B4", fontSize: 12 },
+  pointsPill: { backgroundColor: "#1f71b8", borderRadius: 4, paddingHorizontal: 15, paddingVertical: 10, borderWidth: 2, borderColor: colors.ink },
+  pointsPillText: { color: "#FFFFFF", fontSize: 12 },
   heroSub: { fontSize: 13, marginBottom: 16 },
   balanceRow: { flexDirection: "row", gap: 10 },
-  balanceCell: { flex: 1, backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 24, padding: 14 },
-  balanceCellLight: { backgroundColor: "rgba(235,254,255,0.74)" },
+  balanceCell: { flex: 1, backgroundColor: "#FFFFFF", borderRadius: 4, padding: 14, borderWidth: 2, borderColor: colors.ink },
+  balanceCellLight: { backgroundColor: "#1f71b8" },
   balanceLabel: { fontSize: 10, letterSpacing: 1 },
   balanceValue: { fontSize: 34, lineHeight: 36 },
 
   filters: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  pill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 99 },
+  pill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 4, borderWidth: 2, borderColor: colors.ink },
   pillContent: { alignItems: "center" },
-  pillIdle: { backgroundColor: "#F9FBFF" },
+  pillIdle: { backgroundColor: "#FFFFFF" },
   pillText: { fontSize: 13 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   rewardPressable: { width: "48%" },
   rewardCard: {
-    padding: 14, minHeight: 180, borderRadius: 34, overflow: "hidden",
-    shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3,
+    padding: 14, minHeight: 180, borderRadius: 8, overflow: "hidden",
+    borderWidth: 3, borderColor: colors.ink,
+    shadowColor: "#000000", shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
   },
-  rewardCardCyan: { backgroundColor: "rgba(235,254,255,0.92)" },
-  rewardLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", marginBottom: 22 },
+  rewardCardCyan: { backgroundColor: "#1f71b8" },
+  rewardLogo: { width: 42, height: 42, borderRadius: 4, alignItems: "center", justifyContent: "center", marginBottom: 22, borderWidth: 2, borderColor: colors.ink },
   rewardLogoDark: { backgroundColor: colors.lavaPink },
   rewardLogoLight: { backgroundColor: "#FFFFFF" },
   rewardLogoText: { fontSize: 17, fontWeight: "900" },
@@ -229,6 +230,6 @@ const s = StyleSheet.create({
   rewardFoot: { marginTop: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   rewardCost: { fontSize: 25, lineHeight: 27 },
   rewardCostUnit: { fontSize: 10, fontWeight: "700" },
-  useBadge: { borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
+  useBadge: { borderRadius: 4, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 2, borderColor: colors.ink },
   useBadgeText: { fontSize: 12 },
 })

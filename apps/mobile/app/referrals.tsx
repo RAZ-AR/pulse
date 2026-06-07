@@ -150,15 +150,15 @@ const s = StyleSheet.create({
 
   hero: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  heroLabel: { color: "#000000", fontSize: 11, letterSpacing: 1.5 },
   heroValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
-  heroSub: { color: "#91A1B4", fontSize: 13 },
+  heroSub: { color: "#000000", fontSize: 13 },
 
   h2: { fontSize: 22, marginBottom: 8 },
   line: { fontSize: 13, lineHeight: 20 },
 
   codeCard: { padding: 16, marginBottom: 24, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 30 },
-  codeLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
+  codeLabel: { color: "#000000", fontSize: 10, letterSpacing: 1 },
   codeValue: { color: colors.ink, fontSize: 22, letterSpacing: 4, marginTop: 2 },
   shareBtnText: { color: colors.ink, fontSize: 13 },
 

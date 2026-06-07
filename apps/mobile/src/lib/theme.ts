@@ -4,6 +4,7 @@
  *  rainbow — neon vivid dark mode, inspired by gradient orb/pill references
  */
 
+import { Platform } from "react-native"
 import { useColorMode } from "../store/colorMode"
 
 export type Theme = {
@@ -79,41 +80,41 @@ export const rainbowGradients = {
 // ── Physical Pass color tokens ─────────────────────────────────
 export const pass = {
   // backgrounds
-  bg:        "#F0EBE1",   // warm cream — screen bg
+  bg:        "#F5F4F0",   // brutal warm off-white — screen bg
   card:      "#FFFFFF",   // white card surface
-  dark:      "#1C2B3A",   // deep navy — pass top, tab bar
-  darkMid:   "#253545",   // slightly lighter navy — secondary surfaces
+  dark:      "#000000",   // black — outlines and primary dark surfaces
+  darkMid:   "#273AA8",   // blue — secondary accent
   // accents
-  orange:    "#F05A28",   // warm orange — scan CTA, rate chips
-  orangeLight: "#FFF0EB", // tint for orange bg areas
-  mint:      "#C8F0D8",   // light mint — rewards
-  mintDark:  "#2E7D5A",   // dark mint text
+  orange:    "#1f71b8",   // active brutal teal
+  orangeLight: "#FFFFFF", // inactive buttons/chips
+  mint:      "#B38BC8",   // lavender accent
+  mintDark:  "#806828",   // brown accent
   // text
-  textDark:  "#1C2B3A",   // on cream
-  textMid:   "#5A6B7A",   // secondary on cream
-  textMuted: "#9BAAB8",   // muted on cream
+  textDark:  "#000000",   // on cream/white
+  textMid:   "#000000",   // secondary on cream
+  textMuted: "#000000",   // muted on cream
   textLight: "#FFFFFF",   // on dark navy
-  textFaded: "rgba(255,255,255,0.55)", // muted on dark navy
+  textFaded: "#FFFFFF", // muted on dark navy
   // structure
-  border:    "rgba(28,43,58,0.10)",
-  perf:      "rgba(255,255,255,0.30)", // perforation dash color
+  border:    "#000000",
+  perf:      "#000000", // perforation dash color
 }
 
 // ── Pastel color shorthands ────────────────────────────────────
 export const colors = {
-  pink: "#F7D6EA",
-  sky: "#A7E8EE",
-  mint: "#D9F875",
-  pinkSolid: "#D96AA7",
-  skySolid: "#73D0DA",
-  mintSolid: "#BFF04C",
-  indigoDark: "#6E7D8E",
-  ink: "#6E7D8E",
-  lavaBase: "#E1E6EF",
-  lavaPink: "#F199E3",
-  lavaBlue: "#9DCCFF",
-  lavaLime: "#9FEED3",
-  lavaSalmon: "#F5ECFF",
+  pink: "#ea5b0c",
+  sky: "#1f71b8",
+  mint: "#B38BC8",
+  pinkSolid: "#ea5b0c",
+  skySolid: "#1f71b8",
+  mintSolid: "#B38BC8",
+  indigoDark: "#000000",
+  ink: "#000000",
+  lavaBase: "#F5F4F0",
+  lavaPink: "#ea5b0c",
+  lavaBlue: "#1f71b8",
+  lavaLime: "#B38BC8",
+  lavaSalmon: "#FFFFFF",
   glassMilk: "#FFFFFF",
   glassSmoke: "#A3B1C6",
   panel: "#E1E6EF",
@@ -146,25 +147,25 @@ export const radius = {
 // ── Pastel theme ───────────────────────────────────────────────
 const pastelTheme: Theme = {
   isDark: false,
-  bg: "#E1E6EF",
-  bgLight: "#F7FAFF",
-  surface: "#F9FBFF",
-  text: "#6E7D8E",
-  textSecondary: "#91A1B4",
-  textMuted: "#B0D4E3",
-  border: "rgba(255,255,255,0.72)",
+  bg: "#F5F4F0",
+  bgLight: "#FFFFFF",
+  surface: "#FFFFFF",
+  text: "#000000",
+  textSecondary: "#000000",
+  textMuted: "#000000",
+  border: "#000000",
   shadowRaised: {
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 9, height: 9 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
     elevation: 10,
   },
   shadowRaisedSm: {
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.36,
-    shadowRadius: 12,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
     elevation: 4,
   },
   shadowInset: {
@@ -175,10 +176,10 @@ const pastelTheme: Theme = {
     elevation: 0,
   },
   shadowGlow: {
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 9, height: 9 },
-    shadowOpacity: 0.42,
-    shadowRadius: 18,
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
     elevation: 6,
   },
 }
@@ -229,9 +230,19 @@ export function useTheme(): Theme {
 }
 
 export const fonts = {
-  display: "SpaceGrotesk_700Bold",
-  displayHeavy: "SpaceGrotesk_800ExtraBold",
-  displayBlack: "SpaceGrotesk_700Bold",
-  body: "SpaceGrotesk_500Medium",
-  bodyBold: "SpaceGrotesk_700Bold",
+  display: Platform.OS === "web"
+    ? "Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_700Bold, sans-serif"
+    : "SpaceGrotesk_700Bold",
+  displayHeavy: Platform.OS === "web"
+    ? "Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_800ExtraBold, sans-serif"
+    : "SpaceGrotesk_800ExtraBold",
+  displayBlack: Platform.OS === "web"
+    ? "Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_700Bold, sans-serif"
+    : "SpaceGrotesk_700Bold",
+  body: Platform.OS === "web"
+    ? "Helvetica Neue, Arial, SpaceGrotesk_600SemiBold, sans-serif"
+    : "SpaceGrotesk_600SemiBold",
+  bodyBold: Platform.OS === "web"
+    ? "Arial Black, Helvetica Neue Condensed Black, SpaceGrotesk_700Bold, sans-serif"
+    : "SpaceGrotesk_700Bold",
 }
