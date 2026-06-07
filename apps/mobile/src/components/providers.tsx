@@ -47,6 +47,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       div, span, button, input, textarea {
         letter-spacing: 0;
       }
+      [style*="Climate Crisis"] {
+        letter-spacing: 0.025em !important;
+      }
       [style*="-apple-system"], [style*="system-ui"],
       div[dir="auto"]:not([style]), span[dir="auto"]:not([style]) {
         font-family: "Helvetica Neue", Arial, SpaceGrotesk_600SemiBold, sans-serif !important;
