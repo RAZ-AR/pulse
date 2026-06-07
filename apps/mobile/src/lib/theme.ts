@@ -231,13 +231,13 @@ export function useTheme(): Theme {
 
 export const fonts = {
   display: Platform.OS === "web"
-    ? "Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_700Bold, sans-serif"
+    ? "\"Climate Crisis\", Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_700Bold, sans-serif"
     : "SpaceGrotesk_700Bold",
   displayHeavy: Platform.OS === "web"
-    ? "Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_800ExtraBold, sans-serif"
+    ? "\"Climate Crisis\", Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_800ExtraBold, sans-serif"
     : "SpaceGrotesk_800ExtraBold",
   displayBlack: Platform.OS === "web"
-    ? "Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_700Bold, sans-serif"
+    ? "\"Climate Crisis\", Arial Black, Helvetica Neue Condensed Black, Impact, SpaceGrotesk_700Bold, sans-serif"
     : "SpaceGrotesk_700Bold",
   body: Platform.OS === "web"
     ? "Helvetica Neue, Arial, SpaceGrotesk_600SemiBold, sans-serif"
