@@ -199,11 +199,13 @@ export default function HomeScreen() {
           </View>
 
           <View style={s.pointsBlock}>
-            <Text style={[s.pointsNumber, { fontFamily: ticketFonts.display }]}>{fmt(total)}</Text>
             <View style={s.pointsSide}>
               <Text style={[s.pointsLabel, { fontFamily: ticketFonts.bodyBold }]}>POINTS</Text>
               <Text style={[s.pointsCaption, { fontFamily: ticketFonts.bodyBold }]}>VALID MEMBER CREDIT</Text>
             </View>
+            <Text style={[s.pointsNumber, { fontFamily: ticketFonts.display }]} numberOfLines={1}>
+              {fmt(total)}
+            </Text>
           </View>
 
           <View style={s.statsRow}>
@@ -521,15 +523,17 @@ const s = StyleSheet.create({
     backgroundColor: ticketColors.pink,
     borderTopLeftRadius: 9,
     borderTopRightRadius: 9,
-    padding: 18,
-    paddingBottom: 20,
+    padding: 14,
+    paddingBottom: 14,
+    minHeight: 420,
+    justifyContent: "space-between",
     overflow: "hidden",
   },
   passTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16,
+    marginBottom: 8,
   },
   passLabel: {
     color: "rgba(0,0,0,0.62)",
@@ -558,27 +562,30 @@ const s = StyleSheet.create({
   tierName: { color: ticketColors.white, fontSize: 9, letterSpacing: 1.4, marginTop: 2 },
 
   pointsBlock: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 10,
-    marginBottom: 18,
+    minHeight: 230,
+    justifyContent: "flex-end",
+    marginBottom: 10,
   },
   pointsNumber: {
     color: ticketColors.black,
-    fontSize: 88,
-    lineHeight: 86,
+    fontSize: 80,
+    lineHeight: 78,
     letterSpacing: 0,
   },
-  pointsSide: { marginBottom: 10, flex: 1 },
+  pointsSide: {
+    alignItems: "flex-end",
+    alignSelf: "flex-end",
+    marginBottom: 6,
+  },
   pointsLabel: {
     color: ticketColors.black,
     fontSize: 14,
-    letterSpacing: 2.4,
+    letterSpacing: 2,
   },
   pointsCaption: {
     color: "rgba(0,0,0,0.58)",
     fontSize: 9,
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     marginTop: 3,
   },
 
@@ -588,7 +595,7 @@ const s = StyleSheet.create({
     alignItems: "center",
     backgroundColor: ticketColors.lavender,
     borderRadius: 4,
-    paddingVertical: 9,
+    paddingVertical: 7,
     marginHorizontal: 3,
     borderWidth: 2,
     borderColor: ticketColors.black,
