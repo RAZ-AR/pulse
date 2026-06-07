@@ -3,10 +3,33 @@ import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View 
 import QRCode from "react-native-qrcode-svg"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
-import { LinearGradient } from "expo-linear-gradient"
-import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
+import { fonts, pass, useTheme, type Theme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
-import { NeuCard, NeuInset, VolumeGradient } from "../../src/components/neu"
+
+function ProfilePerforation() {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: pass.dark, height: 26 }}>
+      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: pass.bg, marginLeft: -10 }} />
+      <View style={{ flex: 1, flexDirection: "row", gap: 3, overflow: "hidden", justifyContent: "center" }}>
+        {Array.from({ length: 36 }).map((_, i) => (
+          <View key={i} style={{ width: 6, height: 1, backgroundColor: pass.perf }} />
+        ))}
+      </View>
+      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: pass.bg, marginRight: -10 }} />
+    </View>
+  )
+}
+
+function ProfileBarcodeDecor() {
+  const bars = [3,1,2,1,4,1,2,3,1,2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,1,2,4,1,2,3,1,2,1]
+  return (
+    <View style={{ flexDirection: "row", gap: 2, height: 28, alignItems: "stretch", opacity: 0.18, paddingHorizontal: 2 }}>
+      {bars.map((w, i) => (
+        <View key={i} style={{ width: w * 2.2, backgroundColor: pass.dark, borderRadius: 1 }} />
+      ))}
+    </View>
+  )
+}
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
 import { setLocale } from "../../src/lib/i18n"
@@ -14,7 +37,7 @@ import { CITY_OPTIONS } from "../../src/lib/venues"
 import { formatLoyaltyId } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 
-const AVATAR_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899", "#EF4444", "#F59E0B", "#10B981", "#6366F1", "#0EA5E9"]
+const AVATAR_COLORS = ["#1f71b8", "#ea5b0c", "#B38BC8", "#273AA8", "#806828", "#FFFFFF", "#000000"]
 
 function getAvatarColor(avatarUrl: string | null | undefined): string | null {
   if (!avatarUrl?.startsWith("color:")) return null
@@ -22,12 +45,6 @@ function getAvatarColor(avatarUrl: string | null | undefined): string | null {
   return AVATAR_COLORS[idx] ?? null
 }
 
-const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
-  COMMON: gradients.graphite,
-  RARE: gradients.black,
-  EPIC: gradients.graphite,
-  LEGENDARY: gradients.black,
-}
 
 const DEMO_PROFILE = {
   id: "demo",
@@ -188,7 +205,7 @@ export default function ProfileScreen() {
     : null)
 
   return (
-    <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+    <ScrollView style={[s.scroll, { backgroundColor: pass.bg }]} contentContainerStyle={s.content}>
       <View style={s.screenHead}>
         <View>
           <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>ayoo ID</Text>
@@ -196,86 +213,129 @@ export default function ProfileScreen() {
             {t("personalCabinet", "Personal cabinet")}
           </Text>
         </View>
-        <Pressable onPress={startEditing} style={[s.headButton, theme.shadowRaisedSm]}>
+        <Pressable onPress={startEditing} style={s.headButton}>
           <Text style={[s.headButtonText, { fontFamily: fonts.bodyBold }]}>✎</Text>
         </Pressable>
       </View>
 
-      <NeuCard gradient={gradients.black} style={s.hero}>
-        <View style={s.heroBlob} />
-        <View style={s.heroTop}>
-          <View style={s.heroRow}>
-            <View style={[s.heroAvatar, avatarBgColor ? { backgroundColor: avatarBgColor } : {}]}>
-              <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
+      {/* ── Physical Pass Hero ── */}
+      <View style={s.passHero}>
+        {/* Dark top */}
+        <View style={s.passHeroTop}>
+          <View style={s.passHeroHeader}>
+            <View style={[s.passAvatar, avatarBgColor ? { backgroundColor: avatarBgColor } : {}]}>
+              <Text style={[s.passAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.heroName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
+              <Text style={[s.passHeroLabel, { fontFamily: fonts.bodyBold }]}>MEMBER PASS</Text>
+              <Text style={[s.passHeroName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
                 {u.name ?? u.email}
               </Text>
-              <Text style={s.heroMail} numberOfLines={1}>{u.email}</Text>
-              {u.homeCity ? <Text style={s.heroCity}>⌖ {u.homeCity}</Text> : null}
+              {u.homeCity ? (
+                <Text style={[s.passHeroCity, { fontFamily: fonts.bodyBold }]}>⌖ {u.homeCity.toUpperCase()}</Text>
+              ) : null}
+            </View>
+            <View style={s.passRefBadge}>
+              <Text style={[s.passRefBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
             </View>
           </View>
-          <View style={s.refBadge}>
-            <Text style={[s.refBadgeText, { fontFamily: fonts.bodyBold }]}>{u.referralCode}</Text>
+
+          {/* Loyalty ID strip */}
+          {u.cardNumber ? (
+            <View style={s.passIdStrip}>
+              <Text style={[s.passIdLabel, { fontFamily: fonts.bodyBold }]}>LOYALTY ID</Text>
+              <Text style={[s.passIdNumber, { fontFamily: fonts.displayHeavy }]}>
+                {formatLoyaltyId(new Date(u.createdAt), u.cardNumber).replace(/(\d{7})(\d+)/, "$1 · $2")}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Balance */}
+          <View style={s.passBalance}>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.passBalanceLabel, { fontFamily: fonts.bodyBold }]}>
+                {t("availableBalance", "AVAILABLE BALANCE").toUpperCase()}
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6 }}>
+                <Text style={[s.passBalanceValue, { fontFamily: fonts.displayHeavy }]}>{totalPoints.toLocaleString()}</Text>
+                <Text style={[s.passBalanceSub, { fontFamily: fonts.bodyBold }]}>pts</Text>
+              </View>
+            </View>
+            <View style={s.passBalanceSplit}>
+              <View style={s.passBalanceChip}>
+                <Text style={[s.passBalanceChipValue, { fontFamily: fonts.displayHeavy }]}>{u.earnedPoints.toLocaleString()}</Text>
+                <Text style={[s.passBalanceChipLabel, { fontFamily: fonts.bodyBold }]}>{t("earned", "EARNED")}</Text>
+              </View>
+              <View style={s.passBalanceChip}>
+                <Text style={[s.passBalanceChipValue, { fontFamily: fonts.displayHeavy }]}>{u.welcomePoints.toLocaleString()}</Text>
+                <Text style={[s.passBalanceChipLabel, { fontFamily: fonts.bodyBold }]}>{t("welcome", "WELCOME")}</Text>
+              </View>
+            </View>
           </View>
-        </View>
 
-        {/* ── Loyalty card strip ────────────────────────────── */}
-        {u.cardNumber ? (
-          <LoyaltyCard
-            cardNumber={u.cardNumber}
-            loyaltyId={formatLoyaltyId(new Date(u.createdAt), u.cardNumber)}
-          />
-        ) : null}
-
-        <View style={s.balancePanel}>
-          <View>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>
-              {t("availableBalance", "Available balance").toUpperCase()}
+          {/* Progress bar */}
+          <View style={s.passProgress}>
+            <View style={s.passProgressTrack}>
+              <View style={[s.passProgressFill, { width: `${progressPct}%` }]} />
+            </View>
+            <Text style={[s.passProgressLabel, { fontFamily: fonts.bodyBold }]}>
+              {totalPoints.toLocaleString()} / {nextMilestone.toLocaleString()} pts
             </Text>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{totalPoints.toLocaleString()}</Text>
-            <Text style={s.balanceSub}>pts</Text>
-          </View>
-          <View style={s.balanceSplit}>
-            <MiniBalance label={t("earned", "Earned")} value={u.earnedPoints} />
-            <MiniBalance label={t("welcome", "Welcome")} value={u.welcomePoints} />
           </View>
         </View>
 
-        <View style={s.levelBlock}>
-          <View style={s.levelHead}>
-            <Text style={[s.levelText, { fontFamily: fonts.bodyBold }]}>
-              {totalPoints.toLocaleString()} / {nextMilestone.toLocaleString()}
-            </Text>
-            <Text style={[s.levelText, { fontFamily: fonts.bodyBold }]}>{progressPct}%</Text>
+        {/* Perforation */}
+        <ProfilePerforation />
+
+        {/* Cream bottom: QR */}
+        <View style={s.passHeroBottom}>
+          <View style={s.passQrSection}>
+            <View style={s.passQrBox}>
+              <QRCode
+                value={`ayoo://user/${u.referralCode}`}
+                size={120}
+                color={pass.dark}
+                backgroundColor="#FFFFFF"
+              />
+            </View>
+            <View style={{ flex: 1, gap: 10 }}>
+              <Text style={[s.passQrHint, { fontFamily: fonts.bodyBold }]}>
+                {t("qrHint", "Show to merchant to earn / pay with points")}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Pressable onPress={() => shareReferral(u.referralCode)} style={s.passQrBtn}>
+                  <Text style={[s.passQrBtnText, { fontFamily: fonts.bodyBold }]}>↗ {t("share", "Share")}</Text>
+                </Pressable>
+                <Pressable onPress={() => router.push("/gift")} style={[s.passQrBtn, s.passQrBtnOrange]}>
+                <Text style={[s.passQrBtnText, s.passQrBtnTextBlue, { fontFamily: fonts.bodyBold }]}>□ {t("giftPoints", "Gift")}</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
-          <View style={s.levelTrack}>
-            <View style={[s.levelFill, { width: `${progressPct}%` }]} />
-          </View>
+          <ProfileBarcodeDecor />
         </View>
-      </NeuCard>
+      </View>
 
       <View style={s.quickGrid}>
-        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} tone="mint" onPress={() => router.push("/checkin")} isRainbow={isRainbow} />
-        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} tone="blue" onPress={() => router.push("/scan")} isRainbow={isRainbow} />
-        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} tone="pink" onPress={() => router.push("/gift")} isRainbow={isRainbow} />
-        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} tone="white" onPress={() => router.push("/friends")} isRainbow={isRainbow} />
+        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} tone="orange" onPress={() => router.push("/checkin")} />
+        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} tone="dark" onPress={() => router.push("/scan")} />
+        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} tone="mint" onPress={() => router.push("/gift")} />
+        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} tone="white" onPress={() => router.push("/friends")} />
       </View>
 
       <SectionTitle title={t("activity", "Activity")} action={t("leaderboard", "Leaderboard")} onPress={() => router.push("/leaderboard")} />
       <View style={s.statsRow}>
-        <StatTile label={t("lifetime", "Lifetime")} value={u.totalEarnedLifetime.toLocaleString()} isRainbow={isRainbow} rainbowGrad={["#FF2D9B", "#8B3DFF"]} />
-        <StatTile label={t("streak", "Streak")} value={`${u.currentStreak}d`} isRainbow={isRainbow} rainbowGrad={["#2B6EFF", "#00F5FF"]} />
-        <StatTile label={t("steps", "Steps")} value={u.stepsToday.toLocaleString()} isRainbow={isRainbow} rainbowGrad={["#8B3DFF", "#FF2D9B"]} />
+        <PassStatTile label={t("lifetime", "Lifetime")} value={u.totalEarnedLifetime.toLocaleString()} accent={pass.orange} />
+        <PassStatTile label={t("streak", "Streak")} value={`${u.currentStreak}d`} accent={pass.dark} />
+        <PassStatTile label={t("steps", "Steps")} value={u.stepsToday.toLocaleString()} accent={pass.mintDark} />
       </View>
 
       {lifetimeStats ? (
-        <NeuCard style={s.infoCard}>
+        <View style={s.infoCard}>
           <Row label={t("venuesVisited", "Venues visited")} value={`${lifetimeStats.uniqueVenuesVisited}`} theme={theme} last={false} />
           <Row label={t("rewardsRedeemed", "Rewards redeemed")} value={`${lifetimeStats.rewardsRedeemed}`} theme={theme} last={false} />
           <Row label={t("spentPoints", "Spent points")} value={`${lifetimeStats.spentPoints.toLocaleString()} pts`} theme={theme} last={true} />
-        </NeuCard>
+        </View>
       ) : null}
 
       <SectionTitle title={t("account", "Account")} action={t("editProfile", "Edit")} onPress={startEditing} />
@@ -298,73 +358,41 @@ export default function ProfileScreen() {
       <SectionTitle title={t("badges", "Badges")} action={t("all", "All")} onPress={() => router.push("/badges")} />
       <Pressable onPress={() => router.push("/badges")}>
         {badges.length === 0 ? (
-          <NeuCard style={{ padding: 20, alignItems: "center", marginBottom: 20 }}>
-            <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
+          <View style={[s.infoCard, { padding: 20, alignItems: "center", marginBottom: 20 }]}>
+            <Text style={{ color: pass.textMid, fontSize: 13, textAlign: "center" }}>
               {t("noBadgesYet", "Earn your first badge by checking in or scanning a receipt")}
             </Text>
-          </NeuCard>
+          </View>
         ) : (
           <View style={s.badgeGrid}>
-            {badges.slice(0, 6).map((b) => {
-              const grad = RARITY_GRADIENT[b.rarity] ?? gradients.violet
-              return (
-                <NeuCard key={b.id} gradient={grad} small style={s.badgeCard}>
-                  <Text style={s.badgeIcon}>{b.iconUrl}</Text>
-                  <Text style={[s.badgeName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-                    {b.name}
-                  </Text>
-                  <Text style={s.badgeRarity}>{b.rarity}</Text>
-                </NeuCard>
-              )
-            })}
+            {badges.slice(0, 6).map((b) => (
+              <View key={b.id} style={s.badgeCard}>
+                <Text style={s.badgeIcon}>{b.iconUrl}</Text>
+                <Text style={[s.badgeName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{b.name}</Text>
+                <Text style={s.badgeRarity}>{b.rarity}</Text>
+              </View>
+            ))}
           </View>
         )}
       </Pressable>
 
       <SectionTitle title={t("network", "Network")} action={t("details", "Details")} onPress={() => router.push("/referrals")} />
-      <NeuCard gradient={gradients.black} style={s.referralCard}>
-        <Text style={s.referralLabel}>
+      <View style={s.referralCard}>
+        <Text style={[s.referralLabel, { fontFamily: fonts.bodyBold }]}>
           {t("referralCode", "Referral code").toUpperCase()}
         </Text>
         <Text style={[s.referralCode, { fontFamily: fonts.displayHeavy }]}>{u.referralCode}</Text>
         <Text style={s.referralHint}>{t("referralHintShort", "Friends +50 · You +100 after first buy")}</Text>
-        {/* QR code for merchant to scan */}
-        <View style={s.qrWrap}>
-          <QRCode
-            value={`ayoo://user/${u.referralCode}`}
-            size={160}
-            color="#0f1115"
-            backgroundColor="rgba(255,255,255,0.95)"
-          />
-          <Text style={s.qrHint}>{t("qrHint", "Show to merchant to earn / pay with points")}</Text>
-        </View>
-        <View style={s.referralBtns}>
-          <Pressable
-            onPress={() => shareReferral(u.referralCode)}
-            style={s.referralBtnInner}
-          >
-            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>↗ {t("share", "Share")}</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push("/gift")}
-            style={s.referralBtnInner}
-          >
-            <Text style={[s.referralBtnText, { fontFamily: fonts.bodyBold }]}>□ {t("giftPoints", "Gift")}</Text>
-          </Pressable>
-        </View>
-        <Text
-          onPress={() => router.push("/referrals")}
-          style={s.refsCount}
-        >
+        <Text onPress={() => router.push("/referrals")} style={s.refsCount}>
           {t("referralsCount", "{{count}} referred", { count: referralsCount })} · {friendsCount} {t("friends", "friends")} →
         </Text>
-      </NeuCard>
+      </View>
 
       <SectionTitle title={t("recentRewards", "Recent rewards")} action={t("rewards", "Rewards")} onPress={() => router.push("/rewards")} />
-      <NeuCard style={s.infoCard}>
+      <View style={s.infoCard}>
         {recentRedemptions.length === 0 ? (
           <View style={s.emptyHistory}>
-            <Text style={[s.emptyHistoryText, { color: theme.textSecondary }]}>
+            <Text style={[s.emptyHistoryText, { color: pass.textMid }]}>
               {t("noRewardHistory", "Redeemed rewards will appear here")}
             </Text>
           </View>
@@ -379,10 +407,10 @@ export default function ProfileScreen() {
             />
           ))
         )}
-      </NeuCard>
+      </View>
 
       <SectionTitle title={t("settings", "Settings")} />
-      <NeuCard style={{ padding: 14, marginBottom: 20 }}>
+      <View style={[s.infoCard, { padding: 14, marginBottom: 20 }]}>
         {editing ? (
           <>
             <Field label={t("name", "Name")} value={name} onChangeText={setName} theme={theme} />
@@ -396,7 +424,7 @@ export default function ProfileScreen() {
                     onPress={() => setHomeCity(city.name)}
                     style={[s.cityChip, active ? s.cityChipActive : s.cityChipIdle]}
                   >
-                    <Text style={[s.cityChipText, { color: theme.text, fontFamily: fonts.bodyBold }]}>
+                    <Text style={[s.cityChipText, { color: active ? pass.textLight : pass.textDark, fontFamily: fonts.bodyBold }]}>
                       {city.label}
                     </Text>
                   </Pressable>
@@ -404,7 +432,7 @@ export default function ProfileScreen() {
               })}
             </View>
             <Field label={t("birthday", "Birthday")} value={editBirthday} onChangeText={setEditBirthday} theme={theme} placeholder="YYYY-MM-DD" />
-            <Text style={[s.fieldLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 8 }]}>
+            <Text style={[s.fieldLabel, { color: pass.textMid, fontFamily: fonts.bodyBold, marginBottom: 8 }]}>
               {t("chooseAvatar", "Avatar color")}
             </Text>
             <View style={s.avatarRow}>
@@ -412,7 +440,7 @@ export default function ProfileScreen() {
                 <Pressable
                   key={color}
                   onPress={() => setEditAvatarColor(i)}
-                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i ? 2 : 0, borderColor: theme.text }]}
+                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i ? 3 : 2 }]}
                 />
               ))}
             </View>
@@ -428,43 +456,22 @@ export default function ProfileScreen() {
         ) : (
           <Btn label={t("editProfile", "Edit profile")} variant="ghost" onPress={startEditing} />
         )}
-      </NeuCard>
+      </View>
 
       {/* Language */}
-      <Text style={[s.h2, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+      <Text style={[s.h2, { color: pass.textDark, fontFamily: fonts.displayHeavy }]}>
         {t("language", "Language")}
       </Text>
       <View style={s.langRow}>
         {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => {
           const active = currentLng === lng
-          if (active && isRainbow) {
-            return (
-              <VolumeGradient key={lng} colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={99} onPress={() => changeLanguage(lng)} style={[s.langChip, { flex: 1 }]}>
-                <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{lng.toUpperCase()}</Text>
-              </VolumeGradient>
-            )
-          }
-          if (active) {
-            return (
-              <Pressable key={lng} onPress={() => changeLanguage(lng)} style={{ flex: 1 }}>
-                <LinearGradient
-                  colors={gradients.black as unknown as [string, string, ...string[]]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[s.langChip, theme.shadowGlow]}
-                >
-                  <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold }]}>{lng.toUpperCase()}</Text>
-                </LinearGradient>
-              </Pressable>
-            )
-          }
           return (
             <Pressable
               key={lng}
               onPress={() => changeLanguage(lng)}
-              style={[s.langChip, { backgroundColor: theme.bg, flex: 1 }, theme.shadowRaisedSm]}
+              style={[s.langChip, { flex: 1, backgroundColor: active ? pass.orange : "#FFFFFF", borderColor: pass.border }]}
             >
-              <Text style={[s.langChipText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.langChipActive, { fontFamily: fonts.bodyBold, color: active ? pass.textLight : pass.textDark }]}>
                 {lng.toUpperCase()}
               </Text>
             </Pressable>
@@ -473,7 +480,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Sign out */}
-      <Pressable onPress={signOut} style={[s.signOut, { backgroundColor: "rgba(220,38,38,0.08)" }]}>
+      <Pressable onPress={signOut} style={[s.signOut, { backgroundColor: "#FFFFFF" }]}>
         <Text style={[s.signOutText, { fontFamily: fonts.bodyBold }]}>{t("signOut", "Sign out")}</Text>
       </Pressable>
     </ScrollView>
@@ -482,110 +489,46 @@ export default function ProfileScreen() {
 
 // ── helpers ───────────────────────────────────────────────────
 
-// ── Loyalty Card ──────────────────────────────────────────────
-function LoyaltyCard({ cardNumber, loyaltyId }: { cardNumber: string; loyaltyId: string }) {
-  const { t } = useTranslation("profile")
-  // Format: "2026001 45678" → "2026001 · 45678" for readability
-  const prefix = loyaltyId.slice(0, 7)
-  const suffix = loyaltyId.slice(7)
+function PassStatTile({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
-    <View style={s.loyaltyCard}>
-      <View style={s.loyaltyLeft}>
-        <Text style={[s.loyaltyLabel, { fontFamily: fonts.bodyBold }]}>
-          {t("loyaltyCard", "LOYALTY CARD")}
-        </Text>
-        <Text style={[s.loyaltyId, { fontFamily: fonts.displayHeavy }]}>
-          {prefix}
-          <Text style={s.loyaltyIdSep}> · </Text>
-          {suffix}
-        </Text>
-      </View>
-      <View style={s.loyaltyRight}>
-        <Text style={[s.loyaltyCardLabel, { fontFamily: fonts.bodyBold }]}>
-          {t("cardNo", "CARD #")}
-        </Text>
-        <Text style={[s.loyaltyCardNumber, { fontFamily: fonts.displayHeavy }]}>
-          {cardNumber}
-        </Text>
-      </View>
+    <View style={[s.statTile, { backgroundColor: "#FFFFFF", borderColor: pass.border, borderWidth: 3 }]}>
+      <Text style={[s.statValue, { color: accent, fontFamily: fonts.displayHeavy }]}>{value}</Text>
+      <Text style={[s.statLabel, { color: pass.textMid }]}>{label.toUpperCase()}</Text>
     </View>
   )
-}
-
-function MiniBalance({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={s.miniBalance}>
-      <Text style={[s.miniBalanceValue, { fontFamily: fonts.displayHeavy }]}>{value.toLocaleString()}</Text>
-      <Text style={[s.miniBalanceLabel, { fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
-    </View>
-  )
-}
-
-function StatTile({ label, value, isRainbow, rainbowGrad }: { label: string; value: string; isRainbow?: boolean; rainbowGrad?: readonly [string, string] }) {
-  if (isRainbow && rainbowGrad) {
-    return (
-      <VolumeGradient colors={rainbowGrad} shadowColor={rainbowGrad[0]} shadowOpacity={0.35} borderRadius={24} style={[s.statTile, { flex: 1 }]}>
-        <Text style={[s.statValue, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{value}</Text>
-        <Text style={[s.statLabel, { color: "rgba(255,255,255,0.75)" }]}>{label.toUpperCase()}</Text>
-      </VolumeGradient>
-    )
-  }
-  return (
-    <NeuCard gradient={gradients.black} style={s.statTile} small>
-      <Text style={[s.statValue, { fontFamily: fonts.displayHeavy }]}>{value}</Text>
-      <Text style={s.statLabel}>{label.toUpperCase()}</Text>
-    </NeuCard>
-  )
-}
-
-const QUICK_RAINBOW: Record<string, readonly [string, string]> = {
-  mint:  ["#00F5FF", "#2B6EFF"],
-  blue:  ["#2B6EFF", "#8B3DFF"],
-  pink:  ["#FF2D9B", "#8B3DFF"],
-  white: ["#8B3DFF", "#2B6EFF"],
 }
 
 function QuickAction({
-  icon, label, sub, tone, onPress, isRainbow,
-}: { icon: string; label: string; sub: string; tone: "mint" | "blue" | "pink" | "white"; onPress: () => void; isRainbow?: boolean }) {
-  if (isRainbow) {
-    const grad = QUICK_RAINBOW[tone]!
-    return (
-      <VolumeGradient colors={grad} shadowColor={grad[0]} shadowOpacity={0.32} borderRadius={26} onPress={onPress} style={[s.quickCard, { minHeight: 92 }]}>
-        <View style={[s.quickIcon, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
-          <Text style={[s.quickIconText, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{icon}</Text>
-        </View>
-        <Text style={[s.quickLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
-        <Text style={[s.quickSub, { color: "rgba(255,255,255,0.72)" }]} numberOfLines={1}>{sub}</Text>
-      </VolumeGradient>
-    )
-  }
-
-  const toneStyle =
-    tone === "mint" ? s.quickIconMint :
-    tone === "blue" ? s.quickIconBlue :
-    tone === "pink" ? s.quickIconPink :
-    s.quickIconWhite
+  icon, label, sub, tone, onPress,
+}: { icon: string; label: string; sub: string; tone: "orange" | "dark" | "mint" | "white"; onPress: () => void }) {
+  const bg = tone === "orange" ? pass.orange
+    : tone === "dark" ? pass.mint
+    : tone === "mint" ? pass.mint
+    : "#FFFFFF"
+  const isBlue = tone === "orange"
+  const iconColor = pass.textDark
+  const labelColor = isBlue ? pass.textLight : pass.textDark
+  const subColor = isBlue ? pass.textLight : pass.textMid
 
   return (
     <Pressable onPress={onPress} style={s.quickPressable}>
-      <NeuCard style={s.quickCard} small>
-        <View style={[s.quickIcon, toneStyle]}>
-          <Text style={[s.quickIconText, { fontFamily: fonts.displayHeavy }]}>{icon}</Text>
+      <View style={[s.quickCard, { backgroundColor: bg }]}>
+        <View style={s.quickIcon}>
+          <Text style={[s.quickIconText, { color: iconColor, fontFamily: fonts.displayHeavy }]}>{icon}</Text>
         </View>
-        <Text style={[s.quickLabel, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
-        <Text style={s.quickSub} numberOfLines={1}>{sub}</Text>
-      </NeuCard>
+        <Text style={[s.quickLabel, { color: labelColor, fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
+        <Text style={[s.quickSub, { color: subColor }]} numberOfLines={1}>{sub}</Text>
+      </View>
     </Pressable>
   )
 }
 
 function AccountTile({ label, value }: { label: string; value: string }) {
   return (
-    <NeuCard style={s.accountTile} small>
+    <View style={s.accountTile}>
       <Text style={[s.accountLabel, { fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
       <Text style={[s.accountValue, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{value}</Text>
-    </NeuCard>
+    </View>
   )
 }
 
@@ -595,39 +538,39 @@ function SectionTitle({ title, action, onPress }: { title: string; action?: stri
       <Text style={[s.h2, { fontFamily: fonts.displayHeavy }]}>{title}</Text>
       {action && onPress ? (
         <Pressable onPress={onPress} style={s.sectionAction}>
-          <Text style={[s.sectionActionText, { fontFamily: fonts.bodyBold }]}>{action}</Text>
+          <Text style={[s.sectionActionText, { fontFamily: fonts.bodyBold }]}>{action} →</Text>
         </Pressable>
       ) : null}
     </View>
   )
 }
 
-function Row({ label, value, theme, last }: { label: string; value: string; theme: Theme; last: boolean }) {
+function Row({ label, value, theme: _theme, last }: { label: string; value: string; theme: Theme; last: boolean }) {
   return (
-    <View style={[s.row, !last && { borderBottomColor: "rgba(163,160,200,0.15)", borderBottomWidth: 1 }]}>
-      <Text style={{ color: theme.textSecondary, fontSize: 13 }}>{label}</Text>
-      <Text style={{ color: theme.text, fontSize: 14, fontFamily: fonts.bodyBold }}>{value}</Text>
+    <View style={[s.row, !last && { borderBottomColor: pass.border, borderBottomWidth: 1 }]}>
+      <Text style={{ color: pass.textMid, fontSize: 13 }}>{label}</Text>
+      <Text style={{ color: pass.textDark, fontSize: 14, fontFamily: fonts.bodyBold }}>{value}</Text>
     </View>
   )
 }
 
 function Field({
-  label, value, onChangeText, theme, placeholder,
+  label, value, onChangeText, theme: _theme, placeholder,
 }: { label: string; value: string; onChangeText: (v: string) => void; theme: Theme; placeholder?: string }) {
   return (
     <View style={{ marginBottom: 10 }}>
-      <Text style={{ color: theme.textSecondary, fontSize: 11, fontFamily: fonts.bodyBold, letterSpacing: 0.5, marginBottom: 4 }}>
+      <Text style={{ color: pass.textMid, fontSize: 10, fontFamily: fonts.bodyBold, letterSpacing: 1, marginBottom: 6 }}>
         {label.toUpperCase()}
       </Text>
-      <NeuInset>
+      <View style={{ backgroundColor: "#FFFFFF", borderRadius: 6, borderWidth: 2, borderColor: pass.border }}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          style={{ padding: 12, fontSize: 14, color: theme.text, fontFamily: fonts.body }}
-          placeholderTextColor={theme.textMuted}
+          style={{ padding: 12, fontSize: 14, color: pass.textDark, fontFamily: fonts.body }}
+          placeholderTextColor={pass.textMuted}
         />
-      </NeuInset>
+      </View>
     </View>
   )
 }
@@ -635,37 +578,24 @@ function Field({
 function Btn({
   label, onPress, variant = "primary", disabled,
 }: { label: string; onPress: () => void; variant?: "primary" | "ghost"; disabled?: boolean }) {
-  const theme = useTheme()
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
-  if (variant === "primary") {
-    if (isRainbow) {
-      return (
-        <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.32} borderRadius={10} {...(!disabled ? { onPress } : {})} style={{ flex: 1, padding: 12, alignItems: "center", opacity: disabled ? 0.5 : 1 }}>
-          <Text style={{ color: "#FFFFFF", fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
-        </VolumeGradient>
-      )
-    }
-    return (
-      <Pressable onPress={onPress} disabled={disabled} style={{ flex: 1, opacity: disabled ? 0.5 : 1 }}>
-        <LinearGradient
-          colors={gradients.black as unknown as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[{ padding: 12, borderRadius: 10, alignItems: "center" }, theme.shadowGlow]}
-        >
-          <Text style={{ color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
-        </LinearGradient>
-      </Pressable>
-    )
-  }
+  const bg = variant === "primary" ? pass.orange : "#FFFFFF"
+  const textColor = variant === "primary" ? pass.textLight : pass.textDark
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[{ flex: 1, padding: 12, borderRadius: 10, alignItems: "center", backgroundColor: theme.bg }, theme.shadowRaisedSm]}
+      style={{
+        flex: 1,
+        padding: 12,
+        borderRadius: 6,
+        alignItems: "center",
+        backgroundColor: bg,
+        opacity: disabled ? 0.5 : 1,
+        borderWidth: 2,
+        borderColor: pass.border,
+      }}
     >
-      <Text style={{ color: theme.text, fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
+      <Text style={{ color: textColor, fontFamily: fonts.bodyBold, fontSize: 13 }}>{label}</Text>
     </Pressable>
   )
 }
@@ -675,126 +605,287 @@ const s = StyleSheet.create({
   content: { width: "100%", maxWidth: 620, alignSelf: "center", padding: 16, paddingBottom: 116 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },
-  screenTitle: { color: colors.ink, fontSize: 30, lineHeight: 33, letterSpacing: 0 },
-  headButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center" },
-  headButtonText: { color: colors.ink, fontSize: 18 },
-
-  hero: { padding: 14, marginBottom: 12, overflow: "hidden", borderRadius: 42 },
-  heroBlob: { position: "absolute", top: -54, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.24)" },
-  heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12 },
-  heroRow: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  heroAvatar: {
-    width: 58, height: 58, borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.72)",
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.46)",
+  // Screen header
+  screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  kicker: { color: pass.textMuted, fontSize: 10, letterSpacing: 2 },
+  screenTitle: { color: pass.textDark, fontSize: 28, lineHeight: 32, letterSpacing: 0 },
+  headButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: pass.orange,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: pass.border,
   },
-  heroAvatarText: { color: colors.ink, fontSize: 24 },
-  heroName: { color: colors.ink, fontSize: 22, lineHeight: 25 },
-  heroMail: { color: "#A3B1C6", fontSize: 12, marginTop: 1 },
-  heroCity: { color: "#91A1B4", fontSize: 12, marginTop: 1 },
-  refBadge: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.66)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  refBadgeText: { color: colors.ink, fontSize: 11, letterSpacing: 1.5 },
+  headButtonText: { color: pass.textLight, fontSize: 18 },
 
-  loyaltyCard: {
+  // Physical Pass Hero
+  passHero: { marginBottom: 24 },
+  passHeroTop: {
+    backgroundColor: pass.mint,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderWidth: 3,
+    borderBottomWidth: 0,
+    borderColor: pass.border,
+    padding: 20,
+    paddingBottom: 18,
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  passHeroHeader: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 18 },
+  passAvatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 6,
+    backgroundColor: pass.orange,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passAvatarText: { color: pass.textLight, fontSize: 22 },
+  passHeroLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 2, marginBottom: 3 },
+  passHeroName: { color: pass.textDark, fontSize: 18, lineHeight: 21 },
+  passHeroCity: { color: pass.textDark, fontSize: 10, letterSpacing: 1.5, marginTop: 2 },
+  passRefBadge: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: "flex-start",
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passRefBadgeText: { color: pass.textDark, fontSize: 11, letterSpacing: 1.5 },
+  passIdStrip: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passIdLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 2, marginBottom: 3 },
+  passIdNumber: { color: pass.textDark, fontSize: 16, letterSpacing: 1.5 },
+  passBalance: { flexDirection: "row", alignItems: "flex-end", gap: 12, marginBottom: 18 },
+  passBalanceLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 1.5, marginBottom: 4 },
+  passBalanceValue: { color: pass.textDark, fontSize: 52, lineHeight: 52, letterSpacing: 0 },
+  passBalanceSub: { color: pass.textDark, fontSize: 14, marginBottom: 6 },
+  passBalanceSplit: { gap: 8 },
+  passBalanceChip: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 72,
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passBalanceChipValue: { color: pass.textDark, fontSize: 15, lineHeight: 17 },
+  passBalanceChipLabel: { color: pass.textDark, fontSize: 8, letterSpacing: 1, marginTop: 2 },
+  passProgress: { gap: 6 },
+  passProgressTrack: {
+    height: 10,
+    borderRadius: 0,
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passProgressFill: { height: "100%", backgroundColor: pass.orange, borderRadius: 0 },
+  passProgressLabel: { color: pass.textDark, fontSize: 9, letterSpacing: 0.5 },
+  passHeroBottom: {
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderWidth: 3,
+    borderTopWidth: 0,
+    borderColor: pass.border,
+    padding: 16,
+    gap: 12,
+    shadowColor: "#000000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  passQrSection: { flexDirection: "row", gap: 14, alignItems: "center" },
+  passQrBox: {
+    padding: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passQrHint: { color: pass.textMid, fontSize: 12, lineHeight: 16, flex: 1 },
+  passQrBtn: {
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  passQrBtnOrange: { backgroundColor: pass.orange },
+  passQrBtnText: { color: pass.textDark, fontSize: 12 },
+  passQrBtnTextBlue: { color: pass.textLight },
+
+  // Quick actions
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
+  quickPressable: { width: "48.5%" },
+  quickCard: {
+    padding: 14,
+    minHeight: 92,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  quickIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 9,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  quickIconText: { fontSize: 18 },
+  quickLabel: { fontSize: 13 },
+  quickSub: { fontSize: 11, marginTop: 2 },
+
+  // Stats
+  statsRow: { flexDirection: "row", gap: 9, marginBottom: 12 },
+  statTile: {
+    flex: 1,
+    padding: 14,
+    minHeight: 72,
+    borderRadius: 8,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  statValue: { fontSize: 21, lineHeight: 23 },
+  statLabel: { fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
+
+  row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+    paddingVertical: 12,
+    gap: 10,
   },
-  loyaltyLeft: { flex: 1 },
-  loyaltyLabel: { color: "rgba(255,255,255,0.4)", fontSize: 9, letterSpacing: 1.5, marginBottom: 3 },
-  loyaltyId: { color: colors.ink, fontSize: 15, letterSpacing: 1, opacity: 0.85 },
-  loyaltyIdSep: { color: colors.ink, opacity: 0.4 },
-  loyaltyRight: { alignItems: "flex-end" },
-  loyaltyCardLabel: { color: "rgba(255,255,255,0.4)", fontSize: 9, letterSpacing: 1.5, marginBottom: 3 },
-  loyaltyCardNumber: { color: "#85F5F2", fontSize: 20, letterSpacing: 2 },
 
-  balancePanel: { borderRadius: 30, backgroundColor: "rgba(255,255,255,0.54)", padding: 14, flexDirection: "row", justifyContent: "space-between", gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
-  balanceLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
-  balanceValue: { color: colors.ink, fontSize: 42, lineHeight: 45, marginTop: 2 },
-  balanceSub: { color: "#91A1B4", fontSize: 12 },
-  balanceSplit: { width: 96, gap: 7 },
-  miniBalance: { backgroundColor: "rgba(255,255,255,0.50)", borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8 },
-  miniBalanceValue: { color: colors.ink, fontSize: 16, lineHeight: 18 },
-  miniBalanceLabel: { color: "#91A1B4", fontSize: 8, letterSpacing: 0.8, marginTop: 2 },
-  levelBlock: { marginTop: 12 },
-  levelHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 7 },
-  levelText: { color: "#91A1B4", fontSize: 11 },
-  levelTrack: { height: 9, borderRadius: 8, backgroundColor: "rgba(163,177,198,0.16)", overflow: "hidden" },
-  levelFill: { height: "100%", borderRadius: 8, backgroundColor: "rgba(133,245,242,0.92)" },
-
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
-  quickPressable: { width: "48.5%" },
-  quickCard: { padding: 12, minHeight: 92, borderRadius: 26 },
-  quickIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", marginBottom: 9 },
-  quickIconMint: { backgroundColor: "rgba(236,255,235,0.92)" },
-  quickIconBlue: { backgroundColor: "rgba(235,254,255,0.92)" },
-  quickIconPink: { backgroundColor: "rgba(255,244,254,0.92)" },
-  quickIconWhite: { backgroundColor: "rgba(255,255,255,0.80)" },
-  quickIconText: { color: "#7FAFC2", fontSize: 20 },
-  quickLabel: { color: colors.ink, fontSize: 14 },
-  quickSub: { color: "#91A1B4", fontSize: 11, marginTop: 2 },
-
-  statsRow: { flexDirection: "row", gap: 9, marginBottom: 12 },
-  statTile: { flex: 1, padding: 12, minHeight: 72, borderRadius: 24 },
-  statValue: { color: colors.ink, fontSize: 21, lineHeight: 23 },
-  statLabel: { color: "#91A1B4", fontSize: 9, marginTop: 4, letterSpacing: 0.8, fontWeight: "700" },
-
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
-
+  // Section header
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  h2: { color: colors.ink, fontSize: 23 },
-  sectionAction: { backgroundColor: "#F9FBFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 1 },
-  sectionActionText: { color: "#91A1B4", fontSize: 11 },
-  infoCard: { marginBottom: 18, padding: 0, borderRadius: 28 },
+  h2: { color: pass.textDark, fontSize: 22 },
+  sectionAction: {
+    backgroundColor: pass.orange,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 2,
+    borderColor: pass.border,
+  },
+  sectionActionText: { color: pass.textLight, fontSize: 11 },
+
+  // Info / cards
+  infoCard: {
+    marginBottom: 18,
+    padding: 0,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: pass.border,
+    overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
   accountGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
-  accountTile: { width: "48.5%", padding: 14, minHeight: 84, borderRadius: 28 },
-  accountLabel: { color: "#91A1B4", fontSize: 9, letterSpacing: 0.8 },
-  accountValue: { color: colors.ink, fontSize: 17, marginTop: 8 },
+  accountTile: {
+    width: "48.5%",
+    padding: 14,
+    minHeight: 80,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  accountLabel: { color: pass.textMuted, fontSize: 9, letterSpacing: 0.8 },
+  accountValue: { color: pass.textDark, fontSize: 17, marginTop: 8 },
 
   badgeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
-  badgeCard: { width: "31.4%", padding: 11, alignItems: "center", minHeight: 96, borderRadius: 24 },
+  badgeCard: {
+    width: "31.4%",
+    padding: 11,
+    alignItems: "center",
+    minHeight: 92,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
   badgeIcon: { fontSize: 24, marginBottom: 5 },
-  badgeName: { color: colors.ink, fontSize: 12 },
-  badgeRarity: { color: "#91A1B4", fontSize: 9, marginTop: 2, letterSpacing: 0.5, fontWeight: "700" },
+  badgeName: { color: pass.textDark, fontSize: 12 },
+  badgeRarity: { color: pass.textMuted, fontSize: 9, marginTop: 2, letterSpacing: 0.5 },
 
-  referralCard: { padding: 17, marginBottom: 16, alignItems: "center", borderRadius: 32 },
-  referralLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5, fontWeight: "700", marginBottom: 8 },
-  referralCode: { color: colors.ink, fontSize: 25, letterSpacing: 4 },
-  referralHint: { color: "#91A1B4", fontSize: 11, marginTop: 8, textAlign: "center" },
-  qrWrap: { alignItems: "center", marginTop: 16, padding: 12, backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 20 },
-  qrHint: { color: "#91A1B4", fontSize: 11, marginTop: 8, textAlign: "center" },
-  referralBtns: { flexDirection: "row", gap: 10, marginTop: 14 },
-  referralBtnInner: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 18, paddingVertical: 10 },
-  referralBtnText: { color: colors.ink, fontSize: 13 },
-  refsCount: { color: colors.ink, fontSize: 12, fontWeight: "700", marginTop: 12 },
+  referralCard: {
+    padding: 18,
+    marginBottom: 16,
+    alignItems: "center",
+    borderRadius: 8,
+    backgroundColor: pass.orange,
+    borderWidth: 3,
+    borderColor: pass.border,
+    shadowColor: "#000000",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  referralLabel: { color: pass.textLight, fontSize: 10, letterSpacing: 2, marginBottom: 6 },
+  referralCode: { color: pass.textLight, fontSize: 26, letterSpacing: 4 },
+  referralHint: { color: pass.textLight, fontSize: 11, marginTop: 6, textAlign: "center" },
+  refsCount: { color: pass.textLight, fontSize: 12, fontWeight: "700", marginTop: 14 },
   emptyHistory: { padding: 18, alignItems: "center" },
   emptyHistoryText: { fontSize: 13, textAlign: "center" },
 
   fieldLabel: { fontSize: 11, letterSpacing: 0.5 },
   avatarRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginBottom: 12 },
-  avatarDot: { width: 32, height: 32, borderRadius: 16 },
+  avatarDot: { width: 32, height: 32, borderRadius: 4, borderWidth: 2, borderColor: pass.border },
 
   cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
-  cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },
-  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
-  cityChipIdle: { backgroundColor: "rgba(249,251,255,0.66)" },
+  cityChip: { flex: 1, borderRadius: 4, paddingVertical: 10, alignItems: "center", borderWidth: 2, borderColor: pass.border },
+  cityChipActive: { backgroundColor: pass.orange },
+  cityChipIdle: { backgroundColor: "#FFFFFF" },
   cityChipText: { fontSize: 12 },
 
   langRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  langChip: { paddingVertical: 12, borderRadius: 99, alignItems: "center" },
+  langChip: { paddingVertical: 12, borderRadius: 4, alignItems: "center", borderWidth: 2 },
   langChipText: { fontSize: 13 },
-  langChipActive: { color: colors.ink, fontSize: 13 },
+  langChipActive: { fontSize: 13 },
 
-  signOut: { padding: 14, borderRadius: 99, alignItems: "center" },
-  signOutText: { color: "#DC2626", fontSize: 14 },
+  signOut: { padding: 14, borderRadius: 6, alignItems: "center", borderWidth: 2, borderColor: pass.border },
+  signOutText: { color: "#000000", fontSize: 14 },
 })

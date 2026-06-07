@@ -370,7 +370,7 @@ function TgServiceStep({ currentLng, onChangeLang, onContinue }: {
       </View>
 
       <Animated.View style={[s.tgWelcomeBody, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        <AyooLogo width={120} height={70} />
+        <AyooLogo width={154} height={70} />
         <Text style={[s.tgHello, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 16 }]}>
           {t("serviceTitle", "Welcome to ayoo")}
         </Text>
@@ -382,7 +382,7 @@ function TgServiceStep({ currentLng, onChangeLang, onContinue }: {
           {features.map((f) => (
             <View key={f.icon} style={[s.featureRow, { backgroundColor: theme.bg, borderColor: theme.border }]}>
               <View style={s.featureIcon}>
-                <Text style={{ fontSize: 18, color: "#91A1B4" }}>{f.icon}</Text>
+                <Text style={{ fontSize: 18, color: "#000000" }}>{f.icon}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.featureTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>{f.title}</Text>
@@ -457,7 +457,7 @@ function TgCouponStep({ name, giftToken, onContinue }: {
             <View style={s.couponDivider} />
 
             <View style={s.couponTop}>
-              <AyooLogo width={80} height={47} />
+              <AyooLogo width={103} height={47} />
               <Text style={[s.couponTitle, { fontFamily: fonts.bodyBold }]}>
                 {t("couponTitle", "Congratulations!")}
               </Text>
@@ -812,7 +812,7 @@ function Step0({ onPick }: { onPick: (lng: SupportedLocale) => void }) {
     <View style={s.step}>
       <View style={{ alignItems: "center", marginBottom: 24 }}>
         <View style={[s.logoOrb, theme.shadowGlow, { alignItems: "center", justifyContent: "center" }]}>
-          <AyooLogo width={120} height={70} />
+          <AyooLogo width={154} height={70} />
         </View>
         <Text style={[s.tagline, { color: theme.textSecondary, marginTop: 12 }]}>{t("tagline", "Loyalty that competes for you")}</Text>
       </View>
@@ -1167,7 +1167,7 @@ const s = StyleSheet.create({
   },
   featureTitle: { fontSize: 14, marginBottom: 2 },
   featureDesc: { fontSize: 12, lineHeight: 16 },
-  featureSub: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
+  featureSub: { color: "#000000", fontSize: 12, marginTop: 2 },
 
   // Coupon
   couponGlow: {
@@ -1304,15 +1304,15 @@ const s = StyleSheet.create({
   input: { padding: 14, fontSize: 15 },
   cityRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center" },
-  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
-  cityChipIdle: { backgroundColor: "rgba(249,251,255,0.66)" },
+  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#000000", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
+  cityChipIdle: { backgroundColor: "#FFFFFF" },
   cityChipText: { fontSize: 13 },
 
-  bonusIcon: { color: "#91A1B4", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
+  bonusIcon: { color: "#000000", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
   bonusTitle: { color: colors.ink, fontSize: 25, lineHeight: 28, textAlign: "center" },
-  bonusSub: { color: "#91A1B4", fontSize: 12, marginTop: 6 },
+  bonusSub: { color: "#000000", fontSize: 12, marginTop: 6 },
   bonusHint: { color: colors.ink, fontSize: 12, fontWeight: "700", marginBottom: 8 },
-  skipHint: { color: "#91A1B4", fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  skipHint: { color: "#000000", fontSize: 12, fontWeight: "700", marginBottom: 8 },
 
   bigTitle: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 13, lineHeight: 18 },

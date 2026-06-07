@@ -220,9 +220,9 @@ const s = StyleSheet.create({
 
   hero: { padding: 26, alignItems: "center", marginBottom: 24, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  heroLabel: { color: "#000000", fontSize: 11, letterSpacing: 1.5 },
   heroValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
-  heroSub: { color: "#91A1B4", fontSize: 13, marginBottom: 12 },
+  heroSub: { color: "#000000", fontSize: 13, marginBottom: 12 },
   multBadge: { backgroundColor: "rgba(255,255,255,0.58)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 99 },
   multText: { color: colors.ink, fontSize: 12, letterSpacing: 0.5 },
 

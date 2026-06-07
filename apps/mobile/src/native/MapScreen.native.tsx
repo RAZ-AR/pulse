@@ -178,7 +178,7 @@ export default function MapScreen() {
           </Text>
           <Pressable
             onPress={() => setDenied(false)}
-            style={[s.dismissBtn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}
+            style={[s.dismissBtn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}
           >
             <Text style={{ color: theme.text, fontFamily: fonts.bodyBold }}>{t("common:done", "OK")}</Text>
           </Pressable>
@@ -191,18 +191,18 @@ export default function MapScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   map: { ...StyleSheet.absoluteFillObject },
-  loading: { position: "absolute", top: 16, alignSelf: "center", padding: 10, backgroundColor: "rgba(249,251,255,0.86)", borderRadius: 20 },
+  loading: { position: "absolute", top: 16, alignSelf: "center", padding: 10, backgroundColor: "#FFFFFF", borderRadius: 20 },
   badge: { position: "absolute", top: 16, right: 16, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
   cityBadges: { position: "absolute", top: 16, left: 16, gap: 8 },
   cityBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
-  cityBadgeActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  cityBadgeActive: { backgroundColor: "#FFFFFF", shadowColor: "#000000", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   cityBadgeActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
   filtersWrap: { position: "absolute", left: 16, right: 16, bottom: 26 },
   filters: { gap: 8, paddingRight: 32 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#000000", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   filterChipActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
-  filterChipIdle: { backgroundColor: "rgba(249,251,255,0.68)" },
+  filterChipIdle: { backgroundColor: "#FFFFFF" },
   filterText: { fontSize: 11 },
   deniedCard: { position: "absolute", bottom: 24, left: 16, right: 16, padding: 18, borderRadius: 34 },
   deniedTitle: { fontSize: 14, fontWeight: "700", marginBottom: 4 },

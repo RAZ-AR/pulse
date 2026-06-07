@@ -5,6 +5,7 @@ const fs = require("fs")
 const projectRoot = __dirname
 const workspaceRoot = path.resolve(projectRoot, "../..")
 const workspaceModules = path.resolve(workspaceRoot, "node_modules")
+const workspacePackages = path.resolve(workspaceRoot, "packages")
 
 // Packages that use "exports" field only (no "main") — map them to their dist entry
 const ESM_ONLY_PACKAGES = {
@@ -14,7 +15,7 @@ const ESM_ONLY_PACKAGES = {
 
 const config = getDefaultConfig(projectRoot)
 
-config.watchFolders = [workspaceRoot]
+config.watchFolders = [workspacePackages]
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
@@ -37,6 +38,12 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     }
   }
   return context.resolveRequest(context, moduleName, platform)
+}
+
+// Use default (Babel) transform for web — Hermes transform hangs in this monorepo setup
+config.transformer = {
+  ...config.transformer,
+  unstable_transformProfile: "default",
 }
 
 module.exports = config

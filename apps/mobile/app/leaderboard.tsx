@@ -317,10 +317,10 @@ const s = StyleSheet.create({
 
   myRankBanner: { marginHorizontal: 16, marginBottom: 4, padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", overflow: "hidden", borderRadius: 30 },
   myRankBannerBlob: { position: "absolute", top: -28, right: -28, width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: "rgba(167,232,238,0.25)" },
-  myRankLabel: { color: "#91A1B4", fontSize: 10, letterSpacing: 1 },
+  myRankLabel: { color: "#000000", fontSize: 10, letterSpacing: 1 },
   myRankValue: { color: colors.ink, fontSize: 28 },
   myRankPts: { color: colors.ink, fontSize: 20, fontWeight: "800" },
-  myRankPtsLabel: { color: "#91A1B4", fontSize: 11 },
+  myRankPtsLabel: { color: "#000000", fontSize: 11 },
 
   list: { padding: 16, paddingBottom: 40 },
   row: { flexDirection: "row", alignItems: "center", padding: 14 },

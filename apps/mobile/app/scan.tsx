@@ -334,7 +334,7 @@ function CameraPhase({
         <Text style={[s.dialogText, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "ayoo needs your camera to scan receipts.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }]}>
+        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#FFFFFF" }]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </View>
@@ -410,7 +410,7 @@ function ConfirmPhase({
       <Field label={t("currency", "Currency")} value={ocr.currency} onChangeText={(v) => onChange({ ...ocr, currency: v.toUpperCase() })} theme={theme} />
       <Field label={t("date", "Date (YYYY-MM-DD)")} value={ocr.date} onChangeText={(v) => onChange({ ...ocr, date: v })} theme={theme} />
       <Field label={t("receiptNumber", "Receipt # (optional)")} value={ocr.receiptNumber} onChangeText={(v) => onChange({ ...ocr, receiptNumber: v })} theme={theme} />
-      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: "#F9FBFF", marginTop: 12 }]}>
+      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: "#FFFFFF", marginTop: 12 }]}>
         <Text style={{ color: theme.text, fontWeight: "700" }}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
       </Pressable>
     </ScrollView>
