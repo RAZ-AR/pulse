@@ -329,7 +329,7 @@ export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 
   const next     = nextPetStage(stage)
   const progress = petProgress(lifetimePoints)
   const petTranslateX = Animated.add(
-    walkAnim.interpolate({ inputRange: [-1, 1], outputRange: [-15, 15] }),
+    walkAnim.interpolate({ inputRange: [-1, 1], outputRange: [-60, 60] }),
     shakeAnim
   )
   const petTranslateY = hopAnim.interpolate({ inputRange: [-1, 0], outputRange: [-10, 0] })
@@ -337,7 +337,7 @@ export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 
   return (
     <View style={p.wrap}>
       <Pressable onPress={onTap}>
-        <View style={[p.box, { backgroundColor: stage.bg }]}>
+        <View style={p.box}>
           <Animated.View
             style={[
               p.spriteStage,
@@ -372,14 +372,13 @@ const p = StyleSheet.create({
   wrap: { alignItems: "center", gap: 5 },
 
   box: {
-    width: 132,
-    height: 96,
-    borderWidth: 3,
-    borderColor: "#000",
-    borderRadius: 4,
+    // Transparent habitat — no frame, no fill. Pet roams over the card.
+    width: 264,
+    height: 144,
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    overflow: "visible",
   },
   spriteStage: { alignItems: "center", justifyContent: "center" },
 
