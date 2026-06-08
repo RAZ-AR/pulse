@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native"
-import { petStageForPoints, nextPetStage, petProgress } from "@pulse/shared"
+import { resolvePetStage, nextPetStage, petProgress } from "@pulse/shared"
 import { fonts } from "../lib/theme"
 
 // ── Pixel palette ─────────────────────────────────────────────
@@ -263,7 +263,7 @@ type Props = {
 }
 
 export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 5, showProgress = true }: Props) {
-  const stage = petStageForPoints(lifetimePoints)
+  const stage = resolvePetStage(lifetimePoints, !!petName?.trim())
   const frames = PET_SPRITES[stage.key] ?? PET_SPRITES.EGG!
 
   // Frame toggle for idle animation

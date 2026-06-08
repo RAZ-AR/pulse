@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { Stack, useRouter } from "expo-router"
-import { petStageForPoints, nextPetStage, petProgress, PET_STAGES } from "@pulse/shared"
+import { resolvePetStage, nextPetStage, petProgress, PET_STAGES } from "@pulse/shared"
 import { trpc } from "../src/lib/trpc"
 import { PET_SPRITES, PixelSprite } from "../src/components/AyooPet"
 import { fonts, pass } from "../src/lib/theme"
@@ -88,10 +88,10 @@ export default function PetScreen() {
   const [nameInput, setNameInput] = useState("")
 
   const lifetimePoints = lifetimeOf(me.data)
-  const stage = petStageForPoints(lifetimePoints)
+  const petName = me.data?.petName ?? null
+  const stage = resolvePetStage(lifetimePoints, !!petName?.trim())
   const next = nextPetStage(stage)
   const progress = petProgress(lifetimePoints)
-  const petName = me.data?.petName ?? null
   const stageSeen = me.data?.petStageSeen ?? 0
 
   // Celebration: current stage is ahead of what the user has acknowledged.
@@ -177,7 +177,7 @@ export default function PetScreen() {
         <Text style={[s.timelineHead, { fontFamily: fonts.display }]}>EVOLUTION</Text>
         <View style={s.timeline}>
           {PET_STAGES.map((st) => {
-            const unlocked = lifetimePoints >= st.threshold
+            const unlocked = st.index <= stage.index
             const current = st.index === stage.index
             return (
               <View key={st.key} style={[s.row, current && s.rowCurrent]}>

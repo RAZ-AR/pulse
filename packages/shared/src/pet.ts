@@ -1,12 +1,14 @@
 /**
  * Pet (tamagotchi) evolution — single source of truth shared by mobile + backend.
  *
- * Stage and hunger are *derived*, never stored:
- *   - stage  ← lifetime points (the more you earn, the more it evolves)
- *   - hungry ← current streak (skip a day and it gets hungry)
+ * Lifecycle:
+ *   - EGG     ← pet not yet named (un-hatched)
+ *   - HATCHLING+ ← once named, the egg hatches; stage then grows with earned points
+ *   - hungry  ← current streak (skip a day and it gets hungry)
  *
- * The DB only persists `petName` and `petStageSeen` (the highest stage index the
- * user has already celebrated), so we can fire the hatch/evolution moment once.
+ * Naming is the hatch trigger (done at the welcome-bonus step of onboarding, or
+ * later via the /pet screen). The DB persists only `petName` and `petStageSeen`
+ * (highest celebrated stage), so we can fire the hatch/evolution moment once.
  */
 
 export type PetStage = {
@@ -32,6 +34,17 @@ export function petStageForPoints(lifetimePoints: number): PetStage {
     if (lifetimePoints >= stage.threshold) resolved = stage
   }
   return resolved
+}
+
+/**
+ * Resolve the displayed stage.
+ *   - not hatched (no name) → always EGG
+ *   - hatched → at least HATCHLING, then grows with earned points
+ */
+export function resolvePetStage(earnedPoints: number, hatched: boolean): PetStage {
+  if (!hatched) return PET_STAGES[0]!
+  const byPoints = petStageForPoints(earnedPoints)
+  return byPoints.index < 1 ? PET_STAGES[1]! : byPoints
 }
 
 /** Next stage after the given one, or null at max evolution. */

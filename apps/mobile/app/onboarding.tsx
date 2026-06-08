@@ -260,7 +260,7 @@ function TelegramOnboarding() {
     }
     const finalAvatarUrl = avatarUploadUrl ?? `color:${avatarColor}`
     updateProfile.mutate({ avatarUrl: finalAvatarUrl })
-    setStep(3) // → name your pet
+    setStep(4) // → invite friends
   }
 
   async function hatchPet(petName: string) {
@@ -268,7 +268,7 @@ function TelegramOnboarding() {
     if (n) {
       try { await namePet.mutateAsync({ name: n }) } catch { /* non-blocking */ }
     }
-    setStep(4) // → invite friends
+    setStep(3) // → profile
   }
 
   async function shareInvite() {
@@ -309,7 +309,16 @@ function TelegramOnboarding() {
     />
   )
 
+  // Step 2: pet hatches from the egg right after the welcome bonus reveal.
   if (step === 2) return (
+    <TgPetStep
+      onHatch={hatchPet}
+      onSkip={() => setStep(3)}
+      isPending={namePet.isPending}
+    />
+  )
+
+  if (step === 3) return (
     <TgProfileStep
       displayName={displayName}
       setDisplayName={setDisplayName}
@@ -325,16 +334,8 @@ function TelegramOnboarding() {
       setConsent={(v) => { setConsent(v); if (v) setConsentError(false) }}
       consentError={consentError}
       isPending={completeOnboarding.isPending}
-      onBack={() => setStep(1)}
+      onBack={() => setStep(2)}
       onFinish={finish}
-    />
-  )
-
-  if (step === 3) return (
-    <TgPetStep
-      onHatch={hatchPet}
-      onSkip={() => setStep(4)}
-      isPending={namePet.isPending}
     />
   )
 
@@ -384,10 +385,10 @@ function TgPetStep({ onHatch, onSkip, isPending }: {
         </Animated.View>
 
         <Text style={[s.tgHello, { fontFamily: fonts.displayHeavy, marginTop: 24 }]}>
-          {t("petTitle", "Meet your pet")}
+          {t("petTitle", "Your egg is hatching!")}
         </Text>
         <Text style={[s.tgTagline, { marginBottom: 28 }]}>
-          {t("petSubtitle", "Name it to hatch. It grows as you earn points.")}
+          {t("petSubtitle", "Your 500 points come with a pet. Name it to hatch — it grows as you earn.")}
         </Text>
 
         <View style={s.tgInput}>

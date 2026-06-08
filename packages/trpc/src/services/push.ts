@@ -57,6 +57,8 @@ export async function notifyPetEvolution(
       select: { pushToken: true, language: true, petName: true, totalEarnedLifetime: true },
     })
     if (!user?.pushToken) return
+    // Un-hatched pets (no name) still show as an egg — don't announce evolutions.
+    if (!user.petName?.trim()) return
 
     const after = user.totalEarnedLifetime
     const before = after - pointsAdded
@@ -65,7 +67,7 @@ export async function notifyPetEvolution(
 
     const lang = (user.language ?? "EN") as "EN" | "RU" | "SR"
     const stageName = PET_STAGE_NAMES[stageAfter.key]?.[lang] ?? stageAfter.key
-    const pet = user.petName ?? (lang === "RU" ? "Питомец" : lang === "SR" ? "Ljubimac" : "Your pet")
+    const pet = user.petName
 
     const [title, body] = lang === "RU"
       ? ["✨ Питомец эволюционировал!", `${pet} теперь ${stageName}. Загляни в приложение!`]
