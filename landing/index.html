@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ayoo — loyalty that competes for you</title>
+<meta name="description" content="ayoo — earn points anywhere, spend at partners. Venues compete on their points rate." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Climate+Crisis&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F4F0; --card:#FFFFFF; --ink:#000000;
+    --orange:#ea5b0c; --blue:#273AA8; --teal:#1f71b8; --lilac:#B38BC8; --brown:#806828;
+    --display:"Climate Crisis","Arial Black",Impact,sans-serif;
+    --body:"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:700;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 18px}
+  .hard{box-shadow:8px 8px 0 var(--ink)}
+  .hard-sm{box-shadow:5px 5px 0 var(--ink)}
+  .brd{border:3px solid var(--ink)}
+  .brd2{border:2px solid var(--ink)}
+  .up{text-transform:uppercase}
+  a{color:inherit;text-decoration:none}
+
+  /* ── Header ── */
+  header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:3px solid var(--ink)}
+  .hrow{display:flex;align-items:center;gap:12px;padding:10px 18px;max-width:1200px;margin:0 auto;flex-wrap:wrap}
+  .brand{font-family:var(--display);font-size:30px;color:var(--ink);letter-spacing:-1px}
+  .brand b{color:var(--orange)}
+  .spacer{flex:1}
+  .toggle{display:flex;border:3px solid var(--ink);border-radius:8px;overflow:hidden}
+  .toggle button{font-family:var(--body);font-weight:900;font-size:12px;letter-spacing:1px;padding:9px 16px;background:var(--card);border:none;cursor:pointer;color:var(--ink)}
+  .toggle button.on{background:var(--orange);color:#fff}
+  .toggle button+button{border-left:3px solid var(--ink)}
+  .langs{display:flex;gap:6px}
+  .langs button{font-family:var(--body);font-weight:900;font-size:11px;padding:7px 10px;background:var(--card);border:2px solid var(--ink);border-radius:6px;cursor:pointer;color:var(--ink)}
+  .langs button.on{background:var(--ink);color:#fff}
+
+  /* ── Pixel pet ── */
+  .pet{display:grid;grid-template-columns:repeat(14,var(--px));line-height:0}
+  .pet i{width:var(--px);height:var(--px);display:block}
+  .hero-pet{--px:clamp(9px,2.4vw,20px)}
+  .icon-pet{--px:4px}
+  .pet-icon{padding:5px;background:var(--card);border:2px solid var(--ink);border-radius:5px}
+
+  /* ── Hero ── */
+  .hero{padding:46px 0 30px}
+  .kicker{font-size:13px;letter-spacing:3px;font-weight:900}
+  h1{font-family:var(--display);font-weight:400;line-height:.92;letter-spacing:-2px;
+     font-size:clamp(56px,13vw,200px);text-transform:uppercase;margin:14px 0}
+  .sub{font-size:clamp(16px,2.2vw,26px);max-width:760px;line-height:1.25}
+  .heroGrid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+  .heroPetBox{background:var(--orange);border:3px solid var(--ink);border-radius:14px;padding:26px;display:flex;align-items:center;justify-content:center;min-width:230px;min-height:230px;position:relative;overflow:hidden}
+  .dot{position:absolute;width:18px;height:18px;background:rgba(0,0,0,.12)}
+  .cta{display:inline-block;margin-top:26px;font-family:var(--display);font-size:clamp(18px,2.4vw,26px);
+       background:var(--ink);color:#fff;padding:18px 34px;border-radius:10px;border:3px solid var(--ink)}
+  .cta.alt{background:var(--orange);color:#fff}
+
+  /* ── Sections ── */
+  section{padding:34px 0}
+  .secHead{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,72px);text-transform:uppercase;letter-spacing:-1px;line-height:.95;margin-bottom:20px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .card{background:var(--card);border:3px solid var(--ink);border-radius:12px;padding:22px;box-shadow:8px 8px 0 var(--ink)}
+  .card .big{font-family:var(--display);font-size:clamp(40px,7vw,76px);line-height:.9;color:var(--orange)}
+  .card .ct{font-size:15px;margin-top:12px;line-height:1.3}
+  .card.b1{background:var(--orange)} .card.b1 .big{color:#000}
+  .card.b2{background:var(--lilac)} .card.b2 .big{color:#000}
+  .card.b3{background:var(--teal)} .card.b3 .big{color:#fff} .card.b3 .ct{color:#fff}
+
+  .chips{display:flex;flex-wrap:wrap;gap:12px}
+  .chip{background:var(--card);border:3px solid var(--ink);border-radius:10px;padding:14px 18px;font-size:16px;box-shadow:5px 5px 0 var(--ink)}
+  .collRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:22px}
+
+  /* ── How ── */
+  .how{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .step .n{font-family:var(--display);font-size:clamp(64px,12vw,150px);line-height:.85;color:var(--orange)}
+  .step .tx{font-size:16px;margin-top:8px;max-width:280px;line-height:1.3}
+  @media(max-width:720px){.how{grid-template-columns:1fr}.heroGrid{grid-template-columns:1fr}.heroPetBox{justify-self:start}}
+
+  /* ── Footer CTA ── */
+  .foot{background:var(--ink);color:#fff;border-radius:16px;padding:40px 26px;text-align:center;margin:30px 0}
+  .foot h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,84px);text-transform:uppercase;line-height:.95}
+  .foot .cta{background:#fff;color:#000;border-color:#fff;margin-top:22px}
+  .barcode{display:flex;gap:3px;height:46px;justify-content:center;margin-top:26px;opacity:.9}
+  .barcode i{background:#fff;display:block}
+  .legal{font-size:11px;color:#888;padding:24px 0 40px;text-align:center;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <div class="brand">ay<b>oo</b></div>
+    <div class="spacer"></div>
+    <div class="toggle" id="roleToggle">
+      <button data-role="client" class="on" data-k="nav_client">CLIENT</button>
+      <button data-role="partner" data-k="nav_partner">PARTNER</button>
+    </div>
+    <div class="langs" id="langs">
+      <button data-lang="en" class="on">EN</button>
+      <button data-lang="sr">SR</button>
+      <button data-lang="ru">RU</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div class="heroGrid">
+      <div>
+        <div class="kicker" id="kicker"></div>
+        <h1 id="hero"></h1>
+        <p class="sub" id="sub"></p>
+        <a class="cta" id="cta" href="#" target="_blank" rel="noopener"></a>
+      </div>
+      <div class="heroPetBox" id="heroPetBox">
+        <div class="pet hero-pet" data-pet data-key="HATCHLING" id="heroPet"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="wrap">
+    <div class="secHead" id="benHead"></div>
+    <div class="cards" id="benefits"></div>
+  </section>
+
+  <section class="wrap">
+    <div class="secHead" id="gameHead"></div>
+    <div class="chips" id="game"></div>
+    <div class="collRow" id="collRow"></div>
+  </section>
+
+  <section class="wrap">
+    <div class="secHead" id="howHead"></div>
+    <div class="how" id="how"></div>
+  </section>
+
+  <div class="wrap">
+    <div class="foot">
+      <h2 id="footTitle"></h2>
+      <a class="cta" id="footCta" href="#" target="_blank" rel="noopener"></a>
+      <div class="barcode" id="barcode"></div>
+    </div>
+    <div class="legal">ayoo · loyalty that competes for you · EN / SR / RU</div>
+  </div>
+</main>
+
+<script>
+// ── Pixel sprites: 14×14, two frames. "K" = black, "." = transparent ──
+const S = {
+  EGG:[[".....KKKK.....","...KK....KK...","..K........K..",".K..........K.",".K..........K.","K............K","K....KKK.....K","K...K...K....K","K............K","K............K",".K..........K.",".K..........K.","..KK......KK..","....KKKKKK...."],
+       [".....KKKK.....","...KK....KK...","..K........K..",".K..........K.",".K..........K.","K............K","K.....KKK....K","K....K...K...K","K............K","K............K",".K..........K.",".K..........K.","..KK......KK..","....KKKKKK...."]],
+  HATCHLING:[["..............","....KKKKKK....","..KK......KK..",".K..........K.",".K..K..K....K.","K............K","K.....KK.....K","K............K",".K..........K.","..KK......KK..","....KKKKKK....","....K....K....","...KK....KK...",".............."],
+             ["....KKKKKK....","..KK......KK..",".K..........K.",".K..K..K....K.","K............K","K.....KK.....K","KK..........KK",".K..........K.","..KK......KK..","....KKKKKK....",".....K..K.....","..............","..............",".............."]],
+  KID:[["...K......K...","...K......K...","...K......K...","..KKK....KKK..",".K..........K.",".K..K....K..K.",".K..........K.",".K...KKKK...K.","..K........K..","..K........K..","...KK....KK...","....KK..KK....","..............",".............."],
+       ["....K....K....","...K......K...","...K......K...","..KKK....KKK..",".K..........K.",".K..KK..KK..K.",".K..........K.",".K...KKKK...K.","..K........K..","..K........K..","...KK....KK...","...KK......KK.","..............",".............."]],
+  FOX:[[".KK......KK...","K..K....K..K..","K...KKKK...K..","K..........K..","K..K....K..K..","K..........K..","K....KK....K..",".K........K...",".K........K...",".KKKKKKKKKK...","..K..KK..K....","..K..KK..K....",".KK..KK..KK...",".............."],
+       ["..KK....KK....",".K..K..K..K...","K...KKKK...K..","K..........K..","K..K....K..K..","K..........K..","K....KK....K..",".K........K...",".K........K...",".KKKKKKKKKK...","...K..KK..K...","...K..KK..K...","..KK..KK..KK..",".............."]],
+  DRAGON:[["..K......K....","..KK....KK....",".KKKKKKKKKK...","K..........K..","K..KK..KK..K..","K..........K..","K....KK....K..",".K........K...","KKK......KKK..",".KKKKKKKKKK...","..K..KK..K....",".KK..KK..KK...","..............",".............."],
+          ["..K......K....","..KK....KK....",".KKKKKKKKKK...","K..........K..","K..KK..KK..K..","K..........K..","K....KK....K..","KK........KK..",".KK......KK...",".KKKKKKKKKK...","...K..KK..K...","..KK..KK..KK..","..............",".............."]],
+  PHOENIX:[["....K..K......",".....KK.......","K...KKKK...K..",".K.KKKKKK.K...","..KK....KK....",".K..K..K..K...",".K........K...",".K...KK...K...","..KK....KK....","...KKKKKK.....","....K..K......","...K....K.....","..KK....KK....",".............."],
+           ["....K..K......",".....KK.......","..KK....KK....",".KKKKKKKKKK...","K..K....K..K..","K..........K..","K....KK....K..",".KK......KK...","KK........KK..","...KKKKKK.....","....K..K......","..KK....KK....",".K..K..K..K...",".............."]]
+};
+const COLLECTION = ["HATCHLING","KID","FOX","DRAGON","PHOENIX"];
+
+// ── i18n content ──
+const T = {
+  en:{
+    nav_client:"CLIENT", nav_partner:"PARTNER",
+    howHead:"HOW IT WORKS",
+    how:[["1","Earn points anywhere"],["2","Find the partner with the best rate"],["3","Spend with a discount & collect pets"]],
+    footTitle:"LOYALTY THAT COMPETES FOR YOU",
+    client:{
+      kicker:"AYOO · FOR YOU",
+      hero:"Earn points anywhere. Spend at partners.",
+      sub:"Scan any receipt — get points. Partners give up to 10× more.",
+      cta:"Open in Telegram",
+      benHead:"WHY YOU WIN",
+      benefits:[["500","welcome points to start"],["🧾","scan any receipt, anywhere"],["10×","more at partner venues"],["📍","check in — earn & streak"]],
+      gameHead:"GAMIFICATION",
+      game:["🔥 Streaks","🏅 Badges","🎯 Challenges","🥚 Pet collection","👟 Steps ×1.1–1.3","🤝 Refer +50 / +100"]
+    },
+    partner:{
+      kicker:"AYOO · FOR VENUES",
+      hero:"Set your own rate. Win more guests.",
+      sub:"Better rate = higher in the feed. Compete on loyalty, not discounts.",
+      cta:"Become a partner",
+      benHead:"WHY YOU WIN",
+      benefits:[["📈","public rate — you set it"],["🎯","paid challenges & boosts"],["🔁","points spent only at partners"],["📊","live dashboard & analytics"]],
+      gameHead:"WORKS FOR YOU",
+      game:["🤖 Telegram bot, no terminal","⚡ Live in minutes","🔥 Streaks bring guests back","🏅 Badges & quests","🐲 Pets keep them playing","💳 Accept payment in chat"]
+    }
+  },
+  ru:{
+    nav_client:"КЛИЕНТ", nav_partner:"ПАРТНЁР",
+    howHead:"КАК ЭТО РАБОТАЕТ",
+    how:[["1","Заработал баллы где угодно"],["2","Нашёл партнёра с лучшим курсом"],["3","Потратил со скидкой и собрал питомцев"]],
+    footTitle:"ЛОЯЛЬНОСТЬ, КОТОРАЯ БОРЕТСЯ ЗА ТЕБЯ",
+    client:{
+      kicker:"AYOO · ТЕБЕ",
+      hero:"Зарабатывай баллы где угодно. Трать у партнёров.",
+      sub:"Сканируй любой чек — получай баллы. Партнёры дают до 10× больше.",
+      cta:"Открыть в Telegram",
+      benHead:"ТВОЯ ВЫГОДА",
+      benefits:[["500","баллов в подарок на старте"],["🧾","скан чека — где угодно"],["10×","больше у партнёров"],["📍","чек-ин — баллы и серия"]],
+      gameHead:"ГЕЙМИФИКАЦИЯ",
+      game:["🔥 Серии","🏅 Значки","🎯 Челленджи","🥚 Коллекция питомцев","👟 Шаги ×1.1–1.3","🤝 Друг +50 / +100"]
+    },
+    partner:{
+      kicker:"AYOO · ЗАВЕДЕНИЯМ",
+      hero:"Сам назначай курс. Привлекай гостей.",
+      sub:"Курс выгоднее — выше в выдаче. Конкурируй лояльностью, не скидками в минус.",
+      cta:"Стать партнёром",
+      benHead:"ТВОЯ ВЫГОДА",
+      benefits:[["📈","публичный курс — ты его задаёшь"],["🎯","платные челленджи и бусты"],["🔁","баллы тратят только у партнёров"],["📊","дашборд и аналитика онлайн"]],
+      gameHead:"РАБОТАЕТ НА ТЕБЯ",
+      game:["🤖 Telegram-бот, без терминала","⚡ Запуск за минуты","🔥 Серии возвращают гостей","🏅 Значки и квесты","🐲 Питомцы держат интерес","💳 Оплата прямо в чате"]
+    }
+  },
+  sr:{
+    nav_client:"KLIJENT", nav_partner:"PARTNER",
+    howHead:"KAKO RADI",
+    how:[["1","Skupljaj poene bilo gde"],["2","Nađi partnera sa najboljim kursom"],["3","Potroši uz popust i skupljaj ljubimce"]],
+    footTitle:"LOJALNOST KOJA SE BORI ZA TEBE",
+    client:{
+      kicker:"AYOO · ZA TEBE",
+      hero:"Skupljaj poene bilo gde. Troši kod partnera.",
+      sub:"Skeniraj bilo koji račun — dobij poene. Partneri daju do 10× više.",
+      cta:"Otvori u Telegramu",
+      benHead:"ZAŠTO TI",
+      benefits:[["500","poena na poklon za start"],["🧾","skeniraj račun, bilo gde"],["10×","više kod partnera"],["📍","prijavi se — poeni i niz"]],
+      gameHead:"GEJMIFIKACIJA",
+      game:["🔥 Nizovi","🏅 Bedževi","🎯 Izazovi","🥚 Kolekcija ljubimaca","👟 Koraci ×1.1–1.3","🤝 Pozovi +50 / +100"]
+    },
+    partner:{
+      kicker:"AYOO · ZA LOKALE",
+      hero:"Odredi svoj kurs. Privuci goste.",
+      sub:"Bolji kurs = više u listi. Takmiči se lojalnošću, ne popustima.",
+      cta:"Postani partner",
+      benHead:"ZAŠTO TI",
+      benefits:[["📈","javni kurs — ti ga postavljaš"],["🎯","plaćeni izazovi i bustovi"],["🔁","poeni se troše samo kod partnera"],["📊","dashboard i analitika uživo"]],
+      gameHead:"RADI ZA TEBE",
+      game:["🤖 Telegram bot, bez terminala","⚡ Kreni za par minuta","🔥 Nizovi vraćaju goste","🏅 Bedževi i kvestovi","🐲 Ljubimci drže pažnju","💳 Naplata u četu"]
+    }
+  }
+};
+
+const TG_CLIENT = "https://t.me/ayoo_loyalty_bot";
+const TG_PARTNER = "https://t.me/ayoo_loyalty_bot";
+
+let state = {
+  role: localStorage.getItem("ayoo_role") || "client",
+  lang: localStorage.getItem("ayoo_lang") || "en"
+};
+
+function paint(el, key, frame){
+  const rows = (S[key] || S.HATCHLING)[frame] || (S[key]||S.HATCHLING)[0];
+  let html = "";
+  for (const row of rows) for (const ch of row) html += '<i style="background:'+(ch==="K"?"#1A1208":"transparent")+'"></i>';
+  el.innerHTML = html;
+}
+
+function render(){
+  const L = T[state.lang], R = L[state.role];
+  // toggles
+  document.querySelectorAll("#roleToggle button").forEach(b=>b.classList.toggle("on", b.dataset.role===state.role));
+  document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on", b.dataset.lang===state.lang));
+  document.documentElement.lang = state.lang;
+  // nav labels
+  document.querySelector('[data-k="nav_client"]').textContent = L.nav_client;
+  document.querySelector('[data-k="nav_partner"]').textContent = L.nav_partner;
+  // hero
+  kicker.textContent = R.kicker;
+  hero.textContent = R.hero;
+  sub.textContent = R.sub;
+  cta.textContent = R.cta; cta.href = state.role==="client"?TG_CLIENT:TG_PARTNER;
+  cta.classList.toggle("alt", state.role==="partner");
+  // benefits
+  benHead.textContent = R.benHead;
+  benefits.innerHTML = R.benefits.map((b,i)=>'<div class="card '+["b1","","b2","b3"][i%4]+'"><div class="big">'+b[0]+'</div><div class="ct">'+b[1]+'</div></div>').join("");
+  // gamification
+  gameHead.textContent = R.gameHead;
+  game.innerHTML = R.game.map(g=>'<div class="chip">'+g+'</div>').join("");
+  // collection row of pet icons
+  collRow.innerHTML = COLLECTION.map(k=>'<div class="pet-icon"><div class="pet icon-pet" data-pet data-key="'+k+'"></div></div>').join("");
+  // how
+  howHead.textContent = L.howHead;
+  how.innerHTML = L.how.map(s=>'<div class="step"><div class="n">'+s[0]+'</div><div class="tx">'+s[1]+'</div></div>').join("");
+  // footer
+  footTitle.textContent = L.footTitle;
+  footCta.textContent = R.cta; footCta.href = cta.href; footCta.classList.toggle("alt", state.role==="partner");
+  // repaint pets immediately
+  tick(true);
+}
+
+// scattered dots in hero pet box
+(function dots(){
+  const box = document.getElementById("heroPetBox");
+  for(let i=0;i<14;i++){const d=document.createElement("div");d.className="dot";d.style.left=((i*23)%92)+"%";d.style.top=((i*37)%88)+"%";box.appendChild(d);}
+})();
+
+// barcode
+(function bars(){
+  const w=[3,1,2,1,4,1,2,3,1,2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,1,2,4,1,2,3,1,2,1];
+  document.getElementById("barcode").innerHTML = w.map(x=>'<i style="width:'+(x*2.4)+'px"></i>').join("");
+})();
+
+// animation loop: toggle frame; hero pet cycles through the collection
+let frame=0, heroIdx=0, ticks=0;
+function tick(force){
+  if(!force){ frame=1-frame; ticks++; if(ticks%8===0){ heroIdx=(heroIdx+1)%COLLECTION.length; document.getElementById("heroPet").dataset.key=COLLECTION[heroIdx]; } }
+  document.querySelectorAll("[data-pet]").forEach(el=>paint(el, el.dataset.key, frame));
+}
+setInterval(()=>tick(false), 450);
+
+// events
+document.getElementById("roleToggle").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return; state.role=b.dataset.role; localStorage.setItem("ayoo_role",state.role); render();
+});
+document.getElementById("langs").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return; state.lang=b.dataset.lang; localStorage.setItem("ayoo_lang",state.lang); render();
+});
+
+render();
+</script>
+</body>
+</html>
