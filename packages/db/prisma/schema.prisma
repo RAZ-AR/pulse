@@ -125,6 +125,12 @@ model User {
   stepsToday Int @default(0)
   stepsTotal Int @default(0)
 
+  // Pet (tamagotchi) — stage + hunger are derived from points/streak.
+  // We persist only the name and the highest stage the user has acknowledged,
+  // so we can fire the hatch/evolution celebration exactly once per stage.
+  petName      String?
+  petStageSeen Int     @default(0)
+
   // Push notifications (Expo push token)
   pushToken String?
 

@@ -43,6 +43,8 @@ export const userRouter = router({
         lastCheckinAt: true,
         stepsToday: true,
         stepsTotal: true,
+        petName: true,
+        petStageSeen: true,
         cardNumber: true,
         referralCode: true,
         referredById: true,
@@ -423,5 +425,38 @@ export const userRouter = router({
         data: { pushToken: input.token },
       })
       return { ok: true }
+    }),
+
+  /** Name the pet (hatching) — set once during onboarding, editable later. */
+  namePet: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(20).trim() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.user.update({
+        where: { id: ctx.userId },
+        data: { petName: input.name },
+        select: { id: true, petName: true },
+      })
+    }),
+
+  /**
+   * Acknowledge that the user has seen the celebration for a given evolution stage.
+   * Stored as the highest stage index seen so the moment fires exactly once.
+   */
+  acknowledgePetStage: protectedProcedure
+    .input(z.object({ stageIndex: z.number().int().min(0).max(5) }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: { petStageSeen: true },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" })
+      // Only ever move forward — never regress the seen stage.
+      if (input.stageIndex <= user.petStageSeen) return { petStageSeen: user.petStageSeen }
+      const updated = await ctx.db.user.update({
+        where: { id: ctx.userId },
+        data: { petStageSeen: input.stageIndex },
+        select: { petStageSeen: true },
+      })
+      return updated
     }),
 })

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
+import { AyooPet } from "../../src/components/AyooPet"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
@@ -203,6 +204,16 @@ export default function HomeScreen() {
           </View>
 
           <View style={s.pointsBlock}>
+            <View style={s.passPetSpot}>
+              <AyooPet
+                lifetimePoints={lifetimePoints}
+                streak={streak}
+                petName={me.data?.petName}
+                pixelSize={6}
+                showProgress={false}
+                onPress={() => router.push("/pet")}
+              />
+            </View>
             <View style={s.pointsSide}>
               <Text style={[s.pointsLabel, { fontFamily: ticketFonts.bodyBold }]}>POINTS</Text>
               <Text style={[s.pointsCaption, { fontFamily: ticketFonts.bodyBold }]}>VALID MEMBER CREDIT</Text>
@@ -575,6 +586,7 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
     marginBottom: 10,
   },
+  passPetSpot: { alignSelf: "center", marginBottom: 20 },
   pointsNumber: {
     color: ticketColors.black,
     fontSize: 80,
