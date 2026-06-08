@@ -9,7 +9,7 @@ import { decodeSerbiaQrUrl, fetchVendorInfo } from "../services/serbia-qr"
 import { checkReceiptScanLimits, checkImageFingerprint, checkVendorVelocity } from "../services/rate-limit"
 import { trackSpend } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
-import { sendPushToUser, sendTelegram } from "../services/push"
+import { sendPushToUser, sendTelegram, notifyPetEvolution } from "../services/push"
 import {
   SCAN_POINTS_PER_CURRENCY,
   RECEIPT_MAX_AGE_DAYS,
@@ -343,6 +343,7 @@ export const transactionRouter = router({
       })
 
       await notifyBadges(ctx.db, ctx.userId, result.newBadges)
+      await notifyPetEvolution(ctx.db, ctx.userId, totalPoints)
 
       return {
         transactionId: result.transaction.id,
@@ -480,6 +481,7 @@ export const transactionRouter = router({
       })
 
       await notifyBadges(ctx.db, ctx.userId, result.newBadges)
+      await notifyPetEvolution(ctx.db, ctx.userId, totalPoints)
 
       return {
         transactionId: result.transaction.id,
@@ -639,6 +641,7 @@ export const transactionRouter = router({
 
       // Notify buyer about new badges
       await notifyBadges(ctx.db, input.userId, result.newBadges)
+      await notifyPetEvolution(ctx.db, input.userId, totalPoints)
 
       // Notify merchant via Telegram (best-effort)
       const merchant = await ctx.db.merchant.findUnique({

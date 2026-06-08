@@ -206,7 +206,7 @@ export default function HomeScreen() {
           <View style={s.pointsBlock}>
             <View style={s.passPetSpot}>
               <AyooPet
-                lifetimePoints={lifetimePoints}
+                lifetimePoints={me.data?.totalEarnedLifetime ?? 0}
                 streak={streak}
                 petName={me.data?.petName}
                 pixelSize={6}

@@ -9,6 +9,7 @@ import { useAuth } from "../src/store/auth"
 import { setLocale } from "../src/lib/i18n"
 import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
+import { PixelSprite, PET_SPRITES } from "../src/components/AyooPet"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import { uploadAvatarFile } from "../src/lib/storage"
 import { getTgInitData, getTgUser, getTgStartParam as getTgParam, isTelegramRuntime } from "../src/lib/telegram"
@@ -136,8 +137,9 @@ function TelegramOnboarding() {
   const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token), retry: false })
   const completeOnboarding = trpc.user.completeOnboarding.useMutation({ onSuccess: () => utils.user.me.invalidate() })
   const updateProfile = trpc.user.updateProfile.useMutation()
+  const namePet = trpc.user.namePet.useMutation({ onSuccess: () => utils.user.me.invalidate() })
 
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0)
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0)
   const [displayName, setDisplayName] = useState(() => getTgUserName() ?? "")
   const [birthday, setBirthday] = useState("")
   const [avatarColor, setAvatarColor] = useState(0)
@@ -258,7 +260,15 @@ function TelegramOnboarding() {
     }
     const finalAvatarUrl = avatarUploadUrl ?? `color:${avatarColor}`
     updateProfile.mutate({ avatarUrl: finalAvatarUrl })
-    setStep(3)
+    setStep(3) // → name your pet
+  }
+
+  async function hatchPet(petName: string) {
+    const n = petName.trim()
+    if (n) {
+      try { await namePet.mutateAsync({ name: n }) } catch { /* non-blocking */ }
+    }
+    setStep(4) // → invite friends
   }
 
   async function shareInvite() {
@@ -320,11 +330,92 @@ function TelegramOnboarding() {
     />
   )
 
+  if (step === 3) return (
+    <TgPetStep
+      onHatch={hatchPet}
+      onSkip={() => setStep(4)}
+      isPending={namePet.isPending}
+    />
+  )
+
   return (
     <TgInviteStep
       onShare={shareInvite}
       onSkip={goHome}
     />
+  )
+}
+
+// ── Step 3: Name your pet (hatching) ──────────────────────────
+function TgPetStep({ onHatch, onSkip, isPending }: {
+  onHatch: (name: string) => void
+  onSkip: () => void
+  isPending: boolean
+}) {
+  const { t } = useTranslation("auth")
+  const [name, setName] = useState("")
+  const [frame, setFrame] = useState(0)
+  const bob = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    const id = setInterval(() => setFrame((f) => 1 - f), 480)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bob, { toValue: -6, duration: 600, useNativeDriver: true }),
+        Animated.timing(bob, { toValue: 6, duration: 600, useNativeDriver: true }),
+      ])
+    ).start()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const eggFrames = PET_SPRITES.EGG!
+  const canHatch = name.trim().length > 0 && !isPending
+
+  return (
+    <KeyboardAvoidingView style={s.tgFullScreen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <LinearGradient colors={["#0F1115", "#1A1F2E"]} style={StyleSheet.absoluteFill} />
+
+      <View style={s.tgWelcomeBody}>
+        <Animated.View style={[s.petEggBox, { transform: [{ translateY: bob }] }]}>
+          <PixelSprite rows={eggFrames[frame] ?? eggFrames[0]} px={9} />
+        </Animated.View>
+
+        <Text style={[s.tgHello, { fontFamily: fonts.displayHeavy, marginTop: 24 }]}>
+          {t("petTitle", "Meet your pet")}
+        </Text>
+        <Text style={[s.tgTagline, { marginBottom: 28 }]}>
+          {t("petSubtitle", "Name it to hatch. It grows as you earn points.")}
+        </Text>
+
+        <View style={s.tgInput}>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder={t("petPlaceholder", "e.g. Pixel")}
+            placeholderTextColor="rgba(255,255,255,0.35)"
+            autoCapitalize="words"
+            maxLength={20}
+            style={[s.input, { color: "#fff", fontFamily: fonts.body, textAlign: "center" }]}
+          />
+        </View>
+      </View>
+
+      <View style={s.tgBottomSheet}>
+        <Pressable onPress={() => onHatch(name)} disabled={!canHatch} style={[s.tgContinueBtn, !canHatch && { opacity: 0.4 }]}>
+          {isPending
+            ? <ActivityIndicator color={colors.ink} />
+            : <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("petHatch", "Hatch 🥚")}</Text>}
+        </Pressable>
+        <Pressable onPress={onSkip} style={s.skipBtn}>
+          <Text style={[s.skipText, { color: "rgba(255,255,255,0.4)", fontFamily: fonts.body }]}>
+            {t("petSkip", "Skip for now")}
+          </Text>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -1142,6 +1233,13 @@ const s = StyleSheet.create({
     borderRadius: 99,
     padding: 16,
     alignItems: "center",
+  },
+  petEggBox: {
+    padding: 16,
+    backgroundColor: "#F0DFBD",
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: "#1A1208",
   },
 
   logoOrb: {

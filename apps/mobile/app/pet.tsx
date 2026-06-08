@@ -21,10 +21,10 @@ const STAGE_FLAVOR: Record<string, string> = {
 const labelOf = (key: string) => STAGE_LABEL[key] ?? key
 const flavorOf = (key: string) => STAGE_FLAVOR[key] ?? ""
 
-function lifetimeOf(me: { earnedPoints: number; welcomePoints: number; totalEarnedLifetime: number; spentPoints: number } | undefined) {
-  if (!me) return 0
-  const total = me.earnedPoints + me.welcomePoints
-  return Math.max(me.totalEarnedLifetime ?? 0, total + (me.spentPoints ?? 0))
+// The pet grows on genuinely *earned* points — the 500 welcome bonus is
+// excluded so every member starts as an egg and hatches by earning.
+function lifetimeOf(me: { totalEarnedLifetime: number } | undefined) {
+  return me?.totalEarnedLifetime ?? 0
 }
 
 // ── Big animated sprite (float + frame toggle) ────────────────
