@@ -1,5 +1,5 @@
 import type { db as PrismaDb } from "@pulse/db"
-import { petStageForPoints } from "@pulse/shared"
+import { unlockedPets, currentPet } from "@pulse/shared"
 
 type PushMessage = {
   to: string
@@ -41,7 +41,7 @@ const PET_STAGE_NAMES: Record<string, { EN: string; RU: string; SR: string }> = 
 }
 
 /**
- * Fire a push when freshly-earned points cross a pet evolution threshold.
+ * Fire a push when freshly-earned points unlock a NEW pet in the collection.
  * Call AFTER the earning transaction commits. Best-effort — never throws.
  * `pointsAdded` is what was just credited to totalEarnedLifetime.
  */
@@ -57,25 +57,26 @@ export async function notifyPetEvolution(
       select: { pushToken: true, language: true, petName: true, totalEarnedLifetime: true },
     })
     if (!user?.pushToken) return
-    // Un-hatched pets (no name) still show as an egg — don't announce evolutions.
+    // No pet yet (un-hatched) — nothing to announce.
     if (!user.petName?.trim()) return
 
     const after = user.totalEarnedLifetime
     const before = after - pointsAdded
-    const stageAfter = petStageForPoints(after)
-    if (stageAfter.index <= petStageForPoints(before).index) return // no crossing
+    if (unlockedPets(after).length <= unlockedPets(before).length) return // no new pet
+
+    const newPet = currentPet(after, true)
+    if (!newPet) return
 
     const lang = (user.language ?? "EN") as "EN" | "RU" | "SR"
-    const stageName = PET_STAGE_NAMES[stageAfter.key]?.[lang] ?? stageAfter.key
-    const pet = user.petName
+    const petName = PET_STAGE_NAMES[newPet.key]?.[lang] ?? newPet.key
 
     const [title, body] = lang === "RU"
-      ? ["✨ Питомец эволюционировал!", `${pet} теперь ${stageName}. Загляни в приложение!`]
+      ? ["✨ Новый питомец!", `Ты собрал ${petName}. Загляни в коллекцию!`]
       : lang === "SR"
-      ? ["✨ Ljubimac je evoluirao!", `${pet} je sada ${stageName}. Otvori aplikaciju!`]
-      : ["✨ Your pet evolved!", `${pet} is now a ${stageName}. Open the app to see!`]
+      ? ["✨ Novi ljubimac!", `Sakupio si ${petName}. Otvori kolekciju!`]
+      : ["✨ New pet!", `You collected a ${petName}. Open the app to see!`]
 
-    await sendPushToUser(user.pushToken, title, body, { type: "pet_evolution", stage: stageAfter.key })
+    await sendPushToUser(user.pushToken, title, body, { type: "pet_collected", pet: newPet.key })
   } catch {
     // never throw — push is non-critical
   }

@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
-import { AyooPet } from "../../src/components/AyooPet"
+import { AyooPet, PetIcon } from "../../src/components/AyooPet"
+import { collectedPets } from "@pulse/shared"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../../src/lib/trpc"
@@ -149,6 +150,13 @@ export default function HomeScreen() {
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
   const streak = me.data?.currentStreak ?? 0
 
+  // Pet collection — the egg lives only in onboarding, so the home card always
+  // shows at least the first hatched pet. Newest is big + animated; the rest are
+  // small collected icons above the points.
+  const collected = collectedPets(lifetimePoints, true)
+  const currentPetKey = collected[collected.length - 1]?.key ?? "HATCHLING"
+  const collectedIcons = collected.slice(0, -1)
+
   return (
     <ScrollView
       style={s.scroll}
@@ -206,14 +214,25 @@ export default function HomeScreen() {
           <View style={s.pointsBlock}>
             <View style={s.passPetSpot}>
               <AyooPet
-                lifetimePoints={me.data?.totalEarnedLifetime ?? 0}
+                petKey={currentPetKey}
                 streak={streak}
                 petName={me.data?.petName}
                 pixelSize={6}
-                showProgress={false}
                 onPress={() => router.push("/pet")}
               />
             </View>
+
+            {/* Collected pets (all but the newest) — small icons above the balance */}
+            {collectedIcons.length > 0 && (
+              <Pressable onPress={() => router.push("/pet")} style={s.collectionRow}>
+                {collectedIcons.map((pet) => (
+                  <View key={pet.key} style={s.collectionIcon}>
+                    <PetIcon petKey={pet.key} px={3} />
+                  </View>
+                ))}
+              </Pressable>
+            )}
+
             <View style={s.pointsSide}>
               <Text style={[s.pointsLabel, { fontFamily: ticketFonts.bodyBold }]}>POINTS</Text>
               <Text style={[s.pointsCaption, { fontFamily: ticketFonts.bodyBold }]}>VALID MEMBER CREDIT</Text>
@@ -587,6 +606,19 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   passPetSpot: { alignSelf: "center", marginBottom: 20 },
+  collectionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 8,
+  },
+  collectionIcon: {
+    padding: 4,
+    borderWidth: 2,
+    borderColor: ticketColors.black,
+    borderRadius: 4,
+    backgroundColor: ticketColors.white,
+  },
   pointsNumber: {
     color: ticketColors.black,
     fontSize: 80,

@@ -1,30 +1,31 @@
 import { useEffect, useRef, useState } from "react"
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { Stack, useRouter } from "expo-router"
-import { resolvePetStage, nextPetStage, petProgress, PET_STAGES } from "@pulse/shared"
+import { currentPet, nextPet, collectionProgress, collectedPets, PET_COLLECTION } from "@pulse/shared"
 import { trpc } from "../src/lib/trpc"
 import { PET_SPRITES, PixelSprite } from "../src/components/AyooPet"
 import { fonts, pass } from "../src/lib/theme"
 
-// Friendly labels + one-liners per stage (display only — logic lives in shared).
+// Friendly labels + one-liners per creature (display only — logic lives in shared).
 const STAGE_LABEL: Record<string, string> = {
-  EGG: "Egg", HATCHLING: "Hatchling", KID: "Kid", FOX: "Fox", DRAGON: "Dragon", PHOENIX: "Phoenix",
+  HATCHLING: "Hatchling", KID: "Kid", FOX: "Fox", DRAGON: "Dragon", PHOENIX: "Phoenix",
 }
 const STAGE_FLAVOR: Record<string, string> = {
-  EGG: "Something is stirring inside…",
-  HATCHLING: "It hatched! Keep earning to help it grow.",
+  HATCHLING: "Your first companion — hatched from the welcome bonus.",
   KID: "Curious and full of energy.",
   FOX: "Clever and quick on its feet.",
-  DRAGON: "Powerful — few reach this far.",
-  PHOENIX: "Legendary. The final form.",
+  DRAGON: "Powerful — few collect this one.",
+  PHOENIX: "Legendary. The final companion.",
 }
 const labelOf = (key: string) => STAGE_LABEL[key] ?? key
 const flavorOf = (key: string) => STAGE_FLAVOR[key] ?? ""
 
-// The pet grows on genuinely *earned* points — the 500 welcome bonus is
-// excluded so every member starts as an egg and hatches by earning.
-function lifetimeOf(me: { totalEarnedLifetime: number } | undefined) {
-  return me?.totalEarnedLifetime ?? 0
+// Collection points = lifetime balance (welcome bonus included — the first pet
+// hatches from those 500). Mirrors the home card so the two stay in sync.
+function lifetimeOf(me: { earnedPoints: number; welcomePoints: number; totalEarnedLifetime: number; spentPoints: number } | undefined) {
+  if (!me) return 0
+  const total = me.earnedPoints + me.welcomePoints
+  return Math.max(me.totalEarnedLifetime ?? 0, total + (me.spentPoints ?? 0))
 }
 
 // ── Big animated sprite (float + frame toggle) ────────────────
@@ -89,13 +90,14 @@ export default function PetScreen() {
 
   const lifetimePoints = lifetimeOf(me.data)
   const petName = me.data?.petName ?? null
-  const stage = resolvePetStage(lifetimePoints, !!petName?.trim())
-  const next = nextPetStage(stage)
-  const progress = petProgress(lifetimePoints)
+  const pet = currentPet(lifetimePoints, true)! // home shows a pet always (egg is onboarding-only)
+  const next = nextPet(lifetimePoints)
+  const progress = collectionProgress(lifetimePoints)
   const stageSeen = me.data?.petStageSeen ?? 0
+  const collectedCount = collectedPets(lifetimePoints, true).length
 
-  // Celebration: current stage is ahead of what the user has acknowledged.
-  const hasNewEvolution = !!me.data && petName != null && stage.index > stageSeen
+  // Celebration: a new pet was unlocked beyond what the user has acknowledged.
+  const hasNewEvolution = !!me.data && petName != null && pet.index > stageSeen
 
   return (
     <>
@@ -106,19 +108,17 @@ export default function PetScreen() {
         headerTintColor: pass.dark,
       }} />
       <ScrollView style={s.scroll} contentContainerStyle={s.content}>
-        <BigPet stageKey={stage.key} bg={stage.bg} />
+        <BigPet stageKey={pet.key} bg={pet.bg} />
 
-        {/* Evolution celebration */}
+        {/* New-pet celebration */}
         {hasNewEvolution && (
           <View style={s.evoBanner}>
-            <Text style={[s.evoTitle, { fontFamily: fonts.display }]}>
-              {stage.key === "HATCHLING" ? "IT HATCHED!" : "EVOLVED!"}
-            </Text>
+            <Text style={[s.evoTitle, { fontFamily: fonts.display }]}>NEW PET!</Text>
             <Text style={[s.evoSub, { fontFamily: fonts.bodyBold }]}>
-              {petName} is now a {labelOf(stage.key)} {stage.index >= 5 ? "✦" : "→"}
+              You collected a {labelOf(pet.key)} {pet.index >= PET_COLLECTION.length - 1 ? "✦" : "🎉"}
             </Text>
             <Pressable
-              onPress={() => ackStage.mutate({ stageIndex: stage.index })}
+              onPress={() => ackStage.mutate({ stageIndex: pet.index })}
               style={s.evoBtn}
               disabled={ackStage.isPending}
             >
@@ -127,12 +127,12 @@ export default function PetScreen() {
           </View>
         )}
 
-        {/* Naming flow (hatching) — only when no name yet */}
+        {/* Naming flow — only when no name yet */}
         {!petName && me.data && (
           <View style={s.nameCard}>
-            <Text style={[s.nameTitle, { fontFamily: fonts.display }]}>NAME YOUR EGG</Text>
+            <Text style={[s.nameTitle, { fontFamily: fonts.display }]}>NAME YOUR PET</Text>
             <Text style={[s.nameHint, { fontFamily: fonts.bodyBold }]}>
-              Give your companion a name. It grows as you earn points.
+              Give your companion a name. Earn points to collect more pets.
             </Text>
             <TextInput
               value={nameInput}
@@ -147,7 +147,7 @@ export default function PetScreen() {
               disabled={nameInput.trim().length === 0 || namePet.isPending}
               style={[s.nameBtn, (nameInput.trim().length === 0 || namePet.isPending) && s.nameBtnDisabled]}
             >
-              <Text style={[s.nameBtnText, { fontFamily: fonts.bodyBold }]}>HATCH 🥚</Text>
+              <Text style={[s.nameBtnText, { fontFamily: fonts.bodyBold }]}>NAME IT</Text>
             </Pressable>
           </View>
         )}
@@ -155,8 +155,8 @@ export default function PetScreen() {
         {/* Status */}
         {petName && (
           <>
-            <Text style={[s.stageName, { fontFamily: fonts.display }]}>{labelOf(stage.key).toUpperCase()}</Text>
-            <Text style={[s.flavor, { fontFamily: fonts.bodyBold }]}>{flavorOf(stage.key)}</Text>
+            <Text style={[s.stageName, { fontFamily: fonts.display }]}>{labelOf(pet.key).toUpperCase()}</Text>
+            <Text style={[s.flavor, { fontFamily: fonts.bodyBold }]}>{flavorOf(pet.key)}</Text>
 
             {next ? (
               <View style={s.progressWrap}>
@@ -168,22 +168,24 @@ export default function PetScreen() {
                 </Text>
               </View>
             ) : (
-              <Text style={[s.maxLabel, { fontFamily: fonts.bodyBold }]}>✦ MAX EVOLUTION REACHED</Text>
+              <Text style={[s.maxLabel, { fontFamily: fonts.bodyBold }]}>✦ COLLECTION COMPLETE</Text>
             )}
           </>
         )}
 
-        {/* Evolution timeline */}
-        <Text style={[s.timelineHead, { fontFamily: fonts.display }]}>EVOLUTION</Text>
+        {/* Collection */}
+        <Text style={[s.timelineHead, { fontFamily: fonts.display }]}>
+          COLLECTION · {collectedCount}/{PET_COLLECTION.length}
+        </Text>
         <View style={s.timeline}>
-          {PET_STAGES.map((st) => {
-            const unlocked = st.index <= stage.index
-            const current = st.index === stage.index
+          {PET_COLLECTION.map((st) => {
+            const unlocked = lifetimePoints >= st.threshold
+            const isCurrent = st.index === pet.index
             return (
-              <View key={st.key} style={[s.row, current && s.rowCurrent]}>
+              <View key={st.key} style={[s.row, isCurrent && s.rowCurrent]}>
                 <View style={[s.rowSprite, { backgroundColor: unlocked ? st.bg : "#E5E3DD" }]}>
                   {unlocked
-                    ? <PixelSprite rows={(PET_SPRITES[st.key] ?? PET_SPRITES.EGG!)[0]} px={3} />
+                    ? <PixelSprite rows={(PET_SPRITES[st.key] ?? PET_SPRITES.HATCHLING!)[0]} px={3} />
                     : <Text style={s.lock}>🔒</Text>}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -191,10 +193,10 @@ export default function PetScreen() {
                     {labelOf(st.key)}
                   </Text>
                   <Text style={[s.rowThreshold, { fontFamily: fonts.bodyBold }]}>
-                    {st.threshold === 0 ? "Start" : `${st.threshold} pts`}
+                    {`${st.threshold} pts`}
                   </Text>
                 </View>
-                {current && <Text style={[s.rowBadge, { fontFamily: fonts.bodyBold }]}>NOW</Text>}
+                {isCurrent && <Text style={[s.rowBadge, { fontFamily: fonts.bodyBold }]}>NOW</Text>}
               </View>
             )
           })}

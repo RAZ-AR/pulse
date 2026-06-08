@@ -1,62 +1,65 @@
 /**
- * Pet (tamagotchi) evolution — single source of truth shared by mobile + backend.
+ * Pet (tamagotchi) — a *collection* that grows as you earn points.
  *
  * Lifecycle:
- *   - EGG     ← pet not yet named (un-hatched)
- *   - HATCHLING+ ← once named, the egg hatches; stage then grows with earned points
- *   - hungry  ← current streak (skip a day and it gets hungry)
+ *   - Egg (the EGG sprite) appears ONLY during onboarding and hatches into the
+ *     first pet for the 500-point welcome bonus.
+ *   - Each points threshold unlocks a NEW creature. The newest is the "current"
+ *     one (big + animated on the home card); earlier ones become small collected
+ *     icons shown above the points balance.
  *
- * Naming is the hatch trigger (done at the welcome-bonus step of onboarding, or
- * later via the /pet screen). The DB persists only `petName` and `petStageSeen`
- * (highest celebrated stage), so we can fire the hatch/evolution moment once.
+ * Stage/hunger are derived, never stored. The DB persists only `petName`
+ * (collection mascot name) and `petStageSeen` (how many pets the user has
+ * already celebrated) so the "new pet" moment fires once.
  */
 
-export type PetStage = {
-  index: number
-  threshold: number // min lifetime points to reach this stage
-  key: string
-  bg: string
+export type Pet = {
+  index: number     // position in the collection (0 = first)
+  threshold: number // points needed to unlock
+  key: string       // sprite key
+  bg: string        // tint (used on the /pet collection screen)
 }
 
-export const PET_STAGES: PetStage[] = [
-  { index: 0, threshold: 0,    key: "EGG",       bg: "#F0DFBD" },
-  { index: 1, threshold: 50,   key: "HATCHLING", bg: "#FFF5C0" },
-  { index: 2, threshold: 500,  key: "KID",       bg: "#FFE0EC" },
-  { index: 3, threshold: 1500, key: "FOX",       bg: "#FFE4C0" },
-  { index: 4, threshold: 3500, key: "DRAGON",    bg: "#C8E8FF" },
-  { index: 5, threshold: 7000, key: "PHOENIX",   bg: "#FFF0A0" },
+// The EGG sprite is onboarding-only and intentionally NOT part of the collection.
+export const PET_COLLECTION: Pet[] = [
+  { index: 0, threshold: 500,  key: "HATCHLING", bg: "#FFF5C0" },
+  { index: 1, threshold: 1500, key: "KID",       bg: "#FFE0EC" },
+  { index: 2, threshold: 3000, key: "FOX",       bg: "#FFE4C0" },
+  { index: 3, threshold: 5000, key: "DRAGON",    bg: "#C8E8FF" },
+  { index: 4, threshold: 8000, key: "PHOENIX",   bg: "#FFF0A0" },
 ]
 
-/** Resolve the current stage for a given lifetime-points total. */
-export function petStageForPoints(lifetimePoints: number): PetStage {
-  let resolved = PET_STAGES[0]!
-  for (const stage of PET_STAGES) {
-    if (lifetimePoints >= stage.threshold) resolved = stage
-  }
-  return resolved
+/** Pets whose threshold the points total has reached, in order. */
+export function unlockedPets(points: number): Pet[] {
+  return PET_COLLECTION.filter((p) => points >= p.threshold)
 }
 
 /**
- * Resolve the displayed stage.
- *   - not hatched (no name) → always EGG
- *   - hatched → at least HATCHLING, then grows with earned points
+ * Pets to display in the collection. Once hatched we always show at least the
+ * first one, even before the 500 threshold (covers the onboarding hand-off).
  */
-export function resolvePetStage(earnedPoints: number, hatched: boolean): PetStage {
-  if (!hatched) return PET_STAGES[0]!
-  const byPoints = petStageForPoints(earnedPoints)
-  return byPoints.index < 1 ? PET_STAGES[1]! : byPoints
+export function collectedPets(points: number, hatched: boolean): Pet[] {
+  if (!hatched) return []
+  const unlocked = unlockedPets(points)
+  return unlocked.length ? unlocked : [PET_COLLECTION[0]!]
 }
 
-/** Next stage after the given one, or null at max evolution. */
-export function nextPetStage(stage: PetStage): PetStage | null {
-  return PET_STAGES[stage.index + 1] ?? null
+/** The current (newest, animated) pet, or null if not hatched. */
+export function currentPet(points: number, hatched: boolean): Pet | null {
+  const collected = collectedPets(points, hatched)
+  return collected[collected.length - 1] ?? null
 }
 
-/** Progress [0..1] from current stage toward the next threshold. */
-export function petProgress(lifetimePoints: number): number {
-  const stage = petStageForPoints(lifetimePoints)
-  const next = nextPetStage(stage)
+/** Next pet to unlock, or null when the collection is complete. */
+export function nextPet(points: number): Pet | null {
+  return PET_COLLECTION.find((p) => points < p.threshold) ?? null
+}
+
+/** Progress [0..1] from the current pet toward the next one. */
+export function collectionProgress(points: number): number {
+  const next = nextPet(points)
   if (!next) return 1
-  const span = next.threshold - stage.threshold
-  return Math.min(1, (lifetimePoints - stage.threshold) / span)
+  const unlocked = unlockedPets(points)
+  const base = unlocked.length ? unlocked[unlocked.length - 1]!.threshold : 0
+  return Math.min(1, Math.max(0, (points - base) / (next.threshold - base)))
 }

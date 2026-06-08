@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react"
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native"
-import { resolvePetStage, nextPetStage, petProgress } from "@pulse/shared"
 import { fonts } from "../lib/theme"
 
 // ── Pixel palette ─────────────────────────────────────────────
@@ -252,26 +251,30 @@ export function PixelSprite({ rows, px = 5 }: { rows: string[]; px?: number }) {
   )
 }
 
-// ── Component ─────────────────────────────────────────────────
+// ── Small collected-pet icon (static, no animation) ───────────
+export function PetIcon({ petKey, px = 3 }: { petKey: string; px?: number }) {
+  const frames = PET_SPRITES[petKey] ?? PET_SPRITES.HATCHLING!
+  return <PixelSprite rows={frames[0]} px={px} />
+}
+
+// ── The current pet: big, animated, roams the habitat ─────────
 type Props = {
-  lifetimePoints: number
+  petKey: string
   streak: number
   petName?: string | null | undefined
   onPress?: (() => void) | undefined
   pixelSize?: number | undefined
-  showProgress?: boolean | undefined
 }
 
-export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 5, showProgress = true }: Props) {
-  const stage = resolvePetStage(lifetimePoints, !!petName?.trim())
-  const frames = PET_SPRITES[stage.key] ?? PET_SPRITES.EGG!
+export function AyooPet({ petKey, streak, petName, onPress, pixelSize = 6 }: Props) {
+  const frames = PET_SPRITES[petKey] ?? PET_SPRITES.HATCHLING!
 
   // Frame toggle for idle animation
   const [frame, setFrame] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setFrame((f) => 1 - f), 500)
     return () => clearInterval(id)
-  }, [stage.key])
+  }, [petKey])
 
   // The frame is static. The sprite inside walks and jumps like a tiny toy.
   const walkAnim = useRef(new Animated.Value(-1)).current
@@ -296,11 +299,11 @@ export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 
       walk.stop()
       hop.stop()
     }
-  }, [stage.key])
+  }, [petKey])
 
   // Hunger shake
   const shakeAnim = useRef(new Animated.Value(0)).current
-  const isHungry = streak === 0 && stage.key !== "EGG"
+  const isHungry = streak === 0
   useEffect(() => {
     if (!isHungry) return
     const loop = Animated.loop(
@@ -325,9 +328,6 @@ export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 
     onPress?.()
   }
 
-  // Next stage info for progress bar
-  const next     = nextPetStage(stage)
-  const progress = petProgress(lifetimePoints)
   const petTranslateX = Animated.add(
     walkAnim.interpolate({ inputRange: [-1, 1], outputRange: [-60, 60] }),
     shakeAnim
@@ -354,14 +354,6 @@ export function AyooPet({ lifetimePoints, streak, petName, onPress, pixelSize = 
         <Text style={[p.petName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
           {petName.toUpperCase()}
         </Text>
-      ) : null}
-
-      {showProgress ? (
-        <View style={p.barWrap}>
-          <View style={p.barTrack}>
-            <View style={[p.barFill, { width: `${Math.round(progress * 100)}%` }]} />
-          </View>
-        </View>
       ) : null}
     </View>
   )
