@@ -5,7 +5,6 @@ import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, neonColors, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
-import { AyooLogo } from "../../src/components/AyooLogo"
 
 const TX_ICONS: Record<string, string> = {
   PARTNER_PURCHASE: "P",
@@ -69,7 +68,7 @@ export default function EarnScreen() {
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
           <View style={s.blackLogo}>
-            <AyooLogo width={34} height={15} />
+            <Text style={[s.blackLogoText, isRainbow ? { color: "#8B3DFF" } : {}]}>P</Text>
           </View>
           <View style={s.blackPill}>
             <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("activePlan")}</Text>
@@ -163,7 +162,7 @@ export default function EarnScreen() {
                 <Text
                   style={[
                     s.txValue,
-                    { color: isEarn ? (isRainbow ? neonColors.cyan : colors.ink) : "#ea5b0c", fontFamily: fonts.displayHeavy },
+                    { color: isEarn ? (isRainbow ? neonColors.cyan : colors.ink) : "#D96AA7", fontFamily: fonts.displayHeavy },
                   ]}
                 >
                   {isEarn ? "+" : ""}{tx.pointsEarned}
@@ -224,21 +223,19 @@ function EarnMethod({
   }
 
   const dark = tone === "black"
-  const bg = tone === "cyan" ? colors.skySolid : dark ? "#FFFFFF" : tone === "purple" ? colors.mint : "#FFFFFF"
-  const onBlue = tone === "cyan"
-  const fg = onBlue ? "#FFFFFF" : colors.ink
-  const subFg = onBlue ? "#FFFFFF" : colors.ink
+  const bg = tone === "cyan" ? "rgba(235,254,255,0.92)" : dark ? "rgba(255,244,254,0.92)" : tone === "purple" ? "rgba(245,236,255,0.92)" : "#F9FBFF"
+  const fg = colors.ink
   const content = (
     <>
       <View style={[s.methodIcon, { backgroundColor: "rgba(255,255,255,0.72)" }]}>
-        <Text style={[s.methodIconText, { color: colors.ink }]}>{icon}</Text>
+        <Text style={[s.methodIconText, { color: dark ? "#B0D4E3" : "#91A1B4" }]}>{icon}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[s.methodTitle, { color: fg, fontFamily: fonts.displayHeavy }]}>{title}</Text>
-        <Text style={[s.methodSub, { color: subFg }]}>{sub}</Text>
+        <Text style={[s.methodSub, { color: "#91A1B4" }]}>{sub}</Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>
-        <Text style={[s.methodNote, { color: fg, fontFamily: fonts.bodyBold }]}>{note}</Text>
+        <Text style={[s.methodNote, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{note}</Text>
         <Text style={[s.methodArrow, { color: fg }]}>↗</Text>
       </View>
     </>
@@ -267,22 +264,22 @@ const s = StyleSheet.create({
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
   title: { fontSize: 34, lineHeight: 38, letterSpacing: 0 },
-  balanceBubble: { width: 86, height: 86, borderRadius: 8, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", borderWidth: 3, borderColor: colors.ink, shadowColor: "#000000", shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3 },
+  balanceBubble: { width: 86, height: 86, borderRadius: 43, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.34, shadowRadius: 12, elevation: 3 },
   balanceValue: { color: colors.ink, fontSize: 25, lineHeight: 27 },
   balanceLabel: { color: "#7A808E", fontSize: 11 },
-  hero: { borderRadius: 8, padding: 18, minHeight: 214, marginBottom: 12, overflow: "hidden" },
+  hero: { borderRadius: 32, padding: 18, minHeight: 214, marginBottom: 12, overflow: "hidden" },
   heroOrb: { position: "absolute", right: -52, top: -42, width: 170, height: 170, borderRadius: 85, borderWidth: 1, borderColor: "rgba(167,232,238,0.32)" },
   heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 34 },
-  blackLogo: { width: 40, height: 40, borderRadius: 4, backgroundColor: colors.skySolid, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.ink },
-  blackLogoText: { color: "#000000", fontWeight: "900" },
-  blackPill: { backgroundColor: "#FFFFFF", borderRadius: 4, paddingHorizontal: 16, paddingVertical: 9, borderWidth: 2, borderColor: colors.ink },
-  blackPillText: { color: "#000000", fontSize: 12 },
-  heroTitle: { color: "#000000", fontSize: 31, lineHeight: 34, width: 250 },
-  heroSub: { color: "#000000", fontSize: 13, marginTop: 10 },
+  blackLogo: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
+  blackLogoText: { color: "#91A1B4", fontWeight: "900" },
+  blackPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
+  blackPillText: { color: "#91A1B4", fontSize: 12 },
+  heroTitle: { color: "#6E7D8E", fontSize: 31, lineHeight: 34, width: 250 },
+  heroSub: { color: "#91A1B4", fontSize: 13, marginTop: 10 },
   methods: { gap: 10, marginBottom: 24 },
-  methodCard: { borderRadius: 8, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 3, borderColor: colors.ink, shadowColor: "#000000", shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3 },
+  methodCard: { borderRadius: 32, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3 },
   methodCardContent: { flexDirection: "row", alignItems: "center", gap: 12 },
-  methodIcon: { width: 48, height: 48, borderRadius: 4, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.ink },
+  methodIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   methodIconText: { fontSize: 18, fontWeight: "900" },
   methodTitle: { fontSize: 19, lineHeight: 22 },
   methodSub: { fontSize: 12, marginTop: 3 },
@@ -293,7 +290,7 @@ const s = StyleSheet.create({
   seeAll: { fontSize: 12 },
   activityCard: { padding: 0 },
   txRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  txIcon: { width: 40, height: 40, borderRadius: 4, backgroundColor: colors.cyan, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.ink },
+  txIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cyan, alignItems: "center", justifyContent: "center" },
   txIconRainbow: { backgroundColor: "rgba(0,245,255,0.15)" },
   txIconText: { color: colors.ink, fontSize: 14 },
   txTitle: { fontSize: 14 },

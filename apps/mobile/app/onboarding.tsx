@@ -9,7 +9,6 @@ import { useAuth } from "../src/store/auth"
 import { setLocale } from "../src/lib/i18n"
 import { colors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, NeuInset } from "../src/components/neu"
-import { PixelSprite, PET_SPRITES } from "../src/components/AyooPet"
 import { CITY_OPTIONS, DEFAULT_CITY } from "../src/lib/venues"
 import { uploadAvatarFile } from "../src/lib/storage"
 import { getTgInitData, getTgUser, getTgStartParam as getTgParam, isTelegramRuntime } from "../src/lib/telegram"
@@ -137,9 +136,8 @@ function TelegramOnboarding() {
   const me = trpc.user.me.useQuery(undefined, { enabled: hydrated && Boolean(token), retry: false })
   const completeOnboarding = trpc.user.completeOnboarding.useMutation({ onSuccess: () => utils.user.me.invalidate() })
   const updateProfile = trpc.user.updateProfile.useMutation()
-  const namePet = trpc.user.namePet.useMutation({ onSuccess: () => utils.user.me.invalidate() })
 
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0)
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0)
   const [displayName, setDisplayName] = useState(() => getTgUserName() ?? "")
   const [birthday, setBirthday] = useState("")
   const [avatarColor, setAvatarColor] = useState(0)
@@ -260,15 +258,7 @@ function TelegramOnboarding() {
     }
     const finalAvatarUrl = avatarUploadUrl ?? `color:${avatarColor}`
     updateProfile.mutate({ avatarUrl: finalAvatarUrl })
-    setStep(4) // → invite friends
-  }
-
-  async function hatchPet(petName: string) {
-    const n = petName.trim()
-    if (n) {
-      try { await namePet.mutateAsync({ name: n }) } catch { /* non-blocking */ }
-    }
-    setStep(3) // → profile
+    setStep(3)
   }
 
   async function shareInvite() {
@@ -309,16 +299,7 @@ function TelegramOnboarding() {
     />
   )
 
-  // Step 2: pet hatches from the egg right after the welcome bonus reveal.
   if (step === 2) return (
-    <TgPetStep
-      onHatch={hatchPet}
-      onSkip={() => setStep(3)}
-      isPending={namePet.isPending}
-    />
-  )
-
-  if (step === 3) return (
     <TgProfileStep
       displayName={displayName}
       setDisplayName={setDisplayName}
@@ -334,7 +315,7 @@ function TelegramOnboarding() {
       setConsent={(v) => { setConsent(v); if (v) setConsentError(false) }}
       consentError={consentError}
       isPending={completeOnboarding.isPending}
-      onBack={() => setStep(2)}
+      onBack={() => setStep(1)}
       onFinish={finish}
     />
   )
@@ -344,79 +325,6 @@ function TelegramOnboarding() {
       onShare={shareInvite}
       onSkip={goHome}
     />
-  )
-}
-
-// ── Step 3: Name your pet (hatching) ──────────────────────────
-function TgPetStep({ onHatch, onSkip, isPending }: {
-  onHatch: (name: string) => void
-  onSkip: () => void
-  isPending: boolean
-}) {
-  const { t } = useTranslation("auth")
-  const [name, setName] = useState("")
-  const [frame, setFrame] = useState(0)
-  const bob = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    const id = setInterval(() => setFrame((f) => 1 - f), 480)
-    return () => clearInterval(id)
-  }, [])
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(bob, { toValue: -6, duration: 600, useNativeDriver: true }),
-        Animated.timing(bob, { toValue: 6, duration: 600, useNativeDriver: true }),
-      ])
-    ).start()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const eggFrames = PET_SPRITES.EGG!
-  const canHatch = name.trim().length > 0 && !isPending
-
-  return (
-    <KeyboardAvoidingView style={s.tgFullScreen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <LinearGradient colors={["#0F1115", "#1A1F2E"]} style={StyleSheet.absoluteFill} />
-
-      <View style={s.tgWelcomeBody}>
-        <Animated.View style={[s.petEggBox, { transform: [{ translateY: bob }] }]}>
-          <PixelSprite rows={eggFrames[frame] ?? eggFrames[0]} px={9} />
-        </Animated.View>
-
-        <Text style={[s.tgHello, { fontFamily: fonts.displayHeavy, marginTop: 24 }]}>
-          {t("petTitle", "Your egg is hatching!")}
-        </Text>
-        <Text style={[s.tgTagline, { marginBottom: 28 }]}>
-          {t("petSubtitle", "Your 500 points come with a pet. Name it to hatch — it grows as you earn.")}
-        </Text>
-
-        <View style={s.tgInput}>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder={t("petPlaceholder", "e.g. Pixel")}
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            autoCapitalize="words"
-            maxLength={20}
-            style={[s.input, { color: "#fff", fontFamily: fonts.body, textAlign: "center" }]}
-          />
-        </View>
-      </View>
-
-      <View style={s.tgBottomSheet}>
-        <Pressable onPress={() => onHatch(name)} disabled={!canHatch} style={[s.tgContinueBtn, !canHatch && { opacity: 0.4 }]}>
-          {isPending
-            ? <ActivityIndicator color={colors.ink} />
-            : <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("petHatch", "Hatch 🥚")}</Text>}
-        </Pressable>
-        <Pressable onPress={onSkip} style={s.skipBtn}>
-          <Text style={[s.skipText, { color: "rgba(255,255,255,0.4)", fontFamily: fonts.body }]}>
-            {t("petSkip", "Skip for now")}
-          </Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
   )
 }
 
@@ -462,7 +370,7 @@ function TgServiceStep({ currentLng, onChangeLang, onContinue }: {
       </View>
 
       <Animated.View style={[s.tgWelcomeBody, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        <AyooLogo width={154} height={70} />
+        <AyooLogo width={120} height={70} />
         <Text style={[s.tgHello, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 16 }]}>
           {t("serviceTitle", "Welcome to ayoo")}
         </Text>
@@ -474,7 +382,7 @@ function TgServiceStep({ currentLng, onChangeLang, onContinue }: {
           {features.map((f) => (
             <View key={f.icon} style={[s.featureRow, { backgroundColor: theme.bg, borderColor: theme.border }]}>
               <View style={s.featureIcon}>
-                <Text style={{ fontSize: 18, color: "#000000" }}>{f.icon}</Text>
+                <Text style={{ fontSize: 18, color: "#91A1B4" }}>{f.icon}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.featureTitle, { color: theme.text, fontFamily: fonts.bodyBold }]}>{f.title}</Text>
@@ -549,7 +457,7 @@ function TgCouponStep({ name, giftToken, onContinue }: {
             <View style={s.couponDivider} />
 
             <View style={s.couponTop}>
-              <AyooLogo width={103} height={47} />
+              <AyooLogo width={80} height={47} />
               <Text style={[s.couponTitle, { fontFamily: fonts.bodyBold }]}>
                 {t("couponTitle", "Congratulations!")}
               </Text>
@@ -904,7 +812,7 @@ function Step0({ onPick }: { onPick: (lng: SupportedLocale) => void }) {
     <View style={s.step}>
       <View style={{ alignItems: "center", marginBottom: 24 }}>
         <View style={[s.logoOrb, theme.shadowGlow, { alignItems: "center", justifyContent: "center" }]}>
-          <AyooLogo width={154} height={70} />
+          <AyooLogo width={120} height={70} />
         </View>
         <Text style={[s.tagline, { color: theme.textSecondary, marginTop: 12 }]}>{t("tagline", "Loyalty that competes for you")}</Text>
       </View>
@@ -1235,13 +1143,6 @@ const s = StyleSheet.create({
     padding: 16,
     alignItems: "center",
   },
-  petEggBox: {
-    padding: 16,
-    backgroundColor: "#F0DFBD",
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: "#1A1208",
-  },
 
   logoOrb: {
     width: 88, height: 88, borderRadius: 34,
@@ -1266,7 +1167,7 @@ const s = StyleSheet.create({
   },
   featureTitle: { fontSize: 14, marginBottom: 2 },
   featureDesc: { fontSize: 12, lineHeight: 16 },
-  featureSub: { color: "#000000", fontSize: 12, marginTop: 2 },
+  featureSub: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
 
   // Coupon
   couponGlow: {
@@ -1403,15 +1304,15 @@ const s = StyleSheet.create({
   input: { padding: 14, fontSize: 15 },
   cityRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center" },
-  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#000000", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
-  cityChipIdle: { backgroundColor: "#FFFFFF" },
+  cityChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.26, shadowRadius: 8, elevation: 2 },
+  cityChipIdle: { backgroundColor: "rgba(249,251,255,0.66)" },
   cityChipText: { fontSize: 13 },
 
-  bonusIcon: { color: "#000000", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
+  bonusIcon: { color: "#91A1B4", fontSize: 40, lineHeight: 44, fontWeight: "900", marginBottom: 8 },
   bonusTitle: { color: colors.ink, fontSize: 25, lineHeight: 28, textAlign: "center" },
-  bonusSub: { color: "#000000", fontSize: 12, marginTop: 6 },
+  bonusSub: { color: "#91A1B4", fontSize: 12, marginTop: 6 },
   bonusHint: { color: colors.ink, fontSize: 12, fontWeight: "700", marginBottom: 8 },
-  skipHint: { color: "#000000", fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  skipHint: { color: "#91A1B4", fontSize: 12, fontWeight: "700", marginBottom: 8 },
 
   bigTitle: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 13, lineHeight: 18 },

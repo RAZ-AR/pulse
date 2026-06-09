@@ -1,23 +1,13 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { colors, neonColors, fonts, useTheme } from "../lib/theme"
 import { LavaLampSurface, VolumeGradient } from "../components/neu"
-import { AyooLogo } from "../components/AyooLogo"
 import { useColorMode } from "../store/colorMode"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../lib/venues"
-
-const brutal = {
-  bg: "#F5F4F0",
-  black: "#000000",
-  white: "#FFFFFF",
-  pink: "#ea5b0c",
-  brown: "#806828",
-  teal: "#1f71b8",
-  lavender: "#B38BC8",
-}
 
 function ratingLabel(rating: number | null | undefined, reviews: number | null | undefined) {
   if (!rating) return "Google rating soon"
@@ -80,7 +70,7 @@ export default function MapWebScreen() {
                 onPress={() => updateProfile.mutate({ homeCity: city.name })}
                 style={[s.locationPill, active ? s.locationPillActive : s.locationPillIdle]}
               >
-                <Text style={[s.locationText, { color: active ? brutal.white : colors.ink, fontFamily: fonts.bodyBold }]}>
+                <Text style={[s.locationText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>
                   {city.label}
                 </Text>
               </Pressable>
@@ -90,6 +80,12 @@ export default function MapWebScreen() {
       </LavaLampSurface>
 
       <View style={[s.mapPanel, theme.shadowRaised]}>
+        <LinearGradient
+          colors={["rgba(235,254,255,0.96)", "rgba(255,244,254,0.82)", "rgba(236,255,235,0.86)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={s.mapBubbleTop} />
         <View style={s.mapBubbleBottom} />
         <View style={s.mapGrid}>
@@ -103,7 +99,7 @@ export default function MapWebScreen() {
                   left: `${12 + ((index * 29) % 72)}%`,
                   top: `${18 + ((index * 19) % 62)}%`,
                 },
-                index === 0 && s.pinFeatured,
+                index === 0 && (isRainbow ? s.pinFeaturedRainbow : s.pinFeatured),
               ]}
             >
               <Text style={[s.pinText, { fontFamily: fonts.displayHeavy }]}>
@@ -148,7 +144,7 @@ export default function MapWebScreen() {
               onPress={() => setActiveFilterKey(filter.key)}
               style={[s.filterChip, active ? (isRainbow ? s.filterChipActiveRainbow : s.filterChipActive) : s.filterChipIdle]}
             >
-              <Text style={[s.filterText, { color: active && !isRainbow ? brutal.white : active && isRainbow ? neonColors.cyan : colors.ink, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.filterText, { color: active && isRainbow ? neonColors.cyan : colors.ink, fontFamily: fonts.bodyBold }]}>
                 {filter.label}
               </Text>
             </Pressable>
@@ -167,7 +163,9 @@ export default function MapWebScreen() {
           >
             <View style={s.row}>
               <View style={[s.logo, isRainbow && s.logoRainbow]}>
-                <AyooLogo width={54} height={25} />
+                <Text style={[s.logoText, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.cyan : colors.ink }]}>
+                  {venue.name.slice(0, 1).toUpperCase()}
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <View style={s.nameRow}>
@@ -208,16 +206,11 @@ export default function MapWebScreen() {
                     </Text>
                   </View>
                   {venue.enableDiscount ? (
-                    <Text
-                      style={[
-                        s.discountChip,
-                        s.discountChipText,
-                        isRainbow && s.discountChipRainbow,
-                        { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.green : brutal.white },
-                      ]}
-                    >
-                      up to {venue.maxDiscountPercent}% off
-                    </Text>
+                    <View style={[s.discountChip, isRainbow && s.discountChipRainbow]}>
+                      <Text style={[s.discountChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.green : colors.ink }]}>
+                        up to {venue.maxDiscountPercent}% off
+                      </Text>
+                    </View>
                   ) : null}
                   <View style={[s.sourceChip, isRainbow && s.sourceChipRainbow]}>
                     <Text style={[s.sourceChipText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.cyan : colors.ink }]}>
@@ -246,9 +239,9 @@ export default function MapWebScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 110 },
+  content: { padding: 18, paddingBottom: 34 },
   hero: {
-    borderRadius: 8,
+    borderRadius: 32,
     padding: 18,
     minHeight: 164,
     marginBottom: 14,
@@ -257,32 +250,32 @@ const s = StyleSheet.create({
     overflow: "hidden",
   },
   kicker: {
-    color: brutal.black,
+    color: "#B0D4E3",
     fontSize: 11,
     letterSpacing: 1.8,
   },
-  title: { color: brutal.black, fontSize: 38, lineHeight: 42 },
+  title: { color: "#6E7D8E", fontSize: 38, lineHeight: 42 },
   citySwitch: { gap: 8, alignItems: "flex-end" },
-  locationPill: { minHeight: 38, borderRadius: 4, paddingHorizontal: 14, justifyContent: "center", borderWidth: 2, borderColor: brutal.black },
-  locationPillActive: { backgroundColor: brutal.teal },
-  locationPillIdle: { backgroundColor: brutal.white },
+  locationPill: { minHeight: 38, borderRadius: 99, paddingHorizontal: 14, justifyContent: "center" },
+  locationPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  locationPillIdle: { backgroundColor: "rgba(255,255,255,0.82)" },
   locationText: { fontSize: 12 },
   filters: { gap: 8, paddingBottom: 14 },
-  filterChip: { borderRadius: 4, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 2, borderColor: brutal.black },
+  filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
   filterChipInner: { paddingHorizontal: 0, paddingVertical: 0, alignItems: "center", justifyContent: "center" },
-  filterChipActive: { backgroundColor: brutal.teal },
+  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   filterChipActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
-  filterChipIdle: { backgroundColor: brutal.white },
+  filterChipIdle: { backgroundColor: "rgba(249,251,255,0.62)" },
   filterText: { fontSize: 11 },
   list: { gap: 12 },
   mapPanel: {
     minHeight: 270,
-    borderRadius: 8,
+    borderRadius: 40,
     marginBottom: 14,
     overflow: "hidden",
-    borderWidth: 3,
-    borderColor: brutal.black,
-    backgroundColor: brutal.white,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.84)",
+    backgroundColor: "#F9FBFF",
   },
   mapBubbleTop: {
     position: "absolute",
@@ -290,8 +283,8 @@ const s = StyleSheet.create({
     right: -34,
     width: 190,
     height: 190,
-    borderRadius: 0,
-    backgroundColor: brutal.lavender,
+    borderRadius: 95,
+    backgroundColor: "rgba(255,255,255,0.44)",
   },
   mapBubbleBottom: {
     position: "absolute",
@@ -299,39 +292,37 @@ const s = StyleSheet.create({
     left: -44,
     width: 180,
     height: 180,
-    borderRadius: 0,
-    backgroundColor: brutal.pink,
+    borderRadius: 90,
+    backgroundColor: "rgba(249,251,255,0.34)",
   },
   mapGrid: {
     flex: 1,
     margin: 16,
-    borderRadius: 4,
-    backgroundColor: brutal.bg,
+    borderRadius: 30,
+    backgroundColor: "rgba(249,251,255,0.34)",
     overflow: "hidden",
-    borderWidth: 2,
-    borderColor: brutal.black,
   },
   pin: {
     position: "absolute",
     width: 42,
     height: 42,
-    borderRadius: 4,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: brutal.teal,
-    shadowColor: brutal.black,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    backgroundColor: "rgba(255,255,255,0.78)",
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.34,
+    shadowRadius: 9,
     elevation: 3,
-    borderWidth: 2,
-    borderColor: brutal.black,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.88)",
   },
   pinFeatured: {
     width: 54,
     height: 54,
-    borderRadius: 4,
-    backgroundColor: brutal.pink,
+    borderRadius: 27,
+    backgroundColor: "rgba(255,244,254,0.92)",
   },
   pinFeaturedRainbow: {
     width: 54,
@@ -340,7 +331,7 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(139,61,255,0.22)",
     borderColor: "rgba(139,61,255,0.44)",
   },
-  pinText: { color: brutal.white, fontSize: 16 },
+  pinText: { color: colors.ink, fontSize: 16 },
   mapStats: {
     position: "absolute",
     left: 16,
@@ -352,29 +343,26 @@ const s = StyleSheet.create({
   mapStat: {
     flex: 1,
     minHeight: 64,
-    borderRadius: 4,
-    backgroundColor: brutal.white,
-    borderWidth: 2,
-    borderColor: brutal.black,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.70)",
     alignItems: "center",
     justifyContent: "center",
   },
   mapStatValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
-  mapStatLabel: { color: brutal.black, fontSize: 9, textTransform: "uppercase", marginTop: 4 },
-  card: { backgroundColor: brutal.white, borderRadius: 8, padding: 12, borderWidth: 3, borderColor: brutal.black, shadowColor: brutal.black, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2 },
+  mapStatLabel: { color: "#91A1B4", fontSize: 9, textTransform: "uppercase", marginTop: 4 },
+  card: { backgroundColor: "#F9FBFF", borderRadius: 34, padding: 12, shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
   cardRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOpacity: 0.14 },
   row: { flexDirection: "row", gap: 12 },
   logo: {
     width: 58,
     height: 58,
-    borderRadius: 4,
-    backgroundColor: brutal.white,
+    borderRadius: 22,
+    backgroundColor: "rgba(235,254,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: brutal.black,
   },
   logoRainbow: { backgroundColor: "rgba(43,110,255,0.12)" },
+  logoText: { color: colors.ink, fontSize: 22 },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -383,39 +371,39 @@ const s = StyleSheet.create({
   name: { color: colors.ink, fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8 },
   arrow: { color: colors.ink, fontSize: 21 },
   meta: {
-    color: brutal.black,
+    color: "#6B7280",
     fontSize: 11,
     marginTop: 2,
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
-  address: { color: brutal.black, fontSize: 12, marginTop: 2 },
-  description: { color: brutal.black, fontSize: 12, lineHeight: 16, marginTop: 8 },
+  address: { color: "#8E95A3", fontSize: 12, marginTop: 2 },
+  description: { color: "#91A1B4", fontSize: 12, lineHeight: 16, marginTop: 8 },
   chips: { flexDirection: "row", gap: 6, marginTop: 10, flexWrap: "wrap" },
   darkChip: {
-    backgroundColor: brutal.pink,
-    borderRadius: 4,
+    backgroundColor: "rgba(255,244,254,0.92)",
+    borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   darkChipText: { color: colors.ink, fontSize: 10 },
   lightChip: {
-    backgroundColor: brutal.lavender,
-    borderRadius: 4,
+    backgroundColor: "#EEF3FB",
+    borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   lightChipText: { color: colors.ink, fontSize: 10 },
   discountChip: {
-    backgroundColor: brutal.teal,
-    borderRadius: 4,
+    backgroundColor: "rgba(236,255,235,0.88)",
+    borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  discountChipText: { color: brutal.white, fontSize: 10 },
+  discountChipText: { color: colors.ink, fontSize: 10 },
   sourceChip: {
-    backgroundColor: brutal.white,
-    borderRadius: 4,
+    backgroundColor: "rgba(235,254,255,0.88)",
+    borderRadius: 99,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },

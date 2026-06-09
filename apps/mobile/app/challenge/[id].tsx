@@ -173,7 +173,7 @@ export default function ChallengeDetailScreen() {
         ) : uc?.isCompleted ? (
           <NeuCard gradient={isRainbow ? undefined : gradients.black} style={{ padding: 18, alignItems: "center", borderRadius: 30, backgroundColor: isRainbow ? "#F2F2F6" : undefined }}>
             <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.green : colors.ink }]}>✓ {t("rewardClaimed", "Reward claimed")}</Text>
-            <Text style={[s.completedSub, { color: isRainbow ? neonColors.cyan : "#000000" }]}>+{c.pointsReward} pts {t("addedToBalance", "added to your balance")}</Text>
+            <Text style={[s.completedSub, { color: isRainbow ? neonColors.cyan : "#91A1B4" }]}>+{c.pointsReward} pts {t("addedToBalance", "added to your balance")}</Text>
           </NeuCard>
         ) : (
           <Pressable
@@ -216,7 +216,7 @@ const s = StyleSheet.create({
 
   hero: { padding: 22, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  heroIcon: { color: "#000000", fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 8 },
+  heroIcon: { color: "#91A1B4", fontSize: 48, lineHeight: 52, fontWeight: "900", marginBottom: 8 },
   heroTitle: { color: colors.ink, fontSize: 28, lineHeight: 31, textAlign: "center" },
   heroReward: { color: colors.ink, fontSize: 28, marginTop: 12 },
 
@@ -237,6 +237,6 @@ const s = StyleSheet.create({
   statValueSmall: { fontSize: 12 },
 
   cta: { color: colors.ink, fontSize: 16 },
-  completedSub: { color: "#000000", fontSize: 12, marginTop: 4 },
+  completedSub: { color: "#91A1B4", fontSize: 12, marginTop: 4 },
   encourageCard: { padding: 16, borderRadius: 99, alignItems: "center", marginTop: 4 },
 })

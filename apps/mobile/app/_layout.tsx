@@ -9,7 +9,6 @@ import { useAuth } from "../src/store/auth"
 import { signInWithTelegramDirect, trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
 import { getTgWebApp, getTgInitData, isTelegramRuntime } from "../src/lib/telegram"
-import { AppDock } from "../src/components/AppDock"
 
 function PushRegistrar() {
   const { token } = useAuth()
@@ -61,7 +60,6 @@ function AuthGate() {
   const tg = getTgWebApp()
   const telegramMode = isTelegramRuntime()
   const demoMode = process.env.EXPO_PUBLIC_DEMO_MODE === "1"
-  const previewMiniApp = process.env.EXPO_PUBLIC_PREVIEW_MINIAPP === "1"
   const onAuthRoute = segments[0] === "onboarding"
   const attempted = useRef(false)
 
@@ -133,10 +131,6 @@ function AuthGate() {
   // 3) Route. Pure function of state — no per-mode branches.
   useEffect(() => {
     if (!hydrated || !navReady) return
-    if (previewMiniApp) {
-      if (onAuthRoute) router.replace("/(tabs)")
-      return
-    }
     if (!token) {
       // Email flow: nothing auto-signs us in, push to /onboarding.
       // All unauthenticated users go to /onboarding.
@@ -147,7 +141,7 @@ function AuthGate() {
     if (!me.data) return
     if (!me.data.onboardingDone && !onAuthRoute) router.replace("/onboarding")
     else if (me.data.onboardingDone && onAuthRoute) router.replace("/(tabs)")
-  }, [hydrated, navReady, token, me.data, onAuthRoute, telegramMode, demoMode, previewMiniApp, router])
+  }, [hydrated, navReady, token, me.data, onAuthRoute, telegramMode, demoMode, router])
 
   return null
 }
@@ -179,7 +173,6 @@ export default function RootLayout() {
             <Stack.Screen name="points-history" />
             <Stack.Screen name="friends" />
           </Stack>
-          <AppDock />
         </Providers>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -95,7 +95,7 @@ export default function CheckinScreen() {
             <Text style={s.bigIcon}>⌖</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("locationNeeded", "Location needed")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.reason}</Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:back", "Go back")}</Text>
             </Pressable>
           </Centered>
@@ -113,7 +113,7 @@ export default function CheckinScreen() {
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>
               {t("noVenuesNearbyDesc", "Move closer to a partner venue and try again. Check-ins require being within 100m of a venue.")}
             </Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "OK")}</Text>
             </Pressable>
           </Centered>
@@ -187,7 +187,7 @@ export default function CheckinScreen() {
             ) : null}
             <Pressable
               onPress={() => router.back()}
-              style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF", marginTop: 24 }, theme.shadowRaisedSm]}
+              style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF", marginTop: 24 }, theme.shadowRaisedSm]}
             >
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
             </Pressable>
@@ -291,7 +291,7 @@ function CameraPhase({
         <Text style={[s.subtitle, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "ayoo needs your camera to verify check-ins.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </Centered>
@@ -301,7 +301,7 @@ function CameraPhase({
     <View style={s.cameraWrap}>
       <CameraView ref={cameraRef} style={s.camera} facing="back" />
       <View style={s.cameraOverlay}>
-        <View style={[s.venueBanner, { backgroundColor: "#FFFFFF" }]}>
+        <View style={[s.venueBanner, { backgroundColor: "rgba(249,251,255,0.78)" }]}>
           <Text style={s.bannerLabel}>{t("checkingInAt", "Checking in at").toUpperCase()}</Text>
           <Text style={s.bannerName}>{venue.name}</Text>
         </View>
@@ -332,7 +332,7 @@ const s = StyleSheet.create({
   btn: { padding: 14, paddingHorizontal: 28, borderRadius: 99, alignItems: "center", marginTop: 16 },
   pickerContent: { padding: 18, paddingBottom: 40 },
   venueCard: { padding: 14, borderRadius: 30, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
-  venueName: { fontSize: 18, fontFamily: fonts.displayHeavy },
+  venueName: { fontSize: 18, fontWeight: "800" },
   venueSub: { fontSize: 12, marginTop: 2 },
   venueArrow: { fontSize: 18 },
   cameraWrap: { flex: 1 },
@@ -345,9 +345,9 @@ const s = StyleSheet.create({
   shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 40 },
   shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(249,251,255,0.72)", justifyContent: "center", alignItems: "center" },
   backBtnText: { color: colors.ink, fontSize: 22, fontWeight: "300" },
-  points: { fontSize: 36, fontFamily: fonts.displayHeavy, marginTop: 16 },
+  points: { fontSize: 36, fontWeight: "800", marginTop: 16 },
   streakBonus: { fontSize: 14, fontWeight: "700", marginTop: 4 },
   streakInfo: { fontSize: 13, marginTop: 12 },
   newBadge: { fontSize: 14, fontWeight: "700", marginTop: 12 },

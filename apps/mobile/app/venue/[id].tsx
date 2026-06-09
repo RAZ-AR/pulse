@@ -2,11 +2,10 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, neonColors, useTheme } from "../../src/lib/theme"
+import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 import { NeuCard, GradPill, VolumeGradient } from "../../src/components/neu"
 import { DEMO_VENUES } from "../../src/lib/venues"
-import { AyooLogo } from "../../src/components/AyooLogo"
 
 const REWARD_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
 const REWARD_RAINBOW = [
@@ -15,16 +14,6 @@ const REWARD_RAINBOW = [
   ["#FF2D9B", "#8B3DFF"] as const,
   ["#00F5FF", "#2B6EFF"] as const,
 ]
-
-const brutal = {
-  bg: "#F5F4F0",
-  black: "#000000",
-  white: "#FFFFFF",
-  blue: "#1f71b8",
-  orange: "#ea5b0c",
-  brown: "#806828",
-  lavender: "#B38BC8",
-}
 
 type DetailVenue = {
   id: string
@@ -108,11 +97,7 @@ export default function VenueDetailScreen() {
     { venueId: id, limit: 10 },
     { enabled: !id.startsWith("demo_") }
   )
-  const demoVenue = DEMO_VENUES.find((item) => {
-    if (item.id === id) return true
-    if (!id.startsWith("venue_")) return false
-    return item.id.endsWith(id.replace("venue", ""))
-  })
+  const demoVenue = DEMO_VENUES.find((item) => item.id === id)
 
   if (venue.isLoading && !demoVenue) {
     return (
@@ -146,27 +131,26 @@ export default function VenueDetailScreen() {
       <Stack.Screen options={{
         headerShown: true,
         title: v.name,
-        headerStyle: { backgroundColor: isRainbow ? theme.bg : brutal.bg }, headerShadowVisible: false,
-        headerTintColor: isRainbow ? theme.text : brutal.black,
+        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
+        headerTintColor: theme.text,
       }} />
-      <ScrollView style={[s.scroll, { backgroundColor: isRainbow ? theme.bg : brutal.bg }]} contentContainerStyle={s.content}>
+      <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {/* Title */}
-        <View style={[s.header, !isRainbow && s.headerBrutal]}>
-          {!isRainbow ? <View pointerEvents="none" style={s.headerStamp}><AyooLogo width={86} height={39} /></View> : null}
+        <View style={s.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[s.name, { color: isRainbow ? theme.text : brutal.black, fontFamily: fonts.displayBlack }]} numberOfLines={2}>
+            <Text style={[s.name, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
               {v.name}
             </Text>
-            <Text style={[s.subtle, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.subtle, { color: theme.textSecondary }]}>
               {v.category.toLowerCase()} · {v.city}
             </Text>
             {v.googleRating ? (
-              <Text style={[s.rating, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.rating, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
                 Google {v.googleRating.toFixed(1)} · {v.googleReviews ?? 0} reviews
               </Text>
             ) : null}
             {v.address ? (
-              <Text style={[s.subtle, { color: isRainbow ? theme.textSecondary : brutal.black, marginTop: 2 }]}>{v.address}</Text>
+              <Text style={[s.subtle, { color: theme.textSecondary, marginTop: 2 }]}>{v.address}</Text>
             ) : null}
           </View>
           {v.subscriptionTier === "FEATURED" ? (
@@ -192,11 +176,12 @@ export default function VenueDetailScreen() {
               ) : null}
             </VolumeGradient>
           ) : (
-            <NeuCard style={[s.rateCard, s.rateCardBrutal]}>
+            <NeuCard gradient={gradients.black} style={s.rateCard}>
+              <View style={s.heroBlob} />
               <Text style={[s.rateLabel, { fontFamily: fonts.bodyBold }]}>
                 {t("pointsRate", "Points rate").toUpperCase()}
               </Text>
-              <Text style={[s.rateValue, { fontFamily: fonts.displayBlack }]}>{effectiveRate.toFixed(3)}</Text>
+              <Text style={[s.rateValue, { fontFamily: fonts.displayHeavy }]}>{effectiveRate.toFixed(3)}</Text>
               <Text style={s.rateUnit}>{t("perCurrency", "pts per RSD")}</Text>
               {boostActive ? (
                 <View style={s.boostBadge}>
@@ -208,8 +193,8 @@ export default function VenueDetailScreen() {
             </NeuCard>
           )
         ) : (
-          <NeuCard style={s.emptyCard}>
-            <Text style={s.emptyCardText}>
+          <NeuCard style={{ padding: 16, alignItems: "center", marginBottom: 16 }}>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: "center" }}>
               {t("notPartner")}
             </Text>
           </NeuCard>
@@ -218,10 +203,10 @@ export default function VenueDetailScreen() {
         {offers.length > 0 ? (
           <NeuCard style={{ padding: 16, marginBottom: 16 }}>
             <View style={s.sectionTop}>
-              <Text style={[s.sectionLabel, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
                 {t("specialOffers", "Special offers").toUpperCase()}
               </Text>
-              <Text style={[s.sourceText, { color: isRainbow ? theme.textSecondary : brutal.black }]}>{importSourceLabel}</Text>
+              <Text style={[s.sourceText, { color: theme.textSecondary }]}>{importSourceLabel}</Text>
             </View>
             <View style={{ gap: 8 }}>
               {offers.map((offer) => (
@@ -236,7 +221,7 @@ export default function VenueDetailScreen() {
 
         {activeOffers.length > 0 ? (
           <NeuCard style={{ padding: 16, marginBottom: 16 }}>
-            <Text style={[s.sectionLabel, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold, marginBottom: 10 }]}>
+            <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 10 }]}>
               {t("partnerOffers", "Partner offers").toUpperCase()}
             </Text>
             <View style={{ gap: 8 }}>
@@ -257,7 +242,7 @@ export default function VenueDetailScreen() {
                   </View>
                 </View>
               ))}
-              <Text style={[s.partnerOfferHint, { color: isRainbow ? theme.textSecondary : brutal.black }]}>
+              <Text style={[s.partnerOfferHint, { color: theme.textSecondary }]}>
                 Сканируйте QR-код в заведении чтобы получить баллы
               </Text>
             </View>
@@ -266,7 +251,7 @@ export default function VenueDetailScreen() {
 
         {contacts.length > 0 ? (
           <NeuCard style={{ padding: 16, marginBottom: 16 }}>
-            <Text style={[s.sectionLabel, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
               {t("contacts", "Contacts").toUpperCase()}
             </Text>
             <View style={{ gap: 10 }}>
@@ -277,8 +262,8 @@ export default function VenueDetailScreen() {
                   onPress={() => row.url ? Linking.openURL(row.url) : undefined}
                   style={s.contactRow}
                 >
-                  <Text style={[s.contactLabel, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold }]}>{row.label}</Text>
-                  <Text style={[s.contactValue, { color: isRainbow ? theme.text : brutal.black, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                  <Text style={[s.contactLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{row.label}</Text>
+                  <Text style={[s.contactValue, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
                     {row.value}{row.url ? " ↗" : ""}
                   </Text>
                 </Pressable>
@@ -290,17 +275,17 @@ export default function VenueDetailScreen() {
         {/* Description */}
         {v.description ? (
           <NeuCard style={{ padding: 16, marginBottom: 16 }}>
-            <Text style={[s.sectionLabel, { color: isRainbow ? theme.textSecondary : brutal.black, fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.sectionLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
               {t("about", "About").toUpperCase()}
             </Text>
-            <Text style={[s.body, { color: isRainbow ? theme.text : brutal.black }]}>{v.description}</Text>
+            <Text style={[s.body, { color: theme.text }]}>{v.description}</Text>
           </NeuCard>
         ) : null}
 
         {/* Rewards */}
         {rewards.length > 0 ? (
           <>
-            <Text style={[s.heading, { color: isRainbow ? theme.text : brutal.black, fontFamily: fonts.displayBlack }]}>
+            <Text style={[s.heading, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
               {t("availableRewards", "Available rewards")}
             </Text>
             <View style={{ gap: 10, marginBottom: 24 }}>
@@ -351,23 +336,23 @@ export default function VenueDetailScreen() {
             </View>
           </>
         ) : (
-          <Text style={[s.subtle, { color: isRainbow ? theme.textSecondary : brutal.black, textAlign: "center", marginVertical: 12 }]}>
+          <Text style={[s.subtle, { color: theme.textSecondary, textAlign: "center", marginVertical: 12 }]}>
             {t("noRewardsYet", "No rewards yet at this venue")}
           </Text>
         )}
 
         {/* Reviews */}
         <View style={s.reviewsHead}>
-          <Text style={[s.heading, { color: isRainbow ? theme.text : brutal.black, fontFamily: fonts.displayBlack, marginBottom: 0 }]}>
+          <Text style={[s.heading, { color: theme.text, fontFamily: fonts.displayHeavy, marginBottom: 0 }]}>
             {t("reviews", "Reviews")}
             {reviews.data?.averageRating != null ? (
-              <Text style={{ color: isRainbow ? theme.textSecondary : brutal.black, fontSize: 14, fontFamily: fonts.body }}>
+              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: fonts.body }}>
                 {"  "}★ {reviews.data.averageRating.toFixed(1)} · {reviews.data.count}
               </Text>
             ) : null}
           </Text>
           <Pressable onPress={() => router.push({ pathname: "/venue/[id]/review", params: { id: v.id } })}>
-            <Text style={[s.writeBtn, { color: isRainbow ? theme.text : brutal.white, fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.writeBtn, { color: theme.text, fontFamily: fonts.bodyBold }]}>
               {t("writeReview", "Write review")} →
             </Text>
           </Pressable>
@@ -375,7 +360,7 @@ export default function VenueDetailScreen() {
 
         {!reviews.data || reviews.data.reviews.length === 0 ? (
           <NeuCard style={{ padding: 18, alignItems: "center" }}>
-            <Text style={{ color: isRainbow ? theme.textSecondary : brutal.black }}>
+            <Text style={{ color: theme.textSecondary }}>
               {t("noReviewsYet", "Be the first to leave a review")}
             </Text>
           </NeuCard>
@@ -384,12 +369,12 @@ export default function VenueDetailScreen() {
             {reviews.data.reviews.map((r) => (
               <NeuCard key={r.id} style={{ padding: 14 }}>
                 <View style={s.reviewHead}>
-                  <Text style={[s.reviewAuthor, { color: isRainbow ? theme.text : brutal.black, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                  <Text style={[s.reviewAuthor, { color: theme.text, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
                     {r.user.name ?? t("anonymous")}
                   </Text>
-                  <Text style={s.reviewStars}>{"★".repeat(r.rating)}<Text style={{ color: isRainbow ? theme.textMuted : brutal.black }}>{"★".repeat(5 - r.rating)}</Text></Text>
+                  <Text style={s.reviewStars}>{"★".repeat(r.rating)}<Text style={{ color: theme.textMuted }}>{"★".repeat(5 - r.rating)}</Text></Text>
                 </View>
-                {r.text ? <Text style={[s.reviewText, { color: isRainbow ? theme.text : brutal.black }]}>{r.text}</Text> : null}
+                {r.text ? <Text style={[s.reviewText, { color: theme.text }]}>{r.text}</Text> : null}
               </NeuCard>
             ))}
           </View>
@@ -401,128 +386,53 @@ export default function VenueDetailScreen() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 112 },
+  content: { padding: 18, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   header: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 18 },
-  headerBrutal: {
-    minHeight: 176,
-    borderRadius: 8,
-    borderWidth: 3,
-    borderColor: brutal.black,
-    backgroundColor: brutal.white,
-    padding: 16,
-    overflow: "hidden",
-    shadowColor: brutal.black,
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  headerStamp: {
-    position: "absolute",
-    right: 14,
-    bottom: 14,
-    width: 104,
-    height: 54,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: brutal.black,
-    backgroundColor: brutal.bg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  name: { fontSize: 42, lineHeight: 43, letterSpacing: 0, paddingRight: 84 },
+  name: { fontSize: 34, lineHeight: 38 },
   subtle: { fontSize: 13, marginTop: 4 },
   rating: { fontSize: 12, marginTop: 5 },
 
-  rateCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 8 },
-  rateCardBrutal: {
-    backgroundColor: brutal.blue,
-    borderWidth: 3,
-    borderColor: brutal.black,
-    shadowColor: brutal.black,
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 4,
-  },
-  rateLabel: { color: brutal.white, fontSize: 11, letterSpacing: 1.5 },
-  rateValue: { color: brutal.white, fontSize: 64, lineHeight: 66, marginTop: 4 },
-  rateUnit: { color: brutal.white, fontSize: 13 },
-  boostBadge: { marginTop: 10, backgroundColor: brutal.white, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 4, borderWidth: 2, borderColor: brutal.black },
-  boostText: { color: brutal.black, fontSize: 11 },
-  emptyCard: { padding: 16, alignItems: "center", marginBottom: 16 },
-  emptyCardText: { color: brutal.black, fontSize: 13, textAlign: "center" },
+  rateCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
+  heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
+  rateLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  rateValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
+  rateUnit: { color: "#91A1B4", fontSize: 13 },
+  boostBadge: { marginTop: 10, backgroundColor: "#FFFFFF", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99 },
+  boostText: { color: colors.ink, fontSize: 11 },
 
   sectionLabel: { fontSize: 11, letterSpacing: 1, marginBottom: 8 },
   sectionTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8 },
   sourceText: { fontSize: 10, flexShrink: 1, textAlign: "right" },
   body: { fontSize: 14, lineHeight: 20 },
-  offerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: brutal.orange,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: brutal.black,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  offerDot: { color: brutal.black, fontSize: 10 },
-  offerText: { color: brutal.black, fontSize: 12, flex: 1 },
+  offerRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 9 },
+  offerDot: { color: "#9FEED3", fontSize: 10 },
+  offerText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
 
-  partnerOfferRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: brutal.white,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: brutal.black,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-  },
-  partnerOfferTitle: { fontSize: 14, color: brutal.black },
-  partnerOfferMeta: { fontSize: 11, color: brutal.black, marginTop: 2 },
+  partnerOfferRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(139,61,255,0.06)", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 11 },
+  partnerOfferTitle: { fontSize: 14, color: colors.ink },
+  partnerOfferMeta: { fontSize: 11, color: "#91A1B4", marginTop: 2 },
   partnerOfferPts: { alignItems: "flex-end" },
-  partnerOfferPtsVal: { fontSize: 18, color: brutal.black, lineHeight: 20 },
-  partnerOfferPtsUnit: { fontSize: 10, color: brutal.black },
+  partnerOfferPtsVal: { fontSize: 18, color: "#8B3DFF", lineHeight: 20 },
+  partnerOfferPtsUnit: { fontSize: 10, color: "#91A1B4" },
   partnerOfferHint: { fontSize: 11, textAlign: "center", marginTop: 4, opacity: 0.7 },
-  contactRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: brutal.black,
-    paddingVertical: 9,
-  },
+  contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottomWidth: 1, borderBottomColor: "rgba(163,160,200,0.14)", paddingVertical: 8 },
   contactLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6 },
   contactValue: { fontSize: 13, flex: 1, textAlign: "right" },
 
   heading: { fontSize: 25, marginBottom: 12 },
 
-  rewardRow: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 8 },
-  rewardTitle: { color: brutal.white, fontSize: 16 },
-  rewardDesc: { color: brutal.white, fontSize: 12, marginTop: 2 },
-  rewardCost: { color: brutal.white, fontSize: 21, lineHeight: 23 },
-  rewardCostUnit: { color: brutal.white, fontSize: 10 },
+  rewardRow: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 28 },
+  rewardTitle: { color: colors.ink, fontSize: 16 },
+  rewardDesc: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
+  rewardCost: { color: colors.ink, fontSize: 21, lineHeight: 23 },
+  rewardCostUnit: { color: "#91A1B4", fontSize: 10 },
 
   reviewsHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 8 },
-  writeBtn: {
-    fontSize: 12,
-    backgroundColor: brutal.blue,
-    borderWidth: 2,
-    borderColor: brutal.black,
-    borderRadius: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    overflow: "hidden",
-  },
+  writeBtn: { fontSize: 12 },
   reviewHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   reviewAuthor: { fontSize: 14, flex: 1, marginRight: 8 },
-  reviewStars: { fontSize: 13, color: brutal.orange },
+  reviewStars: { fontSize: 13, color: "#FF85D2" },
   reviewText: { fontSize: 13, lineHeight: 18 },
 })
