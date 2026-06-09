@@ -420,9 +420,31 @@ def start_health_server():
     log.info("Health server listening on :%s", port)
 
 
+def start_keep_alive():
+    """Бесплатный Render засыпает без входящего трафика -> пингуем себя сами."""
+    url = os.getenv("RENDER_EXTERNAL_URL", "")
+    if not url:
+        return
+
+    import time
+    import threading
+
+    def loop():
+        while True:
+            time.sleep(600)  # каждые 10 минут (idle-таймаут Render — 15 мин)
+            try:
+                request.urlopen(url, timeout=10, context=_SSL).read()
+            except Exception as e:
+                log.warning("keep-alive ping failed: %s", e)
+
+    threading.Thread(target=loop, daemon=True).start()
+    log.info("Keep-alive: пингуем %s каждые 10 мин", url)
+
+
 def main():
     log.info("Bot starting…")
     start_health_server()
+    start_keep_alive()
     build_app().run_polling()
 
 
