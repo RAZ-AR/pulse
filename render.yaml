@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: jan-feedback-bot
+    runtime: python
+    plan: free
+    branch: feedback-bot
+    rootDir: feedback-bot
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    healthCheckPath: /
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_CHAT_ID
+        sync: false
+      - key: SHEETS_WEBHOOK_URL
+        sync: false
