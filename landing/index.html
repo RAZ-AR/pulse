@@ -4,7 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ayoo — loyalty that competes for you</title>
-<meta name="description" content="ayoo — earn points anywhere, spend at partners. Venues compete on their points rate." />
+<meta name="description" content="Earn points anywhere, spend at partners. Venues compete on their points rate — up to 10× more. Free, in Telegram." />
+<meta property="og:title" content="ayoo — loyalty that competes for you" />
+<meta property="og:description" content="Earn points anywhere. Partners give up to 10× more. Free, in Telegram." />
+<meta property="og:image" content="og.png" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Climate+Crisis&display=swap" rel="stylesheet">
@@ -17,77 +22,146 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:700;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:700;-webkit-font-smoothing:antialiased;overflow-x:hidden;padding-bottom:64px}
+  @media(min-width:721px){body{padding-bottom:0}}
   .wrap{max-width:1200px;margin:0 auto;padding:0 18px}
-  .hard{box-shadow:8px 8px 0 var(--ink)}
-  .hard-sm{box-shadow:5px 5px 0 var(--ink)}
   .brd{border:3px solid var(--ink)}
-  .brd2{border:2px solid var(--ink)}
   .up{text-transform:uppercase}
   a{color:inherit;text-decoration:none}
+  button{font-family:var(--body);cursor:pointer}
 
-  /* ── Header ── */
+  /* Header */
   header{position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:3px solid var(--ink)}
   .hrow{display:flex;align-items:center;gap:12px;padding:10px 18px;max-width:1200px;margin:0 auto;flex-wrap:wrap}
   .brand{display:flex;align-items:center}
-  .brand svg{height:42px;width:auto;display:block}
+  .brand svg{height:40px;width:auto;display:block}
   .spacer{flex:1}
   .toggle{display:flex;border:3px solid var(--ink);border-radius:8px;overflow:hidden}
-  .toggle button{font-family:var(--body);font-weight:900;font-size:12px;letter-spacing:1px;padding:9px 16px;background:var(--card);border:none;cursor:pointer;color:var(--ink)}
+  .toggle button{font-weight:900;font-size:12px;letter-spacing:1px;padding:9px 16px;background:var(--card);border:none;color:var(--ink)}
   .toggle button.on{background:var(--orange);color:#fff}
   .toggle button+button{border-left:3px solid var(--ink)}
   .langs{display:flex;gap:6px}
-  .langs button{font-family:var(--body);font-weight:900;font-size:11px;padding:7px 10px;background:var(--card);border:2px solid var(--ink);border-radius:6px;cursor:pointer;color:var(--ink)}
+  .langs button{font-weight:900;font-size:11px;padding:7px 10px;background:var(--card);border:2px solid var(--ink);border-radius:6px;color:var(--ink)}
   .langs button.on{background:var(--ink);color:#fff}
 
-  /* ── Pixel pet ── */
+  /* Pixel pet */
   .pet{display:grid;grid-template-columns:repeat(14,var(--px));line-height:0}
   .pet i{width:var(--px);height:var(--px);display:block}
-  .hero-pet{--px:clamp(9px,2.4vw,20px)}
   .icon-pet{--px:4px}
   .pet-icon{padding:5px;background:var(--card);border:2px solid var(--ink);border-radius:5px}
 
-  /* ── Hero ── */
-  .hero{padding:46px 0 30px}
+  /* Hero */
+  .hero{padding:40px 0 24px}
   .kicker{font-size:13px;letter-spacing:3px;font-weight:900}
-  h1{font-family:var(--display);font-weight:400;line-height:.92;letter-spacing:-2px;
-     font-size:clamp(56px,13vw,200px);text-transform:uppercase;margin:14px 0}
-  .sub{font-size:clamp(16px,2.2vw,26px);max-width:760px;line-height:1.25}
-  .heroGrid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
-  .heroPetBox{background:var(--orange);border:3px solid var(--ink);border-radius:14px;padding:26px;display:flex;align-items:center;justify-content:center;min-width:230px;min-height:230px;position:relative;overflow:hidden}
-  .dot{position:absolute;width:18px;height:18px;background:rgba(0,0,0,.12)}
-  .cta{display:inline-block;margin-top:26px;font-family:var(--display);font-size:clamp(18px,2.4vw,26px);
-       background:var(--ink);color:#fff;padding:18px 34px;border-radius:10px;border:3px solid var(--ink)}
+  h1{font-family:var(--display);font-weight:400;line-height:.92;letter-spacing:-2px;font-size:clamp(52px,12vw,180px);text-transform:uppercase;margin:12px 0}
+  .sub{font-size:clamp(16px,2.2vw,24px);max-width:680px;line-height:1.25}
+  .heroGrid{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center}
+  .trust{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+  .trust span{font-size:12px;font-weight:900;letter-spacing:.5px;background:var(--card);border:2px solid var(--ink);border-radius:99px;padding:8px 14px}
+  .cta{display:inline-block;margin-top:22px;font-family:var(--display);font-size:clamp(18px,2.4vw,26px);background:var(--ink);color:#fff;padding:18px 32px;border-radius:10px;border:3px solid var(--ink)}
   .cta.alt{background:var(--orange);color:#fff}
 
-  /* ── Sections ── */
+  /* Mock Member Pass */
+  .pass{width:300px;border:3px solid var(--ink);border-radius:14px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;background:var(--orange)}
+  .passTop{padding:16px 16px 10px;position:relative;min-height:200px;display:flex;flex-direction:column;justify-content:space-between}
+  .passLbl{font-size:10px;letter-spacing:2px;font-weight:900;color:rgba(0,0,0,.62)}
+  .passPts{font-family:var(--display);font-size:64px;line-height:.85;color:#000}
+  .passPetRow{display:flex;justify-content:flex-end}
+  .passPet{--px:6px}
+  .dot{position:absolute;width:14px;height:14px;background:rgba(0,0,0,.12)}
+  .perf{display:flex;align-items:center;height:22px;background:var(--orange);border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
+  .perf .d{flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.4) 0 6px,transparent 6px 10px)}
+  .passBot{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+  .bc{display:flex;gap:2px;height:34px}.bc i{background:#000;display:block}
+  .passBtn{background:var(--teal);color:#fff;border:2px solid #000;border-radius:6px;text-align:center;font-weight:900;font-size:12px;letter-spacing:1px;padding:9px}
+
+  /* Social proof strip */
+  .proof{border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);background:var(--card)}
+  .proofIn{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px;max-width:1200px;margin:0 auto;font-weight:900;font-size:14px}
+  .proof .city{background:var(--lilac);border:2px solid #000;border-radius:99px;padding:6px 14px;font-size:13px}
+  .proof .pr{background:var(--bg);border:2px solid #000;border-radius:8px;padding:6px 12px;font-size:13px}
+
   section{padding:34px 0}
-  .secHead{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,72px);text-transform:uppercase;letter-spacing:-1px;line-height:.95;margin-bottom:20px}
+  .secHead{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,68px);text-transform:uppercase;letter-spacing:-1px;line-height:.95;margin-bottom:20px}
+
+  /* Compare 2 vs 20 */
+  .compare{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+  .vs{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .vs .v{font-family:var(--display);font-size:clamp(22px,3vw,34px)}
+  .vsTag{background:var(--orange);color:#fff;border:3px solid #000;border-radius:99px;padding:8px 16px;font-weight:900;font-size:13px;white-space:nowrap}
+  .cmpCard{background:var(--card);border:3px solid var(--ink);border-radius:12px;box-shadow:8px 8px 0 var(--ink);padding:22px;text-align:center}
+  .cmpCard.win{background:var(--orange)}
+  .cmpCard .cap{font-size:12px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:rgba(0,0,0,.55)}
+  .cmpCard .num{font-family:var(--display);font-size:clamp(56px,12vw,120px);line-height:.85;margin:8px 0}
+  .cmpCard .u{font-size:14px;font-weight:900}
+  .cmpNote{text-align:center;margin-top:14px;font-size:14px}
+  @media(max-width:640px){.compare{grid-template-columns:1fr}.vs{flex-direction:row}}
+
+  /* Calculator */
+  .calc{background:var(--ink);color:#fff;border-radius:16px;padding:28px}
+  .calc h3{font-family:var(--display);font-weight:400;font-size:clamp(24px,4vw,40px);text-transform:uppercase}
+  .calc .lab{font-size:13px;font-weight:900;letter-spacing:1px;margin:18px 0 10px;color:#bbb}
+  .calc .val{font-family:var(--display);font-size:clamp(30px,6vw,54px);color:var(--orange)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:14px;background:#333;border-radius:99px;outline:none;margin:14px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:34px;height:34px;border-radius:8px;background:var(--orange);border:3px solid #fff;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:34px;height:34px;border-radius:8px;background:var(--orange);border:3px solid #fff;cursor:pointer}
+  .calcOut{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  .calcOut .o{background:#1a1a1a;border:2px solid #444;border-radius:12px;padding:16px}
+  .calcOut .o.win{border-color:var(--orange);background:#241200}
+  .calcOut .cap{font-size:11px;color:#aaa;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+  .calcOut .big{font-family:var(--display);font-size:clamp(28px,6vw,46px);margin-top:6px}
+  .calcOut .o.win .big{color:var(--orange)}
+  .calcMult{text-align:center;margin-top:16px;font-weight:900;font-size:16px}
+
+  /* Cards / chips */
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
   .card{background:var(--card);border:3px solid var(--ink);border-radius:12px;padding:22px;box-shadow:8px 8px 0 var(--ink)}
-  .card .big{font-family:var(--display);font-size:clamp(40px,7vw,76px);line-height:.9;color:var(--orange)}
+  .card .big{font-family:var(--display);font-size:clamp(40px,7vw,72px);line-height:.9;color:var(--orange)}
   .card .ct{font-size:15px;margin-top:12px;line-height:1.3}
   .card.b1{background:var(--orange)} .card.b1 .big{color:#000}
   .card.b2{background:var(--lilac)} .card.b2 .big{color:#000}
   .card.b3{background:var(--teal)} .card.b3 .big{color:#fff} .card.b3 .ct{color:#fff}
-
   .chips{display:flex;flex-wrap:wrap;gap:12px}
   .chip{background:var(--card);border:3px solid var(--ink);border-radius:10px;padding:14px 18px;font-size:16px;box-shadow:5px 5px 0 var(--ink)}
   .collRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:22px}
 
-  /* ── How ── */
+  /* How */
   .how{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .step .n{font-family:var(--display);font-size:clamp(64px,12vw,150px);line-height:.85;color:var(--orange)}
+  .step .n{font-family:var(--display);font-size:clamp(64px,12vw,140px);line-height:.85;color:var(--orange)}
   .step .tx{font-size:16px;margin-top:8px;max-width:280px;line-height:1.3}
-  @media(max-width:720px){.how{grid-template-columns:1fr}.heroGrid{grid-template-columns:1fr}.heroPetBox{justify-self:start}}
 
-  /* ── Footer CTA ── */
+  /* Partner form */
+  .lead{background:var(--lilac);border:3px solid var(--ink);border-radius:16px;box-shadow:10px 10px 0 var(--ink);padding:28px}
+  .lead h3{font-family:var(--display);font-weight:400;font-size:clamp(26px,5vw,48px);text-transform:uppercase;line-height:.95}
+  .lead p{margin-top:8px;font-size:15px}
+  .lead .f{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-top:18px}
+  .lead input{font-family:var(--body);font-weight:700;font-size:16px;padding:14px;border:3px solid #000;border-radius:8px;background:#fff;color:#000}
+  .lead .sub{background:var(--ink);color:#fff;border:3px solid #000;border-radius:8px;font-family:var(--display);font-size:18px;padding:0 24px}
+  .leadOk{margin-top:16px;background:#fff;border:3px solid #000;border-radius:8px;padding:14px;font-weight:900;display:none}
+  @media(max-width:640px){.lead .f{grid-template-columns:1fr}}
+
+  /* FAQ */
+  .faq{display:grid;gap:12px}
+  .qa{background:var(--card);border:3px solid var(--ink);border-radius:12px;overflow:hidden}
+  .qa summary{list-style:none;cursor:pointer;padding:18px 20px;font-weight:900;font-size:17px;display:flex;justify-content:space-between;gap:14px}
+  .qa summary::-webkit-details-marker{display:none}
+  .qa summary::after{content:"+";font-family:var(--display);font-size:24px}
+  .qa[open] summary::after{content:"–"}
+  .qa .a{padding:0 20px 18px;font-size:15px;line-height:1.4}
+
+  /* Footer */
   .foot{background:var(--ink);color:#fff;border-radius:16px;padding:40px 26px;text-align:center;margin:30px 0}
-  .foot h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,84px);text-transform:uppercase;line-height:.95}
+  .foot h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,7vw,80px);text-transform:uppercase;line-height:.95}
   .foot .cta{background:#fff;color:#000;border-color:#fff;margin-top:22px}
   .barcode{display:flex;gap:3px;height:46px;justify-content:center;margin-top:26px;opacity:.9}
   .barcode i{background:#fff;display:block}
   .legal{font-size:11px;color:#888;padding:24px 0 40px;text-align:center;letter-spacing:1px}
+
+  /* Sticky mobile CTA */
+  .sticky{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--bg);border-top:3px solid var(--ink);padding:10px 14px;display:flex}
+  .sticky a{flex:1;text-align:center;font-family:var(--display);font-size:18px;background:var(--orange);color:#fff;border:3px solid #000;border-radius:10px;padding:12px}
+  @media(min-width:721px){.sticky{display:none}}
+  @media(max-width:720px){.how{grid-template-columns:1fr}.heroGrid{grid-template-columns:1fr}.pass{justify-self:start}}
 </style>
 </head>
 <body>
@@ -97,7 +171,6 @@
     <a class="brand" href="#" aria-label="ayoo">
       <svg viewBox="0 0 889.3 404.81" role="img" aria-label="ayoo">
         <path fill="#1f71b8" d="M147.18,404.65c-19.15,0-37.65-5.58-50.81-18.6l-75.67-74.82-7.37-9.73c-5.06-6.89-8.62-14.8-11-22.91l1.11-2.52c.16-.36-.75-.33-2.04-.42l-1.4-18.5L.21,72.23c.02-21.46,11.52-40.38,27.02-53.85S60.03,0,79.71,0l670.94.03c10.82,0,20.3,2.39,28.38,8.04,5.55,3.88,11.11,7.47,16.52,12.87l69.89,69.86c15.33,15.32,23.86,34.62,23.86,56.75v179.38c0,44.7-35.78,77.88-79.63,77.87l-662.49-.17ZM796.89,260.59l-.05-187.92c0-2.71-1.54-7.49-2.41-9.74l-4.74-12.2c-11.57-19.84-32.87-29.29-55.92-27.45l-660.11.1c-13.04,0-25.79,7.6-34.27,15.46s-12.61,17.81-15.88,29.14l.02,199.65c5.34,23.19,22.51,40.68,45.92,43.73l11.08.46,63.44.18h593.77c31.09,2.06,56.53-19.64,59.14-51.4Z"/>
-        <path fill="#1f71b8" d="M742.58,299.39l-665.14-.06c-22.19-1.92-38.99-16.06-40.87-38.57l-.06-185.01c1.23-19.43,14.91-35.28,34.08-38.2l678.23.02c17.81,2.12,30.4,15.59,34.08,33.32l-.08,195.52c-5.17,19.64-19.9,30.71-40.25,32.99Z"/>
         <path fill="#ea5b0c" d="M747.95,292.28l-669.29.06c-17.97,0-35.58-12.06-35.6-31.69l-.15-184.72c-.01-16.09,11.52-27.42,26.35-32.44h680.23c14.47,3.69,24.25,13.82,27.42,28.49l.03,181.2c2.09,18.79-9.95,35.82-29,39.1Z"/>
         <path fill="#FFFFFF" d="M127.54,155.18c2.82-.15,5.49-.23,8.01-.23,16.02,0,28.34,1.67,36.94,5,1.04.45,2.08.91,3.12,1.36-.89-5.15-3.78-9.16-8.68-12.04-5.94-3.48-15.8-5.22-29.6-5.22-9.35,0-18.73,1.02-28.15,3.07-9.42,2.04-18.06,4.81-25.93,8.29v-40.66c11.13-4.69,22.25-8.1,33.38-10.22,11.13-2.12,22.77-3.18,34.94-3.18,16.61,0,30.6,2.35,41.95,7.04,11.35,4.7,20.32,11.47,26.93,20.33,6.6,8.86,9.9,19.42,9.9,31.68v75.63h-54.52v-13.85c-.89.76-1.78,1.51-2.67,2.27-5.49,4.54-12.09,8.29-19.81,11.24-7.72,2.95-16.32,4.43-25.81,4.43-10.39,0-19.7-1.7-27.93-5.11-8.23-3.41-14.73-8.29-19.47-14.65-4.75-6.36-7.12-13.93-7.12-22.71s2.41-16.31,7.23-22.6c4.82-6.28,11.35-11.09,19.58-14.42,8.23-3.33,17.47-5.15,27.71-5.45ZM175.83,184.94c-4.6-1.82-12.72-2.73-24.37-2.73s-19.66,1.1-24.03,3.29c-4.38,2.2-6.57,4.96-6.57,8.29,0,3.63,2.15,6.55,6.45,8.74,4.3,2.2,10.24,3.29,17.8,3.29,9.05,0,16.43-2.08,22.14-6.25,5.71-4.16,8.57-9.05,8.57-14.65Z"/>
         <path fill="#FFFFFF" d="M283.76,277.61c-10.68,0-20.07-1.33-28.15-3.97-8.09-2.65-16.13-7-24.15-13.06v-38.61c7.86,5.15,15.17,8.82,21.92,11.02,6.75,2.2,14.05,3.29,21.92,3.29,6.23,0,11.72-1.36,16.47-4.09,4.3-2.42,7.86-6.96,10.68-13.63h-25.81l-51.41-113.11h62.31l29.15,76.77,29.82-76.77h60.09l-58.31,128.78c-4.9,10.9-10.87,19.53-17.91,25.89-7.05,6.36-14.58,10.86-22.59,13.51-8.01,2.65-16.02,3.97-24.03,3.97Z"/>
@@ -125,30 +198,99 @@
         <div class="kicker" id="kicker"></div>
         <h1 id="hero"></h1>
         <p class="sub" id="sub"></p>
+        <div class="trust" id="trust"></div>
         <a class="cta" id="cta" href="#" target="_blank" rel="noopener"></a>
       </div>
-      <div class="heroPetBox" id="heroPetBox">
-        <div class="pet hero-pet" data-pet data-key="HATCHLING" id="heroPet"></div>
+      <!-- Mock Member Pass -->
+      <div class="pass">
+        <div class="passTop" id="passTop">
+          <div>
+            <div class="passLbl">MEMBER PASS</div>
+            <div class="passPts">2,480</div>
+          </div>
+          <div class="passPetRow"><div class="pet passPet" data-pet data-key="FOX"></div></div>
+        </div>
+        <div class="perf"><span style="width:14px"></span><span class="d"></span><span style="width:14px"></span></div>
+        <div class="passBot">
+          <div class="bc" id="passBc"></div>
+          <div class="passBtn" data-k="passScan">SCAN RECEIPT</div>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Social proof -->
+  <div class="proof"><div class="proofIn">
+    <span class="city" id="proofCity"></span>
+    <span class="pr">Café Willow</span><span class="pr">Hi Food</span><span class="pr">JAN</span>
+  </div></div>
+
+  <!-- Compare 2 vs 20 -->
+  <section class="wrap">
+    <div class="secHead" id="cmpHead"></div>
+    <div class="compare">
+      <div class="cmpCard"><div class="cap" id="cmpScanCap"></div><div class="num">2</div><div class="u" id="cmpU1"></div></div>
+      <div class="vs"><div class="v">VS</div><div class="vsTag" id="cmpTag"></div></div>
+      <div class="cmpCard win"><div class="cap" id="cmpPartCap"></div><div class="num">20</div><div class="u" id="cmpU2"></div></div>
+    </div>
+    <div class="cmpNote" id="cmpNote"></div>
+  </section>
+
+  <!-- Calculator -->
+  <section class="wrap">
+    <div class="calc">
+      <h3 id="calcHead"></h3>
+      <div class="lab" id="calcLab"></div>
+      <div class="val"><span id="calcVal">20,000</span> <span id="calcUnit">RSD</span></div>
+      <input type="range" id="calcRange" min="1000" max="100000" step="1000" value="20000">
+      <div class="calcOut">
+        <div class="o"><div class="cap" id="calcScanCap"></div><div class="big"><span id="calcScan">0</span></div></div>
+        <div class="o win"><div class="cap" id="calcPartCap"></div><div class="big"><span id="calcPart">0</span></div></div>
+      </div>
+      <div class="calcMult" id="calcMult"></div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
   <section class="wrap">
     <div class="secHead" id="benHead"></div>
     <div class="cards" id="benefits"></div>
   </section>
 
+  <!-- Gamification -->
   <section class="wrap">
     <div class="secHead" id="gameHead"></div>
     <div class="chips" id="game"></div>
     <div class="collRow" id="collRow"></div>
   </section>
 
+  <!-- Partner lead form (partner role only) -->
+  <section class="wrap" id="leadSec" style="display:none">
+    <div class="lead">
+      <h3 id="leadHead"></h3>
+      <p id="leadSub"></p>
+      <form class="f" id="leadForm">
+        <input id="lf_name" placeholder="" required>
+        <input id="lf_contact" placeholder="" required>
+        <button class="sub" id="lf_btn" type="submit"></button>
+      </form>
+      <div class="leadOk" id="leadOk"></div>
+    </div>
+  </section>
+
+  <!-- How it works -->
   <section class="wrap">
     <div class="secHead" id="howHead"></div>
     <div class="how" id="how"></div>
   </section>
 
+  <!-- FAQ -->
+  <section class="wrap">
+    <div class="secHead" id="faqHead"></div>
+    <div class="faq" id="faq"></div>
+  </section>
+
+  <!-- Footer CTA -->
   <div class="wrap">
     <div class="foot">
       <h2 id="footTitle"></h2>
@@ -159,11 +301,10 @@
   </div>
 </main>
 
+<div class="sticky"><a id="stickyCta" href="#" target="_blank" rel="noopener"></a></div>
+
 <script>
-// ── Pixel sprites: 14×14, two frames. "K" = black, "." = transparent ──
 const S = {
-  EGG:[[".....KKKK.....","...KK....KK...","..K........K..",".K..........K.",".K..........K.","K............K","K....KKK.....K","K...K...K....K","K............K","K............K",".K..........K.",".K..........K.","..KK......KK..","....KKKKKK...."],
-       [".....KKKK.....","...KK....KK...","..K........K..",".K..........K.",".K..........K.","K............K","K.....KKK....K","K....K...K...K","K............K","K............K",".K..........K.",".K..........K.","..KK......KK..","....KKKKKK...."]],
   HATCHLING:[["..............","....KKKKKK....","..KK......KK..",".K..........K.",".K..K..K....K.","K............K","K.....KK.....K","K............K",".K..........K.","..KK......KK..","....KKKKKK....","....K....K....","...KK....KK...",".............."],
              ["....KKKKKK....","..KK......KK..",".K..........K.",".K..K..K....K.","K............K","K.....KK.....K","KK..........KK",".K..........K.","..KK......KK..","....KKKKKK....",".....K..K.....","..............","..............",".............."]],
   KID:[["...K......K...","...K......K...","...K......K...","..KKK....KKK..",".K..........K.",".K..K....K..K.",".K..........K.",".K...KKKK...K.","..K........K..","..K........K..","...KK....KK...","....KK..KK....","..............",".............."],
@@ -177,162 +318,201 @@ const S = {
 };
 const COLLECTION = ["HATCHLING","KID","FOX","DRAGON","PHOENIX"];
 
-// ── i18n content ──
 const T = {
   en:{
-    nav_client:"CLIENT", nav_partner:"PARTNER",
+    nav_client:"CLIENT", nav_partner:"PARTNER", passScan:"SCAN RECEIPT",
+    proofCity:"Live in Belgrade & Novi Sad",
+    cmpHead:"SAME RECEIPT. 10× THE POINTS.", cmpScanCap:"Scanning anywhere", cmpPartCap:"At a partner", cmpU1:"points", cmpU2:"points", cmpTag:"UP TO 10×", cmpNote:"On a 2,000 RSD receipt. Partners simply pay you back better.",
+    calcHead:"HOW MUCH YOU'D EARN", calcLab:"I SPEND PER MONTH", calcUnit:"RSD", calcScanCap:"Scanning", calcPartCap:"At partners",
+    calcMult:(m)=>`That's ${m}× more points — every month.`,
     howHead:"HOW IT WORKS",
     how:[["1","Earn points anywhere"],["2","Find the partner with the best rate"],["3","Spend with a discount & collect pets"]],
-    footTitle:"LOYALTY THAT COMPETES FOR YOU",
+    faqHead:"FAQ", footTitle:"LOYALTY THAT COMPETES FOR YOU",
     client:{
-      kicker:"AYOO · FOR YOU",
-      hero:"Earn points anywhere. Spend at partners.",
+      kicker:"AYOO · FOR YOU", hero:"Earn points anywhere. Spend at partners.",
       sub:"Scan any receipt — get points. Partners give up to 10× more.",
-      cta:"Open in Telegram",
+      trust:["Free","No card, no app","500 points now"], cta:"Open in Telegram",
       benHead:"WHY YOU WIN",
       benefits:[["500","welcome points to start"],["🧾","scan any receipt, anywhere"],["10×","more at partner venues"],["📍","check in — earn & streak"]],
       gameHead:"GAMIFICATION",
-      game:["🔥 Streaks","🏅 Badges","🎯 Challenges","🥚 Pet collection","👟 Steps ×1.1–1.3","🤝 Refer +50 / +100"]
+      game:["🔥 Streaks","🏅 Badges","🎯 Challenges","🥚 Pet collection","👟 Steps ×1.1–1.3","🤝 Refer +50 / +100"],
+      faq:[["Is it free?","Yes — completely free, forever. You only earn."],["Do I need an app?","No. ayoo runs inside Telegram. Open and go — no install, no plastic."],["Where can I spend points?","At partner venues. They give the best rate, so points are worth the most there."],["Do points expire?","Welcome points last 90 days. Earned points stay while you're active."]]
     },
     partner:{
-      kicker:"AYOO · FOR VENUES",
-      hero:"Set your own rate. Win more guests.",
+      kicker:"AYOO · FOR VENUES", hero:"Set your own rate. Win more guests.",
       sub:"Better rate = higher in the feed. Compete on loyalty, not discounts.",
-      cta:"Become a partner",
+      trust:["No terminal","Live in minutes","You set the rate"], cta:"Become a partner",
       benHead:"WHY YOU WIN",
       benefits:[["📈","public rate — you set it"],["🎯","paid challenges & boosts"],["🔁","points spent only at partners"],["📊","live dashboard & analytics"]],
       gameHead:"WORKS FOR YOU",
-      game:["🤖 Telegram bot, no terminal","⚡ Live in minutes","🔥 Streaks bring guests back","🏅 Badges & quests","🐲 Pets keep them playing","💳 Accept payment in chat"]
+      game:["🤖 Telegram bot, no terminal","⚡ Live in minutes","🔥 Streaks bring guests back","🏅 Badges & quests","🐲 Pets keep them playing","💳 Accept payment in chat"],
+      leadHead:"BECOME A FOUNDING PARTNER", leadSub:"First venues get featured placement free. Leave your contact — we'll set you up in Telegram.",
+      lfName:"Venue name", lfContact:"Telegram or phone", lfBtn:"Request access", leadOk:"Got it! We'll reach out in Telegram shortly. 🚀",
+      faq:[["How much does it cost?","Free to start. You only fund the points you choose to give — like a discount, but it brings guests back."],["Do I need a terminal or POS integration?","No. You run everything from a Telegram bot: award points, accept payment, launch offers."],["How fast can I launch?","Minutes. Register the venue, set your rate, done."],["Why do guests come back?","Points are spent only at partners — so every point you give pulls them back to you."]]
     }
   },
   ru:{
-    nav_client:"КЛИЕНТ", nav_partner:"ПАРТНЁР",
+    nav_client:"КЛИЕНТ", nav_partner:"ПАРТНЁР", passScan:"СКАН ЧЕКА",
+    proofCity:"Работает в Белграде и Нови-Саде",
+    cmpHead:"ТОТ ЖЕ ЧЕК. В 10× БОЛЬШЕ БАЛЛОВ.", cmpScanCap:"Скан где угодно", cmpPartCap:"У партнёра", cmpU1:"баллов", cmpU2:"баллов", cmpTag:"ДО 10×", cmpNote:"С чека на 2 000 RSD. Партнёры просто отдают тебе больше.",
+    calcHead:"СКОЛЬКО ТЫ ЗАРАБОТАЕШЬ", calcLab:"ТРАЧУ В МЕСЯЦ", calcUnit:"RSD", calcScanCap:"Сканом", calcPartCap:"У партнёров",
+    calcMult:(m)=>`Это в ${m}× больше баллов — каждый месяц.`,
     howHead:"КАК ЭТО РАБОТАЕТ",
     how:[["1","Заработал баллы где угодно"],["2","Нашёл партнёра с лучшим курсом"],["3","Потратил со скидкой и собрал питомцев"]],
-    footTitle:"ЛОЯЛЬНОСТЬ, КОТОРАЯ БОРЕТСЯ ЗА ТЕБЯ",
+    faqHead:"ВОПРОСЫ", footTitle:"ЛОЯЛЬНОСТЬ, КОТОРАЯ БОРЕТСЯ ЗА ТЕБЯ",
     client:{
-      kicker:"AYOO · ТЕБЕ",
-      hero:"Зарабатывай баллы где угодно. Трать у партнёров.",
+      kicker:"AYOO · ТЕБЕ", hero:"Зарабатывай баллы где угодно. Трать у партнёров.",
       sub:"Сканируй любой чек — получай баллы. Партнёры дают до 10× больше.",
-      cta:"Открыть в Telegram",
+      trust:["Бесплатно","Без карты и приложения","500 баллов сразу"], cta:"Открыть в Telegram",
       benHead:"ТВОЯ ВЫГОДА",
       benefits:[["500","баллов в подарок на старте"],["🧾","скан чека — где угодно"],["10×","больше у партнёров"],["📍","чек-ин — баллы и серия"]],
       gameHead:"ГЕЙМИФИКАЦИЯ",
-      game:["🔥 Серии","🏅 Значки","🎯 Челленджи","🥚 Коллекция питомцев","👟 Шаги ×1.1–1.3","🤝 Друг +50 / +100"]
+      game:["🔥 Серии","🏅 Значки","🎯 Челленджи","🥚 Коллекция питомцев","👟 Шаги ×1.1–1.3","🤝 Друг +50 / +100"],
+      faq:[["Это бесплатно?","Да — полностью и навсегда. Ты только зарабатываешь."],["Нужно приложение?","Нет. ayoo работает внутри Telegram. Открыл и пользуешься — без установки и пластика."],["Где тратить баллы?","У партнёров. У них лучший курс, там баллы стоят дороже всего."],["Баллы сгорают?","Приветственные — 90 дней. Заработанные хранятся, пока ты активен."]]
     },
     partner:{
-      kicker:"AYOO · ЗАВЕДЕНИЯМ",
-      hero:"Сам назначай курс. Привлекай гостей.",
+      kicker:"AYOO · ЗАВЕДЕНИЯМ", hero:"Сам назначай курс. Привлекай гостей.",
       sub:"Курс выгоднее — выше в выдаче. Конкурируй лояльностью, не скидками в минус.",
-      cta:"Стать партнёром",
+      trust:["Без терминала","Запуск за минуты","Курс задаёшь ты"], cta:"Стать партнёром",
       benHead:"ТВОЯ ВЫГОДА",
       benefits:[["📈","публичный курс — ты его задаёшь"],["🎯","платные челленджи и бусты"],["🔁","баллы тратят только у партнёров"],["📊","дашборд и аналитика онлайн"]],
       gameHead:"РАБОТАЕТ НА ТЕБЯ",
-      game:["🤖 Telegram-бот, без терминала","⚡ Запуск за минуты","🔥 Серии возвращают гостей","🏅 Значки и квесты","🐲 Питомцы держат интерес","💳 Оплата прямо в чате"]
+      game:["🤖 Telegram-бот, без терминала","⚡ Запуск за минуты","🔥 Серии возвращают гостей","🏅 Значки и квесты","🐲 Питомцы держат интерес","💳 Оплата прямо в чате"],
+      leadHead:"СТАНЬ ПАРТНЁРОМ-ОСНОВАТЕЛЕМ", leadSub:"Первые заведения — featured-размещение бесплатно. Оставь контакт — подключим в Telegram.",
+      lfName:"Название заведения", lfContact:"Telegram или телефон", lfBtn:"Оставить заявку", leadOk:"Готово! Скоро напишем в Telegram. 🚀",
+      faq:[["Сколько это стоит?","Старт бесплатный. Ты оплачиваешь только баллы, которые сам решаешь дарить — как скидка, но она возвращает гостей."],["Нужен терминал или интеграция с кассой?","Нет. Всё из Telegram-бота: начисляй баллы, принимай оплату, запускай акции."],["Как быстро запуститься?","За минуты. Зарегистрировал заведение, задал курс — готово."],["Почему гости возвращаются?","Баллы тратятся только у партнёров — каждый подаренный балл тянет гостя обратно к тебе."]]
     }
   },
   sr:{
-    nav_client:"KLIJENT", nav_partner:"PARTNER",
+    nav_client:"KLIJENT", nav_partner:"PARTNER", passScan:"SKENIRAJ RAČUN",
+    proofCity:"Radi u Beogradu i Novom Sadu",
+    cmpHead:"ISTI RAČUN. 10× VIŠE POENA.", cmpScanCap:"Skeniranje bilo gde", cmpPartCap:"Kod partnera", cmpU1:"poena", cmpU2:"poena", cmpTag:"DO 10×", cmpNote:"Na računu od 2.000 RSD. Partneri ti jednostavno vraćaju više.",
+    calcHead:"KOLIKO BI ZARADIO", calcLab:"TROŠIM MESEČNO", calcUnit:"RSD", calcScanCap:"Skeniranjem", calcPartCap:"Kod partnera",
+    calcMult:(m)=>`To je ${m}× više poena — svakog meseca.`,
     howHead:"KAKO RADI",
     how:[["1","Skupljaj poene bilo gde"],["2","Nađi partnera sa najboljim kursom"],["3","Potroši uz popust i skupljaj ljubimce"]],
-    footTitle:"LOJALNOST KOJA SE BORI ZA TEBE",
+    faqHead:"PITANJA", footTitle:"LOJALNOST KOJA SE BORI ZA TEBE",
     client:{
-      kicker:"AYOO · ZA TEBE",
-      hero:"Skupljaj poene bilo gde. Troši kod partnera.",
+      kicker:"AYOO · ZA TEBE", hero:"Skupljaj poene bilo gde. Troši kod partnera.",
       sub:"Skeniraj bilo koji račun — dobij poene. Partneri daju do 10× više.",
-      cta:"Otvori u Telegramu",
+      trust:["Besplatno","Bez kartice i aplikacije","500 poena odmah"], cta:"Otvori u Telegramu",
       benHead:"ZAŠTO TI",
       benefits:[["500","poena na poklon za start"],["🧾","skeniraj račun, bilo gde"],["10×","više kod partnera"],["📍","prijavi se — poeni i niz"]],
       gameHead:"GEJMIFIKACIJA",
-      game:["🔥 Nizovi","🏅 Bedževi","🎯 Izazovi","🥚 Kolekcija ljubimaca","👟 Koraci ×1.1–1.3","🤝 Pozovi +50 / +100"]
+      game:["🔥 Nizovi","🏅 Bedževi","🎯 Izazovi","🥚 Kolekcija ljubimaca","👟 Koraci ×1.1–1.3","🤝 Pozovi +50 / +100"],
+      faq:[["Da li je besplatno?","Da — potpuno i zauvek. Samo zarađuješ."],["Treba li aplikacija?","Ne. ayoo radi u Telegramu. Otvori i kreni — bez instalacije i plastike."],["Gde trošim poene?","Kod partnera. Oni daju najbolji kurs, tu poeni vrede najviše."],["Da li poeni ističu?","Pozdravni traju 90 dana. Zarađeni ostaju dok si aktivan."]]
     },
     partner:{
-      kicker:"AYOO · ZA LOKALE",
-      hero:"Odredi svoj kurs. Privuci goste.",
+      kicker:"AYOO · ZA LOKALE", hero:"Odredi svoj kurs. Privuci goste.",
       sub:"Bolji kurs = više u listi. Takmiči se lojalnošću, ne popustima.",
-      cta:"Postani partner",
+      trust:["Bez terminala","Kreni za par minuta","Ti postavljaš kurs"], cta:"Postani partner",
       benHead:"ZAŠTO TI",
       benefits:[["📈","javni kurs — ti ga postavljaš"],["🎯","plaćeni izazovi i bustovi"],["🔁","poeni se troše samo kod partnera"],["📊","dashboard i analitika uživo"]],
       gameHead:"RADI ZA TEBE",
-      game:["🤖 Telegram bot, bez terminala","⚡ Kreni za par minuta","🔥 Nizovi vraćaju goste","🏅 Bedževi i kvestovi","🐲 Ljubimci drže pažnju","💳 Naplata u četu"]
+      game:["🤖 Telegram bot, bez terminala","⚡ Kreni za par minuta","🔥 Nizovi vraćaju goste","🏅 Bedževi i kvestovi","🐲 Ljubimci drže pažnju","💳 Naplata u četu"],
+      leadHead:"POSTANI PARTNER-OSNIVAČ", leadSub:"Prvi lokali dobijaju istaknuto mesto besplatno. Ostavi kontakt — povezujemo te u Telegramu.",
+      lfName:"Naziv lokala", lfContact:"Telegram ili telefon", lfBtn:"Pošalji zahtev", leadOk:"Odlično! Javljamo se uskoro na Telegramu. 🚀",
+      faq:[["Koliko košta?","Start je besplatan. Plaćaš samo poene koje sam biraš da daš — kao popust, ali vraća goste."],["Treba li terminal ili POS integracija?","Ne. Sve iz Telegram bota: dodeljuj poene, naplaćuj, pokreći akcije."],["Koliko brzo krećem?","Za minute. Registruj lokal, postavi kurs — gotovo."],["Zašto se gosti vraćaju?","Poeni se troše samo kod partnera — svaki dati poen vuče gosta nazad kod tebe."]]
     }
   }
 };
 
-const TG_CLIENT = "https://t.me/ayoo_loyalty_bot";
-const TG_PARTNER = "https://t.me/ayoo_loyalty_bot";
+const TG = "https://t.me/ayoo_loyalty_bot";
+const SCAN_RATE = 0.001, PARTNER_RATE = 0.01; // 1pt/1000 RSD vs 10×
 
-let state = {
-  role: localStorage.getItem("ayoo_role") || "client",
-  lang: localStorage.getItem("ayoo_lang") || "en"
-};
+let state = { role: localStorage.getItem("ayoo_role")||"client", lang: localStorage.getItem("ayoo_lang")||"en" };
 
-function paint(el, key, frame){
-  const rows = (S[key] || S.HATCHLING)[frame] || (S[key]||S.HATCHLING)[0];
-  let html = "";
-  for (const row of rows) for (const ch of row) html += '<i style="background:'+(ch==="K"?"#1A1208":"transparent")+'"></i>';
-  el.innerHTML = html;
+function paint(el,key,frame){
+  const rows=(S[key]||S.HATCHLING)[frame]||(S[key]||S.HATCHLING)[0];let h="";
+  for(const r of rows)for(const ch of r)h+='<i style="background:'+(ch==="K"?"#1A1208":"transparent")+'"></i>';
+  el.innerHTML=h;
+}
+const fmt=n=>Math.round(n).toLocaleString();
+
+function calc(){
+  const L=T[state.lang];const spend=+document.getElementById("calcRange").value;
+  document.getElementById("calcVal").textContent=spend.toLocaleString();
+  const scan=spend*SCAN_RATE, part=spend*PARTNER_RATE;
+  document.getElementById("calcScan").textContent=fmt(scan);
+  document.getElementById("calcPart").textContent=fmt(part);
+  document.getElementById("calcMult").textContent=L.calcMult(Math.round(part/Math.max(scan,0.0001)));
 }
 
 function render(){
-  const L = T[state.lang], R = L[state.role];
-  // toggles
-  document.querySelectorAll("#roleToggle button").forEach(b=>b.classList.toggle("on", b.dataset.role===state.role));
-  document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on", b.dataset.lang===state.lang));
-  document.documentElement.lang = state.lang;
-  // nav labels
-  document.querySelector('[data-k="nav_client"]').textContent = L.nav_client;
-  document.querySelector('[data-k="nav_partner"]').textContent = L.nav_partner;
+  const L=T[state.lang], R=L[state.role];
+  document.querySelectorAll("#roleToggle button").forEach(b=>b.classList.toggle("on",b.dataset.role===state.role));
+  document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.lang===state.lang));
+  document.documentElement.lang=state.lang;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  document.querySelector('[data-k="nav_client"]').textContent=L.nav_client;
+  document.querySelector('[data-k="nav_partner"]').textContent=L.nav_partner;
+  document.querySelector('[data-k="passScan"]').textContent=L.passScan;
   // hero
-  kicker.textContent = R.kicker;
-  hero.textContent = R.hero;
-  sub.textContent = R.sub;
-  cta.textContent = R.cta; cta.href = state.role==="client"?TG_CLIENT:TG_PARTNER;
-  cta.classList.toggle("alt", state.role==="partner");
+  set("kicker",R.kicker); set("hero",R.hero); set("sub",R.sub);
+  document.getElementById("trust").innerHTML=R.trust.map(t=>"<span>"+t+"</span>").join("");
+  const cta=document.getElementById("cta"); cta.textContent=R.cta; cta.href=TG; cta.classList.toggle("alt",state.role==="partner");
+  // proof
+  set("proofCity",L.proofCity);
+  // compare
+  set("cmpHead",L.cmpHead); set("cmpScanCap",L.cmpScanCap); set("cmpPartCap",L.cmpPartCap);
+  set("cmpU1",L.cmpU1); set("cmpU2",L.cmpU2); set("cmpTag",L.cmpTag); set("cmpNote",L.cmpNote);
+  // calc
+  set("calcHead",L.calcHead); set("calcLab",L.calcLab); set("calcUnit",L.calcUnit);
+  set("calcScanCap",L.calcScanCap); set("calcPartCap",L.calcPartCap); calc();
   // benefits
-  benHead.textContent = R.benHead;
-  benefits.innerHTML = R.benefits.map((b,i)=>'<div class="card '+["b1","","b2","b3"][i%4]+'"><div class="big">'+b[0]+'</div><div class="ct">'+b[1]+'</div></div>').join("");
-  // gamification
-  gameHead.textContent = R.gameHead;
-  game.innerHTML = R.game.map(g=>'<div class="chip">'+g+'</div>').join("");
-  // collection row of pet icons
-  collRow.innerHTML = COLLECTION.map(k=>'<div class="pet-icon"><div class="pet icon-pet" data-pet data-key="'+k+'"></div></div>').join("");
+  set("benHead",R.benHead);
+  document.getElementById("benefits").innerHTML=R.benefits.map((b,i)=>'<div class="card '+["b1","","b2","b3"][i%4]+'"><div class="big">'+b[0]+'</div><div class="ct">'+b[1]+'</div></div>').join("");
+  // game
+  set("gameHead",R.gameHead);
+  document.getElementById("game").innerHTML=R.game.map(g=>'<div class="chip">'+g+'</div>').join("");
+  document.getElementById("collRow").innerHTML=COLLECTION.map(k=>'<div class="pet-icon"><div class="pet icon-pet" data-pet data-key="'+k+'"></div></div>').join("");
+  // lead form (partner only)
+  const leadSec=document.getElementById("leadSec");
+  if(state.role==="partner"){
+    leadSec.style.display="";
+    set("leadHead",R.leadHead); set("leadSub",R.leadSub);
+    document.getElementById("lf_name").placeholder=R.lfName;
+    document.getElementById("lf_contact").placeholder=R.lfContact;
+    document.getElementById("lf_btn").textContent=R.lfBtn;
+    document.getElementById("leadOk").textContent=R.leadOk;
+    document.getElementById("leadOk").style.display="none";
+  } else leadSec.style.display="none";
   // how
-  howHead.textContent = L.howHead;
-  how.innerHTML = L.how.map(s=>'<div class="step"><div class="n">'+s[0]+'</div><div class="tx">'+s[1]+'</div></div>').join("");
-  // footer
-  footTitle.textContent = L.footTitle;
-  footCta.textContent = R.cta; footCta.href = cta.href; footCta.classList.toggle("alt", state.role==="partner");
-  // repaint pets immediately
+  set("howHead",L.howHead);
+  document.getElementById("how").innerHTML=L.how.map(s=>'<div class="step"><div class="n">'+s[0]+'</div><div class="tx">'+s[1]+'</div></div>').join("");
+  // faq
+  set("faqHead",L.faqHead);
+  document.getElementById("faq").innerHTML=R.faq.map(q=>'<details class="qa"><summary>'+q[0]+'</summary><div class="a">'+q[1]+'</div></details>').join("");
+  // footer + sticky
+  set("footTitle",L.footTitle);
+  const fc=document.getElementById("footCta"); fc.textContent=R.cta; fc.href=TG; fc.classList.toggle("alt",state.role==="partner");
+  const sc=document.getElementById("stickyCta"); sc.textContent=R.cta; sc.href=TG;
   tick(true);
 }
 
-// scattered dots in hero pet box
-(function dots(){
-  const box = document.getElementById("heroPetBox");
-  for(let i=0;i<14;i++){const d=document.createElement("div");d.className="dot";d.style.left=((i*23)%92)+"%";d.style.top=((i*37)%88)+"%";box.appendChild(d);}
-})();
+// barcodes
+(function(){const w=[3,1,2,1,4,1,2,3,1,2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,1,2,4,1,2,3,1,2,1];
+  document.getElementById("barcode").innerHTML=w.map(x=>'<i style="width:'+(x*2.4)+'px"></i>').join("");
+  document.getElementById("passBc").innerHTML=w.slice(0,28).map(x=>'<i style="width:'+(x*1.8)+'px"></i>').join("");})();
+// dots in pass
+(function(){const t=document.getElementById("passTop");for(let i=0;i<10;i++){const d=document.createElement("div");d.className="dot";d.style.left=((i*29)%88)+"%";d.style.top=((i*41)%80)+"%";t.appendChild(d);}})();
 
-// barcode
-(function bars(){
-  const w=[3,1,2,1,4,1,2,3,1,2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,1,2,4,1,2,3,1,2,1];
-  document.getElementById("barcode").innerHTML = w.map(x=>'<i style="width:'+(x*2.4)+'px"></i>').join("");
-})();
-
-// animation loop: toggle frame; hero pet cycles through the collection
-let frame=0, heroIdx=0, ticks=0;
+let frame=0,heroIdx=2,ticks=0;
 function tick(force){
-  if(!force){ frame=1-frame; ticks++; if(ticks%8===0){ heroIdx=(heroIdx+1)%COLLECTION.length; document.getElementById("heroPet").dataset.key=COLLECTION[heroIdx]; } }
-  document.querySelectorAll("[data-pet]").forEach(el=>paint(el, el.dataset.key, frame));
+  if(!force){frame=1-frame;ticks++;}
+  document.querySelectorAll("[data-pet]").forEach(el=>paint(el,el.dataset.key,frame));
 }
-setInterval(()=>tick(false), 450);
+setInterval(()=>tick(false),450);
 
-// events
-document.getElementById("roleToggle").addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b)return; state.role=b.dataset.role; localStorage.setItem("ayoo_role",state.role); render();
-});
-document.getElementById("langs").addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b)return; state.lang=b.dataset.lang; localStorage.setItem("ayoo_lang",state.lang); render();
+document.getElementById("roleToggle").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.role=b.dataset.role;localStorage.setItem("ayoo_role",state.role);render();});
+document.getElementById("langs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.lang=b.dataset.lang;localStorage.setItem("ayoo_lang",state.lang);render();});
+document.getElementById("calcRange").addEventListener("input",calc);
+document.getElementById("leadForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const lead={name:document.getElementById("lf_name").value,contact:document.getElementById("lf_contact").value,t:Date.now()};
+  try{const all=JSON.parse(localStorage.getItem("ayoo_leads")||"[]");all.push(lead);localStorage.setItem("ayoo_leads",JSON.stringify(all));}catch(_){}
+  document.getElementById("leadOk").style.display="block";
+  e.target.reset();
 });
 
 render();
