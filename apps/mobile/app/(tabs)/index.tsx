@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
-import { AyooPet } from "../../src/components/AyooPet"
+import { TamagotchiWindow } from "../../src/components/Tamagotchi"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -105,6 +105,15 @@ export default function HomeScreen() {
   const activeChallengeRewards = activeChallenges.reduce((sum, uc) => sum + uc.challenge.pointsReward, 0)
   const todayAvailable = (me.data?.todayPotentialPoints ?? 0) + activeChallengeRewards
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
+  // Tamagotchi stat bars — retro labels, real ayoo signals (all 0..1).
+  const petStats = [
+    { label: "HUNGER",  value: streak > 0 ? Math.min(streak / 7, 1) : 0.15 },
+    { label: "HYGIENE", value: Math.min(welcomeDays / 90, 1) },
+    { label: "SMARTS",  value: Math.min(activeChallenges.length / 5, 1) },
+    { label: "ACTIVE",  value: Math.min(weeklyEarned / 50, 1) },
+    { label: "ENERGY",  value: progress },
+    { label: "HAPPY",   value: Math.min(total / Math.max(tier.next, 1), 1) },
+  ]
 
   return (
     <ScrollView
@@ -144,34 +153,14 @@ export default function HomeScreen() {
       <View style={[s.dashboard, theme.shadowRaised, isRainbow && s.dashboardRainbow]}>
         <View style={[s.dashboardGlowTop, isRainbow && s.dashboardGlowTopRainbow]} />
         <View style={[s.dashboardGlowBottom, isRainbow && s.dashboardGlowBottomRainbow]} />
-        <ProgressOrb tier={tier} progress={progress} petKey={petKey} streak={streak} />
-
-        <View style={s.profileRow}>
-          {getAvatarColor(me.data?.avatarUrl) ? (
-            <View style={[s.profileAvatar, { backgroundColor: getAvatarColor(me.data?.avatarUrl)! }]}>
-              <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
-                {initials(me.data?.name)}
-              </Text>
-            </View>
-          ) : (
-            <LavaLampSurface style={s.profileAvatar}>
-              <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy }]}>
-                {initials(me.data?.name)}
-              </Text>
-            </LavaLampSurface>
-          )}
-          <View style={s.profileMain}>
-            <Text style={[s.profileName, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
-              {fmt(total)} pts
-            </Text>
-            <View style={s.profileStats}>
-              <Text style={s.profileStat}>{t("activeBalance")}</Text>
-            </View>
-          </View>
-          <View style={s.profileIcon}>
-            <Text style={s.profileIconText}>⌘</Text>
-          </View>
-        </View>
+        <TamagotchiWindow
+          petKey={petKey}
+          streak={streak}
+          petName={me.data?.petName}
+          coins={total}
+          caption={tier.name}
+          stats={petStats}
+        />
 
         <View style={[s.levelSplit, isRainbow && s.levelSplitRainbow]}>
           <View style={[s.levelPaneLight, isRainbow && { backgroundColor: "rgba(57,255,20,0.10)" }]}>
@@ -755,38 +744,6 @@ function VenueSkeleton() {
     </View>
   )
 }
-
-function ProgressOrb({
-  tier,
-  progress,
-  petKey,
-  streak,
-}: {
-  tier: ReturnType<typeof userTier>
-  progress: number
-  petKey: string
-  streak: number
-}) {
-  return (
-    <View style={s.progressOrbWrap}>
-      <LavaLampSurface intensity="glass" style={s.progressOrbGlow} />
-      <View style={s.progressOrb}>
-        <LinearGradient
-          colors={tier.colors}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 1, y: 0 }}
-          style={[s.progressOrbFill, { height: `${Math.round(progress * 100)}%` }]}
-        />
-        <View style={s.progressOrbShine} />
-        {/* round tamagotchi screen — the pet roams inside the circle */}
-        <View style={s.tierCreature}>
-          <AyooPet petKey={petKey} streak={streak} pixelSize={7} walkRange={18} />
-        </View>
-      </View>
-    </View>
-  )
-}
-
 
 function BalancePanel({
   total,
