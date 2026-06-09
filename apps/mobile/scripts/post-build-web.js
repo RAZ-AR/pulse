@@ -17,9 +17,15 @@ if (!html.includes("telegram-web-app.js")) {
   console.log("✓ telegram-web-app.js already present")
 }
 
-// 2. Add vercel.json for SPA routing
+// 2. Add vercel.json for SPA routing.
+//    dist/ is already a fully-built static export — disable any server-side
+//    build/install so Vercel just serves these files as-is.
 const vercelJson = path.join(distDir, "vercel.json")
 fs.writeFileSync(vercelJson, JSON.stringify({
+  framework: null,
+  buildCommand: null,
+  installCommand: null,
+  outputDirectory: ".",
   rewrites: [{ source: "/(.*)", destination: "/index.html" }]
 }, null, 2) + "\n")
 console.log("✓ Written vercel.json")
