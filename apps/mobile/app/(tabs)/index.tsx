@@ -140,7 +140,7 @@ export default function HomeScreen() {
       <View style={[s.dashboard, theme.shadowRaised, isRainbow && s.dashboardRainbow]}>
         <View style={[s.dashboardGlowTop, isRainbow && s.dashboardGlowTopRainbow]} />
         <View style={[s.dashboardGlowBottom, isRainbow && s.dashboardGlowBottomRainbow]} />
-        <ProgressOrb points={lifetimePoints} tier={tier} progress={progress} />
+        <ProgressOrb tier={tier} progress={progress} />
 
         <View style={s.profileRow}>
           {getAvatarColor(me.data?.avatarUrl) ? (
@@ -753,11 +753,9 @@ function VenueSkeleton() {
 }
 
 function ProgressOrb({
-  points,
   tier,
   progress,
 }: {
-  points: number
   tier: ReturnType<typeof userTier>
   progress: number
 }) {
@@ -772,10 +770,9 @@ function ProgressOrb({
           style={[s.progressOrbFill, { height: `${Math.round(progress * 100)}%` }]}
         />
         <View style={s.progressOrbShine} />
-        <View style={s.tierBadge}>
+        {/* round tamagotchi screen — just the pet, centered and large */}
+        <View style={s.tierCreature}>
           <TierMark kind={tier.kind} />
-          <Text style={[s.tierName, { fontFamily: fonts.displayHeavy }]}>{tier.name}</Text>
-          <Text style={[s.tierPoints, { fontFamily: fonts.bodyBold }]}>{fmt(points)} pts</Text>
         </View>
       </View>
     </View>
@@ -1061,7 +1058,7 @@ const s = StyleSheet.create({
   },
   progressOrbFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 71, opacity: 0.92 },
   progressOrbShine: { position: "absolute", top: 15, left: 18, width: 50, height: 30, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.38)" },
-  tierBadge: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.52)", borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
+  tierCreature: { transform: [{ scale: 2 }], alignItems: "center", justifyContent: "center" },
   tierMark: { width: 48, height: 40, alignItems: "center", justifyContent: "center", marginBottom: 1 },
   sproutStem: { position: "absolute", bottom: 7, width: 9, height: 28, borderRadius: 8, shadowColor: "#67C887", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 8 },
   sproutLeaf: { position: "absolute", width: 29, height: 20, borderRadius: 18, top: 10, shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.24, shadowRadius: 7 },
@@ -1080,8 +1077,6 @@ const s = StyleSheet.create({
   diamondTop: { position: "absolute", top: 7, width: 42, height: 18, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#9DCCFF", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.26, shadowRadius: 9 },
   diamondBody: { position: "absolute", top: 18, width: 39, height: 39, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#9DCCFF", shadowOffset: { width: 5, height: 7 }, shadowOpacity: 0.3, shadowRadius: 10 },
   diamondFacet: { position: "absolute", top: 18, width: 18, height: 18, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.56)", transform: [{ rotate: "45deg" }] },
-  tierName: { color: "#6E7D8E", fontSize: 14, lineHeight: 16, marginTop: 1, letterSpacing: 0 },
-  tierPoints: { color: "#91A1B4", fontSize: 10, marginTop: 2 },
   profileRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
   profileAvatar: { width: 58, height: 58, borderRadius: 21, alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 3 },
   profileAvatarText: { color: "#91A1B4", fontSize: 24 },
