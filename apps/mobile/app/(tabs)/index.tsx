@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
+import { AyooPet } from "../../src/components/AyooPet"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
+import { currentPet } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
 import { colors, neonColors, fonts, useTheme, rainbowGradients } from "../../src/lib/theme"
@@ -96,6 +98,8 @@ export default function HomeScreen() {
   const lifetimePoints = Math.max(me.data?.totalEarnedLifetime ?? 0, total + (me.data?.spentPoints ?? 0))
   const tier = userTier(lifetimePoints)
   const progress = tierProgress(lifetimePoints, tier.start, tier.next)
+  const petKey = currentPet(lifetimePoints, true)?.key ?? "HATCHLING"
+  const streak = me.data?.currentStreak ?? 0
   const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
   const weeklySpent = me.data?.weeklySpentPoints ?? 10
   const activeChallengeRewards = activeChallenges.reduce((sum, uc) => sum + uc.challenge.pointsReward, 0)
@@ -140,7 +144,7 @@ export default function HomeScreen() {
       <View style={[s.dashboard, theme.shadowRaised, isRainbow && s.dashboardRainbow]}>
         <View style={[s.dashboardGlowTop, isRainbow && s.dashboardGlowTopRainbow]} />
         <View style={[s.dashboardGlowBottom, isRainbow && s.dashboardGlowBottomRainbow]} />
-        <ProgressOrb tier={tier} progress={progress} />
+        <ProgressOrb tier={tier} progress={progress} petKey={petKey} streak={streak} />
 
         <View style={s.profileRow}>
           {getAvatarColor(me.data?.avatarUrl) ? (
@@ -755,9 +759,13 @@ function VenueSkeleton() {
 function ProgressOrb({
   tier,
   progress,
+  petKey,
+  streak,
 }: {
   tier: ReturnType<typeof userTier>
   progress: number
+  petKey: string
+  streak: number
 }) {
   return (
     <View style={s.progressOrbWrap}>
@@ -770,79 +778,15 @@ function ProgressOrb({
           style={[s.progressOrbFill, { height: `${Math.round(progress * 100)}%` }]}
         />
         <View style={s.progressOrbShine} />
-        {/* round tamagotchi screen — just the pet, centered and large */}
+        {/* round tamagotchi screen — the pet roams inside the circle */}
         <View style={s.tierCreature}>
-          <TierMark kind={tier.kind} />
+          <AyooPet petKey={petKey} streak={streak} pixelSize={7} walkRange={18} />
         </View>
       </View>
     </View>
   )
 }
 
-function TierMark({ kind }: { kind: ReturnType<typeof userTier>["kind"] }) {
-  if (kind === "sprout") {
-    return (
-      <View style={s.tierMark}>
-        <LinearGradient colors={["#CFF8D8", "#67C887"]} style={s.sproutStem} />
-        <LinearGradient colors={["#ECFFEB", "#8EE9B2"]} style={[s.sproutLeaf, s.sproutLeafLeft]} />
-        <LinearGradient colors={["#EBFEFF", "#74D8B0"]} style={[s.sproutLeaf, s.sproutLeafRight]} />
-        <View style={s.markGloss} />
-      </View>
-    )
-  }
-
-  if (kind === "flower") {
-    const petals = [
-      { left: 0, top: -16 },
-      { left: 15, top: -5 },
-      { left: 9, top: 14 },
-      { left: -9, top: 14 },
-      { left: -15, top: -5 },
-    ]
-    return (
-      <View style={s.tierMark}>
-        {petals.map((petal, index) => (
-          <LinearGradient
-            key={`${petal.left}-${petal.top}`}
-            colors={index % 2 ? ["#F9FBFF", "#F199E3"] : ["#FFF4FE", "#D9E1FF"]}
-            style={[s.flowerPetal, { transform: [{ translateX: petal.left }, { translateY: petal.top }, { rotate: `${index * 32}deg` }] }]}
-          />
-        ))}
-        <LinearGradient colors={["#FFF6C7", "#F3CD64"]} style={s.flowerCenter} />
-      </View>
-    )
-  }
-
-  if (kind === "pomegranate") {
-    return (
-      <View style={s.tierMark}>
-        <LinearGradient colors={["#FFF4FE", "#FF7070", "#D96AA7"]} style={s.pomegranateBody} />
-        <LinearGradient colors={["#ECFFEB", "#9FEED3"]} style={s.pomegranateCrown} />
-        <View style={s.pomegranateSeedA} />
-        <View style={s.pomegranateSeedB} />
-        <View style={s.markGloss} />
-      </View>
-    )
-  }
-
-  if (kind === "ruby") {
-    return (
-      <View style={s.tierMark}>
-        <LinearGradient colors={["#FFF4FE", "#F199E3", "#9DCCFF"]} style={s.gemTop} />
-        <LinearGradient colors={["#F199E3", "#A971FF"]} style={s.gemBody} />
-        <View style={s.gemFacet} />
-      </View>
-    )
-  }
-
-  return (
-    <View style={s.tierMark}>
-      <LinearGradient colors={["#FFFFFF", "#BEEBFF", "#9DCCFF"]} style={s.diamondTop} />
-      <LinearGradient colors={["#EBFEFF", "#9DCCFF", "#F9FBFF"]} style={s.diamondBody} />
-      <View style={s.diamondFacet} />
-    </View>
-  )
-}
 
 function BalancePanel({
   total,
@@ -1058,7 +1002,7 @@ const s = StyleSheet.create({
   },
   progressOrbFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 71, opacity: 0.92 },
   progressOrbShine: { position: "absolute", top: 15, left: 18, width: 50, height: 30, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.38)" },
-  tierCreature: { transform: [{ scale: 2 }], alignItems: "center", justifyContent: "center" },
+  tierCreature: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   tierMark: { width: 48, height: 40, alignItems: "center", justifyContent: "center", marginBottom: 1 },
   sproutStem: { position: "absolute", bottom: 7, width: 9, height: 28, borderRadius: 8, shadowColor: "#67C887", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 8 },
   sproutLeaf: { position: "absolute", width: 29, height: 20, borderRadius: 18, top: 10, shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.24, shadowRadius: 7 },
