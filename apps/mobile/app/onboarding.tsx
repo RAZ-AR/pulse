@@ -713,7 +713,6 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
   const signIn = useAuth((s) => s.signIn)
 
   const [step, setStep] = useState<Step>(0)
-  const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [homeCity, setHomeCity] = useState<"Belgrade" | "Novi Sad">(DEFAULT_CITY.name)
   const [referralCode, setReferralCode] = useState("")
@@ -723,23 +722,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
 
   async function pickLanguage(lng: SupportedLocale) {
     await setLocale(lng)
-    setStep(1)
-  }
-
-  function continueFromEmail() {
-    setError("")
-    const e = email.trim().toLowerCase()
-    if (e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
-      setError(t("errors.invalidEmail", "Enter a valid email address"))
-      return
-    }
-    setEmail(e)
-    setStep(2)
-  }
-
-  function skipEmail() {
-    setEmail("") // will be filled by backend as guest_xxx@ayoo.space
-    setStep(2)
+    setStep(2) // skip email step → straight to name
   }
 
   async function submit() {
@@ -752,7 +735,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
     try {
       const lng = (i18n.language as SupportedLocale).toUpperCase() as "EN" | "RU" | "SR"
       const result = await signInMutation.mutateAsync({
-        ...(email ? { email } : {}), // omit email if skipped → backend generates guest account
+        // email omitted → backend generates a guest account
         name: trimmedName,
         homeCity,
         language: lng,
@@ -773,16 +756,6 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
     >
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         {step === 0 ? <Step0 onPick={pickLanguage} /> : null}
-        {step === 1 ? (
-          <Step1
-            email={email}
-            setEmail={setEmail}
-            error={error}
-            onBack={() => setStep(0)}
-            onContinue={continueFromEmail}
-            onSkip={skipEmail}
-          />
-        ) : null}
         {step === 2 ? (
           <Step2
             name={name}
@@ -793,7 +766,7 @@ function EmailOnboarding({ theme }: { theme: ReturnType<typeof useTheme> }) {
             setReferralCode={(v) => setReferralCode(cleanReferralCode(v))}
             error={error}
             isPending={signInMutation.isPending}
-            onBack={() => setStep(1)}
+            onBack={() => setStep(0)}
             onSubmit={submit}
           />
         ) : null}
@@ -876,63 +849,6 @@ function LangButton({ code, label, onPress }: { code: string; label: string; onP
       <Text style={[s.langLabel, { color: theme.text, fontFamily: fonts.bodyBold }]}>{label}</Text>
       <Text style={[s.langArrow, { color: theme.textSecondary }]}>→</Text>
     </NeuCard>
-  )
-}
-
-// ── Step 1: email + welcome bonus reveal ───────────────────
-function Step1({
-  email, setEmail, error, onBack, onContinue, onSkip,
-}: { email: string; setEmail: (v: string) => void; error: string; onBack: () => void; onContinue: () => void; onSkip: () => void }) {
-  const theme = useTheme()
-  const { t } = useTranslation("auth")
-
-  return (
-    <View style={s.step}>
-      <Pressable onPress={onBack} style={s.backBtn}>
-        <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>← {t("back", "Back")}</Text>
-      </Pressable>
-
-      <NeuCard gradient={gradients.black} style={{ padding: 22, marginBottom: 28, alignItems: "center", borderRadius: 32 }}>
-        <Text style={s.bonusIcon}>+</Text>
-        <Text style={[s.bonusTitle, { fontFamily: fonts.displayHeavy }]}>
-          {t("welcomeBonus", "500 welcome points!")}
-        </Text>
-        <Text style={s.bonusSub}>{t("welcomeBonusDescription", "Up to 100 per visit · Valid 90 days")}</Text>
-      </NeuCard>
-
-      <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-        {t("email", "Email address").toUpperCase()}
-        <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
-      </Text>
-      <NeuInset style={{ marginBottom: 6 }}>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder={t("emailPlaceholder", "you@example.com")}
-          placeholderTextColor={theme.textMuted}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
-        />
-      </NeuInset>
-      <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body }]}>
-        {t("emailHint", "You can add it later in your profile")}
-      </Text>
-      {error ? <Text style={s.err}>{error}</Text> : null}
-
-      <View style={{ flex: 1, minHeight: 24 }} />
-
-      <NeuCard gradient={gradients.black} onPress={onContinue} style={{ padding: 16, alignItems: "center", borderRadius: 99, marginBottom: 10 }}>
-        <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("continue", "Continue →")}</Text>
-      </NeuCard>
-
-      <Pressable onPress={onSkip} style={{ alignItems: "center", paddingVertical: 10 }}>
-        <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-          {t("skipForNow", "Skip for now")}
-        </Text>
-      </Pressable>
-    </View>
   )
 }
 
