@@ -36,6 +36,7 @@ import { setLocale } from "../../src/lib/i18n"
 import { CITY_OPTIONS } from "../../src/lib/venues"
 import { formatLoyaltyId } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
+import { reportProblem } from "../../src/lib/support"
 
 const AVATAR_COLORS = ["#1f71b8", "#ea5b0c", "#B38BC8", "#273AA8", "#806828", "#FFFFFF", "#000000"]
 
@@ -117,6 +118,20 @@ export default function ProfileScreen() {
   const [homeCity, setHomeCity] = useState("")
   const [editBirthday, setEditBirthday] = useState("")
   const [editAvatarColor, setEditAvatarColor] = useState<number | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportText, setReportText] = useState("")
+  const [reportSending, setReportSending] = useState(false)
+
+  async function sendReport() {
+    const msg = reportText.trim()
+    if (!msg) return
+    setReportSending(true)
+    await reportProblem(msg, { screen: "profile" }, profile.data?.id)
+    setReportSending(false)
+    setReportOpen(false)
+    setReportText("")
+    Alert.alert(t("reportThanks", "Thanks!"), t("reportSent", "We received your report and will look into it."))
+  }
 
   function startEditing() {
     const current = profile.data ?? (showDemoProfile ? DEMO_PROFILE : null)
@@ -478,6 +493,35 @@ export default function ProfileScreen() {
           )
         })}
       </View>
+
+      {/* Report a problem */}
+      <Text style={[s.h2, { color: pass.textDark, fontFamily: fonts.displayHeavy }]}>
+        {t("help", "Help")}
+      </Text>
+      {reportOpen ? (
+        <View style={[s.infoCard, { padding: 14, marginBottom: 12 }]}>
+          <TextInput
+            value={reportText}
+            onChangeText={setReportText}
+            placeholder={t("reportPlaceholder", "Describe the problem…")}
+            placeholderTextColor={pass.textMuted}
+            multiline
+            style={s.reportInput}
+          />
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Btn label={t("common:cancel", "Cancel")} variant="ghost" onPress={() => { setReportOpen(false); setReportText("") }} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Btn label={reportSending ? t("sending", "Sending…") : t("send", "Send")} onPress={sendReport} disabled={reportSending || reportText.trim().length === 0} />
+            </View>
+          </View>
+        </View>
+      ) : (
+        <Pressable onPress={() => setReportOpen(true)} style={[s.signOut, { backgroundColor: "#FFFFFF", marginBottom: 12 }]}>
+          <Text style={[s.signOutText, { fontFamily: fonts.bodyBold }]}>🐛 {t("reportProblem", "Report a problem")}</Text>
+        </Pressable>
+      )}
 
       {/* Sign out */}
       <Pressable onPress={signOut} style={[s.signOut, { backgroundColor: "#FFFFFF" }]}>
@@ -888,4 +932,5 @@ const s = StyleSheet.create({
 
   signOut: { padding: 14, borderRadius: 6, alignItems: "center", borderWidth: 2, borderColor: pass.border },
   signOutText: { color: "#000000", fontSize: 14 },
+  reportInput: { minHeight: 90, borderWidth: 2, borderColor: pass.border, borderRadius: 6, padding: 12, fontSize: 15, color: pass.textDark, textAlignVertical: "top", backgroundColor: "#FFFFFF" },
 })
