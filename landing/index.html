@@ -507,10 +507,14 @@ setInterval(()=>tick(false),450);
 document.getElementById("roleToggle").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.role=b.dataset.role;localStorage.setItem("ayoo_role",state.role);render();});
 document.getElementById("langs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.lang=b.dataset.lang;localStorage.setItem("ayoo_lang",state.lang);render();});
 document.getElementById("calcRange").addEventListener("input",calc);
+const API="https://api.ayoo.space";
 document.getElementById("leadForm").addEventListener("submit",e=>{
   e.preventDefault();
-  const lead={name:document.getElementById("lf_name").value,contact:document.getElementById("lf_contact").value,t:Date.now()};
-  try{const all=JSON.parse(localStorage.getItem("ayoo_leads")||"[]");all.push(lead);localStorage.setItem("ayoo_leads",JSON.stringify(all));}catch(_){}
+  const lead={name:document.getElementById("lf_name").value,contact:document.getElementById("lf_contact").value,source:"landing",lang:state.lang};
+  // local backup
+  try{const all=JSON.parse(localStorage.getItem("ayoo_leads")||"[]");all.push({...lead,t:Date.now()});localStorage.setItem("ayoo_leads",JSON.stringify(all));}catch(_){}
+  // send to support bot (best-effort)
+  fetch(API+"/api/partner-lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(lead)}).catch(()=>{});
   document.getElementById("leadOk").style.display="block";
   e.target.reset();
 });

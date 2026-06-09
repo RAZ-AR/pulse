@@ -12,7 +12,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./partner": "./src/partner.ts"
+    "./partner": "./src/partner.ts",
+    "./support": "./src/support.ts"
   },
   "dependencies": {
     "@pulse/db": "workspace:*",
