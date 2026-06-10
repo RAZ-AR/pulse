@@ -4,6 +4,7 @@
  *  rainbow — neon vivid dark mode, inspired by gradient orb/pill references
  */
 
+import { Platform } from "react-native"
 import { useColorMode } from "../store/colorMode"
 
 export type Theme = {
@@ -211,4 +212,6 @@ export const fonts = {
   displayBlack: "SpaceGrotesk_700Bold",
   body: "SpaceGrotesk_500Medium",
   bodyBold: "SpaceGrotesk_700Bold",
+  // Retro LCD pixel font — Press Start 2P on web (Telegram), native fallback.
+  pixel: Platform.OS === "web" ? "\"Press Start 2P\", monospace" : "SpaceGrotesk_700Bold",
 }

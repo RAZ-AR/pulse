@@ -158,8 +158,8 @@ export default function HomeScreen() {
           streak={streak}
           petName={me.data?.petName}
           coins={total}
-          caption={tier.name}
           stats={petStats}
+          onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
         />
 
         <View style={[s.levelSplit, isRainbow && s.levelSplitRainbow]}>

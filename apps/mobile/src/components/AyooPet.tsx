@@ -321,7 +321,10 @@ export function AyooPet({ petKey, streak, petName, onPress, pixelSize = 6, walkR
 
   // Tap bounce
   const tapScale = useRef(new Animated.Value(1)).current
-  function onTap() {
+  function onTap(e?: { stopPropagation?: () => void }) {
+    // Keep the tap on the pet — don't let it bubble to a parent (e.g. the
+    // tamagotchi screen that opens the collection). Tapping the pet only jumps.
+    e?.stopPropagation?.()
     Animated.sequence([
       Animated.timing(tapScale, { toValue: 1.4, duration: 100, useNativeDriver: false }),
       Animated.spring(tapScale,  { toValue: 1,  friction: 3,   useNativeDriver: false }),

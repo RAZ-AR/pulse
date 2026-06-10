@@ -158,6 +158,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="pet" />
             <Stack.Screen name="reward/[id]" />
             <Stack.Screen name="venue/[id]" />
             <Stack.Screen name="venue/[id]/review" />

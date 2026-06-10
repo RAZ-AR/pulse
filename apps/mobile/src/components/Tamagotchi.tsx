@@ -11,11 +11,25 @@
  * Pure presentational. All values come in as props.
  */
 
-import { StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Defs, Pattern, Rect } from "react-native-svg"
 import { fonts } from "../lib/theme"
 import { AyooPet } from "./AyooPet"
+
+// Standard pet names (Latin — render in the Press Start 2P pixel font).
+export const PET_NAMES: Record<string, string> = {
+  EGG: "Egg",
+  HATCHLING: "Hatchling",
+  KID: "Kid",
+  FOX: "Fox",
+  DRAGON: "Dragon",
+  PHOENIX: "Phoenix",
+}
+
+export function petDefaultName(petKey: string): string {
+  return PET_NAMES[petKey] ?? "Pet"
+}
 
 // ── LCD palette — light device, neutral grey screen ────────────
 const CASE_GRADIENT = ["#FFFFFF", "#E9EDF4"] as const
@@ -37,25 +51,24 @@ export function TamagotchiWindow({
   streak,
   petName,
   coins,
-  caption,
   stats,
-  onPress,
+  onOpen,
 }: {
   petKey: string
   streak: number
   petName?: string | null | undefined
   coins: number
-  caption: string
   stats: Stat[]
-  onPress?: (() => void) | undefined
+  onOpen?: (() => void) | undefined
 }) {
+  const name = (petName?.trim() || petDefaultName(petKey))
   return (
     <LinearGradient colors={CASE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.case}>
       {/* ── Status bars ── */}
       <View style={s.statsBox}>
         {stats.map((stat) => (
           <View key={stat.label} style={s.statCol}>
-            <Text style={[s.statLabel, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+            <Text style={[s.statLabel, { fontFamily: fonts.pixel }]} numberOfLines={1} adjustsFontSizeToFit>
               {stat.label}
             </Text>
             <View style={s.statTrack}>
@@ -65,8 +78,8 @@ export function TamagotchiWindow({
         ))}
       </View>
 
-      {/* ── LCD screen ── */}
-      <View style={s.screen}>
+      {/* ── LCD screen — tap to open the pet collection ── */}
+      <Pressable style={s.screen} onPress={onOpen}>
         <Svg style={StyleSheet.absoluteFill as object} width="100%" height="100%">
           <Defs>
             <Pattern id="lcdDots" width={7} height={7} patternUnits="userSpaceOnUse">
@@ -78,26 +91,20 @@ export function TamagotchiWindow({
 
         {/* coin counter, top-right */}
         <View style={s.coinRow}>
-          <Text style={[s.coinNum, { fontFamily: fonts.displayHeavy }]}>{coins}</Text>
+          <Text style={[s.coinNum, { fontFamily: fonts.pixel }]}>{coins}</Text>
           <View style={s.coin} />
         </View>
 
-        {/* the pet roams the screen */}
+        {/* the pet roams the screen — tapping it makes it jump (no navigation) */}
         <View style={s.petStage}>
-          <AyooPet
-            petKey={petKey}
-            streak={streak}
-            pixelSize={6}
-            walkRange={46}
-            onPress={onPress}
-          />
+          <AyooPet petKey={petKey} streak={streak} pixelSize={6} walkRange={46} />
         </View>
 
-        {/* name / tier caption */}
-        <Text style={[s.caption, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
-          {(petName || caption).toUpperCase()}
+        {/* pet name caption */}
+        <Text style={[s.caption, { fontFamily: fonts.pixel }]} numberOfLines={1}>
+          {name}
         </Text>
-      </View>
+      </Pressable>
     </LinearGradient>
   )
 }
@@ -130,8 +137,8 @@ const s = StyleSheet.create({
     borderColor: LCD.caseEdge,
     backgroundColor: "rgba(255,255,255,0.55)",
   },
-  statCol: { flex: 1, alignItems: "center", gap: 4 },
-  statLabel: { fontSize: 7, letterSpacing: 0.3, color: LCD.inkDim },
+  statCol: { flex: 1, alignItems: "center", gap: 5 },
+  statLabel: { fontSize: 5, letterSpacing: 0, color: LCD.inkDim, textAlign: "center" },
   statTrack: {
     width: "100%",
     height: 6,
@@ -162,10 +169,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 5,
   },
-  coinNum: { fontSize: 18, color: LCD.ink, letterSpacing: 0.5 },
+  coinNum: { fontSize: 13, color: LCD.ink },
   coin: {
-    width: 14,
-    height: 16,
+    width: 13,
+    height: 15,
     borderRadius: 3,
     backgroundColor: LCD.track,
     borderWidth: 2,
@@ -174,9 +181,8 @@ const s = StyleSheet.create({
   petStage: { alignItems: "center", justifyContent: "center" },
   caption: {
     position: "absolute",
-    bottom: 12,
-    fontSize: 20,
+    bottom: 14,
+    fontSize: 12,
     color: LCD.ink,
-    letterSpacing: 1,
   },
 })
