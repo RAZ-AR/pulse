@@ -56,6 +56,39 @@ async function main() {
   // Update alias
   execSync(`vercel alias ${deployUrl} ${ALIAS}`, { encoding: "utf8", stdio: "inherit" })
   console.log(`✓ ${ALIAS} updated`)
+
+  // Bust the Telegram WebView cache: point the bot's menu button at a fresh
+  // versioned URL each deploy, so clients reload instead of serving a stale
+  // (and now-missing) bundle. Best-effort — never blocks the deploy.
+  await bumpTelegramMenuButton().catch((e) => console.warn("⚠ menu-button bump skipped:", e.message))
+}
+
+function readBotToken() {
+  const envPath = require("path").join(__dirname, "../../../.env")
+  const m = fs.readFileSync(envPath, "utf8").match(/^TELEGRAM_BOT_TOKEN="?([^"\n]+)"?/m)
+  return m ? m[1] : null
+}
+
+function tg(token, method, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body)
+    const req = https.request({
+      hostname: "api.telegram.org", path: `/bot${token}/${method}`, method: "POST",
+      headers: { "Content-Type": "application/json", "Content-Length": data.length },
+    }, (res) => { let b = ""; res.on("data", c => b += c); res.on("end", () => resolve(JSON.parse(b))) })
+    req.on("error", reject); req.write(data); req.end()
+  })
+}
+
+async function bumpTelegramMenuButton() {
+  const token = readBotToken()
+  if (!token) { console.warn("⚠ no TELEGRAM_BOT_TOKEN — skipping menu-button bump"); return }
+  const url = `https://${ALIAS}/?v=${Date.now()}`
+  const r = await tg(token, "setChatMenuButton", {
+    menu_button: { type: "web_app", text: "🚀 Open ayoo", web_app: { url } },
+  })
+  if (r.ok) console.log(`✓ Telegram menu button → ${url}`)
+  else console.warn("⚠ menu-button bump failed:", JSON.stringify(r))
 }
 
 main().catch(e => { console.error(e); process.exit(1) })
