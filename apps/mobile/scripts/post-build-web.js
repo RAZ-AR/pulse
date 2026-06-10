@@ -17,6 +17,19 @@ if (!html.includes("telegram-web-app.js")) {
   console.log("✓ telegram-web-app.js already present")
 }
 
+// 1b. Inject the Press Start 2P pixel font (used by the tamagotchi LCD)
+const fontLink =
+  '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+  '<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">\n  '
+if (!html.includes("Press+Start+2P")) {
+  html = html.replace("</head>", fontLink + "</head>")
+  fs.writeFileSync(htmlPath, html)
+  console.log("✓ Injected Press Start 2P font into index.html")
+} else {
+  console.log("✓ Press Start 2P font already present")
+}
+
 // 2. Add vercel.json for SPA routing.
 //    dist/ is already a fully-built static export — disable any server-side
 //    build/install so Vercel just serves these files as-is.
