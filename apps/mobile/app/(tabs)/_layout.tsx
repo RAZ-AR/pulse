@@ -24,35 +24,35 @@ const IND_TOP  = (DOCK_H - IND_H) / 2   // vertical centering = 8
 function IconHome({ color }: { color: string }) {
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M11.06 3.25a1.5 1.5 0 0 1 1.88 0l7.6 6.08A2 2 0 0 1 21.3 10.9v8.5a2.1 2.1 0 0 1-2.1 2.1H14.3v-5.1a1.1 1.1 0 0 0-1.1-1.1h-2.4a1.1 1.1 0 0 0-1.1 1.1v5.1H4.8a2.1 2.1 0 0 1-2.1-2.1v-8.5a2 2 0 0 1 .76-1.57Z" />
+      <Path fill={color} d="M12 3.3a1.7 1.7 0 0 1 1.08.39l7.3 6.16a1.8 1.8 0 0 1 .62 1.36V19a2.4 2.4 0 0 1-2.4 2.4h-3.45v-4.9a3.15 3.15 0 0 0-6.3 0v4.9H5.4A2.4 2.4 0 0 1 3 19v-7.79a1.8 1.8 0 0 1 .62-1.36l7.3-6.16A1.7 1.7 0 0 1 12 3.3Z" />
     </Svg>
   )
 }
 function IconEarn({ color }: { color: string }) {
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M13.4 2.2a.85.85 0 0 1 1.63.55L13.5 9.1h3.6a.9.9 0 0 1 .68 1.49l-8 9.2a.85.85 0 0 1-1.48-.74L9.6 13H6a.9.9 0 0 1-.7-1.46Z" />
+      <Path fill={color} d="M14.3 2.3a1.05 1.05 0 0 1 2 .72L14.5 9.1h3.4a1.15 1.15 0 0 1 .9 1.87l-7.8 9.4a1.05 1.05 0 0 1-1.85-.85L10 13.2H6.1a1.15 1.15 0 0 1-.9-1.86Z" />
     </Svg>
   )
 }
 function IconRewards({ color }: { color: string }) {
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M12 2.4c.8 6.5 3 8.7 9.5 9.6-6.5.8-8.7 3-9.5 9.5-.8-6.5-3-8.7-9.5-9.5 6.5-.9 8.7-3.1 9.5-9.6Z" />
+      <Path fill={color} d="M12 2.2c.9 7 3 9.1 9.8 10-6.8.9-8.9 3-9.8 9.8-.9-6.8-3-8.9-9.8-9.8 6.8-.9 8.9-3 9.8-10Z" />
     </Svg>
   )
 }
 function IconMap({ color }: { color: string }) {
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} fillRule="evenodd" clipRule="evenodd" d="M12 2.2a6.8 6.8 0 0 1 6.8 6.8c0 4.6-5.1 9.9-6.3 11.1a.7.7 0 0 1-1 0C10.3 18.9 5.2 13.6 5.2 9A6.8 6.8 0 0 1 12 2.2Zm0 4.4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
+      <Path fill={color} fillRule="evenodd" clipRule="evenodd" d="M12 2a7.2 7.2 0 0 1 7.2 7.2c0 4.9-5.4 10.45-6.65 11.7a.78.78 0 0 1-1.1 0C10.2 19.65 4.8 14.1 4.8 9.2A7.2 7.2 0 0 1 12 2Zm0 4.5a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4Z" />
     </Svg>
   )
 }
 function IconProfile({ color }: { color: string }) {
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M12 3.1a4.1 4.1 0 1 0 0 8.2 4.1 4.1 0 0 0 0-8.2ZM4.6 20.1a7.4 7.4 0 0 1 14.8 0 1.4 1.4 0 0 1-1.4 1.4H6a1.4 1.4 0 0 1-1.4-1.4Z" />
+      <Path fill={color} d="M12 2.8a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8ZM4.2 20.4a7.8 7.8 0 0 1 15.6 0 1.5 1.5 0 0 1-1.5 1.5H5.7a1.5 1.5 0 0 1-1.5-1.5Z" />
     </Svg>
   )
 }
