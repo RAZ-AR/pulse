@@ -12,21 +12,22 @@
  */
 
 import { StyleSheet, Text, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Defs, Pattern, Rect } from "react-native-svg"
 import { fonts } from "../lib/theme"
 import { AyooPet } from "./AyooPet"
 
-// ── LCD palette ────────────────────────────────────────────────
+// ── LCD palette — light device, neutral grey screen ────────────
+const CASE_GRADIENT = ["#FFFFFF", "#E9EDF4"] as const
 const LCD = {
-  case:        "#9AA886",
-  caseEdge:    "#828F6C",
-  caseBorder:  "#5F6B49",
-  screen:      "#A9B795",
-  screenEdge:  "#7E8C68",
-  dot:         "#93A17C",
-  ink:         "#2A3322",
-  inkDim:      "#5E6A48",
-  track:       "#8E9C78",
+  caseBorder:  "rgba(255,255,255,0.9)",
+  caseEdge:    "#D7DCE6",
+  screen:      "#DBDBDB",
+  screenEdge:  "#C4C4C4",
+  dot:         "#CBCBCB",
+  ink:         "#3A3F47",
+  inkDim:      "#9AA0AB",
+  track:       "#CFCFCF",
 }
 
 export type Stat = { label: string; value: number }
@@ -49,7 +50,7 @@ export function TamagotchiWindow({
   onPress?: (() => void) | undefined
 }) {
   return (
-    <View style={s.case}>
+    <LinearGradient colors={CASE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.case}>
       {/* ── Status bars ── */}
       <View style={s.statsBox}>
         {stats.map((stat) => (
@@ -97,23 +98,23 @@ export function TamagotchiWindow({
           {(petName || caption).toUpperCase()}
         </Text>
       </View>
-    </View>
+    </LinearGradient>
   )
 }
 
 const s = StyleSheet.create({
   case: {
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 12,
-    backgroundColor: LCD.case,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: LCD.caseBorder,
-    borderBottomWidth: 5,
+    borderBottomWidth: 3,
+    borderBottomColor: LCD.caseEdge,
     gap: 10,
-    shadowColor: "#5F6B49",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
     elevation: 6,
   },
 
@@ -124,13 +125,13 @@ const s = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 8,
     paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1.5,
+    borderRadius: 14,
+    borderWidth: 1,
     borderColor: LCD.caseEdge,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(255,255,255,0.55)",
   },
   statCol: { flex: 1, alignItems: "center", gap: 4 },
-  statLabel: { fontSize: 7, letterSpacing: 0.3, color: LCD.ink },
+  statLabel: { fontSize: 7, letterSpacing: 0.3, color: LCD.inkDim },
   statTrack: {
     width: "100%",
     height: 6,
