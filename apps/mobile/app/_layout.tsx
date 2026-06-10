@@ -8,7 +8,7 @@ import { Providers } from "../src/components/providers"
 import { useAuth } from "../src/store/auth"
 import { signInWithTelegramDirect, trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
-import { getTgWebApp, getTgInitData, isTelegramRuntime } from "../src/lib/telegram"
+import { getTgWebApp, getTgInitData, isTelegramRuntime, readPetStartParam } from "../src/lib/telegram"
 
 function PushRegistrar() {
   const { token } = useAuth()
@@ -56,6 +56,9 @@ function AuthGate() {
   const signOut = useAuth((s) => s.signOut)
 
   const demoSignIn = trpc.auth.signInWithEmail.useMutation()
+  const namePet = trpc.user.namePet.useMutation()
+  const utils = trpc.useUtils()
+  const petNamed = useRef(false)
 
   const tg = getTgWebApp()
   const telegramMode = isTelegramRuntime()
@@ -127,6 +130,17 @@ function AuthGate() {
     attempted.current = false
     signOut().catch(noop)
   }, [me.error, token, signOut])
+
+  // 2b) Carry the pet name handed off from the landing (startapp=pet-KEY-name),
+  //     but only if the user hasn't already named a pet.
+  useEffect(() => {
+    if (petNamed.current || !token || !me.data) return
+    if (me.data.petName && me.data.petName.trim()) { petNamed.current = true; return }
+    const pet = readPetStartParam()
+    if (!pet?.name) return
+    petNamed.current = true
+    namePet.mutate({ name: pet.name }, { onSuccess: () => utils.user.me.invalidate() })
+  }, [token, me.data, namePet, utils])
 
   // 3) Route. Pure function of state — no per-mode branches.
   useEffect(() => {

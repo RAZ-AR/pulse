@@ -61,3 +61,22 @@ export function getTgUser() {
 export function getTgStartParam(): string | undefined {
   return getTgWebApp()?.initDataUnsafe?.start_param || parseHashInitData()?.get("start_param") || undefined
 }
+
+function b64urlDecode(s: string): string {
+  try {
+    const pad = s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)
+    return decodeURIComponent(escape(atob(pad)))
+  } catch {
+    return ""
+  }
+}
+
+/** Pet handed off from the landing: startapp=pet-<KEY>-<base64url(name)>. */
+export function readPetStartParam(): { key: string; name?: string } | undefined {
+  const p = getTgStartParam()
+  if (!p || !p.startsWith("pet-")) return undefined
+  const [, key, b64] = p.split("-")
+  if (!key) return undefined
+  const name = b64 ? b64urlDecode(b64).trim().slice(0, 20) : undefined
+  return name ? { key, name } : { key }
+}
