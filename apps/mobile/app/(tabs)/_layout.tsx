@@ -20,41 +20,39 @@ const IND_H    = 44
 const IND_TOP  = (DOCK_H - IND_H) / 2   // vertical centering = 8
 
 // ── SVG Icons ─────────────────────────────────────────────────
+// ── Chunky filled "puffy" icon set ────────────────────────────
 function IconHome({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H5a1 1 0 01-1-1V10.5z" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
-      <Path d="M9 22V12h6v10" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
+    <Svg width={23} height={23} viewBox="0 0 24 24">
+      <Path fill={color} d="M11.06 3.25a1.5 1.5 0 0 1 1.88 0l7.6 6.08A2 2 0 0 1 21.3 10.9v8.5a2.1 2.1 0 0 1-2.1 2.1H14.3v-5.1a1.1 1.1 0 0 0-1.1-1.1h-2.4a1.1 1.1 0 0 0-1.1 1.1v5.1H4.8a2.1 2.1 0 0 1-2.1-2.1v-8.5a2 2 0 0 1 .76-1.57Z" />
     </Svg>
   )
 }
 function IconEarn({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M13 2L4.5 13.5H12L11 22l8.5-11.5H12.5L13 2z" stroke={color} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" />
+    <Svg width={23} height={23} viewBox="0 0 24 24">
+      <Path fill={color} d="M13.4 2.2a.85.85 0 0 1 1.63.55L13.5 9.1h3.6a.9.9 0 0 1 .68 1.49l-8 9.2a.85.85 0 0 1-1.48-.74L9.6 13H6a.9.9 0 0 1-.7-1.46Z" />
     </Svg>
   )
 }
 function IconRewards({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 2l2.9 6.3 6.6.9-4.8 4.7 1.1 6.6L12 17.3l-5.8 3.2 1.1-6.6L2.5 9.2l6.6-.9L12 2z" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
+    <Svg width={23} height={23} viewBox="0 0 24 24">
+      <Path fill={color} d="M12 2.4c.8 6.5 3 8.7 9.5 9.6-6.5.8-8.7 3-9.5 9.5-.8-6.5-3-8.7-9.5-9.5 6.5-.9 8.7-3.1 9.5-9.6Z" />
     </Svg>
   )
 }
 function IconMap({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 2C8.7 2 6 4.7 6 8c0 5 6 14 6 14s6-9 6-14c0-3.3-2.7-6-6-6z" stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
-      <Circle cx={12} cy={8} r={2} stroke={color} strokeWidth={1.8} />
+    <Svg width={23} height={23} viewBox="0 0 24 24">
+      <Path fill={color} fillRule="evenodd" clipRule="evenodd" d="M12 2.2a6.8 6.8 0 0 1 6.8 6.8c0 4.6-5.1 9.9-6.3 11.1a.7.7 0 0 1-1 0C10.3 18.9 5.2 13.6 5.2 9A6.8 6.8 0 0 1 12 2.2Zm0 4.4a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
     </Svg>
   )
 }
 function IconProfile({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={8} r={4} stroke={color} strokeWidth={1.8} />
-      <Path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Svg width={23} height={23} viewBox="0 0 24 24">
+      <Path fill={color} d="M12 3.1a4.1 4.1 0 1 0 0 8.2 4.1 4.1 0 0 0 0-8.2ZM4.6 20.1a7.4 7.4 0 0 1 14.8 0 1.4 1.4 0 0 1-1.4 1.4H6a1.4 1.4 0 0 1-1.4-1.4Z" />
     </Svg>
   )
 }
@@ -97,8 +95,8 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
     }).start()
   }, [state.index, indX])
 
-  const activeColor   = isRainbow ? "#FFFFFF"                   : "#1A1A2E"
-  const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)"    : "rgba(80,90,110,0.42)"
+  const activeColor   = "#FFFFFF"
+  const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)"    : "#d74427"
 
   // На вебе нужен position:fixed чтобы dock прилипал к низу viewport (не к родителю).
   // React Native Web принимает "fixed" в runtime, но TypeScript это не знает.
@@ -136,7 +134,8 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
           )}
           {!isRainbow && (
             <>
-              {/* Top highlight edge */}
+              {/* Glass specular + top highlight edge */}
+              <View style={s.specular} />
               <View style={s.normalHighlight} />
             </>
           )}
@@ -272,13 +271,13 @@ const s = StyleSheet.create({
   },
 
   indNormal: {
-    // White glass droplet
-    backgroundColor:   "rgba(255,255,255,0.90)",
+    // #d74427 glass droplet
+    backgroundColor:   "rgba(215,68,39,0.95)",
     borderWidth: 1,
-    borderTopColor:    "rgba(255,255,255,1.0)",
-    borderLeftColor:   "rgba(255,255,255,0.90)",
-    borderRightColor:  "rgba(200,210,232,0.45)",
-    borderBottomColor: "rgba(200,210,232,0.50)",
+    borderTopColor:    "rgba(255,255,255,0.55)",
+    borderLeftColor:   "rgba(255,170,150,0.45)",
+    borderRightColor:  "rgba(150,40,20,0.40)",
+    borderBottomColor: "rgba(150,40,20,0.55)",
   },
 
   indRainbow: {
