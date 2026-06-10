@@ -39,6 +39,12 @@ fs.writeFileSync(vercelJson, JSON.stringify({
   buildCommand: null,
   installCommand: null,
   outputDirectory: ".",
-  rewrites: [{ source: "/(.*)", destination: "/index.html" }]
+  rewrites: [{ source: "/(.*)", destination: "/index.html" }],
+  // Never cache the HTML shell — so Telegram's WebView always loads the
+  // newest hashed JS bundle instead of a stale cached version.
+  headers: [
+    { source: "/", headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }] },
+    { source: "/index.html", headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }] },
+  ],
 }, null, 2) + "\n")
 console.log("✓ Written vercel.json")
