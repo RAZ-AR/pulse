@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
-import { IconClover, IconPlane } from "../../src/components/icons"
+import { Clover3D, Plane3D } from "../../src/components/icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -180,15 +180,15 @@ export default function HomeScreen() {
           onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
         />
 
-        {/* earn / give-away actions */}
+        {/* earn / give-away — volumetric console keys, no card around them */}
         <View style={s.actionSplit}>
-          <Pressable onPress={() => router.push("/(tabs)/earn")} style={({ pressed }) => [s.actionHalf, pressed && { transform: [{ scale: 0.97 }] }]}>
-            <IconClover color="#d74427" />
-            <Text style={[s.actionHalfText, { fontFamily: fonts.bodyBold }]}>{t("nav.earn")}</Text>
+          <Pressable onPress={() => router.push("/(tabs)/earn")} style={({ pressed }) => [s.consoleKey, pressed && s.consoleKeyPressed]}>
+            <Clover3D size={68} />
+            <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("nav.earn").toUpperCase()}</Text>
           </Pressable>
-          <Pressable onPress={() => router.push("/gift")} style={({ pressed }) => [s.actionHalf, pressed && { transform: [{ scale: 0.97 }] }]}>
-            <IconPlane color="#d74427" />
-            <Text style={[s.actionHalfText, { fontFamily: fonts.bodyBold }]}>{t("sendTo")}</Text>
+          <Pressable onPress={() => router.push("/gift")} style={({ pressed }) => [s.consoleKey, pressed && s.consoleKeyPressed]}>
+            <Plane3D size={68} />
+            <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("sendTo").toUpperCase()}</Text>
           </Pressable>
         </View>
 
@@ -965,23 +965,10 @@ const s = StyleSheet.create({
   profileStat: { color: "#91A1B4", fontSize: 11, fontWeight: "700" },
   profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
   profileIconText: { color: "#91A1B4", fontSize: 16, fontWeight: "900" },
-  actionSplit: { flexDirection: "row", gap: 12, marginBottom: 12 },
-  actionHalf: {
-    flex: 1,
-    minHeight: 64,
-    borderRadius: 24,
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.24,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  actionHalfText: { color: "#d74427", fontSize: 14 },
+  actionSplit: { flexDirection: "row", justifyContent: "space-evenly", alignItems: "flex-start", marginTop: 4, marginBottom: 14 },
+  consoleKey: { alignItems: "center", gap: 7 },
+  consoleKeyPressed: { transform: [{ translateY: 2 }] },
+  consoleKeyLabel: { fontSize: 10, letterSpacing: 1.2, color: "#91A1B4" },
   dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
   dashboardSectionTitle: { color: "#6E7D8E", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
   dashboardSectionLink: { color: "#91A1B4", fontSize: 11 },
