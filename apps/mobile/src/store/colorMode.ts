@@ -1,23 +1,9 @@
 import { create } from "zustand"
-import { Platform } from "react-native"
 
+// Rainbow mode removed — the app is always in the light "pastel" design.
+// The store shape is kept so existing `useColorMode` consumers compile;
+// every `mode === "rainbow"` branch is now dead.
 type ColorMode = "pastel" | "rainbow"
-
-const KEY = "ayoo_color_mode"
-
-function loadMode(): ColorMode {
-  if (Platform.OS === "web") {
-    const v = globalThis.localStorage?.getItem(KEY)
-    return v === "rainbow" ? "rainbow" : "pastel"
-  }
-  return "pastel"
-}
-
-function saveMode(mode: ColorMode) {
-  if (Platform.OS === "web") {
-    globalThis.localStorage?.setItem(KEY, mode)
-  }
-}
 
 type ColorModeState = {
   mode: ColorMode
@@ -25,15 +11,8 @@ type ColorModeState = {
   setMode: (mode: ColorMode) => void
 }
 
-export const useColorMode = create<ColorModeState>((set, get) => ({
-  mode: loadMode(),
-  toggle() {
-    const next: ColorMode = get().mode === "pastel" ? "rainbow" : "pastel"
-    saveMode(next)
-    set({ mode: next })
-  },
-  setMode(mode) {
-    saveMode(mode)
-    set({ mode })
-  },
+export const useColorMode = create<ColorModeState>(() => ({
+  mode: "pastel",
+  toggle() {},
+  setMode() {},
 }))

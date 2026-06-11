@@ -67,7 +67,7 @@ function tierProgress(points: number, start: number, next: number) {
 
 export default function HomeScreen() {
   const theme = useTheme()
-  const { mode, toggle } = useColorMode()
+  const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const router = useRouter()
   const { t } = useTranslation(["common", "venue"])
@@ -147,7 +147,6 @@ export default function HomeScreen() {
           </View>
           <LanguageSwitcher isRainbow={isRainbow} />
         </View>
-        <ColorModeToggle isRainbow={isRainbow} onToggle={toggle} />
       </View>
 
       <View style={[s.dashboard, theme.shadowRaised, isRainbow && s.dashboardRainbow]}>
@@ -437,22 +436,6 @@ function LanguageSwitcher({ isRainbow }: { isRainbow?: boolean }) {
         )
       })}
     </View>
-  )
-}
-
-function ColorModeToggle({ isRainbow, onToggle }: { isRainbow: boolean; onToggle: () => void }) {
-  return (
-    <Pressable onPress={onToggle} style={[s.modeToggle, isRainbow && s.modeToggleRainbow]}>
-      <View style={[s.modeToggleTrack, isRainbow && s.modeToggleTrackRainbow]}>
-        <View style={[s.modeToggleThumb, isRainbow ? s.modeToggleThumbRight : s.modeToggleThumbLeft]}>
-          {isRainbow ? (
-            <Text style={s.modeToggleIcon}>🌈</Text>
-          ) : (
-            <Text style={s.modeToggleIcon}>🌸</Text>
-          )}
-        </View>
-      </View>
-    </Pressable>
   )
 }
 
@@ -1229,56 +1212,6 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   langPillText: { fontSize: 10, letterSpacing: 0.8 },
-  modeToggle: {
-    width: 64,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modeToggleRainbow: {},
-  modeToggleTrack: {
-    width: 56,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#EAEEF8",
-    justifyContent: "center",
-    paddingHorizontal: 2,
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  modeToggleTrackRainbow: {
-    backgroundColor: "#1A0A3A",
-    shadowColor: "#8B3DFF",
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(139,61,255,0.4)",
-  },
-  modeToggleThumb: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  modeToggleThumbLeft: { alignSelf: "flex-start" },
-  modeToggleThumbRight: {
-    alignSelf: "flex-end",
-    backgroundColor: "#1A0A3A",
-    shadowColor: "#FF2D9B",
-    shadowOpacity: 0.7,
-    shadowRadius: 8,
-  },
-  modeToggleIcon: { fontSize: 14 },
 
   dashboardRainbow: {
     backgroundColor: "#F2F2F6",
