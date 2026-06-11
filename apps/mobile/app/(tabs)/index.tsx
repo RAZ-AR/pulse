@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
+import { IconClover, IconPlane } from "../../src/components/icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -172,18 +173,23 @@ export default function HomeScreen() {
           petName={me.data?.petName}
           coins={total}
           stats={petStats}
+          weeklyEarned={weeklyEarned}
+          weeklySpent={weeklySpent}
+          earnedLabel={t("earnedThisWeek")}
+          spentLabel={t("spentThisWeek")}
           onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
         />
 
-        <View style={[s.levelSplit, isRainbow && s.levelSplitRainbow]}>
-          <View style={[s.levelPaneLight, isRainbow && { backgroundColor: "rgba(57,255,20,0.10)" }]}>
-            <Text style={[s.levelValueDark, s.weekGain, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.green : "#67C887" }]}>+{fmt(weeklyEarned)}</Text>
-            <Text style={[s.levelLabelDark, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#6E7D8E" }]}>{t("earnedThisWeek")}</Text>
-          </View>
-          <View style={[s.levelPaneBlue, isRainbow && { backgroundColor: "rgba(255,45,155,0.10)" }]}>
-            <Text style={[s.levelValueLight, s.weekSpend, { fontFamily: fonts.displayHeavy, color: isRainbow ? neonColors.pink : "#91A1B4" }]}>-{fmt(weeklySpent)}</Text>
-            <Text style={[s.levelLabelLight, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#7FAFC2" }]}>{t("spentThisWeek")}</Text>
-          </View>
+        {/* earn / give-away actions */}
+        <View style={s.actionSplit}>
+          <Pressable onPress={() => router.push("/(tabs)/earn")} style={({ pressed }) => [s.actionHalf, pressed && { transform: [{ scale: 0.97 }] }]}>
+            <IconClover color="#d74427" />
+            <Text style={[s.actionHalfText, { fontFamily: fonts.bodyBold }]}>{t("nav.earn")}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push("/gift")} style={({ pressed }) => [s.actionHalf, pressed && { transform: [{ scale: 0.97 }] }]}>
+            <IconPlane color="#d74427" />
+            <Text style={[s.actionHalfText, { fontFamily: fonts.bodyBold }]}>{t("sendTo")}</Text>
+          </Pressable>
         </View>
 
         <BalancePanel
@@ -959,15 +965,23 @@ const s = StyleSheet.create({
   profileStat: { color: "#91A1B4", fontSize: 11, fontWeight: "700" },
   profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#F9FBFF", alignItems: "center", justifyContent: "center", shadowColor: "#A3B1C6", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
   profileIconText: { color: "#91A1B4", fontSize: 16, fontWeight: "900" },
-  levelSplit: { flexDirection: "row", borderRadius: 24, overflow: "hidden", marginBottom: 12, backgroundColor: "#F9FBFF", shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 10, elevation: 3 },
-  levelPaneLight: { flex: 1, minHeight: 82, backgroundColor: "#FFFFFF", padding: 10, flexDirection: "row", alignItems: "center", gap: 7 },
-  levelPaneBlue: { flex: 1, minHeight: 82, backgroundColor: "rgba(235,254,255,0.82)", padding: 10, flexDirection: "row", alignItems: "center", gap: 7 },
-  levelValueDark: { color: "#6E7D8E", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
-  levelValueLight: { color: "#7FAFC2", fontSize: 50, lineHeight: 54, letterSpacing: 0 },
-  weekGain: { color: "#67C887", fontSize: 34, lineHeight: 37 },
-  weekSpend: { color: "#91A1B4", fontSize: 34, lineHeight: 37 },
-  levelLabelDark: { color: "#6E7D8E", fontSize: 11, lineHeight: 12 },
-  levelLabelLight: { color: "#7FAFC2", fontSize: 11, lineHeight: 12 },
+  actionSplit: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  actionHalf: {
+    flex: 1,
+    minHeight: 64,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.24,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  actionHalfText: { color: "#d74427", fontSize: 14 },
   dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
   dashboardSectionTitle: { color: "#6E7D8E", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
   dashboardSectionLink: { color: "#91A1B4", fontSize: 11 },
@@ -1204,12 +1218,6 @@ const s = StyleSheet.create({
   },
   dashboardGlowTopRainbow: { backgroundColor: "rgba(100,0,255,0.06)" },
   dashboardGlowBottomRainbow: { backgroundColor: "rgba(255,0,100,0.05)" },
-
-  levelSplitRainbow: {
-    backgroundColor: "#EEEEF4",
-    shadowColor: "#AA00FF",
-    shadowOpacity: 0.18,
-  },
 
   balancePanelRainbow: {
     shadowColor: "#FF2D9B",

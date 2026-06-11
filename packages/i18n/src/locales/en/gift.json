@@ -15,6 +15,7 @@
   "linkCreated": "Link created!",
   "linkShared": "link opened for sharing",
   "doneHint": "Points will be credited when your friend opens the link",
+  "qrHint": "A friend or partner scans the QR — the points go to them",
   "shareAgain": "Share again",
   "sendAnother": "Send another",
   "history": "History",

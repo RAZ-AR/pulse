@@ -52,6 +52,10 @@ export function TamagotchiWindow({
   petName,
   coins,
   stats,
+  weeklyEarned,
+  weeklySpent,
+  earnedLabel,
+  spentLabel,
   onOpen,
 }: {
   petKey: string
@@ -59,6 +63,10 @@ export function TamagotchiWindow({
   petName?: string | null | undefined
   coins: number
   stats: Stat[]
+  weeklyEarned: number
+  weeklySpent: number
+  earnedLabel: string
+  spentLabel: string
   onOpen?: (() => void) | undefined
 }) {
   const name = (petName?.trim() || petDefaultName(petKey))
@@ -93,6 +101,14 @@ export function TamagotchiWindow({
         <View style={s.coinRow}>
           <Text style={[s.coinNum, { fontFamily: fonts.pixel }]}>{coins}</Text>
           <View style={s.coin} />
+        </View>
+
+        {/* weekly earned / spent, top-left — LCD style */}
+        <View style={s.weekWrap}>
+          <Text style={[s.weekNum, { fontFamily: fonts.pixel }]}>+{weeklyEarned.toLocaleString()}</Text>
+          <Text style={[s.weekLabel, { fontFamily: fonts.pixel }]}>{earnedLabel}</Text>
+          <Text style={[s.weekNum, s.weekNumSpent, { fontFamily: fonts.pixel }]}>-{weeklySpent.toLocaleString()}</Text>
+          <Text style={[s.weekLabel, { fontFamily: fonts.pixel }]}>{spentLabel}</Text>
         </View>
 
         {/* the pet roams the screen — tapping it makes it jump (no navigation) */}
@@ -170,6 +186,10 @@ const s = StyleSheet.create({
     gap: 5,
   },
   coinNum: { fontSize: 13, color: LCD.ink },
+  weekWrap: { position: "absolute", top: 10, left: 12 },
+  weekNum: { fontSize: 11, color: LCD.ink },
+  weekNumSpent: { color: LCD.inkDim, marginTop: 7 },
+  weekLabel: { fontSize: 5, lineHeight: 8, color: LCD.inkDim, marginTop: 3 },
   coin: {
     width: 13,
     height: 15,

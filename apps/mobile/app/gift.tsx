@@ -1,6 +1,7 @@
 import { useState } from "react"
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native"
+import { IconPlane } from "../src/components/icons"
 import { Stack, useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../src/lib/trpc"
@@ -151,6 +153,17 @@ export default function GiftScreen() {
                 {t("doneHint", "Points will be credited when your friend opens the link")}
               </Text>
 
+              {/* QR with the gift link — scan to claim the points */}
+              <View style={s.qrCard}>
+                <Image
+                  source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=0&data=${encodeURIComponent(done.shareUrl)}` }}
+                  style={s.qrImg}
+                />
+              </View>
+              <Text style={[s.doneHint, { color: theme.textSecondary }]}>
+                {t("qrHint", "A friend or partner scans it — the points go to them")}
+              </Text>
+
               <View style={s.btnRow}>
                 <Pressable onPress={shareAgain} style={{ flex: 1 }}>
                   {isRainbow ? (
@@ -258,7 +271,10 @@ export default function GiftScreen() {
                     {createLink.isPending ? (
                       <ActivityIndicator color={colors.ink} />
                     ) : (
-                      <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>🎁  {t("giftBtn", "Gift")}</Text>
+                      <View style={s.ctaRow}>
+                        <IconPlane color="#d74427" size={20} />
+                        <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("giftBtn", "Gift")}</Text>
+                      </View>
                     )}
                   </NeuCard>
                 )}
@@ -370,6 +386,18 @@ const s = StyleSheet.create({
   doneTitle: { fontSize: 34, lineHeight: 38 },
   doneSub: { fontSize: 15, marginTop: 8, textAlign: "center" },
   doneHint: { fontSize: 12, marginTop: 6, marginBottom: 22, textAlign: "center", lineHeight: 18, paddingHorizontal: 20 },
+  qrCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 16,
+    shadowColor: "#A3B1C6",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  qrImg: { width: 200, height: 200 },
+  ctaRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   btnRow: { flexDirection: "row", gap: 10, width: "100%", marginBottom: 12 },
   primaryBtn: { padding: 14, alignItems: "center", borderRadius: 99 },
   secondaryPressable: { padding: 12, alignItems: "center" },
