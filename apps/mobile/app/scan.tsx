@@ -15,7 +15,7 @@ type Phase =
   | { kind: "camera"; mode: Mode }
   | { kind: "uploading" }
   | { kind: "scanning"; imageUrl: string }
-  | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number }
+  | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number; scanToken: string }
   | { kind: "submitting" }
   | { kind: "error"; message: string; mode: Mode; alreadyScanned?: boolean }
   | {
@@ -151,6 +151,7 @@ export default function ScanScreen() {
         imageUrl,
         receiptHash: result.receiptHash,
         confidence: result.confidence,
+        scanToken: result.scanToken,
         ocr: {
           vendor: d.vendor ?? "",
           amount: d.total !== null ? String(d.total) : "",
@@ -178,14 +179,13 @@ export default function ScanScreen() {
     setPhase({ kind: "submitting" })
     try {
       const res = await confirmMutation.mutateAsync({
+        scanToken: phase.scanToken,
         imageUrl: phase.imageUrl,
-        ...(phase.receiptHash ? { receiptHash: phase.receiptHash } : {}),
         vendor: phase.ocr.vendor.trim(),
         amount,
         currency: phase.ocr.currency.trim().toUpperCase().slice(0, 3) || "RSD",
         date: phase.ocr.date,
         ...(phase.ocr.receiptNumber.trim() ? { receiptNumber: phase.ocr.receiptNumber.trim() } : {}),
-        ocrConfidence: phase.confidence,
       })
       setPhase({ kind: "done", pointsEarned: res.pointsEarned })
     } catch (e) {
@@ -334,7 +334,7 @@ function CameraPhase({
         <Text style={[s.dialogText, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "ayoo needs your camera to scan receipts.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }]}>
+        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#FFFFFF" }]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </View>
@@ -410,7 +410,7 @@ function ConfirmPhase({
       <Field label={t("currency", "Currency")} value={ocr.currency} onChangeText={(v) => onChange({ ...ocr, currency: v.toUpperCase() })} theme={theme} />
       <Field label={t("date", "Date (YYYY-MM-DD)")} value={ocr.date} onChangeText={(v) => onChange({ ...ocr, date: v })} theme={theme} />
       <Field label={t("receiptNumber", "Receipt # (optional)")} value={ocr.receiptNumber} onChangeText={(v) => onChange({ ...ocr, receiptNumber: v })} theme={theme} />
-      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: "#F9FBFF", marginTop: 12 }]}>
+      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: "#FFFFFF", marginTop: 12 }]}>
         <Text style={{ color: theme.text, fontWeight: "700" }}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
       </Pressable>
     </ScrollView>

@@ -134,7 +134,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: LCD.caseEdge,
     gap: 10,
-    shadowColor: "#A3B1C6",
+    shadowColor: "#C9C4B4",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.45,
     shadowRadius: 18,

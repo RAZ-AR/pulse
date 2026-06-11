@@ -87,7 +87,7 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 40 },
   hero: { borderRadius: 32, padding: 20, alignItems: "center", marginBottom: 20, overflow: "hidden" },
-  heroLabel: { color: "#91A1B4", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },
+  heroLabel: { color: "#75736A", fontSize: 11, fontWeight: "700", letterSpacing: 1, opacity: 0.85 },
   heroValue: { color: colors.ink, fontSize: 44, fontWeight: "800", marginTop: 4 },
   heroDenom: { fontSize: 24, fontWeight: "700", opacity: 0.7 },
   progressTrack: { width: "100%", height: 6, backgroundColor: "rgba(163,177,198,0.18)", borderRadius: 3, marginTop: 12, overflow: "hidden" },

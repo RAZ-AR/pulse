@@ -174,9 +174,9 @@ const s = StyleSheet.create({
 
   priceCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   priceBlob: { position: "absolute", top: -40, right: -40, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  priceLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  priceLabel: { color: "#75736A", fontSize: 11, letterSpacing: 1.5 },
   priceValue: { color: colors.ink, fontSize: 52, lineHeight: 56, marginTop: 4 },
-  priceSub: { color: "#91A1B4", fontSize: 12, marginTop: 4 },
+  priceSub: { color: "#75736A", fontSize: 12, marginTop: 4 },
 
   descText: { fontSize: 14, lineHeight: 20 },
 

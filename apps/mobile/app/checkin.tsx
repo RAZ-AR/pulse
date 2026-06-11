@@ -95,7 +95,7 @@ export default function CheckinScreen() {
             <Text style={s.bigIcon}>⌖</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("locationNeeded", "Location needed")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.reason}</Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:back", "Go back")}</Text>
             </Pressable>
           </Centered>
@@ -113,7 +113,7 @@ export default function CheckinScreen() {
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>
               {t("noVenuesNearbyDesc", "Move closer to a partner venue and try again. Check-ins require being within 100m of a venue.")}
             </Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "OK")}</Text>
             </Pressable>
           </Centered>
@@ -187,7 +187,7 @@ export default function CheckinScreen() {
             ) : null}
             <Pressable
               onPress={() => router.back()}
-              style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF", marginTop: 24 }, theme.shadowRaisedSm]}
+              style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF", marginTop: 24 }, theme.shadowRaisedSm]}
             >
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
             </Pressable>
@@ -291,7 +291,7 @@ function CameraPhase({
         <Text style={[s.subtitle, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "ayoo needs your camera to verify check-ins.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}>
+        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </Centered>

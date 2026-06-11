@@ -91,11 +91,11 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.9)",
-    borderLeftColor: "rgba(255,255,255,0.85)",
-    borderRightColor: "rgba(5,6,10,0.04)",
-    borderBottomColor: "rgba(5,6,10,0.05)",
+    borderBottomWidth: 3,
+    borderTopColor: "rgba(255,255,255,0.95)",
+    borderLeftColor: "rgba(255,255,255,0.8)",
+    borderRightColor: "rgba(120,112,96,0.08)",
+    borderBottomColor: "rgba(120,112,96,0.16)",
     ...shadow,
   }
 
@@ -135,16 +135,16 @@ export function NeuInset({ children, style }: NeuInsetProps) {
     <View
       style={[
         {
-          backgroundColor: "rgba(0,0,0,0.04)",
+          backgroundColor: "rgba(120,112,96,0.06)",
           borderRadius: radius.sm,
           borderTopWidth: 1,
           borderLeftWidth: 1,
-          borderTopColor: "rgba(163,160,200,0.35)",
-          borderLeftColor: "rgba(163,160,200,0.25)",
+          borderTopColor: "rgba(120,112,96,0.22)",
+          borderLeftColor: "rgba(120,112,96,0.16)",
           borderBottomWidth: 1,
           borderRightWidth: 1,
-          borderBottomColor: "rgba(255,255,255,0.7)",
-          borderRightColor: "rgba(255,255,255,0.6)",
+          borderBottomColor: "rgba(255,255,255,0.85)",
+          borderRightColor: "rgba(255,255,255,0.7)",
         },
         style,
       ]}
@@ -397,7 +397,7 @@ function PillLabel({ label }: { label: string }) {
   return (
     <Text
       style={{
-        color: "#6E7D8E",
+        color: "#33322D",
         fontSize: 10,
         fontWeight: "800",
         letterSpacing: 0.5,
@@ -421,7 +421,7 @@ const s = StyleSheet.create({
   },
   lavaRoot: {
     overflow: "hidden",
-    backgroundColor: "#F9FBFF",
+    backgroundColor: "#FFFFFF",
   },
   lavaBlob: {
     position: "absolute",
@@ -433,22 +433,22 @@ const s = StyleSheet.create({
   lavaBlobPink: {
     left: -74,
     top: -88,
-    backgroundColor: "#F199E3",
+    backgroundColor: "#E8DACE",
   },
   lavaBlobBlue: {
     right: -82,
     top: -54,
-    backgroundColor: "#85F5F2",
+    backgroundColor: "#BCE6D2",
   },
   lavaBlobLime: {
     right: 12,
     bottom: -116,
-    backgroundColor: "#9FEED3",
+    backgroundColor: "#A9E2C6",
   },
   lavaBlobSalmon: {
     left: -42,
     bottom: -118,
-    backgroundColor: "#D9E1FF",
+    backgroundColor: "#EFE7DA",
   },
   lavaFrost: {
     ...StyleSheet.absoluteFillObject,

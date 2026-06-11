@@ -155,7 +155,7 @@ function RewardCard({
       <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
         {title}
       </Text>
-      <Text style={[s.rewardVenue, { color: "#91A1B4", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+      <Text style={[s.rewardVenue, { color: "#75736A", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
         {venue}
       </Text>
       {leftLabel ? <Text style={[s.stockHint, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
@@ -163,7 +163,7 @@ function RewardCard({
       <View style={s.rewardFoot}>
         <View>
           <Text style={[s.rewardCost, { color: colors.ink, fontFamily: fonts.displayHeavy }]}>{points}</Text>
-          <Text style={[s.rewardCostUnit, { color: "#91A1B4" }]}>{ptsLabel}</Text>
+          <Text style={[s.rewardCostUnit, { color: "#75736A" }]}>{ptsLabel}</Text>
         </View>
         {canRedeem ? (
           <View style={[s.useBadge, { backgroundColor: "rgba(255,255,255,0.58)" }]}>
@@ -195,10 +195,10 @@ const s = StyleSheet.create({
 
   hero: { borderRadius: 32, padding: 18, marginBottom: 14, overflow: "hidden" },
   heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
-  kicker: { color: "#B0D4E3", fontSize: 11, letterSpacing: 1.8 },
+  kicker: { color: "#A5A299", fontSize: 11, letterSpacing: 1.8 },
   title: { fontSize: 36, lineHeight: 40 },
   pointsPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 15, paddingVertical: 10 },
-  pointsPillText: { color: "#91A1B4", fontSize: 12 },
+  pointsPillText: { color: "#75736A", fontSize: 12 },
   heroSub: { fontSize: 13, marginBottom: 16 },
   balanceRow: { flexDirection: "row", gap: 10 },
   balanceCell: { flex: 1, backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 24, padding: 14 },
@@ -209,14 +209,14 @@ const s = StyleSheet.create({
   filters: { flexDirection: "row", gap: 10, marginBottom: 18 },
   pill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 99 },
   pillContent: { alignItems: "center" },
-  pillIdle: { backgroundColor: "#F9FBFF" },
+  pillIdle: { backgroundColor: "#FFFFFF" },
   pillText: { fontSize: 13 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   rewardPressable: { width: "48%" },
   rewardCard: {
     padding: 14, minHeight: 180, borderRadius: 34, overflow: "hidden",
-    shadowColor: "#A3B1C6", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3,
+    shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3,
   },
   rewardCardCyan: { backgroundColor: "rgba(235,254,255,0.92)" },
   rewardLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", marginBottom: 22 },

@@ -396,9 +396,9 @@ const s = StyleSheet.create({
 
   rateCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
   heroBlob: { position: "absolute", top: -42, right: -42, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  rateLabel: { color: "#91A1B4", fontSize: 11, letterSpacing: 1.5 },
+  rateLabel: { color: "#75736A", fontSize: 11, letterSpacing: 1.5 },
   rateValue: { color: colors.ink, fontSize: 56, lineHeight: 60, marginTop: 4 },
-  rateUnit: { color: "#91A1B4", fontSize: 13 },
+  rateUnit: { color: "#75736A", fontSize: 13 },
   boostBadge: { marginTop: 10, backgroundColor: "#FFFFFF", paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99 },
   boostText: { color: colors.ink, fontSize: 11 },
 
@@ -408,14 +408,14 @@ const s = StyleSheet.create({
   body: { fontSize: 14, lineHeight: 20 },
   offerRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 9 },
   offerDot: { color: "#9FEED3", fontSize: 10 },
-  offerText: { color: "#7FAFC2", fontSize: 12, flex: 1 },
+  offerText: { color: "#75736A", fontSize: 12, flex: 1 },
 
   partnerOfferRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(139,61,255,0.06)", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 11 },
   partnerOfferTitle: { fontSize: 14, color: colors.ink },
-  partnerOfferMeta: { fontSize: 11, color: "#91A1B4", marginTop: 2 },
+  partnerOfferMeta: { fontSize: 11, color: "#75736A", marginTop: 2 },
   partnerOfferPts: { alignItems: "flex-end" },
   partnerOfferPtsVal: { fontSize: 18, color: "#8B3DFF", lineHeight: 20 },
-  partnerOfferPtsUnit: { fontSize: 10, color: "#91A1B4" },
+  partnerOfferPtsUnit: { fontSize: 10, color: "#75736A" },
   partnerOfferHint: { fontSize: 11, textAlign: "center", marginTop: 4, opacity: 0.7 },
   contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, borderBottomWidth: 1, borderBottomColor: "rgba(163,160,200,0.14)", paddingVertical: 8 },
   contactLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6 },
@@ -425,9 +425,9 @@ const s = StyleSheet.create({
 
   rewardRow: { padding: 14, flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 28 },
   rewardTitle: { color: colors.ink, fontSize: 16 },
-  rewardDesc: { color: "#91A1B4", fontSize: 12, marginTop: 2 },
+  rewardDesc: { color: "#75736A", fontSize: 12, marginTop: 2 },
   rewardCost: { color: colors.ink, fontSize: 21, lineHeight: 23 },
-  rewardCostUnit: { color: "#91A1B4", fontSize: 10 },
+  rewardCostUnit: { color: "#75736A", fontSize: 10 },
 
   reviewsHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, marginTop: 8 },
   writeBtn: { fontSize: 12 },

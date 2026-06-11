@@ -178,7 +178,7 @@ export default function MapScreen() {
           </Text>
           <Pressable
             onPress={() => setDenied(false)}
-            style={[s.dismissBtn, { backgroundColor: "#F9FBFF" }, theme.shadowRaisedSm]}
+            style={[s.dismissBtn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}
           >
             <Text style={{ color: theme.text, fontFamily: fonts.bodyBold }}>{t("common:done", "OK")}</Text>
           </Pressable>
@@ -195,12 +195,12 @@ const s = StyleSheet.create({
   badge: { position: "absolute", top: 16, right: 16, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
   cityBadges: { position: "absolute", top: 16, left: 16, gap: 8 },
   cityBadge: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 99 },
-  cityBadgeActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  cityBadgeActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   cityBadgeActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
   filtersWrap: { position: "absolute", left: 16, right: 16, bottom: 26 },
   filters: { gap: 8, paddingRight: 32 },
   filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
+  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   filterChipActiveRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.28, shadowRadius: 6, elevation: 1 },
   filterChipIdle: { backgroundColor: "rgba(249,251,255,0.68)" },
   filterText: { fontSize: 11 },

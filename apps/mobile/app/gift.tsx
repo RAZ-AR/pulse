@@ -295,7 +295,7 @@ export default function GiftScreen() {
                   const claimed = link.status === "CLAIMED"
                   const expired = link.status === "EXPIRED"
                   return (
-                    <View key={link.id} style={[s.historyRow, { backgroundColor: isRainbow ? "#F2F2F6" : "#F9FBFF" }]}>
+                    <View key={link.id} style={[s.historyRow, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF" }]}>
                       <View style={{ flex: 1 }}>
                         <Text style={[s.historyAmount, { color: claimed ? (isRainbow ? neonColors.green : colors.mint) : theme.text, fontFamily: fonts.displayHeavy }]}>
                           {link.amount} pts
@@ -321,7 +321,7 @@ export default function GiftScreen() {
                             ? (isRainbow ? neonColors.green : "#5EC67A")
                             : expired
                             ? theme.textSecondary
-                            : (isRainbow ? neonColors.cyan : "#7FAFC2"),
+                            : (isRainbow ? neonColors.cyan : "#75736A"),
                           fontFamily: fonts.bodyBold,
                         }]}>
                           {claimed ? t("statusClaimed", "received") : expired ? t("statusExpired", "expired") : t("statusPending", "waiting")}
@@ -353,10 +353,10 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.72)",
     alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.9)",
-    shadowColor: "#A3B1C6", shadowOpacity: 0.26, shadowRadius: 14, shadowOffset: { width: 6, height: 8 },
+    shadowColor: "#C9C4B4", shadowOpacity: 0.26, shadowRadius: 14, shadowOffset: { width: 6, height: 8 },
   },
   limitOrbValue: { color: colors.ink, fontSize: 20, lineHeight: 22 },
-  limitOrbLabel: { color: "#91A1B4", fontSize: 10, textTransform: "uppercase" },
+  limitOrbLabel: { color: "#75736A", fontSize: 10, textTransform: "uppercase" },
   limitTrack: { height: 18, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.6)", marginTop: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
   limitFill: { height: "100%", borderRadius: 99 },
   heroMeta: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
@@ -390,7 +390,7 @@ const s = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     padding: 16,
-    shadowColor: "#A3B1C6",
+    shadowColor: "#C9C4B4",
     shadowOffset: { width: 6, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
