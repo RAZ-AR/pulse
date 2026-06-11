@@ -33,13 +33,25 @@ if (!html.includes("Press+Start+2P")) {
 // 2. Add vercel.json for SPA routing.
 //    dist/ is already a fully-built static export — disable any server-side
 //    build/install so Vercel just serves these files as-is.
+// Find the current JS bundle so stale clients asking for an old (deleted)
+// entry-*.js get the live bundle instead of index.html (which broke parsing
+// and left Telegram WebViews stuck on a spinner forever).
+const bundleDir = path.join(distDir, "_expo/static/js/web")
+const bundleName = fs.readdirSync(bundleDir).find((f) => /^entry-[a-f0-9]+\.js$/.test(f))
+if (!bundleName) { console.error("✗ no entry-*.js bundle found in dist"); process.exit(1) }
+
 const vercelJson = path.join(distDir, "vercel.json")
 fs.writeFileSync(vercelJson, JSON.stringify({
   framework: null,
   buildCommand: null,
   installCommand: null,
   outputDirectory: ".",
-  rewrites: [{ source: "/(.*)", destination: "/index.html" }],
+  rewrites: [
+    // Old cached HTML shells reference deleted bundle hashes — serve the
+    // current bundle for any entry-*.js (existing files win over rewrites).
+    { source: "/_expo/static/js/web/:name*", destination: `/_expo/static/js/web/${bundleName}` },
+    { source: "/(.*)", destination: "/index.html" },
+  ],
   // Never cache the HTML shell — so Telegram's WebView always loads the
   // newest hashed JS bundle instead of a stale cached version.
   headers: [
