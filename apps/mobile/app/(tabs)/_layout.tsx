@@ -1,25 +1,29 @@
-import { useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Animated, Dimensions, Platform, Pressable, StyleSheet, Text, View } from "react-native"
 import { Tabs } from "expo-router"
+import { useRouter } from "expo-router"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import Svg, { Path, Circle } from "react-native-svg"
-import { LinearGradient } from "expo-linear-gradient"
+import { useTranslation } from "react-i18next"
+import Svg, { Path } from "react-native-svg"
 import { fonts, useTheme } from "../../src/lib/theme"
-import { useColorMode } from "../../src/store/colorMode"
 
 // ── Layout geometry ────────────────────────────────────────────
 const SCREEN_W = Dimensions.get("window").width
 const H_MARGIN = 20
 const DOCK_W   = SCREEN_W - H_MARGIN * 2
 const DOCK_H   = 60
-const TAB_N    = 5
-const SLOT_W   = DOCK_W / TAB_N
-const IND_W    = 84
+const FAB_D    = 60            // detached "earn" circle
+const GAP      = 10
+const PILL_W   = DOCK_W - FAB_D - GAP
+const TAB_N    = 3
+const SLOT_W   = PILL_W / TAB_N
+const IND_W    = Math.min(96, SLOT_W - 10)
 const IND_H    = 44
-const IND_TOP  = (DOCK_H - IND_H) / 2   // vertical centering = 8
+const IND_TOP  = (DOCK_H - IND_H) / 2
 
-// ── SVG Icons ─────────────────────────────────────────────────
+const ORANGE = "#d74427"
+
 // ── Chunky filled "puffy" icon set ────────────────────────────
 function IconHome({ color }: { color: string }) {
   return (
@@ -49,125 +53,170 @@ function IconMap({ color }: { color: string }) {
     </Svg>
   )
 }
-function IconProfile({ color }: { color: string }) {
+function IconReceipt({ color }: { color: string }) {
   return (
-    <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M12 2.8a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8ZM4.2 20.4a7.8 7.8 0 0 1 15.6 0 1.5 1.5 0 0 1-1.5 1.5H5.7a1.5 1.5 0 0 1-1.5-1.5Z" />
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path fill={color} fillRule="evenodd" clipRule="evenodd" d="M6.2 2.6h11.6c.9 0 1.6.7 1.6 1.6v15.9l-2.6-1.7-2.4 1.7-2.4-1.7-2.4 1.7-2.4-1.7-2.6 1.7V4.2c0-.9.7-1.6 1.6-1.6Zm2 4.6a1 1 0 0 0 0 2h7.6a1 1 0 1 0 0-2H8.2Zm0 4a1 1 0 0 0 0 2h5a1 1 0 1 0 0-2h-5Z" />
+    </Svg>
+  )
+}
+function IconCheckin({ color }: { color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path fill={color} fillRule="evenodd" clipRule="evenodd" d="M12 2.4a9.6 9.6 0 1 0 0 19.2 9.6 9.6 0 0 0 0-19.2Zm4.5 6.6-5.2 5.6a1.2 1.2 0 0 1-1.76.02L7.4 12.4a1.2 1.2 0 1 1 1.7-1.7l1.3 1.3 4.34-4.66a1.2 1.2 0 0 1 1.76 1.66Z" />
+    </Svg>
+  )
+}
+function IconGift({ color }: { color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Path fill={color} d="M8.6 2.7c1.5-.5 2.9.6 3.4 2.1.5-1.5 1.9-2.6 3.4-2.1 1.7.5 2 2.7.6 4.3h-8c-1.4-1.6-1.1-3.8.6-4.3ZM4.5 8.4h15a1 1 0 0 1 1 1v1.8a1 1 0 0 1-1 1h-6.2V8.4h-2.6v3.8H4.5a1 1 0 0 1-1-1V9.4a1 1 0 0 1 1-1Zm1.4 5.4h4.8v7.6H7.3a1.4 1.4 0 0 1-1.4-1.4v-6.2Zm7.4 0h4.8v6.2a1.4 1.4 0 0 1-1.4 1.4h-3.4v-7.6Z" />
     </Svg>
   )
 }
 
-const ICONS = {
-  index:   IconHome,
-  earn:    IconEarn,
-  rewards: IconRewards,
-  map:     IconMap,
-  profile: IconProfile,
-} as const
-
-const TABS = [
-  { name: "index",   label: "home"    },
-  { name: "earn",    label: "earn"    },
-  { name: "rewards", label: "rewards" },
-  { name: "map",     label: "map"     },
-  { name: "profile", label: "profile" },
+// ── Dock contents ─────────────────────────────────────────────
+const DOCK_TABS = [
+  { name: "index",   label: "Home",    Icon: IconHome },
+  { name: "rewards", label: "Rewards", Icon: IconRewards },
+  { name: "map",     label: "Map",     Icon: IconMap },
 ] as const
 
-// ── Liquid Dock ───────────────────────────────────────────────
+// All tab routes (order = navigator order; earn/profile have no dock slot)
+const ROUTES = ["index", "earn", "rewards", "map", "profile"] as const
+
+// ── Liquid Dock: glass pill (3 tabs) + detached "earn" circle ──
 function LiquidDock({ state, navigation }: BottomTabBarProps) {
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const { t } = useTranslation("common")
   const bottom = Platform.OS === "web" ? 16 : Math.max(insets.bottom, 8)
 
-  // Indicator slides to: center of active slot
-  const indX = useRef(
-    new Animated.Value(state.index * SLOT_W + (SLOT_W - IND_W) / 2),
-  ).current
+  const activeName = state.routes[state.index]?.name
+  const dockIndex = DOCK_TABS.findIndex((d) => d.name === activeName)
+
+  const indX  = useRef(new Animated.Value(Math.max(dockIndex, 0) * SLOT_W + (SLOT_W - IND_W) / 2)).current
+  const indOp = useRef(new Animated.Value(dockIndex >= 0 ? 1 : 0)).current
+  const menuAnim = useRef(new Animated.Value(0)).current
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
-    // useNativeDriver не поддерживается на вебе — используем JS-анимацию там
-    Animated.spring(indX, {
-      toValue: state.index * SLOT_W + (SLOT_W - IND_W) / 2,
+    if (dockIndex >= 0) {
+      Animated.spring(indX, {
+        toValue: dockIndex * SLOT_W + (SLOT_W - IND_W) / 2,
+        useNativeDriver: Platform.OS !== "web",
+        tension: 180,
+        friction: 15,
+      }).start()
+    }
+    Animated.timing(indOp, {
+      toValue: dockIndex >= 0 ? 1 : 0,
+      duration: 160,
       useNativeDriver: Platform.OS !== "web",
-      tension: 180,
-      friction: 15,
     }).start()
-  }, [state.index, indX])
+  }, [dockIndex, indX, indOp])
 
-  const activeColor   = "#FFFFFF"
-  const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)"    : "#d74427"
+  useEffect(() => {
+    Animated.spring(menuAnim, {
+      toValue: menuOpen ? 1 : 0,
+      useNativeDriver: Platform.OS !== "web",
+      tension: 160,
+      friction: 14,
+    }).start()
+  }, [menuOpen, menuAnim])
 
-  // На вебе нужен position:fixed чтобы dock прилипал к низу viewport (не к родителю).
-  // React Native Web принимает "fixed" в runtime, но TypeScript это не знает.
+  const EARN_ACTIONS = [
+    { key: "partners", label: t("partnerOffers"), Icon: IconGift,    go: () => navigation.navigate("earn") },
+    { key: "checkin",  label: t("checkIn"),       Icon: IconCheckin, go: () => router.push("/checkin") },
+    { key: "scan",     label: t("scanReceipt"),   Icon: IconReceipt, go: () => router.push("/scan") },
+  ]
+
   const wrapperStyle = Platform.OS === "web"
     ? [s.wrapper, { bottom, position: "fixed" as "absolute", zIndex: 1000 }]
     : [s.wrapper, { bottom }]
 
   return (
     <View pointerEvents="box-none" style={wrapperStyle}>
-      {/* ── Outer shadow shell (no overflow:hidden so shadow renders) ── */}
-      <View style={[s.dockShell, isRainbow ? s.shellRainbow : s.shellNormal]}>
+      {/* tap-outside catcher while the earn menu is open */}
+      {menuOpen && <Pressable style={s.backdrop} onPress={() => setMenuOpen(false)} />}
 
-        {/* ── Animated liquid indicator ── */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            s.indicator,
-            isRainbow ? s.indRainbow : s.indNormal,
-            { transform: [{ translateX: indX }] },
+      {/* ── Earn submenu — circles popping up above the FAB ── */}
+      <View pointerEvents={menuOpen ? "auto" : "none"} style={s.menuWrap}>
+        {EARN_ACTIONS.map((a, i) => (
+          <Animated.View
+            key={a.key}
+            style={[
+              s.menuItem,
+              {
+                opacity: menuAnim,
+                transform: [
+                  { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [16 * (EARN_ACTIONS.length - i), 0] }) },
+                  { scale: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <View style={s.menuLabel}>
+              <Text style={[s.menuLabelText, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{a.label}</Text>
+            </View>
+            <Pressable
+              onPress={() => { setMenuOpen(false); a.go() }}
+              style={({ pressed }) => [s.menuCircle, pressed && { transform: [{ scale: 0.94 }] }]}
+            >
+              <a.Icon color={ORANGE} />
+            </Pressable>
+          </Animated.View>
+        ))}
+      </View>
+
+      <View style={s.row} pointerEvents="box-none">
+        {/* ── Glass pill with 3 tabs ── */}
+        <View style={[s.dockShell, s.shellGlass]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[s.indicator, { opacity: indOp, transform: [{ translateX: indX }] }]}
+          >
+            <View style={s.indicatorHighlight} />
+          </Animated.View>
+
+          {DOCK_TABS.map((tab) => {
+            const route = state.routes.find((r) => r.name === tab.name)
+            if (!route) return null
+            const isFocused = activeName === tab.name
+            return (
+              <Pressable
+                key={route.key}
+                onPress={() => {
+                  setMenuOpen(false)
+                  const ev = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true })
+                  if (!isFocused && !ev.defaultPrevented) navigation.navigate(route.name)
+                }}
+                onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
+                style={s.slot}
+              >
+                <tab.Icon color={ORANGE} />
+                {isFocused ? (
+                  <Text style={[s.label, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                    {tab.label}
+                  </Text>
+                ) : null}
+              </Pressable>
+            )
+          })}
+        </View>
+
+        {/* ── Detached "earn" circle ── */}
+        <Pressable
+          onPress={() => setMenuOpen((v) => !v)}
+          style={({ pressed }) => [
+            s.fab,
+            s.shellGlass,
+            (menuOpen || activeName === "earn") && s.fabActive,
+            pressed && { transform: [{ scale: 0.95 }] },
           ]}
         >
-          {isRainbow && (
-            <>
-              <LinearGradient
-                colors={["#8B3DFF", "#2B6EFF", "#00C2FF"]}
-                start={{ x: 0.1, y: 0 }}
-                end={{ x: 0.9, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {/* Specular highlight — top-left oval */}
-              <View style={s.specular} />
-              {/* Rim light */}
-              <View style={s.rim} />
-            </>
-          )}
-          {!isRainbow && (
-            <>
-              {/* Glass specular + top highlight edge */}
-              <View style={s.specular} />
-              <View style={s.normalHighlight} />
-            </>
-          )}
-        </Animated.View>
-
-        {/* ── Tab slots ── */}
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index
-          const tab = TABS.find((t) => t.name === route.name)
-          if (!tab) return null
-          const Icon  = ICONS[tab.name as keyof typeof ICONS]
-          const label = tab.label[0]!.toUpperCase() + tab.label.slice(1)
-
-          return (
-            <Pressable
-              key={route.key}
-              onPress={() => {
-                const ev = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true })
-                if (!isFocused && !ev.defaultPrevented) navigation.navigate(route.name)
-              }}
-              onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
-              style={s.slot}
-            >
-              <Icon color={isFocused ? activeColor : inactiveColor} />
-              {isFocused ? (
-                <Text style={[s.label, { color: activeColor, fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-                  {label}
-                </Text>
-              ) : null}
-            </Pressable>
-          )
-        })}
+          <IconEarn color={ORANGE} />
+        </Pressable>
       </View>
     </View>
   )
@@ -179,8 +228,6 @@ function renderDock(props: BottomTabBarProps) {
 }
 
 // ── Themed root — provides correct bg on mode switch ──────────
-// Separate component so TabsLayout itself never re-renders on mode change.
-// This prevents React Navigation from scheduling a re-render of screens.
 function ThemedRoot({ children }: { children: React.ReactNode }) {
   const theme = useTheme()
   return (
@@ -197,17 +244,12 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          // tabBarStyle hidden — we render our own LiquidDock via tabBar prop
           tabBarStyle: { display: "none" },
         } as object}
         tabBar={renderDock}
       >
-        {TABS.map((tab) => (
-          <Tabs.Screen
-            key={tab.name}
-            name={tab.name}
-            options={{ title: tab.label[0]!.toUpperCase() + tab.label.slice(1) }}
-          />
+        {ROUTES.map((name) => (
+          <Tabs.Screen key={name} name={name} />
         ))}
       </Tabs>
     </ThemedRoot>
@@ -223,18 +265,33 @@ const s = StyleSheet.create({
     height: DOCK_H,
   },
 
-  // ── Dock shell ────
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: GAP,
+    height: DOCK_H,
+  },
+
+  backdrop: {
+    position: "absolute",
+    top: -1400,
+    bottom: -60,
+    left: -H_MARGIN * 2,
+    right: -H_MARGIN * 2,
+  },
+
+  // ── Dock shell / glass surface ────
   dockShell: {
-    flex: 1,
+    width: PILL_W,
     flexDirection: "row",
     height: DOCK_H,
     borderRadius: DOCK_H / 2,
     alignItems: "center",
   },
 
-  shellNormal: {
-    // Frosted light glass
-    backgroundColor: "rgba(236,238,244,0.80)",
+  shellGlass: {
+    // Frosted light glass — like the reference pill
+    backgroundColor: "rgba(252,253,255,0.86)",
     borderWidth: 1,
     borderTopColor:    "rgba(255,255,255,0.95)",
     borderLeftColor:   "rgba(255,255,255,0.88)",
@@ -247,19 +304,7 @@ const s = StyleSheet.create({
     elevation:      12,
   },
 
-  shellRainbow: {
-    // Dark purple translucent
-    backgroundColor: "rgba(16,8,38,0.65)",
-    borderWidth: 1,
-    borderColor: "rgba(140,100,255,0.30)",
-    shadowColor:   "#8B3DFF",
-    shadowOffset:  { width: 0, height: 10 },
-    shadowOpacity: 0.38,
-    shadowRadius:  28,
-    elevation:     14,
-  },
-
-  // ── Indicator ─────
+  // ── Liquid glass indicator ─────
   indicator: {
     position: "absolute",
     top:    IND_TOP,
@@ -267,46 +312,15 @@ const s = StyleSheet.create({
     width:  IND_W,
     height: IND_H,
     borderRadius: IND_H / 2,
+    backgroundColor: "rgba(222,228,240,0.85)",
+    borderWidth: 1,
+    borderTopColor:    "rgba(255,255,255,0.9)",
+    borderLeftColor:   "rgba(255,255,255,0.7)",
+    borderRightColor:  "rgba(190,200,220,0.45)",
+    borderBottomColor: "rgba(190,200,220,0.5)",
     overflow: "hidden",
   },
-
-  indNormal: {
-    // #d74427 glass droplet
-    backgroundColor:   "rgba(215,68,39,0.95)",
-    borderWidth: 1,
-    borderTopColor:    "rgba(255,255,255,0.55)",
-    borderLeftColor:   "rgba(255,170,150,0.45)",
-    borderRightColor:  "rgba(150,40,20,0.40)",
-    borderBottomColor: "rgba(150,40,20,0.55)",
-  },
-
-  indRainbow: {
-    // Filled by LinearGradient child
-    backgroundColor: "transparent",
-  },
-
-  // Specular highlight for rainbow indicator
-  specular: {
-    position:  "absolute",
-    top:       "8%",
-    left:      "7%",
-    width:     "52%",
-    height:    "38%",
-    borderRadius: 99,
-    backgroundColor: "rgba(255,255,255,0.28)",
-  },
-
-  // Rim border for rainbow indicator
-  rim: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius:    IND_H / 2,
-    borderWidth:     1,
-    borderColor:     "rgba(255,255,255,0.35)",
-    borderBottomColor: "rgba(0,0,0,0.12)",
-  },
-
-  // Top highlight line for normal indicator
-  normalHighlight: {
+  indicatorHighlight: {
     position: "absolute",
     top: 0,
     left: "10%",
@@ -329,5 +343,65 @@ const s = StyleSheet.create({
   label: {
     fontSize:      12,
     letterSpacing: -0.3,
+    color: ORANGE,
+  },
+
+  // ── Earn FAB ──────
+  fab: {
+    width: FAB_D,
+    height: FAB_D,
+    borderRadius: FAB_D / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fabActive: {
+    backgroundColor: "rgba(222,228,240,0.95)",
+  },
+
+  // ── Earn submenu ──────
+  menuWrap: {
+    position: "absolute",
+    right: 0,
+    bottom: DOCK_H + 12,
+    alignItems: "flex-end",
+    gap: 10,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  menuLabel: {
+    backgroundColor: "rgba(252,253,255,0.92)",
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+    shadowColor: "#8090B0",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 6,
+    maxWidth: 220,
+  },
+  menuLabelText: { fontSize: 12, color: ORANGE },
+  menuCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(252,253,255,0.95)",
+    borderWidth: 1,
+    borderTopColor:    "rgba(255,255,255,0.95)",
+    borderLeftColor:   "rgba(255,255,255,0.88)",
+    borderRightColor:  "rgba(200,208,226,0.50)",
+    borderBottomColor: "rgba(200,208,226,0.55)",
+    shadowColor: "#8090B0",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 10,
   },
 })

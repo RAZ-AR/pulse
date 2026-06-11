@@ -123,7 +123,21 @@ export default function HomeScreen() {
       removeClippedSubviews
     >
       <View style={[s.topBar, isRainbow && s.topBarRainbow]}>
-        <CircleButton label="+" onPress={() => router.push("/earn")} isRainbow={isRainbow} />
+        <Pressable onPress={() => router.push("/(tabs)/profile")} hitSlop={8}>
+          {getAvatarColor(me.data?.avatarUrl) ? (
+            <View style={[s.profileAvatar, { backgroundColor: getAvatarColor(me.data?.avatarUrl)! }]}>
+              <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
+                {initials(me.data?.name)}
+              </Text>
+            </View>
+          ) : (
+            <LavaLampSurface style={s.profileAvatar}>
+              <Text style={[s.profileAvatarText, { fontFamily: fonts.displayHeavy }]}>
+                {initials(me.data?.name)}
+              </Text>
+            </LavaLampSurface>
+          )}
+        </Pressable>
         <View style={s.helloBlock}>
           <AyooLogo width={60} height={35} />
           <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
@@ -382,14 +396,6 @@ export default function HomeScreen() {
         })}
       </View>
     </ScrollView>
-  )
-}
-
-function CircleButton({ label, onPress, isRainbow }: { label: string; onPress: () => void; isRainbow?: boolean }) {
-  return (
-    <Pressable onPress={onPress} style={[s.circleButton, isRainbow && s.circleButtonRainbow]}>
-      <Text style={[s.circleButtonText, isRainbow && { color: neonColors.cyan }]}>{label}</Text>
-    </Pressable>
   )
 }
 
@@ -863,23 +869,6 @@ const s = StyleSheet.create({
   cityPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#A3B1C6", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.32, shadowRadius: 6, elevation: 2 },
   cityPillIdle: { backgroundColor: "rgba(225,230,239,0.68)" },
   cityPillText: { fontSize: 10 },
-  circleButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#F9FBFF",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.8)",
-    shadowColor: "#A3B1C6",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.34,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  circleButtonText: { color: "#91A1B4", fontSize: 25, lineHeight: 27 },
-
   dashboard: {
     borderRadius: 42,
     padding: 14,
@@ -1177,12 +1166,6 @@ const s = StyleSheet.create({
     borderColor: "rgba(180,160,255,0.35)",
     shadowColor: "#AA00FF",
     shadowOpacity: 0.18,
-  },
-  circleButtonRainbow: {
-    backgroundColor: "#EEEEF4",
-    borderColor: "rgba(180,160,255,0.4)",
-    shadowColor: "#AA00FF",
-    shadowOpacity: 0.25,
   },
   cityPillActiveRainbow: {
     backgroundColor: "rgba(0,245,255,0.14)",
