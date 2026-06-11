@@ -5,7 +5,7 @@ import { useRouter } from "expo-router"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTranslation } from "react-i18next"
-import Svg, { Path } from "react-native-svg"
+import Svg, { Circle, Ellipse, Path } from "react-native-svg"
 import { fonts, useTheme } from "../../src/lib/theme"
 
 // ── Layout geometry ────────────────────────────────────────────
@@ -26,23 +26,33 @@ const ORANGE = "#d74427"
 
 // ── Chunky filled "puffy" icon set ────────────────────────────
 function IconHome({ color }: { color: string }) {
+  // Playful "eyes" — two tilted beans with highlight holes (reference style)
   return (
-    <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M12 3.3a1.7 1.7 0 0 1 1.08.39l7.3 6.16a1.8 1.8 0 0 1 .62 1.36V19a2.4 2.4 0 0 1-2.4 2.4h-3.45v-4.9a3.15 3.15 0 0 0-6.3 0v4.9H5.4A2.4 2.4 0 0 1 3 19v-7.79a1.8 1.8 0 0 1 .62-1.36l7.3-6.16A1.7 1.7 0 0 1 12 3.3Z" />
+    <Svg width={24} height={24} viewBox="0 0 24 24">
+      <Ellipse cx={8.3} cy={12} rx={4.4} ry={5.8} fill={color} transform="rotate(-14 8.3 12)" />
+      <Ellipse cx={15.7} cy={12} rx={4.4} ry={5.8} fill={color} transform="rotate(14 15.7 12)" />
+      <Ellipse cx={7.3} cy={9.9} rx={1.7} ry={2.1} fill="#FFFFFF" transform="rotate(-14 7.3 9.9)" />
+      <Ellipse cx={14.8} cy={9.9} rx={1.7} ry={2.1} fill="#FFFFFF" transform="rotate(14 14.8 9.9)" />
     </Svg>
   )
 }
 function IconEarn({ color }: { color: string }) {
+  // Clover of four lobes with a white plus — the detached circle in the reference
   return (
-    <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M14.3 2.3a1.05 1.05 0 0 1 2 .72L14.5 9.1h3.4a1.15 1.15 0 0 1 .9 1.87l-7.8 9.4a1.05 1.05 0 0 1-1.85-.85L10 13.2H6.1a1.15 1.15 0 0 1-.9-1.86Z" />
+    <Svg width={26} height={26} viewBox="0 0 24 24">
+      <Circle cx={12} cy={7.2} r={4.7} fill={color} />
+      <Circle cx={16.8} cy={12} r={4.7} fill={color} />
+      <Circle cx={12} cy={16.8} r={4.7} fill={color} />
+      <Circle cx={7.2} cy={12} r={4.7} fill={color} />
+      <Path fill="#FFFFFF" d="M12 9.2c.5 0 .9.4.9.9v1h1c.5 0 .9.4.9.9s-.4.9-.9.9h-1v1c0 .5-.4.9-.9.9s-.9-.4-.9-.9v-1h-1c-.5 0-.9-.4-.9-.9s.4-.9.9-.9h1v-1c0-.5.4-.9.9-.9Z" />
     </Svg>
   )
 }
 function IconRewards({ color }: { color: string }) {
+  // Filled heart
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M12 2.2c.9 7 3 9.1 9.8 10-6.8.9-8.9 3-9.8 9.8-.9-6.8-3-8.9-9.8-9.8 6.8-.9 8.9-3 9.8-10Z" />
+      <Path fill={color} d="M12 20.7C9.2 18.6 3.9 14.8 2.8 10.9 1.9 7.7 4 4.9 6.9 4.6c1.9-.2 3.9.9 5.1 2.7 1.2-1.8 3.2-2.9 5.1-2.7 2.9.3 5 3.1 4.1 6.3-1.1 3.9-6.4 7.7-9.2 9.8Z" />
     </Svg>
   )
 }
