@@ -1,3 +1,3 @@
-import MapScreen from "../../src/native/MapScreen"
+import PlacesScreen from "../../src/native/PlacesScreen"
 
-export default MapScreen
+export default PlacesScreen

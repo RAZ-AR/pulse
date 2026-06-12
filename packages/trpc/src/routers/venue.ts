@@ -2,7 +2,7 @@ import { z } from "zod"
 import { router, publicProcedure, protectedProcedure } from "../trpc"
 import { boundingBox, haversineMeters } from "@pulse/shared"
 
-const VenueCategoryEnum = z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "OTHER"])
+const VenueCategoryEnum = z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "BEAUTY", "FITNESS", "YOGA", "OTHER"])
 
 const venuePublicSelect = {
   id: true,
@@ -74,9 +74,18 @@ export const venueRouter = router({
     .query(async ({ ctx, input }) => {
       return ctx.db.venue.findUnique({
         where: { id: input.id },
-        include: {
+        select: {
+          ...venuePublicSelect,
           rewards: {
             where: { isActive: true },
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              pointsCost: true,
+              imageUrl: true,
+              redemptionType: true,
+            },
             orderBy: { pointsCost: "asc" },
           },
         },
@@ -137,6 +146,63 @@ export const venueRouter = router({
         .filter((v) => v.distanceMeters <= radiusMeters)
         .sort((a, b) => a.distanceMeters - b.distanceMeters)
         .slice(0, input.limit)
+    }),
+
+  // Yelp-like discovery: search + filters + badges + pagination.
+  discover: publicProcedure
+    .input(
+      z.object({
+        query: z.string().trim().optional(),
+        city: z.string().optional(),
+        categories: z.array(VenueCategoryEnum).optional(),
+        partnerOnly: z.boolean().optional(),
+        hasOffer: z.boolean().optional(),
+        minRating: z.number().min(0).max(5).optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
+        sort: z.enum(["partner", "rating", "rate", "name"]).default("partner"),
+        cursor: z.number().min(0).default(0),
+        limit: z.number().min(1).max(50).default(20),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const now = new Date()
+      const activeOffer = { active: true, OR: [{ endsAt: null }, { endsAt: { gt: now } }] }
+      const where = {
+        ...(input.query ? { name: { contains: input.query, mode: "insensitive" as const } } : {}),
+        ...(input.city ? { city: { equals: input.city, mode: "insensitive" as const } } : {}),
+        ...(input.categories?.length ? { category: { in: input.categories } } : {}),
+        ...(input.partnerOnly ? { isPartner: true } : {}),
+        ...(typeof input.minRating === "number" ? { googleRating: { gte: input.minRating } } : {}),
+        ...(input.hasOffer ? { offers: { some: activeOffer } } : {}),
+      }
+      const orderBy =
+        input.sort === "rating" ? [{ googleRating: { sort: "desc" as const, nulls: "last" as const } }]
+        : input.sort === "rate" ? [{ pointsPerCurrency: { sort: "desc" as const, nulls: "last" as const } }]
+        : input.sort === "name" ? [{ name: "asc" as const }]
+        : [{ isPartner: "desc" as const }, { googleRating: { sort: "desc" as const, nulls: "last" as const } }]
+
+      const rows = await ctx.db.venue.findMany({
+        where,
+        orderBy,
+        skip: input.cursor,
+        take: input.limit + 1,
+        select: { ...venuePublicSelect, offers: { where: activeOffer, select: { id: true }, take: 1 } },
+      })
+
+      const hasMore = rows.length > input.limit
+      const items = rows.slice(0, input.limit).map((v) => {
+        const { offers, ...rest } = v
+        return {
+          ...rest,
+          hasOffer: offers.length > 0,
+          distanceMeters:
+            input.lat != null && input.lng != null
+              ? Math.round(haversineMeters(input.lat, input.lng, v.lat, v.lng))
+              : null,
+        }
+      })
+      return { items, nextCursor: hasMore ? input.cursor + input.limit : null }
     }),
 
   // The ayoo core: venues competing by points rate — partners sorted by generosity
