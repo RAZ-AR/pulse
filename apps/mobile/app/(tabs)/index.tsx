@@ -66,12 +66,20 @@ function tierProgress(points: number, start: number, next: number) {
   return Math.max(0.08, Math.min(1, (points - start) / Math.max(1, next - start)))
 }
 
+// Cute words the pet flashes on its LCD, per interface language.
+const PET_MOODS: Record<string, string[]> = {
+  en: ["HI", "LOVE", "<3", "YUM", "PLAY", "HUG"],
+  ru: ["ПРИВЕТ", "ЛЮБЛЮ", "<3", "ВКУСНО", "ИГРАЙ", "ОБНИМИ"],
+  sr: ["ZDRAVO", "VOLIM", "<3", "MLJAC", "IGRA", "ZAGRLI"],
+}
+
 export default function HomeScreen() {
   const theme = useTheme()
   const { mode } = useColorMode()
   const isRainbow = mode === "rainbow"
   const router = useRouter()
-  const { t } = useTranslation(["common", "venue"])
+  const { t, i18n } = useTranslation(["common", "venue"])
+  const petWords = PET_MOODS[(i18n.language ?? "en").slice(0, 2)] ?? PET_MOODS.en
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
   const me = trpc.user.me.useQuery()
@@ -175,6 +183,7 @@ export default function HomeScreen() {
           stats={petStats}
           weeklyEarned={weeklyEarned}
           weeklySpent={weeklySpent}
+          words={petWords}
           earnedLabel={t("earnedThisWeek")}
           spentLabel={t("spentThisWeek")}
           onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}

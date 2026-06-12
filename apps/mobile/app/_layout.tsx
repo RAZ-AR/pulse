@@ -9,6 +9,7 @@ import { useAuth } from "../src/store/auth"
 import { signInWithTelegramDirect, trpc } from "../src/lib/trpc"
 import { usePushToken } from "../src/lib/usePushToken"
 import { getTgWebApp, getTgInitData, isTelegramRuntime, readPetStartParam } from "../src/lib/telegram"
+import { PointsFloat } from "../src/components/PointsFloat"
 
 function PushRegistrar() {
   const { token } = useAuth()
@@ -172,6 +173,7 @@ export default function RootLayout() {
           <AuthGate />
           <PushRegistrar />
           <NotificationHandler />
+          <PointsFloat />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />

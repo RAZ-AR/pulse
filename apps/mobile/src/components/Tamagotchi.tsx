@@ -11,6 +11,7 @@
  * Pure presentational. All values come in as props.
  */
 
+import { useEffect, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Defs, Pattern, Rect } from "react-native-svg"
@@ -56,6 +57,7 @@ export function TamagotchiWindow({
   weeklySpent,
   earnedLabel,
   spentLabel,
+  words,
   onOpen,
 }: {
   petKey: string
@@ -67,9 +69,26 @@ export function TamagotchiWindow({
   weeklySpent: number
   earnedLabel: string
   spentLabel: string
+  words?: string[] | undefined
   onOpen?: (() => void) | undefined
 }) {
   const name = (petName?.trim() || petDefaultName(petKey))
+
+  // Every so often the pet "says" a localized word, then goes back to its name.
+  const [flash, setFlash] = useState<string | null>(null)
+  useEffect(() => {
+    if (!words || words.length === 0) return
+    let outer: ReturnType<typeof setTimeout>
+    const tick = () => {
+      const w = words[Math.floor(Math.random() * words.length)] ?? null
+      setFlash(w)
+      const hold = setTimeout(() => setFlash(null), 1700)
+      outer = setTimeout(tick, 6000 + Math.random() * 4000)
+      return () => clearTimeout(hold)
+    }
+    outer = setTimeout(tick, 4000)
+    return () => clearTimeout(outer)
+  }, [words])
   return (
     <LinearGradient colors={CASE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.case}>
       {/* ── Status bars ── */}
@@ -116,9 +135,9 @@ export function TamagotchiWindow({
           <AyooPet petKey={petKey} streak={streak} pixelSize={6} walkRange={46} />
         </View>
 
-        {/* pet name caption */}
-        <Text style={[s.caption, { fontFamily: fonts.pixel }]} numberOfLines={1}>
-          {name}
+        {/* pet name caption — sometimes the pet "speaks" a word */}
+        <Text style={[s.caption, { fontFamily: fonts.pixel }, flash ? s.captionFlash : null]} numberOfLines={1}>
+          {flash ?? name}
         </Text>
       </Pressable>
     </LinearGradient>
@@ -205,4 +224,5 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: LCD.ink,
   },
+  captionFlash: { color: "#f2a66e" },
 })
