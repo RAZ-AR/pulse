@@ -272,7 +272,7 @@ export default function GiftScreen() {
                       <ActivityIndicator color={colors.ink} />
                     ) : (
                       <View style={s.ctaRow}>
-                        <IconPlane color="#d74427" size={20} />
+                        <IconPlane color="#f2a66e" size={20} />
                         <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("giftBtn", "Gift")}</Text>
                       </View>
                     )}

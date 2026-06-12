@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
-import { Clover3D, Plane3D } from "../../src/components/icons"
+import { IconClover, IconPlane } from "../../src/components/icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -182,13 +182,25 @@ export default function HomeScreen() {
 
         {/* earn / give-away — volumetric console keys, no card around them */}
         <View style={s.actionSplit}>
-          <Pressable onPress={() => router.push("/(tabs)/earn")} style={({ pressed }) => [s.consoleKey, pressed && s.consoleKeyPressed]}>
-            <Clover3D size={68} />
-            <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("nav.earn").toUpperCase()}</Text>
+          <Pressable onPress={() => router.push("/(tabs)/earn")} style={s.consoleKey}>
+            {({ pressed }) => (
+              <>
+                <View style={[s.gbKey, pressed && s.gbKeyPressed]}>
+                  <View style={s.gbKeyFace}><IconClover color="#f2a66e" size={30} /></View>
+                </View>
+                <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("nav.earn").toUpperCase()}</Text>
+              </>
+            )}
           </Pressable>
-          <Pressable onPress={() => router.push("/gift")} style={({ pressed }) => [s.consoleKey, pressed && s.consoleKeyPressed]}>
-            <Plane3D size={68} />
-            <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("sendTo").toUpperCase()}</Text>
+          <Pressable onPress={() => router.push("/gift")} style={s.consoleKey}>
+            {({ pressed }) => (
+              <>
+                <View style={[s.gbKey, pressed && s.gbKeyPressed]}>
+                  <View style={s.gbKeyFace}><IconPlane color="#f2a66e" size={28} /></View>
+                </View>
+                <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("sendTo").toUpperCase()}</Text>
+              </>
+            )}
           </Pressable>
         </View>
 
@@ -965,10 +977,46 @@ const s = StyleSheet.create({
   profileStat: { color: "#75736A", fontSize: 11, fontWeight: "700" },
   profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
   profileIconText: { color: "#75736A", fontSize: 16, fontWeight: "900" },
-  actionSplit: { flexDirection: "row", justifyContent: "space-evenly", alignItems: "flex-start", marginTop: 4, marginBottom: 14 },
-  consoleKey: { alignItems: "center", gap: 7 },
-  consoleKeyPressed: { transform: [{ translateY: 2 }] },
-  consoleKeyLabel: { fontSize: 10, letterSpacing: 1.2, color: "#75736A" },
+  actionSplit: { flexDirection: "row", justifyContent: "space-evenly", alignItems: "flex-start", marginTop: 6, marginBottom: 16 },
+  consoleKey: { alignItems: "center", gap: 9 },
+  // Physical "Tetris" key: raised clay disc, light top, thick dark bottom edge
+  gbKey: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EDEDEB",
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderBottomWidth: 7,
+    borderTopColor: "rgba(255,255,255,0.95)",
+    borderLeftColor: "rgba(255,255,255,0.6)",
+    borderRightColor: "rgba(120,112,96,0.14)",
+    borderBottomColor: "rgba(95,88,74,0.30)",
+    shadowColor: "#9A958A",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  gbKeyPressed: {
+    transform: [{ translateY: 4 }],
+    borderBottomWidth: 3,
+    shadowOpacity: 0.2,
+  },
+  gbKeyFace: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F4F3F1",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.9)",
+  },
+  consoleKeyLabel: { fontSize: 10, letterSpacing: 1.6, color: "#75736A" },
   dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
   dashboardSectionTitle: { color: "#33322D", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
   dashboardSectionLink: { color: "#75736A", fontSize: 11 },

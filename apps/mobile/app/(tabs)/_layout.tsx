@@ -22,7 +22,8 @@ const IND_W    = Math.min(96, SLOT_W - 10)
 const IND_H    = 44
 const IND_TOP  = (DOCK_H - IND_H) / 2
 
-const ORANGE = "#d74427"
+const ORANGE = "#f2a66e"
+const DARK = "#55534D"   // inactive dock icons — dark grey
 
 // ── Chunky filled "puffy" icon set ────────────────────────────
 function IconHome({ color }: { color: string }) {
@@ -204,7 +205,7 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
                 onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
                 style={s.slot}
               >
-                <tab.Icon color={ORANGE} />
+                <tab.Icon color={isFocused ? ORANGE : DARK} />
                 {isFocused ? (
                   <Text style={[s.label, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
                     {tab.label}
@@ -225,7 +226,7 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
             pressed && { transform: [{ scale: 0.95 }] },
           ]}
         >
-          <IconEarn color={ORANGE} />
+          <IconEarn color={(menuOpen || activeName === "earn") ? ORANGE : DARK} />
         </Pressable>
       </View>
     </View>
@@ -300,34 +301,40 @@ const s = StyleSheet.create({
   },
 
   shellGlass: {
-    // Frosted light glass — like the reference pill
-    backgroundColor: "rgba(252,253,255,0.86)",
-    borderWidth: 1,
+    // Volumetric clay pill — light top, extruded bottom edge, soft shadow
+    backgroundColor: "#EDEDEB",
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 5,
     borderTopColor:    "rgba(255,255,255,0.95)",
-    borderLeftColor:   "rgba(255,255,255,0.88)",
-    borderRightColor:  "rgba(200,208,226,0.50)",
-    borderBottomColor: "rgba(200,208,226,0.55)",
-    shadowColor:    "#B7B0A0",
-    shadowOffset:   { width: 0, height: 10 },
-    shadowOpacity:  0.22,
-    shadowRadius:   28,
+    borderLeftColor:   "rgba(255,255,255,0.7)",
+    borderRightColor:  "rgba(120,112,96,0.12)",
+    borderBottomColor: "rgba(110,102,86,0.22)",
+    shadowColor:    "#9A958A",
+    shadowOffset:   { width: 0, height: 12 },
+    shadowOpacity:  0.4,
+    shadowRadius:   24,
     elevation:      12,
   },
 
-  // ── Liquid glass indicator ─────
+  // ── Raised clay indicator ─────
   indicator: {
     position: "absolute",
-    top:    IND_TOP,
+    top:    IND_TOP - 2,
     left:   0,
     width:  IND_W,
     height: IND_H,
     borderRadius: IND_H / 2,
-    backgroundColor: "rgba(222,228,240,0.85)",
-    borderWidth: 1,
-    borderTopColor:    "rgba(255,255,255,0.9)",
-    borderLeftColor:   "rgba(255,255,255,0.7)",
-    borderRightColor:  "rgba(190,200,220,0.45)",
-    borderBottomColor: "rgba(190,200,220,0.5)",
+    backgroundColor: "#F6F5F2",
+    borderTopWidth: 1.5,
+    borderBottomWidth: 3,
+    borderTopColor:    "rgba(255,255,255,1)",
+    borderBottomColor: "rgba(110,102,86,0.16)",
+    shadowColor: "#9A958A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     overflow: "hidden",
   },
   indicatorHighlight: {
@@ -365,7 +372,8 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   fabActive: {
-    backgroundColor: "rgba(222,228,240,0.95)",
+    backgroundColor: "#FBEADC",
+    borderBottomColor: "rgba(180,120,70,0.30)",
   },
 
   // ── Earn submenu ──────
@@ -402,15 +410,18 @@ const s = StyleSheet.create({
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(252,253,255,0.95)",
-    borderWidth: 1,
+    backgroundColor: "#EDEDEB",
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 4,
     borderTopColor:    "rgba(255,255,255,0.95)",
-    borderLeftColor:   "rgba(255,255,255,0.88)",
-    borderRightColor:  "rgba(200,208,226,0.50)",
-    borderBottomColor: "rgba(200,208,226,0.55)",
-    shadowColor: "#B7B0A0",
+    borderLeftColor:   "rgba(255,255,255,0.7)",
+    borderRightColor:  "rgba(120,112,96,0.12)",
+    borderBottomColor: "rgba(110,102,86,0.22)",
+    shadowColor: "#9A958A",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.28,
     shadowRadius: 18,
     elevation: 10,
   },

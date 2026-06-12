@@ -88,14 +88,14 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
   const wrapperStyle: ViewStyle = {
     borderRadius: r,
     backgroundColor: gradient ? "transparent" : theme.surface,
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 3,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 5,
     borderTopColor: "rgba(255,255,255,0.95)",
-    borderLeftColor: "rgba(255,255,255,0.8)",
-    borderRightColor: "rgba(120,112,96,0.08)",
-    borderBottomColor: "rgba(120,112,96,0.16)",
+    borderLeftColor: "rgba(255,255,255,0.7)",
+    borderRightColor: "rgba(120,112,96,0.12)",
+    borderBottomColor: "rgba(110,102,86,0.22)",
     ...shadow,
   }
 
@@ -421,7 +421,7 @@ const s = StyleSheet.create({
   },
   lavaRoot: {
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#EDEDEB",
   },
   lavaBlob: {
     position: "absolute",
