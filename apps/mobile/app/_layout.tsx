@@ -34,8 +34,11 @@ function NotificationHandler() {
   useEffect(() => {
     if (!token) return
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const screen = response.notification.request.content.data?.screen as string | undefined
-      if (screen && SCREEN_MAP[screen]) {
+      const data = response.notification.request.content.data as { screen?: string; venueId?: string } | undefined
+      const screen = data?.screen
+      if (screen === "venue" && data?.venueId) {
+        router.push(`/venue/${data.venueId}` as Parameters<typeof router.push>[0])
+      } else if (screen && SCREEN_MAP[screen]) {
         router.push(SCREEN_MAP[screen] as Parameters<typeof router.push>[0])
       }
     })

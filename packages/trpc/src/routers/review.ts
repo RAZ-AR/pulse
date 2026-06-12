@@ -2,6 +2,11 @@ import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, publicProcedure, protectedProcedure } from "../trpc"
 
+// Reward for the first genuine review at a venue you've actually visited.
+const REVIEW_POINTS = 25
+const MIN_TEXT_LENGTH = 20
+const VISIT_TYPES = ["RECEIPT_SCAN", "CHECKIN_PHOTO", "PARTNER_PURCHASE"] as const
+
 export const reviewRouter = router({
   /**
    * Public list of reviews for a venue, newest first.
@@ -40,29 +45,57 @@ export const reviewRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Check venue exists (don't leak info if not)
-      const venue = await ctx.db.venue.findUnique({
-        where: { id: input.venueId },
-        select: { id: true },
-      })
+      const venue = await ctx.db.venue.findUnique({ where: { id: input.venueId }, select: { id: true } })
       if (!venue) throw new TRPCError({ code: "NOT_FOUND", message: "Venue not found" })
 
-      // Optional anti-spam: require the user to have at least one verified transaction at this venue
-      // — disabled for v1 to make seeding easier; revisit for production.
-
-      return ctx.db.review.upsert({
+      const existing = await ctx.db.review.findUnique({
         where: { userId_venueId: { userId: ctx.userId, venueId: input.venueId } },
-        update: {
-          rating: input.rating,
-          text: input.text ?? null,
-        },
-        create: {
-          userId: ctx.userId,
-          venueId: input.venueId,
-          rating: input.rating,
-          ...(input.text ? { text: input.text } : {}),
-        },
+        select: { id: true, pointsAwarded: true },
       })
+
+      // Points are awarded once, only for a *first* genuine review backed by a
+      // real visit (a scan/checkin/purchase at this venue) with enough text.
+      const text = input.text?.trim() ?? ""
+      let awardPoints = false
+      if (!existing && text.length >= MIN_TEXT_LENGTH) {
+        const visits = await ctx.db.transaction.count({
+          where: { userId: ctx.userId, venueId: input.venueId, type: { in: [...VISIT_TYPES] } },
+        })
+        awardPoints = visits > 0
+      }
+
+      const review = await ctx.db.$transaction(async (tx) => {
+        const r = await tx.review.upsert({
+          where: { userId_venueId: { userId: ctx.userId, venueId: input.venueId } },
+          update: { rating: input.rating, text: input.text ?? null },
+          create: {
+            userId: ctx.userId,
+            venueId: input.venueId,
+            rating: input.rating,
+            ...(input.text ? { text: input.text } : {}),
+            ...(awardPoints ? { pointsAwarded: true } : {}),
+          },
+        })
+        if (awardPoints) {
+          await tx.transaction.create({
+            data: {
+              userId: ctx.userId,
+              venueId: input.venueId,
+              type: "BONUS",
+              pointsEarned: REVIEW_POINTS,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+          await tx.user.update({
+            where: { id: ctx.userId },
+            data: { earnedPoints: { increment: REVIEW_POINTS }, totalEarnedLifetime: { increment: REVIEW_POINTS } },
+          })
+        }
+        return r
+      })
+
+      return { review, awardedPoints: awardPoints ? REVIEW_POINTS : 0 }
     }),
 
   /** Returns the current user's review for a venue, if any. */

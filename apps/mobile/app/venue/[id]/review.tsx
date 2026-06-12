@@ -18,6 +18,7 @@ export default function VenueReviewScreen() {
   const [rating, setRating] = useState(0)
   const [text, setText] = useState("")
   const [error, setError] = useState("")
+  const [awarded, setAwarded] = useState(0)
 
   // Pre-fill from existing review
   useEffect(() => {
@@ -28,10 +29,18 @@ export default function VenueReviewScreen() {
   }, [myReview.data])
 
   const upsert = trpc.review.upsert.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.review.listByVenue.invalidate({ venueId: id })
       utils.review.myForVenue.invalidate({ venueId: id })
-      router.back()
+      utils.venue.detail.invalidate({ id })
+      const points = (data as { awardedPoints?: number })?.awardedPoints ?? 0
+      if (points > 0) {
+        utils.user.me.invalidate()
+        setAwarded(points)
+        setTimeout(() => router.back(), 1400)
+      } else {
+        router.back()
+      }
     },
     onError: (e) => setError(e.message),
   })
@@ -104,6 +113,18 @@ export default function VenueReviewScreen() {
           />
           <Text style={[s.charCount, { color: theme.textSecondary }]}>{text.length}/1000</Text>
 
+          {!myReview.data ? (
+            <Text style={[s.reward, { color: theme.textSecondary }]}>
+              {t("reviewReward", "First review of a place you've visited = +25 points 🎁")}
+            </Text>
+          ) : null}
+
+          {awarded > 0 ? (
+            <View style={s.awardBanner}>
+              <Text style={s.awardText}>{t("reviewAwarded", "+{{n}} points!", { n: awarded })} 🎉</Text>
+            </View>
+          ) : null}
+
           {error ? <Text style={s.err}>{error}</Text> : null}
 
           <Pressable
@@ -148,6 +169,9 @@ const s = StyleSheet.create({
   star: { fontSize: 44, lineHeight: 48 },
   input: { borderWidth: 1, borderRadius: 24, padding: 14, fontSize: 15, height: 140, textAlignVertical: "top", backgroundColor: "#FFFFFF" },
   charCount: { fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 16 },
+  reward: { fontSize: 13, marginBottom: 12, textAlign: "center", lineHeight: 18 },
+  awardBanner: { backgroundColor: "#EBF6EE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 12 },
+  awardText: { color: "#57B286", fontWeight: "800", fontSize: 16 },
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
   btn: { padding: 14, borderRadius: 99, alignItems: "center", marginTop: 8 },
   btnGhost: { backgroundColor: "transparent", borderWidth: 1, marginTop: 12 },
