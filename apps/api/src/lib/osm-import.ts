@@ -81,62 +81,66 @@ export async function importCity(db: PrismaClient, city: City): Promise<OsmSumma
   const elements = await fetchCity(city)
   const summary: OsmSummary = { city: city.name, fetched: elements.length, created: 0, linked: 0, updated: 0, skipped: 0 }
 
-  for (const el of elements) {
+  // 1) Normalize OSM elements → rows (in memory).
+  const rows = elements.flatMap((el) => {
     const tags = el.tags ?? {}
     const name = tags.name?.trim()
     const lat = el.lat ?? el.center?.lat
     const lng = el.lon ?? el.center?.lon
-    if (!name || lat == null || lng == null) { summary.skipped++; continue }
-
-    const osmId = `${el.type}/${el.id}`
-    const data = {
+    if (!name || lat == null || lng == null) return []
+    return [{
+      osmId: `${el.type}/${el.id}`,
       name,
-      category: categoryOf(tags),
-      address: addressOf(tags, city.name),
-      city: city.name,
-      country: city.country,
-      lat,
-      lng,
-      ...(tags.phone || tags["contact:phone"] ? { phone: tags.phone ?? tags["contact:phone"] } : {}),
-      ...(tags.website || tags["contact:website"] ? { website: tags.website ?? tags["contact:website"] } : {}),
-      ...(tags.opening_hours ? { openingHoursText: tags.opening_hours } : {}),
-    }
-
-    // 1) already linked to this OSM element → refresh light fields
-    const byOsm = await db.venue.findUnique({ where: { osmId }, select: { id: true } })
-    if (byOsm) {
-      await db.venue.update({ where: { id: byOsm.id }, data: { ...data, sourceUpdatedAt: new Date() } })
-      summary.updated++
-      continue
-    }
-
-    // 2) same place already exists (e.g. a partner) → link osmId, don't clobber
-    const existing = await db.venue.findFirst({
-      where: {
-        name: { equals: name, mode: "insensitive" },
-        city: { equals: city.name, mode: "insensitive" },
-      },
-      select: { id: true },
-    })
-    if (existing) {
-      await db.venue.update({ where: { id: existing.id }, data: { osmId, sourceUpdatedAt: new Date() } })
-      summary.linked++
-      continue
-    }
-
-    // 3) brand new
-    await db.venue.create({
       data: {
-        ...data,
-        photos: [],
-        osmId,
-        sourceProvider: "osm",
-        sourcePlaceId: osmId,
-        sourceUrl: `https://www.openstreetmap.org/${osmId}`,
-        sourceUpdatedAt: new Date(),
+        name,
+        category: categoryOf(tags),
+        address: addressOf(tags, city.name),
+        city: city.name,
+        country: city.country,
+        lat,
+        lng,
+        ...(tags.phone || tags["contact:phone"] ? { phone: tags.phone ?? tags["contact:phone"] } : {}),
+        ...(tags.website || tags["contact:website"] ? { website: tags.website ?? tags["contact:website"] } : {}),
+        ...(tags.opening_hours ? { openingHoursText: tags.opening_hours } : {}),
       },
+    }]
+  })
+  summary.skipped = elements.length - rows.length
+
+  // 2) Load existing venues for this city once → in-memory dedup maps.
+  const existing = await db.venue.findMany({
+    where: { city: city.name },
+    select: { id: true, name: true, osmId: true },
+  })
+  const linkedOsm = new Set(existing.filter((v) => v.osmId).map((v) => v.osmId as string))
+  const byName = new Map(existing.map((v) => [v.name.toLowerCase(), v.id] as const))
+
+  // 3) Partition: already-linked (skip), name-match (link osmId), brand-new (create).
+  const toCreate: object[] = []
+  const toLink: { id: string; osmId: string }[] = []
+  for (const r of rows) {
+    if (linkedOsm.has(r.osmId)) { summary.updated++; continue }
+    const existingId = byName.get(r.name.toLowerCase())
+    if (existingId) { toLink.push({ id: existingId, osmId: r.osmId }); continue }
+    toCreate.push({
+      ...r.data,
+      photos: [],
+      osmId: r.osmId,
+      sourceProvider: "osm",
+      sourcePlaceId: r.osmId,
+      sourceUrl: `https://www.openstreetmap.org/${r.osmId}`,
+      sourceUpdatedAt: new Date(),
     })
-    summary.created++
+  }
+
+  // 4) Bulk create new; link name-matched partners (don't clobber their data).
+  if (toCreate.length) {
+    const res = await db.venue.createMany({ data: toCreate as never, skipDuplicates: true })
+    summary.created += res.count
+  }
+  for (const l of toLink) {
+    await db.venue.update({ where: { id: l.id }, data: { osmId: l.osmId, sourceUpdatedAt: new Date() } }).catch(() => {})
+    summary.linked++
   }
 
   return summary
