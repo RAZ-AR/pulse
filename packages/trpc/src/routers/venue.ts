@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { router, publicProcedure, protectedProcedure } from "../trpc"
 import { boundingBox, haversineMeters } from "@pulse/shared"
+import { enrichVenueFromGoogle } from "../lib/google-enrich"
 
 const VenueCategoryEnum = z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "BEAUTY", "FITNESS", "YOGA", "OTHER"])
 
@@ -37,6 +38,9 @@ const venuePublicSelect = {
   instagram: true,
   openingHoursText: true,
   specialOffers: true,
+  priceLevel: true,
+  googleMapsUrl: true,
+  lastEnrichedAt: true,
 } as const
 
 export const venueRouter = router({
@@ -72,24 +76,38 @@ export const venueRouter = router({
   detail: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.venue.findUnique({
-        where: { id: input.id },
-        select: {
-          ...venuePublicSelect,
-          rewards: {
-            where: { isActive: true },
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              pointsCost: true,
-              imageUrl: true,
-              redemptionType: true,
-            },
-            orderBy: { pointsCost: "asc" },
+      const detailSelect = {
+        ...venuePublicSelect,
+        rewards: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            pointsCost: true,
+            imageUrl: true,
+            redemptionType: true,
           },
+          orderBy: { pointsCost: "asc" as const },
         },
+      }
+
+      const venue = await ctx.db.venue.findUnique({ where: { id: input.id }, select: detailSelect })
+      if (!venue) return null
+
+      // Lazy Google enrichment: fill rating/hours/price on first open (best-effort, cached).
+      const updated = await enrichVenueFromGoogle(ctx.db, {
+        id: venue.id,
+        name: venue.name,
+        city: venue.city,
+        lat: venue.lat,
+        lng: venue.lng,
+        phone: venue.phone,
+        website: venue.website,
+        lastEnrichedAt: venue.lastEnrichedAt,
       })
+      if (!updated) return venue
+      return (await ctx.db.venue.findUnique({ where: { id: input.id }, select: detailSelect })) ?? venue
     }),
 
   search: publicProcedure

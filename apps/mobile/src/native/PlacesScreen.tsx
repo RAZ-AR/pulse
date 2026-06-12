@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { fonts, useTheme } from "../lib/theme"
 import { resolveCity, CITY_OPTIONS } from "../lib/venues"
@@ -19,6 +20,7 @@ const CATS: { key: Cat; label: string }[] = [
 
 export default function PlacesScreen() {
   const theme = useTheme()
+  const router = useRouter()
   const me = trpc.user.me.useQuery()
   const city = resolveCity(me.data?.homeCity)
 
@@ -113,7 +115,11 @@ export default function PlacesScreen() {
             : <Text style={[s.empty, { color: theme.textMuted }]}>Ничего не нашлось</Text>
         }
         ListFooterComponent={q.isFetchingNextPage ? <ActivityIndicator color={theme.textSecondary} style={{ margin: 16 }} /> : null}
-        renderItem={({ item }) => <VenueCard v={item} theme={theme} />}
+        renderItem={({ item }) => (
+          <Pressable onPress={() => router.push(`/venue/${item.id}` as Parameters<typeof router.push>[0])}>
+            <VenueCard v={item} theme={theme} />
+          </Pressable>
+        )}
       />
     </View>
   )
