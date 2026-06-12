@@ -25,6 +25,9 @@ enum VenueCategory {
   RESTAURANT
   RETAIL
   SERVICE
+  BEAUTY
+  FITNESS
+  YOGA
   OTHER
 }
 
@@ -286,8 +289,11 @@ model Venue {
   googleReviews Int?
   yandexRating  Float?
   woltRating    Float?
+  priceLevel    Int?       // 1..4 (Google price_level)
 
   // Public source/import metadata
+  osmId            String?    @unique // OpenStreetMap element id (e.g. "node/123")
+  lastEnrichedAt   DateTime?  // last Google enrichment — TTL marker
   sourceProvider   String?
   sourcePlaceId    String?
   sourceUrl        String?
@@ -369,6 +375,7 @@ model Transaction {
   ocrConfidence   Float?
   receiptHash     String? @unique
   receiptNumber   String? @unique  // Serbian fiscal receipt number (dedup for QR scans)
+  merchantRequestId String? @unique // Idempotency key for merchant-entered purchases
 
   // Verification
   status          TransactionStatus @default(PENDING)
@@ -379,6 +386,7 @@ model Transaction {
 
   @@index([userId, createdAt])
   @@index([receiptHash])
+  @@index([merchantRequestId])
 }
 
 // ============================================================
@@ -399,11 +407,13 @@ model Checkin {
   aiVerification    Json?
   status            CheckinStatus @default(PENDING)
   pointsEarned      Int
+  checkinDay        String?
 
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([venueId, userId])
+  @@unique([userId, checkinDay])
 }
 
 // ============================================================
@@ -532,7 +542,12 @@ model Review {
   rating  Int
   text    String?
 
+  photos        String[] @default([])
+  helpfulCount  Int      @default(0)
+  pointsAwarded Boolean  @default(false) // points granted once on first review
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, venueId])
 }
