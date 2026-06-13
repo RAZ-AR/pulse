@@ -1,4 +1,47 @@
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Stop } from "react-native-svg"
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from "react-native-svg"
+
+// ── Plus / Minus shaped console keys ──────────────────────────
+// The button IS the shape: a green cross (+) and an orange bar (−),
+// each with a darker extrusion below + a glossy top highlight.
+
+/** Green plus-shaped key (earn). */
+export function PlusKey({ size = 88 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size * (104 / 96)} viewBox="0 0 96 104">
+      <Defs>
+        <LinearGradient id="plusFace" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#8FD6A4" />
+          <Stop offset="1" stopColor="#63B07E" />
+        </LinearGradient>
+      </Defs>
+      {/* extrusion (depth) */}
+      <Rect x={6} y={39} width={84} height={34} rx={15} fill="#3C8557" />
+      <Rect x={31} y={14} width={34} height={84} rx={15} fill="#3C8557" />
+      {/* face */}
+      <Rect x={6} y={31} width={84} height={34} rx={15} fill="url(#plusFace)" />
+      <Rect x={31} y={6} width={34} height={84} rx={15} fill="url(#plusFace)" />
+      {/* gloss */}
+      <Rect x={37} y={11} width={22} height={13} rx={6} fill="rgba(255,255,255,0.42)" />
+    </Svg>
+  )
+}
+
+/** Orange minus-shaped key (send). */
+export function MinusKey({ size = 88 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size * (52 / 96)} viewBox="0 0 96 52">
+      <Defs>
+        <LinearGradient id="minusFace" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#F7BC8B" />
+          <Stop offset="1" stopColor="#EC9A5A" />
+        </LinearGradient>
+      </Defs>
+      <Rect x={6} y={14} width={84} height={32} rx={15} fill="#C7733A" />
+      <Rect x={6} y={6} width={84} height={32} rx={15} fill="url(#minusFace)" />
+      <Rect x={16} y={11} width={30} height={11} rx={5} fill="rgba(255,255,255,0.42)" />
+    </Svg>
+  )
+}
 
 /** Four-lobe clover with a white plus — the "earn" mark. */
 export function IconClover({ color, size = 22 }: { color: string; size?: number }) {
