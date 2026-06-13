@@ -2,7 +2,6 @@ import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { AyooLogo } from "../../src/components/AyooLogo"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
-import { IconClover, IconPlane } from "../../src/components/icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
@@ -189,13 +188,15 @@ export default function HomeScreen() {
           onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
         />
 
-        {/* earn / give-away — volumetric console keys, no card around them */}
+        {/* earn (+) / send (−) — big Game-Boy console keys */}
         <View style={s.actionSplit}>
           <Pressable onPress={() => router.push("/(tabs)/earn")} style={s.consoleKey}>
             {({ pressed }) => (
               <>
-                <View style={[s.gbKey, pressed && s.gbKeyPressed]}>
-                  <View style={s.gbKeyFace}><IconClover color="#f2a66e" size={30} /></View>
+                <View style={[s.gbKey, s.gbKeyGreen, pressed && s.gbKeyPressed]}>
+                  <View style={s.gbGloss} />
+                  <View style={s.plusH} />
+                  <View style={s.plusV} />
                 </View>
                 <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("nav.earn").toUpperCase()}</Text>
               </>
@@ -204,8 +205,9 @@ export default function HomeScreen() {
           <Pressable onPress={() => router.push("/gift")} style={s.consoleKey}>
             {({ pressed }) => (
               <>
-                <View style={[s.gbKey, pressed && s.gbKeyPressed]}>
-                  <View style={s.gbKeyFace}><IconPlane color="#f2a66e" size={28} /></View>
+                <View style={[s.gbKey, s.gbKeyOrange, pressed && s.gbKeyPressed]}>
+                  <View style={s.gbGloss} />
+                  <View style={s.minusBar} />
                 </View>
                 <Text style={[s.consoleKeyLabel, { fontFamily: fonts.bodyBold }]}>{t("sendTo").toUpperCase()}</Text>
               </>
@@ -988,42 +990,55 @@ const s = StyleSheet.create({
   profileIconText: { color: "#75736A", fontSize: 16, fontWeight: "900" },
   actionSplit: { flexDirection: "row", justifyContent: "space-evenly", alignItems: "flex-start", marginTop: 6, marginBottom: 16 },
   consoleKey: { alignItems: "center", gap: 9 },
-  // Physical "Tetris" key: raised clay disc, light top, thick dark bottom edge
+  // Big Game-Boy console key: raised glossy disc, light top, thick colored bottom edge
   gbKey: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EDEDEB",
     borderTopWidth: 2,
     borderLeftWidth: 2,
     borderRightWidth: 2,
-    borderBottomWidth: 7,
-    borderTopColor: "rgba(255,255,255,0.95)",
-    borderLeftColor: "rgba(255,255,255,0.6)",
-    borderRightColor: "rgba(120,112,96,0.14)",
-    borderBottomColor: "rgba(95,88,74,0.30)",
+    borderBottomWidth: 8,
     shadowColor: "#9A958A",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 11 },
+    shadowOpacity: 0.42,
     shadowRadius: 16,
     elevation: 8,
+    overflow: "hidden",
   },
+  gbKeyGreen: {
+    backgroundColor: "#76C78D",
+    borderTopColor: "rgba(255,255,255,0.55)",
+    borderLeftColor: "rgba(255,255,255,0.35)",
+    borderRightColor: "rgba(30,110,60,0.25)",
+    borderBottomColor: "rgba(30,95,55,0.55)",
+  },
+  gbKeyOrange: {
+    backgroundColor: "#f2a66e",
+    borderTopColor: "rgba(255,255,255,0.55)",
+    borderLeftColor: "rgba(255,255,255,0.35)",
+    borderRightColor: "rgba(170,80,40,0.25)",
+    borderBottomColor: "rgba(150,75,40,0.55)",
+  },
+  gbGloss: {
+    position: "absolute",
+    top: 5,
+    left: 12,
+    width: 40,
+    height: 22,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.32)",
+  },
+  // White +/− symbols (rounded bars)
+  plusH: { position: "absolute", width: 38, height: 11, borderRadius: 6, backgroundColor: "#FFFFFF" },
+  plusV: { position: "absolute", width: 11, height: 38, borderRadius: 6, backgroundColor: "#FFFFFF" },
+  minusBar: { width: 38, height: 11, borderRadius: 6, backgroundColor: "#FFFFFF" },
   gbKeyPressed: {
-    transform: [{ translateY: 4 }],
+    transform: [{ translateY: 5 }],
     borderBottomWidth: 3,
     shadowOpacity: 0.2,
-  },
-  gbKeyFace: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F4F3F1",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.9)",
   },
   consoleKeyLabel: { fontSize: 10, letterSpacing: 1.6, color: "#75736A" },
   dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
