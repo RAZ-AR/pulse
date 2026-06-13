@@ -4,41 +4,51 @@ import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 
 // The button IS the shape: a green cross (+) and an orange bar (−),
 // each with a darker extrusion below + a glossy top highlight.
 
-/** Green plus-shaped key (earn). */
-export function PlusKey({ size = 88 }: { size?: number }) {
+// Soft "clay" console keys — just the cross / bar, puffy, with a gentle
+// same-hue rounded bottom and a soft top gloss (no hard dark edge).
+const T = 38            // arm thickness
+const R = T / 2         // fully-rounded ends
+const DROP = 5          // soft rounded "thickness" below the face
+
+/** Mint plus-shaped key (earn). */
+export function PlusKey({ size = 92 }: { size?: number }) {
+  const VB = 96 + DROP
   return (
-    <Svg width={size} height={size * (104 / 96)} viewBox="0 0 96 104">
+    <Svg width={size} height={size * (VB / 96)} viewBox={`0 0 96 ${VB}`}>
       <Defs>
         <LinearGradient id="plusFace" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#8FD6A4" />
-          <Stop offset="1" stopColor="#63B07E" />
+          <Stop offset="0" stopColor="#B2E6D5" />
+          <Stop offset="0.55" stopColor="#8FD3BC" />
+          <Stop offset="1" stopColor="#74C2A8" />
         </LinearGradient>
       </Defs>
-      {/* extrusion (depth) */}
-      <Rect x={6} y={39} width={84} height={34} rx={15} fill="#3C8557" />
-      <Rect x={31} y={14} width={34} height={84} rx={15} fill="#3C8557" />
-      {/* face */}
-      <Rect x={6} y={31} width={84} height={34} rx={15} fill="url(#plusFace)" />
-      <Rect x={31} y={6} width={34} height={84} rx={15} fill="url(#plusFace)" />
-      {/* gloss */}
-      <Rect x={37} y={11} width={22} height={13} rx={6} fill="rgba(255,255,255,0.42)" />
+      {/* soft rounded underside (same hue, darker) */}
+      <Rect x={6} y={29 + DROP} width={84} height={T} rx={R} fill="#5FAE92" />
+      <Rect x={29} y={6 + DROP} width={T} height={84} rx={R} fill="#5FAE92" />
+      {/* puffy face */}
+      <Rect x={6} y={29} width={84} height={T} rx={R} fill="url(#plusFace)" />
+      <Rect x={29} y={6} width={T} height={84} rx={R} fill="url(#plusFace)" />
+      {/* soft top gloss */}
+      <Ellipse cx={48} cy={20} rx={13} ry={7} fill="rgba(255,255,255,0.45)" />
     </Svg>
   )
 }
 
 /** Orange minus-shaped key (send). */
-export function MinusKey({ size = 88 }: { size?: number }) {
+export function MinusKey({ size = 92 }: { size?: number }) {
+  const VB = T + DROP + 2
   return (
-    <Svg width={size} height={size * (52 / 96)} viewBox="0 0 96 52">
+    <Svg width={size} height={size * (VB / 96)} viewBox={`0 0 96 ${VB}`}>
       <Defs>
         <LinearGradient id="minusFace" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F7BC8B" />
+          <Stop offset="0" stopColor="#F8C79B" />
+          <Stop offset="0.55" stopColor="#F2A972" />
           <Stop offset="1" stopColor="#EC9A5A" />
         </LinearGradient>
       </Defs>
-      <Rect x={6} y={14} width={84} height={32} rx={15} fill="#C7733A" />
-      <Rect x={6} y={6} width={84} height={32} rx={15} fill="url(#minusFace)" />
-      <Rect x={16} y={11} width={30} height={11} rx={5} fill="rgba(255,255,255,0.42)" />
+      <Rect x={6} y={1 + DROP} width={84} height={T} rx={R} fill="#D5894C" />
+      <Rect x={6} y={1} width={84} height={T} rx={R} fill="url(#minusFace)" />
+      <Ellipse cx={30} cy={13} rx={16} ry={6} fill="rgba(255,255,255,0.42)" />
     </Svg>
   )
 }
