@@ -27,6 +27,8 @@ export async function POST(req: Request) {
     await sendPartnerLead({
       name,
       contact,
+      venue: body.venue ? String(body.venue).trim().slice(0, 120) : undefined,
+      city: body.city ? String(body.city).trim().slice(0, 80) : undefined,
       source: body.source ? String(body.source).slice(0, 60) : "landing",
       lang: body.lang ? String(body.lang).slice(0, 8) : undefined,
     })

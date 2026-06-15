@@ -11,10 +11,13 @@ import { createHmac } from "crypto"
 import { SignJWT } from "jose"
 import { db } from "@pulse/db"
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.MERCHANT_AUTH_SECRET ?? "fallback-secret-change-me",
-)
 const JWT_EXPIRY = "8h"
+
+function jwtSecret(): Uint8Array {
+  const secret = process.env.MERCHANT_AUTH_SECRET
+  if (!secret) throw new Error("MERCHANT_AUTH_SECRET is not configured")
+  return new TextEncoder().encode(secret)
+}
 
 function validateTelegramInitData(initData: string, botToken: string): Record<string, string> | null {
   const params = new URLSearchParams(initData)
@@ -100,7 +103,7 @@ export async function POST(req: Request) {
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime(JWT_EXPIRY)
-      .sign(JWT_SECRET)
+      .sign(jwtSecret())
 
     return NextResponse.json({
       status: "active",

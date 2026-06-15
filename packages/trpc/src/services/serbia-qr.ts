@@ -73,48 +73,61 @@ export type VendorInfo = {
   pib: string | null   // Serbian tax ID, 9 digits
 }
 
+// Small in-memory cache (per warm serverless instance) keyed by verification
+// URL — avoids re-scraping PURS for the same receipt / store on repeat scans.
+const vendorCache = new Map<string, VendorInfo>()
+
 /**
  * Fetches the public PURS verification page and extracts vendor name + PIB.
- * Both fields are best-effort — returns nulls on failure. Never throws.
+ * Best-effort: cached, retried once, 6s timeout. Returns nulls on failure,
+ * never throws.
  */
 export async function fetchVendorInfo(verificationUrl: string): Promise<VendorInfo> {
-  try {
-    const res = await fetch(verificationUrl, {
-      headers: { "Accept": "text/html", "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(5000),
-    })
-    if (!res.ok) return { name: null, pib: null }
-    const html = await res.text()
+  const cached = vendorCache.get(verificationUrl)
+  if (cached) return cached
 
-    // Vendor name patterns seen in the wild on suf.purs.gov.rs
-    const namePatterns = [
-      /Naziv prodajnog mesta[^>]*>[^<]*<[^>]*>([^<]+)</i,
-      /Naziv obveznika[^>]*>[^<]*<[^>]*>([^<]+)</i,
-      /<td[^>]*>\s*Naziv\s*<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
-      /locationName["\s]*:["\s]*"([^"]+)"/i,
-    ]
-    let name: string | null = null
-    for (const pat of namePatterns) {
-      const m = html.match(pat)
-      if (m?.[1]) { name = m[1].trim(); break }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(verificationUrl, {
+        headers: { "Accept": "text/html", "User-Agent": "Mozilla/5.0" },
+        signal: AbortSignal.timeout(6000),
+      })
+      if (!res.ok) continue
+      const html = await res.text()
+
+      // Vendor name patterns seen in the wild on suf.purs.gov.rs
+      const namePatterns = [
+        /Naziv prodajnog mesta[^>]*>[^<]*<[^>]*>([^<]+)</i,
+        /Naziv obveznika[^>]*>[^<]*<[^>]*>([^<]+)</i,
+        /<td[^>]*>\s*Naziv\s*<\/td>\s*<td[^>]*>([^<]+)<\/td>/i,
+        /locationName["\s]*:["\s]*"([^"]+)"/i,
+      ]
+      let name: string | null = null
+      for (const pat of namePatterns) {
+        const m = html.match(pat)
+        if (m?.[1]) { name = m[1].trim(); break }
+      }
+
+      // PIB patterns: "PIB: 123456789" or table cell after PIB label
+      const pibPatterns = [
+        /PIB[^>]*>[^<]*<[^>]*>(\d{8,13})</i,
+        /PIB\s*:\s*(\d{8,13})/i,
+        /<td[^>]*>\s*PIB\s*<\/td>\s*<td[^>]*>(\d{8,13})<\/td>/i,
+      ]
+      let pib: string | null = null
+      for (const pat of pibPatterns) {
+        const m = html.match(pat)
+        if (m?.[1]) { pib = m[1].trim(); break }
+      }
+
+      const info: VendorInfo = { name, pib }
+      if (name || pib) vendorCache.set(verificationUrl, info) // only cache successful resolutions
+      return info
+    } catch {
+      // network/timeout — retry once, then give up
     }
-
-    // PIB patterns: "PIB: 123456789" or table cell after PIB label
-    const pibPatterns = [
-      /PIB[^>]*>[^<]*<[^>]*>(\d{8,13})</i,
-      /PIB\s*:\s*(\d{8,13})/i,
-      /<td[^>]*>\s*PIB\s*<\/td>\s*<td[^>]*>(\d{8,13})<\/td>/i,
-    ]
-    let pib: string | null = null
-    for (const pat of pibPatterns) {
-      const m = html.match(pat)
-      if (m?.[1]) { pib = m[1].trim(); break }
-    }
-
-    return { name, pib }
-  } catch {
-    return { name: null, pib: null }
   }
+  return { name: null, pib: null }
 }
 
 /** @deprecated Use fetchVendorInfo instead */

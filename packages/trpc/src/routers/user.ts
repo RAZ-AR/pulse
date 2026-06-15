@@ -139,7 +139,16 @@ export const userRouter = router({
         }
       }
 
-      const updated = await ctx.db.$transaction(async (tx) => {
+      const result = await ctx.db.$transaction(async (tx) => {
+        let claimedGiftAmount = 0
+        if (giftLink) {
+          const claimed = await tx.giftLink.updateMany({
+            where: { id: giftLink.id, status: "PENDING" },
+            data: { status: "CLAIMED", recipientId: ctx.userId, claimedAt: new Date() },
+          })
+          if (claimed.count === 1) claimedGiftAmount = giftLink.amount
+        }
+
         const u = await tx.user.update({
           where: { id: ctx.userId },
           data: {
@@ -151,8 +160,8 @@ export const userRouter = router({
             ...(input.deviceFingerprint !== undefined ? { deviceFingerprint: input.deviceFingerprint } : {}),
             ...(referrerId ? { referredById: referrerId } : {}),
             ...(referrerId ? { earnedPoints: { increment: REFERRAL_SIGNUP_POINTS } } : {}),
-            ...(giftLink ? { earnedPoints: { increment: giftLink.amount } } : {}),
-            ...(giftLink ? { totalEarnedLifetime: { increment: giftLink.amount } } : {}),
+            ...(claimedGiftAmount > 0 ? { earnedPoints: { increment: claimedGiftAmount } } : {}),
+            ...(claimedGiftAmount > 0 ? { totalEarnedLifetime: { increment: claimedGiftAmount } } : {}),
           },
           select: { id: true, earnedPoints: true, welcomePoints: true, referralCode: true },
         })
@@ -169,16 +178,12 @@ export const userRouter = router({
           })
         }
 
-        if (giftLink) {
-          await tx.giftLink.update({
-            where: { id: giftLink.id },
-            data: { status: "CLAIMED", recipientId: ctx.userId, claimedAt: new Date() },
-          })
+        if (claimedGiftAmount > 0) {
           await tx.transaction.create({
             data: {
               userId: ctx.userId,
               type: "GIFT_RECEIVED",
-              pointsEarned: giftLink.amount,
+              pointsEarned: claimedGiftAmount,
               status: "VERIFIED",
               verifiedAt: new Date(),
             },
@@ -188,8 +193,9 @@ export const userRouter = router({
         await checkAndAwardBadges(tx, ctx.userId)
         if (referrerId) await checkAndAwardBadges(tx, referrerId)
 
-        return u
+        return { user: u, giftReceived: claimedGiftAmount || null }
       })
+      const updated = result.user
 
       if (referrerId) {
         const referrer = await ctx.db.user.findUnique({
@@ -209,7 +215,7 @@ export const userRouter = router({
       return {
         ...updated,
         totalPoints: updated.earnedPoints + updated.welcomePoints,
-        giftReceived: giftLink?.amount ?? null,
+        giftReceived: result.giftReceived,
       }
     }),
 

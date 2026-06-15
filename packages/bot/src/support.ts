@@ -53,6 +53,8 @@ export async function notifyAdmins(text: string, extra?: Extra): Promise<void> {
 export type PartnerLead = {
   name: string
   contact: string
+  venue?: string | undefined
+  city?: string | undefined
   source?: string | undefined
   lang?: string | undefined
 }
@@ -60,7 +62,9 @@ export type PartnerLead = {
 export async function sendPartnerLead(lead: PartnerLead): Promise<void> {
   const text =
     `🏪 *New partner application*\n\n` +
-    `*Venue:* ${esc(lead.name)}\n` +
+    `*Name:* ${esc(lead.name)}\n` +
+    (lead.venue ? `*Venue:* ${esc(lead.venue)}\n` : "") +
+    (lead.city ? `*City:* ${esc(lead.city)}\n` : "") +
     `*Contact:* ${esc(lead.contact)}\n` +
     `*Lang:* ${esc(lead.lang ?? "—")}  ·  *Source:* ${esc(lead.source ?? "landing")}\n` +
     `_${new Date().toLocaleString("ru-RU")}_`

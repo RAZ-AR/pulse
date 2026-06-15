@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
+import { Prisma } from "@pulse/db"
 import { router, protectedProcedure } from "../trpc"
 import { trackVisit, trackStreak } from "../services/challenge-progress"
 import { checkAndAwardBadges } from "../services/badges"
@@ -12,7 +13,16 @@ import {
   computeStreakUpdate,
 } from "@pulse/shared"
 
-const CHECKIN_COOLDOWN_HOURS = 12 // same venue, same user
+function dayKey(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Europe/Belgrade",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((part) => part.type === type)?.value
+  return `${get("year")}-${get("month")}-${get("day")}`
+}
 
 export const checkinRouter = router({
   create: protectedProcedure
@@ -50,20 +60,19 @@ export const checkinRouter = router({
         })
       }
 
-      // 4. Cooldown: same venue, same user — once per 12h
-      const cooldownCutoff = new Date(Date.now() - CHECKIN_COOLDOWN_HOURS * 3_600_000)
-      const recentCheckin = await ctx.db.checkin.findFirst({
+      // 4. Daily limit: one check-in per user per calendar day.
+      const checkinDay = dayKey()
+      const todayCheckin = await ctx.db.checkin.findFirst({
         where: {
           userId: ctx.userId,
-          venueId: input.venueId,
-          createdAt: { gte: cooldownCutoff },
+          checkinDay,
         },
         select: { id: true },
       })
-      if (recentCheckin) {
+      if (todayCheckin) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Already checked in here recently. Try again in ${CHECKIN_COOLDOWN_HOURS}h.`,
+          message: "Already checked in today. Try again tomorrow.",
         })
       }
 
@@ -88,7 +97,8 @@ export const checkinRouter = router({
             lng: input.lng,
             distanceFromVenue: distanceMeters,
             status: "VERIFIED",
-            pointsEarned: totalPoints,
+            pointsEarned: CHECKIN_POINTS,
+            checkinDay,
           },
         })
 
@@ -97,7 +107,7 @@ export const checkinRouter = router({
             userId: ctx.userId,
             venueId: input.venueId,
             type: "CHECKIN_PHOTO",
-            pointsEarned: totalPoints,
+            pointsEarned: CHECKIN_POINTS,
             status: "VERIFIED",
             verifiedAt: new Date(),
           },
@@ -135,6 +145,14 @@ export const checkinRouter = router({
         const newBadges = await checkAndAwardBadges(tx, ctx.userId)
 
         return { checkin, updatedUser, newBadges }
+      }).catch((e) => {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Already checked in today. Try again tomorrow.",
+          })
+        }
+        throw e
       })
 
       // Push notification (best-effort, after tx)

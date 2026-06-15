@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { createHmac, timingSafeEqual } from "node:crypto"
 import { Prisma } from "@pulse/db"
 import type { db as PrismaDb } from "@pulse/db"
 import { TRPCError } from "@trpc/server"
@@ -23,6 +24,72 @@ import {
 } from "@pulse/shared"
 
 // ── Helpers ───────────────────────────────────────────────────
+
+const RECEIPT_SCAN_TOKEN_TTL_MS = 15 * 60_000
+
+type ReceiptScanToken = {
+  v: 1
+  userId: string
+  imageUrl: string
+  vendor: string | null
+  total: number | null
+  currency: string | null
+  date: string | null
+  receiptNumber: string | null
+  receiptHash: string | null
+  confidence: number
+  rawData: Prisma.InputJsonValue
+  exp: number
+}
+
+function b64url(input: string): string {
+  return Buffer.from(input).toString("base64url")
+}
+
+function receiptTokenSecret(): string {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+  if (secret) return secret
+  if (process.env.NODE_ENV === "production") {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Receipt scan token secret is not configured" })
+  }
+  return "dev-receipt-scan-secret"
+}
+
+function signReceiptScanToken(payload: ReceiptScanToken): string {
+  const body = b64url(JSON.stringify(payload))
+  const sig = createHmac("sha256", receiptTokenSecret()).update(body).digest("base64url")
+  return `${body}.${sig}`
+}
+
+function readReceiptScanToken(token: string): ReceiptScanToken {
+  const [body, sig] = token.split(".")
+  if (!body || !sig) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid receipt scan token" })
+  }
+
+  const expected = createHmac("sha256", receiptTokenSecret()).update(body).digest("base64url")
+  const got = Buffer.from(sig)
+  const want = Buffer.from(expected)
+  if (got.length !== want.length || !timingSafeEqual(got, want)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid receipt scan token" })
+  }
+
+  let payload: ReceiptScanToken
+  try {
+    payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as ReceiptScanToken
+  } catch {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid receipt scan token" })
+  }
+  if (payload.v !== 1 || payload.exp < Date.now()) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Receipt scan expired. Please scan again." })
+  }
+  return payload
+}
+
+function cleanOptionalText(value: string | null | undefined): string | null {
+  const text = value?.trim()
+  return text ? text : null
+}
 
 function validateReceiptDate(dateStr: string): void {
   const receiptDate = new Date(dateStr)
@@ -56,6 +123,7 @@ async function runReceiptTx(
     venueId: string | null
     amount: number
     currency: string
+    earnedPoints: number
     totalPoints: number
     streak: StreakResult
     status: "VERIFIED" | "PENDING"
@@ -76,7 +144,7 @@ async function runReceiptTx(
         type: "RECEIPT_SCAN",
         amount: params.amount,
         currency: params.currency,
-        pointsEarned: params.totalPoints,
+        pointsEarned: params.earnedPoints,
         status: params.status,
         verifiedAt: params.status === "VERIFIED" ? new Date() : null,
         receiptHash:      params.record.receiptHash      ?? null,
@@ -233,6 +301,20 @@ export const transactionRouter = router({
         confidence: ocrResult.confidence,
         source: ocrResult.source,
         receiptHash,
+        scanToken: signReceiptScanToken({
+          v: 1,
+          userId: ctx.userId,
+          imageUrl: input.imageUrl,
+          vendor: ocrResult.data.vendor ?? null,
+          total: ocrResult.data.total,
+          currency: ocrResult.data.currency ?? null,
+          date: ocrResult.data.date ?? null,
+          receiptNumber: ocrResult.data.receiptNumber ?? null,
+          receiptHash,
+          confidence: ocrResult.confidence,
+          rawData: ocrResult.data as Prisma.InputJsonValue,
+          exp: Date.now() + RECEIPT_SCAN_TOKEN_TTL_MS,
+        }),
         requiresConfirmation: ocrResult.confidence < OCR_CONFIDENCE_THRESHOLD,
         isSuspicious,
         aiVerification: {
@@ -248,35 +330,46 @@ export const transactionRouter = router({
   confirmReceipt: protectedProcedure
     .input(
       z.object({
-        imageUrl: z.string().url(),
-        receiptHash: z.string().length(64).optional(), // pre-computed SHA-256
-        vendor: z.string().min(1).max(200),
-        amount: z.number().positive(),
-        currency: z.string().length(3),
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        scanToken: z.string().min(20),
+        imageUrl: z.string().url().optional(),
+        vendor: z.string().min(1).max(200).optional(),
+        amount: z.number().positive().optional(),
+        currency: z.string().length(3).optional(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         time: z.string().optional(),
         receiptNumber: z.string().optional(),
-        ocrConfidence: z.number().min(0).max(1).optional(),
-        ocrRawData: z.record(z.unknown()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const scan = readReceiptScanToken(input.scanToken)
+      if (scan.userId !== ctx.userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Receipt scan belongs to another user" })
+      }
+      const vendor = cleanOptionalText(input.vendor) ?? scan.vendor
+      const amount = input.amount ?? scan.total
+      const currency = cleanOptionalText(input.currency)?.toUpperCase() ?? scan.currency
+      const date = cleanOptionalText(input.date) ?? scan.date
+      const receiptNumber = cleanOptionalText(input.receiptNumber) ?? scan.receiptNumber
+      const imageUrl = input.imageUrl ?? scan.imageUrl
+
+      if (!vendor || amount === null || !currency || !date) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Receipt scan is incomplete. Please scan again." })
+      }
+
       // 1. Date validation
-      validateReceiptDate(input.date)
+      validateReceiptDate(date)
 
       // 1b. Per-vendor velocity (max 2 receipts/day per user per vendor)
-      await checkVendorVelocity(ctx.userId, input.vendor)
+      await checkVendorVelocity(ctx.userId, vendor)
 
-      // 2. Compute (or reuse) receipt hash
-      const receiptHash =
-        input.receiptHash ??
-        computeReceiptHash({
-          vendor: input.vendor,
-          total: input.amount,
-          currency: input.currency,
-          date: input.date,
-          receiptNumber: input.receiptNumber ?? null,
-        })
+      // 2. Compute from confirmed fields; user edits must affect dedup.
+      const receiptHash = computeReceiptHash({
+        vendor,
+        total: amount,
+        currency,
+        date,
+        receiptNumber,
+      })
 
       // 3. Duplicate check (unique index enforces this at DB level too)
       const duplicate = await ctx.db.transaction.findUnique({
@@ -292,7 +385,7 @@ export const transactionRouter = router({
 
       // 5. Try to match vendor to a known venue (B2B lead if no match)
       const matchedVenue = await ctx.db.venue.findFirst({
-        where: { name: { contains: input.vendor, mode: "insensitive" } },
+        where: { name: { contains: vendor, mode: "insensitive" } },
         select: { id: true },
       })
 
@@ -311,12 +404,12 @@ export const transactionRouter = router({
       if (!user) throw new TRPCError({ code: "NOT_FOUND" })
 
       // 4. Determine status and points (after user load so we can apply step multiplier)
-      const needsManualReview = input.amount > RECEIPT_MANUAL_REVIEW_THRESHOLD
+      const needsManualReview = amount > RECEIPT_MANUAL_REVIEW_THRESHOLD
       const status = needsManualReview ? "PENDING" : "VERIFIED"
       const stepMult = stepMultiplier(user.stepsToday)
       const pointsEarned = needsManualReview
         ? 0
-        : Math.floor(input.amount * SCAN_POINTS_PER_CURRENCY * stepMult)
+        : Math.floor(amount * SCAN_POINTS_PER_CURRENCY * stepMult)
 
       const streak = computeStreakUpdate(
         user.currentStreak,
@@ -329,16 +422,21 @@ export const transactionRouter = router({
       const result = await runReceiptTx(ctx.db, {
         userId: ctx.userId,
         venueId: matchedVenue?.id ?? null,
-        amount: input.amount,
-        currency: input.currency,
+        amount,
+        currency,
+        earnedPoints: pointsEarned,
         totalPoints,
         streak,
         status,
         record: {
           receiptHash,
-          receiptImageUrl: input.imageUrl,
-          ocrRawData: (input.ocrRawData as Prisma.InputJsonValue) ?? Prisma.JsonNull,
-          ocrConfidence: input.ocrConfidence ?? null,
+          receiptNumber,
+          receiptImageUrl: imageUrl,
+          ocrRawData: {
+            ...(typeof scan.rawData === "object" && scan.rawData !== null && !Array.isArray(scan.rawData) ? scan.rawData : {}),
+            confirmed: { vendor, amount, currency, date, receiptNumber },
+          },
+          ocrConfidence: scan.confidence,
         },
       })
 
@@ -392,27 +490,34 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "CONFLICT", message: "This receipt has already been scanned." })
       }
 
-      // 5. Fetch vendor name + PIB from PURS (best-effort, non-blocking)
+      // 5. Fetch vendor name + PIB from PURS (best-effort, cached + retried)
       const vendorInfo = await fetchVendorInfo(qr.verificationUrl)
-      const vendorName = vendorInfo.name ?? qr.requestedBy
+      // `lookupName` is for internal matching/velocity (UID fallback when PURS
+      // is unreachable). `displayVendor` is what the UI shows — real name only,
+      // never the cryptic store UID.
+      const lookupName = vendorInfo.name ?? qr.requestedBy
+      const displayVendor = vendorInfo.name
 
       // 6. Per-vendor velocity check
-      await checkVendorVelocity(ctx.userId, vendorName)
+      await checkVendorVelocity(ctx.userId, lookupName)
 
       // 7. Try to match to a known venue (by name or by partner PIB)
       const [matchedVenue, partnerMerchant] = await Promise.all([
         ctx.db.venue.findFirst({
-          where: { name: { contains: vendorName, mode: "insensitive" } },
-          select: { id: true, isPartner: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true },
+          where: { name: { contains: lookupName, mode: "insensitive" } },
+          select: { id: true, isPartner: true, category: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true },
         }),
         // PIB match: if the receipt belongs to a registered ayoo partner
         vendorInfo.pib
           ? ctx.db.merchant.findFirst({
               where: { taxId: vendorInfo.pib, status: "ACTIVE" },
-              include: { venues: { where: { isPartner: true }, take: 1, select: { id: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true } } },
+              include: { venues: { where: { isPartner: true }, take: 1, select: { id: true, category: true, pointsPerCurrency: true, boostMultiplier: true, boostUntil: true } } },
             })
           : Promise.resolve(null),
       ])
+
+      // Activity type (shop / cafe / sports / salon …) from our venue DB match.
+      const category = matchedVenue?.category ?? partnerMerchant?.venues[0]?.category ?? null
 
       // 8. Load user
       const user = await ctx.db.user.findUnique({
@@ -438,16 +543,17 @@ export const transactionRouter = router({
         : partnerMerchant?.venues[0] ?? null
 
       const isPartnerReceipt = !!partnerVenue
-      const pointsEarned = needsManualReview
-        ? 0
-        : isPartnerReceipt && partnerVenue?.pointsPerCurrency
-          ? Math.floor(calculatePartnerPoints(
-              qr.totalRsd,
-              partnerVenue.pointsPerCurrency,
-              partnerVenue.boostMultiplier,
-              partnerVenue.boostUntil,
-            ) * stepMult)
-          : Math.floor(qr.totalRsd * SCAN_POINTS_PER_CURRENCY * stepMult)
+      const rawPoints = isPartnerReceipt && partnerVenue?.pointsPerCurrency
+        ? calculatePartnerPoints(
+            qr.totalRsd,
+            partnerVenue.pointsPerCurrency,
+            partnerVenue.boostMultiplier,
+            partnerVenue.boostUntil,
+          ) * stepMult
+        : qr.totalRsd * SCAN_POINTS_PER_CURRENCY * stepMult
+      // Any valid (non-review) receipt always credits at least 1 point —
+      // never show "Points awarded! +0" for a recognised receipt.
+      const pointsEarned = needsManualReview ? 0 : Math.max(1, Math.floor(rawPoints))
 
       const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
       const totalPoints = pointsEarned + streak.milestoneBonus
@@ -462,6 +568,7 @@ export const transactionRouter = router({
         venueId: resolvedVenueId,
         amount: qr.totalRsd,
         currency: "RSD",
+        earnedPoints: pointsEarned,
         totalPoints,
         streak,
         status: needsManualReview ? "PENDING" : "VERIFIED",
@@ -472,8 +579,9 @@ export const transactionRouter = router({
             source: "serbia_qr",
             requestedBy: qr.requestedBy,
             signedBy: qr.signedBy,
-            vendorName,
+            vendorName: vendorInfo.name,
             vendorPib: vendorInfo.pib,
+            category,
             verificationUrl: qr.verificationUrl,
             isPartnerReceipt,
           },
@@ -491,7 +599,8 @@ export const transactionRouter = router({
         newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
         status: needsManualReview ? "PENDING" : "VERIFIED",
         needsManualReview,
-        vendorName,
+        vendorName: displayVendor,
+        category,
         totalRsd: qr.totalRsd,
         date: qr.date,
         receiptNumber: qr.receiptNumber,
@@ -511,9 +620,44 @@ export const transactionRouter = router({
         venueId: z.string(),
         amount: z.number().positive(),
         currency: z.string().length(3),
+        idempotencyKey: z.string().min(8).max(120).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.idempotencyKey) {
+        const existing = await ctx.db.transaction.findUnique({
+          where: { merchantRequestId: input.idempotencyKey },
+          select: {
+            id: true,
+            userId: true,
+            venueId: true,
+            amount: true,
+            currency: true,
+            pointsEarned: true,
+            user: { select: { earnedPoints: true, welcomePoints: true, currentStreak: true } },
+          },
+        })
+        if (existing) {
+          if (
+            existing.userId !== input.userId ||
+            existing.venueId !== input.venueId ||
+            existing.amount !== input.amount ||
+            existing.currency !== input.currency
+          ) {
+            throw new TRPCError({ code: "CONFLICT", message: "Idempotency key was already used for another purchase" })
+          }
+          return {
+            transactionId: existing.id,
+            pointsEarned: existing.pointsEarned,
+            streakBonus: 0,
+            newStreak: existing.user.currentStreak,
+            newTotalPoints: existing.user.earnedPoints + existing.user.welcomePoints,
+            referralRewarded: false,
+            newBadges: [],
+          }
+        }
+      }
+
       // 1. Load venue and verify merchant ownership
       const venue = await ctx.db.venue.findUnique({
         where: { id: input.venueId },
@@ -578,7 +722,8 @@ export const transactionRouter = router({
             type: "PARTNER_PURCHASE",
             amount: input.amount,
             currency: input.currency,
-            pointsEarned: totalPoints,
+            pointsEarned,
+            merchantRequestId: input.idempotencyKey ?? null,
             status: "VERIFIED",
             verifiedAt: new Date(),
           },

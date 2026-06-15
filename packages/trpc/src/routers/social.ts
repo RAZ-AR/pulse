@@ -255,10 +255,13 @@ export const socialRouter = router({
       ])
 
       await ctx.db.$transaction(async (tx) => {
-        await tx.giftLink.update({
-          where: { id: link.id },
+        const claimed = await tx.giftLink.updateMany({
+          where: { id: link.id, status: "PENDING" },
           data: { status: "CLAIMED", recipientId: ctx.userId, claimedAt: new Date() },
         })
+        if (claimed.count !== 1) {
+          throw new TRPCError({ code: "CONFLICT", message: "Gift already claimed" })
+        }
         await tx.user.update({
           where: { id: ctx.userId },
           data: {
