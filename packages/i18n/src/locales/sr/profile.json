@@ -1,4 +1,7 @@
 {
+  "photo": "Slika",
+  "addPhoto": "Dodaj sliku",
+  "changePhoto": "Promeni sliku",
   "title": "Profil",
   "editProfile": "Uredi profil",
   "name": "Ime",

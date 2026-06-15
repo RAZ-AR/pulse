@@ -1,4 +1,7 @@
 {
+  "photo": "Photo",
+  "addPhoto": "Add photo",
+  "changePhoto": "Change photo",
   "title": "Profile",
   "editProfile": "Edit profile",
   "name": "Name",

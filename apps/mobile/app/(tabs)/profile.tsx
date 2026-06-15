@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
+import { Alert, Image, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from "react-native"
 import QRCode from "react-native-qrcode-svg"
+import { uploadAvatarFile } from "../../src/lib/storage"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
@@ -20,6 +21,11 @@ function getAvatarColor(avatarUrl: string | null | undefined): string | null {
   if (!avatarUrl?.startsWith("color:")) return null
   const idx = parseInt(avatarUrl.slice(6), 10)
   return AVATAR_COLORS[idx] ?? null
+}
+
+// A real uploaded photo (vs a "color:N" swatch or empty).
+function isPhotoUrl(avatarUrl: string | null | undefined): boolean {
+  return Boolean(avatarUrl) && !avatarUrl!.startsWith("color:")
 }
 
 const RARITY_GRADIENT: Record<string, readonly [string, string, ...string[]]> = {
@@ -100,11 +106,36 @@ export default function ProfileScreen() {
   const [homeCity, setHomeCity] = useState("")
   const [editBirthday, setEditBirthday] = useState("")
   const [editAvatarColor, setEditAvatarColor] = useState<number | null>(null)
+  const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null) // uploaded photo URL
+  const [avatarUploading, setAvatarUploading] = useState(false)
+
+  // Web-only photo upload (matches the old onboarding capability).
+  async function pickPhoto() {
+    if (Platform.OS !== "web") return
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = "image/jpeg,image/png,image/webp"
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return
+      setAvatarUploading(true)
+      try {
+        const ownerKey = profile.data?.id ?? "me"
+        setEditAvatarUrl(await uploadAvatarFile(file, ownerKey))
+      } catch {
+        Alert.alert(t("common:error", "Something went wrong"))
+      } finally {
+        setAvatarUploading(false)
+      }
+    }
+    input.click()
+  }
 
   function startEditing() {
     const current = profile.data ?? (showDemoProfile ? DEMO_PROFILE : null)
     setName(current?.name ?? "")
     setHomeCity(current?.homeCity ?? "")
+    setEditAvatarUrl(isPhotoUrl(current?.avatarUrl) ? current!.avatarUrl! : null)
     const existingColor = getAvatarColor(current?.avatarUrl ?? null)
     setEditAvatarColor(existingColor ? AVATAR_COLORS.indexOf(existingColor) : 0)
     const bd = (current as { birthday?: Date | null } | null)?.birthday
@@ -122,12 +153,14 @@ export default function ProfileScreen() {
 
   function save() {
     const isoDate = editBirthday.match(/^\d{4}-\d{2}-\d{2}$/) ? editBirthday : undefined
+    // A picked photo wins; otherwise fall back to the chosen color swatch.
+    const avatarUrl = editAvatarUrl ?? (editAvatarColor !== null ? `color:${editAvatarColor}` : undefined)
     updateProfile.mutate(
       {
         ...(name.trim() !== (profile.data?.name ?? "") ? { name: name.trim() } : {}),
         ...(homeCity.trim() !== (profile.data?.homeCity ?? "") ? { homeCity: homeCity.trim() } : {}),
         ...(isoDate ? { birthday: isoDate } : {}),
-        ...(editAvatarColor !== null ? { avatarUrl: `color:${editAvatarColor}` } : {}),
+        ...(avatarUrl ? { avatarUrl } : {}),
       },
       { onSuccess: () => setEditing(false) },
     )
@@ -206,7 +239,11 @@ export default function ProfileScreen() {
         <View style={s.heroTop}>
           <View style={s.heroRow}>
             <View style={[s.heroAvatar, avatarBgColor ? { backgroundColor: avatarBgColor } : {}]}>
-              <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
+              {isPhotoUrl(u.avatarUrl) ? (
+                <Image source={{ uri: u.avatarUrl! }} style={s.heroAvatarImg} />
+              ) : (
+                <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy }]}>{initial}</Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.heroName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>
@@ -404,6 +441,34 @@ export default function ProfileScreen() {
               })}
             </View>
             <Field label={t("birthday", "Birthday")} value={editBirthday} onChangeText={setEditBirthday} theme={theme} placeholder="YYYY-MM-DD" />
+            {Platform.OS === "web" ? (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[s.fieldLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 8 }]}>
+                  {t("photo", "Photo")}
+                </Text>
+                <View style={s.photoRow}>
+                  <View style={[s.photoPreview, editAvatarColor !== null && !editAvatarUrl ? { backgroundColor: AVATAR_COLORS[editAvatarColor] } : {}]}>
+                    {editAvatarUrl ? (
+                      <Image source={{ uri: editAvatarUrl }} style={s.photoPreviewImg} />
+                    ) : (
+                      <Text style={[s.heroAvatarText, { fontFamily: fonts.displayHeavy, color: "#FFFFFF", fontSize: 20 }]}>
+                        {(name || "?")[0]?.toUpperCase() ?? "?"}
+                      </Text>
+                    )}
+                  </View>
+                  <Pressable onPress={pickPhoto} disabled={avatarUploading} style={[s.photoBtn, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
+                    <Text style={{ color: theme.text, fontFamily: fonts.bodyBold, fontSize: 13 }}>
+                      {avatarUploading ? t("common:uploading", "Uploading…") : editAvatarUrl ? t("changePhoto", "Change photo") : t("addPhoto", "Add photo")}
+                    </Text>
+                  </Pressable>
+                  {editAvatarUrl ? (
+                    <Pressable onPress={() => setEditAvatarUrl(null)} hitSlop={8}>
+                      <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: fonts.bodyBold }}>{t("common:remove", "Remove")}</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
             <Text style={[s.fieldLabel, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 8 }]}>
               {t("chooseAvatar", "Avatar color")}
             </Text>
@@ -411,8 +476,8 @@ export default function ProfileScreen() {
               {AVATAR_COLORS.map((color, i) => (
                 <Pressable
                   key={color}
-                  onPress={() => setEditAvatarColor(i)}
-                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i ? 2 : 0, borderColor: theme.text }]}
+                  onPress={() => { setEditAvatarColor(i); setEditAvatarUrl(null) }}
+                  style={[s.avatarDot, { backgroundColor: color, borderWidth: editAvatarColor === i && !editAvatarUrl ? 2 : 0, borderColor: theme.text }]}
                 />
               ))}
             </View>
@@ -692,6 +757,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.46)",
   },
   heroAvatarText: { color: colors.ink, fontSize: 24 },
+  heroAvatarImg: { width: 58, height: 58, borderRadius: 22 },
   heroName: { color: colors.ink, fontSize: 22, lineHeight: 25 },
   heroMail: { color: "#C9C4B4", fontSize: 12, marginTop: 1 },
   heroCity: { color: "#75736A", fontSize: 12, marginTop: 1 },
@@ -783,6 +849,10 @@ const s = StyleSheet.create({
   fieldLabel: { fontSize: 11, letterSpacing: 0.5 },
   avatarRow: { flexDirection: "row", gap: 10, flexWrap: "wrap", marginBottom: 12 },
   avatarDot: { width: 32, height: 32, borderRadius: 16 },
+  photoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  photoPreview: { width: 52, height: 52, borderRadius: 18, backgroundColor: "rgba(110,102,86,0.18)", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  photoPreviewImg: { width: 52, height: 52, borderRadius: 18 },
+  photoBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
 
   cityRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
   cityChip: { flex: 1, borderRadius: 99, paddingVertical: 10, alignItems: "center" },

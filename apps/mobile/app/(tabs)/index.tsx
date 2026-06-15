@@ -1,18 +1,16 @@
-import { useState } from "react"
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { AyooLogo } from "../../src/components/AyooLogo"
+import { useEffect, useRef, useState } from "react"
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import QRCode from "react-native-qrcode-svg"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
-import { PlusKey, MinusKey } from "../../src/components/icons"
-import { LinearGradient } from "expo-linear-gradient"
+import { DeviceChrome, Keypad, Readout, LcdScreen } from "../../src/components/console"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
 import { currentPet } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
-import { colors, neonColors, fonts, useTheme, rainbowGradients } from "../../src/lib/theme"
-import { useColorMode } from "../../src/store/colorMode"
-import { LavaLampSurface, VolumeGradient } from "../../src/components/neu"
+import { colors, fonts, useTheme } from "../../src/lib/theme"
+import { LavaLampSurface } from "../../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 type RewardItem = {
@@ -20,10 +18,6 @@ type RewardItem = {
   title: string
   pointsCost: number
   venue: { id: string; name: string }
-}
-
-function fmt(n: number) {
-  return n.toLocaleString()
 }
 
 function daysLeft(d: Date | string | null | undefined): number {
@@ -75,13 +69,23 @@ const PET_MOODS: Record<string, string[]> = {
 
 export default function HomeScreen() {
   const theme = useTheme()
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const { t, i18n } = useTranslation(["common", "venue"])
   const petWords = PET_MOODS[(i18n.language ?? "en").slice(0, 2)] ?? PET_MOODS.en
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
+  const [deviceMode, setDeviceMode] = useState<"home" | "earn" | "spend">("home")
+  // LCD switch animation — content fades/scales in while a scanline sweeps down.
+  const lcdAnim = useRef(new Animated.Value(1)).current
+  const scanAnim = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    lcdAnim.setValue(0)
+    scanAnim.setValue(0)
+    Animated.parallel([
+      Animated.timing(lcdAnim, { toValue: 1, duration: 240, useNativeDriver: false }),
+      Animated.timing(scanAnim, { toValue: 1, duration: 360, useNativeDriver: false }),
+    ]).start()
+  }, [deviceMode, lcdAnim, scanAnim])
   const me = trpc.user.me.useQuery()
   const utils = trpc.useUtils()
   const updateProfile = trpc.user.updateProfile.useMutation({
@@ -124,6 +128,27 @@ export default function HomeScreen() {
     { label: "HAPPY",   value: Math.min(total / Math.max(tier.next, 1), 1) },
   ]
 
+  // Keypad re-legends per device mode (HOME → EARN/SPEND switch in place).
+  const homePads = [
+    { key: "scan",   symbol: "⌁", label: "SCAN",   color: "#3B82F6", onPress: () => router.push("/scan") },
+    { key: "check",  symbol: "✓", label: "CHECK",  color: "#14B8A6", onPress: () => router.push("/checkin") },
+    { key: "map",    symbol: "⌖", label: "MAP",    color: "#EC4899", onPress: () => router.push("/map") },
+    { key: "earn",   symbol: "+", label: "EARN",   color: "#4FB286", edge: "#3E8E6E", solid: true, onPress: () => setDeviceMode("earn") },
+    { key: "send",   symbol: "−", label: "SEND",   color: "#F2A66E", edge: "#D98A4E", solid: true, onPress: () => setDeviceMode("spend") },
+    { key: "reward", symbol: "✦", label: "REWARD", color: "#8B5CF6", onPress: () => router.push("/rewards") },
+  ]
+  const earnPads = [
+    { key: "scan",  symbol: "⌁", label: "SCAN",  color: "#4FB286", edge: "#3E8E6E", solid: true, onPress: () => router.push("/scan") },
+    { key: "check", symbol: "✓", label: "CHECK", color: "#14B8A6", onPress: () => router.push("/checkin") },
+    { key: "hist",  symbol: "≡", label: "LOG",   color: "#8C887E", onPress: () => router.push("/points-history") },
+  ]
+  const spendPads = [
+    { key: "reward", symbol: "✦", label: "REWARD", color: "#8B5CF6", onPress: () => router.push("/rewards") },
+    { key: "gift",   symbol: "♡", label: "GIFT",   color: "#F2A66E", edge: "#D98A4E", solid: true, onPress: () => router.push("/gift") },
+    { key: "hist",   symbol: "≡", label: "LOG",    color: "#8C887E", onPress: () => router.push("/points-history") },
+  ]
+  const modePads = deviceMode === "home" ? homePads : deviceMode === "earn" ? earnPads : spendPads
+
   return (
     <ScrollView
       style={[s.scroll, { backgroundColor: theme.bg }]}
@@ -131,7 +156,7 @@ export default function HomeScreen() {
       scrollEventThrottle={16}
       removeClippedSubviews
     >
-      <View style={[s.topBar, isRainbow && s.topBarRainbow]}>
+      <View style={s.topBar}>
         <Pressable onPress={() => router.push("/(tabs)/profile")} hitSlop={8}>
           {getAvatarColor(me.data?.avatarUrl) ? (
             <View style={[s.profileAvatar, { backgroundColor: getAvatarColor(me.data?.avatarUrl)! }]}>
@@ -148,7 +173,6 @@ export default function HomeScreen() {
           )}
         </Pressable>
         <View style={s.helloBlock}>
-          <AyooLogo width={60} height={35} />
           <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
@@ -159,156 +183,79 @@ export default function HomeScreen() {
                 <Pressable
                   key={city.name}
                   onPress={() => updateProfile.mutate({ homeCity: city.name })}
-                  style={[s.cityPill, active ? (isRainbow ? s.cityPillActiveRainbow : s.cityPillActive) : s.cityPillIdle]}
+                  style={[s.cityPill, active ? s.cityPillActive : s.cityPillIdle]}
                 >
-                  <Text style={[s.cityPillText, { color: active ? (isRainbow ? neonColors.cyan : "#75736A") : theme.textMuted, fontFamily: fonts.bodyBold }]}>
+                  <Text style={[s.cityPillText, { color: active ? "#75736A" : theme.textMuted, fontFamily: fonts.bodyBold }]}>
                     ⌖ {city.label}
                   </Text>
                 </Pressable>
               )
             })}
           </View>
-          <LanguageSwitcher isRainbow={isRainbow} />
+          <LanguageSwitcher />
         </View>
       </View>
 
-      <View style={[s.dashboard, theme.shadowRaised, isRainbow && s.dashboardRainbow]}>
-        <View style={[s.dashboardGlowTop, isRainbow && s.dashboardGlowTopRainbow]} />
-        <View style={[s.dashboardGlowBottom, isRainbow && s.dashboardGlowBottomRainbow]} />
-        <TamagotchiWindow
-          petKey={petKey}
-          streak={streak}
-          petName={me.data?.petName}
-          coins={total}
-          stats={petStats}
-          weeklyEarned={weeklyEarned}
-          weeklySpent={weeklySpent}
-          words={petWords}
-          earnedLabel={t("earnedThisWeek")}
-          spentLabel={t("spentThisWeek")}
-          onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
-        />
-
-        {/* earn (+) / send (−) — the button itself is the plus / minus shape */}
-        <View style={s.actionSplit}>
-          <Pressable onPress={() => router.push("/(tabs)/earn")} style={({ pressed }) => [s.shapeKey, pressed && s.shapeKeyPressed]}>
-            <PlusKey size={88} />
-          </Pressable>
-          <Pressable onPress={() => router.push("/gift")} style={({ pressed }) => [s.shapeKey, pressed && s.shapeKeyPressed]}>
-            <MinusKey size={88} />
-          </Pressable>
-        </View>
-
-        <BalancePanel
-          total={lifetimePoints}
-          available={total}
-          today={todayAvailable}
-          onToday={() => router.push("/earn")}
-          onHistory={() => router.push("/points-history")}
-          onShare={() => router.push("/gift")}
-          isRainbow={isRainbow}
-        />
-
-        <View style={s.dashboardSectionHead}>
-          <Text style={[s.dashboardSectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#33322D" }]}>{t("dailyPlan")}</Text>
-          <Text style={[s.dashboardSectionLink, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#75736A" }]}>{t("earnMore")} ›</Text>
-        </View>
-
-        <LinearGradient
-          colors={isRainbow ? ["rgba(43,110,255,0.22)", "rgba(139,61,255,0.18)", "rgba(255,45,155,0.14)"] : ["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[s.rewardProgressCard, isRainbow && s.rewardProgressCardRainbow]}
+      <DeviceChrome>
+        <Animated.View
+          style={[
+            deviceMode !== "home" && s.lcdAnimWrap,
+            { opacity: lcdAnim, transform: [{ scale: lcdAnim.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) }] },
+          ]}
         >
-          <View style={s.rewardProgressTop}>
-            <View>
-              <Text style={[s.rewardProgressTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#33322D" }]}>{t("scanVisitRedeem")}</Text>
-              <Text style={[s.rewardProgressSub, { color: isRainbow ? neonColors.muted : "#75736A" }]}>{t("chooseLevelDesc")}</Text>
-            </View>
-            <View style={[s.rewardProgressButton, isRainbow && { backgroundColor: "rgba(139,61,255,0.22)" }]}>
-              <Text style={[s.rewardProgressButtonText, { color: isRainbow ? neonColors.purple : "#75736A" }]}>⌃</Text>
-            </View>
-          </View>
-          <Text style={[s.rewardProgressLabel, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#75736A" }]}>{t("levels")}</Text>
-          <View style={s.levelBlocks}>
-            {["01", "02", "03", "04", "05", "06"].map((level, index) => (
-              <View key={level} style={[s.levelBlock, isRainbow && s.levelBlockRainbow, (index > 3) && (isRainbow ? s.levelBlockFutureRainbow : s.levelBlockFuture)]}>
-                <Text style={[s.levelCheck, { color: isRainbow ? neonColors.cyan : "#75736A" }]}>{index < 4 ? "✓" : ""}</Text>
-                <Text style={[s.levelBlockText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#75736A" }]}>{level}</Text>
-              </View>
-            ))}
-          </View>
-        </LinearGradient>
+          {deviceMode === "home" ? (
+            <TamagotchiWindow
+              petKey={petKey}
+              streak={streak}
+              petName={me.data?.petName}
+              coins={total}
+              stats={petStats}
+              weeklyEarned={weeklyEarned}
+              weeklySpent={weeklySpent}
+              words={petWords}
+              earnedLabel={t("earnedThisWeek")}
+              spentLabel={t("spentThisWeek")}
+              onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
+            />
+          ) : deviceMode === "earn" ? (
+            <EarnPanel total={total} weekly={weeklyEarned} today={todayAvailable} />
+          ) : (
+            <SpendPanel rewards={rewardItems} available={total} />
+          )}
+          {/* scanline sweep on mode switch (earn/spend only) */}
+          {deviceMode !== "home" ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                s.scanline,
+                {
+                  opacity: scanAnim.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 0.7, 0.7, 0] }),
+                  transform: [{ translateY: scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 240] }) }],
+                },
+              ]}
+            />
+          ) : null}
+        </Animated.View>
 
-        <Pressable onPress={() => router.push("/rewards")} style={[s.blueRewardPill, isRainbow && s.blueRewardPillRainbow]}>
-          <Text style={[s.blueRewardText, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#FFFFFF" : "#33322D" }]}>{t("specialOffers")}</Text>
-          <View style={[s.blueRewardIcon, isRainbow && { backgroundColor: "rgba(255,45,155,0.22)" }]}>
-            <Text style={[s.blueRewardIconText, { color: isRainbow ? neonColors.pink : "#75736A" }]}>⌄</Text>
-          </View>
-        </Pressable>
-      </View>
+        {/* Keypad — re-legends per device mode, like K.O. II SHIFT layers */}
+        <Keypad pads={modePads} />
 
-      {isRainbow ? (
-        <View style={s.quickStatsPanelVolume}>
-          <VolumeGradient colors={["#0066FF", "#00BBDD"]} shadowColor="#0066FF" borderRadius={22} style={s.quickStatVolume}>
-            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{`${me.data?.currentStreak ?? 0}d`}</Text>
-            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("streakLabel")}</Text>
-          </VolumeGradient>
-          <VolumeGradient colors={["#FF1155", "#CC0088"]} shadowColor="#FF1155" borderRadius={22} style={s.quickStatVolume}>
-            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{`${welcomeDays}d`}</Text>
-            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("welcomeLeft")}</Text>
-          </VolumeGradient>
-          <VolumeGradient colors={["#AA00FF", "#FF2288"]} shadowColor="#AA00FF" borderRadius={22} style={s.quickStatVolume}>
-            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{activeChallenges.length}</Text>
-            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("quests")}</Text>
-          </VolumeGradient>
-        </View>
-      ) : (
-        <View style={s.quickStatsPanel}>
-          <View style={s.quickStat}>
-            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${me.data?.currentStreak ?? 0}d`}</Text>
-            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("streakLabel")}</Text>
-          </View>
-          <View style={s.quickStat}>
-            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{`${welcomeDays}d`}</Text>
-            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("welcomeLeft")}</Text>
-          </View>
-          <View style={s.quickStat}>
-            <Text style={[s.quickStatValue, { fontFamily: fonts.displayHeavy }]}>{activeChallenges.length}</Text>
-            <Text style={[s.quickStatLabel, { fontFamily: fonts.bodyBold }]}>{t("quests")}</Text>
-          </View>
-        </View>
-      )}
-
-      {isRainbow ? (
-        <View style={s.modeTabs}>
-          <VolumeGradient colors={["#AA00FF", "#2200CC"]} shadowColor="#AA00FF" borderRadius={99} onPress={() => router.push("/rewards")} style={s.modeTabVolume}>
-            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{t("goals")}</Text>
-          </VolumeGradient>
-          <VolumeGradient colors={["#0066FF", "#00BBDD"]} shadowColor="#0066FF" borderRadius={99} onPress={() => router.push("/rewards")} style={s.modeTabVolume}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{t("nav.rewards")}</Text>
-          </VolumeGradient>
-          <VolumeGradient colors={["#FF1155", "#CC0088"]} shadowColor="#FF1155" borderRadius={99} onPress={() => router.push("/profile")} style={s.modeTabVolume}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold, color: "#FFFFFF" }]}>{t("support")}</Text>
-          </VolumeGradient>
-        </View>
-      ) : (
-        <View style={s.modeTabs}>
-          <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabLight]}>
-            <Text style={[s.modeTabTextLight, { fontFamily: fonts.bodyBold }]}>{t("goals")}</Text>
+        {deviceMode !== "home" ? (
+          <Pressable onPress={() => setDeviceMode("home")} style={({ pressed }) => [s.backBar, pressed && s.backBarPressed]}>
+            <Text style={[s.backBarText, { fontFamily: fonts.pixel }]}>◀ BACK</Text>
           </Pressable>
-          <Pressable onPress={() => router.push("/rewards")} style={[s.modeTab, s.modeTabBlue]}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>{t("nav.rewards")}</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push("/profile")} style={[s.modeTab, s.modeTabRed]}>
-            <Text style={[s.modeTabTextDark, { fontFamily: fonts.bodyBold }]}>{t("support")}</Text>
-          </Pressable>
-        </View>
-      )}
+        ) : null}
+      </DeviceChrome>
 
-      <View style={s.actionRow}>
-        <ActionPill label={t("scanReceipt")} icon="⌁" onPress={() => router.push("/scan")} dark isRainbow={isRainbow} />
-        <ActionPill label={t("checkIn")} icon="⌖" onPress={() => router.push("/checkin")} isRainbow={isRainbow} />
+      {/* LCD readout — live device status at a glance */}
+      <View style={s.readoutWrap}>
+        <Readout
+          cells={[
+            { label: "STREAK",  value: `${me.data?.currentStreak ?? 0}d` },
+            { label: "WELCOME", value: `${welcomeDays}d` },
+            { label: "QUESTS",  value: `${activeChallenges.length}` },
+          ]}
+        />
       </View>
 
       <SectionHeader title={t("specialOffers")} action={t("allRewards")} onPress={() => router.push("/rewards")} />
@@ -322,7 +269,6 @@ export default function HomeScreen() {
             pointsLabel={t("pointsUnit")}
             openLabel={t("open")}
             featured={index === 0}
-            index={index}
             onPress={() => router.push({ pathname: "/reward/[id]", params: { id: reward.id } })}
           />
         ))}
@@ -336,16 +282,16 @@ export default function HomeScreen() {
               <Pressable
                 key={offer.id}
                 onPress={() => router.push({ pathname: "/venue/[id]", params: { id: offer.venue.id } })}
-                style={[s.partnerOfferCard, isRainbow ? s.partnerOfferCardRainbow : {}]}
+                style={s.partnerOfferCard}
               >
-                <View style={[s.partnerOfferPtsBox, isRainbow ? s.partnerOfferPtsBoxRainbow : {}]}>
-                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#8B3DFF" : "#75736A" }]}>+{offer.pointsReward}</Text>
-                  <Text style={[s.partnerOfferPtsLabel, { color: isRainbow ? "#8B3DFF" : "#75736A" }]}>pts</Text>
+                <View style={s.partnerOfferPtsBox}>
+                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.displayHeavy, color: "#75736A" }]}>+{offer.pointsReward}</Text>
+                  <Text style={[s.partnerOfferPtsLabel, { color: "#75736A" }]}>pts</Text>
                 </View>
-                <Text style={[s.partnerOfferTitle, { color: isRainbow ? "#1A1A2E" : "#2C3E50", fontFamily: fonts.bodyBold }]} numberOfLines={2}>
+                <Text style={[s.partnerOfferTitle, { color: "#2C3E50", fontFamily: fonts.bodyBold }]} numberOfLines={2}>
                   {offer.title}
                 </Text>
-                <Text style={[s.partnerOfferVenue, { color: isRainbow ? "#8877BB" : "#75736A" }]} numberOfLines={1}>
+                <Text style={[s.partnerOfferVenue, { color: "#75736A" }]} numberOfLines={1}>
                   {offer.venue.name}
                 </Text>
               </Pressable>
@@ -362,9 +308,9 @@ export default function HomeScreen() {
             <Pressable
               key={filter.key}
               onPress={() => setActiveFilterKey(filter.key)}
-              style={[s.filterChip, isActive ? (isRainbow ? s.filterChipActiveRainbow : s.filterChipActive) : (isRainbow ? s.filterChipIdleRainbow : s.filterChipIdle)]}
+              style={[s.filterChip, isActive ? s.filterChipActive : s.filterChipIdle]}
             >
-              <Text style={[s.filterChipText, { color: isActive ? (isRainbow ? neonColors.cyan : "#75736A") : (isRainbow ? neonColors.muted : colors.ink), fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.filterChipText, { color: isActive ? "#75736A" : colors.ink, fontFamily: fonts.bodyBold }]}>
                 {filter.label}
               </Text>
             </Pressable>
@@ -403,12 +349,103 @@ export default function HomeScreen() {
               discount={venue.enableDiscount ? venue.maxDiscountPercent : null}
               onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
               receiptScanLabel={t("receiptScan")}
-              isRainbow={isRainbow}
             />
           )
         })}
       </View>
     </ScrollView>
+  )
+}
+
+// ── EARN mode panel — live earn stats on the device LCD ──
+function EarnPanel({ total, weekly, today }: { total: number; weekly: number; today: number }) {
+  return (
+    <LcdScreen accent="#4FB286">
+      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#3E8E6E" }]}>EARN</Text>
+      <Text style={[s.modeBig, { fontFamily: fonts.pixel }]}>{total.toLocaleString()}</Text>
+      <View style={s.modeStatsRow}>
+        <View style={s.modeStat}>
+          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel }]}>+{weekly.toLocaleString()}</Text>
+          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel }]}>WEEK</Text>
+        </View>
+        <View style={s.modeStat}>
+          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel }]}>+{today.toLocaleString()}</Text>
+          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel }]}>TODAY</Text>
+        </View>
+      </View>
+      <Text style={[s.modeHint, { fontFamily: fonts.pixel }]}>SCAN ↓ A RECEIPT TO EARN</Text>
+    </LcdScreen>
+  )
+}
+
+// ── SPEND mode panel — pick a reward → redeem QR right on the LCD ──
+function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: number }) {
+  const utils = trpc.useUtils()
+  const [redemption, setRedemption] = useState<{ code: string; title: string; expiresAt: Date } | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const redeem = trpc.reward.redeem.useMutation({
+    onSuccess: (data, vars) => {
+      const r = rewards.find((x) => x.id === vars.rewardId)
+      setRedemption({ code: data.redemptionCode, title: r?.title ?? "", expiresAt: new Date(data.expiresAt) })
+      utils.user.me.invalidate()
+      utils.reward.list.invalidate()
+    },
+    onError: (e) => setErr(e.message),
+  })
+
+  if (redemption) {
+    return (
+      <LcdScreen accent="#F2A66E">
+        <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#D98A4E" }]}>SHOW TO CASHIER</Text>
+        <View style={s.qrBox}>
+          <QRCode value={redemption.code} size={132} backgroundColor="#FFFFFF" color="#1F2937" />
+        </View>
+        <Text style={[s.qrCode, { fontFamily: fonts.pixel }]} numberOfLines={1}>{redemption.code}</Text>
+        <Countdown to={redemption.expiresAt} />
+      </LcdScreen>
+    )
+  }
+
+  return (
+    <LcdScreen accent="#F2A66E">
+      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#D98A4E" }]}>SPEND · {available.toLocaleString()}</Text>
+      {err ? <Text style={[s.modeErr, { fontFamily: fonts.pixel }]} numberOfLines={2}>{err}</Text> : null}
+      <ScrollView style={s.rewardScroll} contentContainerStyle={s.rewardScrollInner} showsVerticalScrollIndicator={false}>
+        {rewards.length === 0 ? (
+          <Text style={[s.modeHint, { fontFamily: fonts.pixel }]}>NO REWARDS YET</Text>
+        ) : rewards.map((r) => {
+          const afford = available >= r.pointsCost && !redeem.isPending
+          return (
+            <Pressable
+              key={r.id}
+              disabled={!afford}
+              onPress={() => { setErr(null); redeem.mutate({ rewardId: r.id }) }}
+              style={({ pressed }) => [s.rewardRow, !afford && s.rewardRowOff, pressed && s.rewardRowPressed]}
+            >
+              <Text style={[s.rewardRowName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{r.title}</Text>
+              <Text style={[s.rewardRowCost, { fontFamily: fonts.pixel }]}>{r.pointsCost}</Text>
+            </Pressable>
+          )
+        })}
+      </ScrollView>
+    </LcdScreen>
+  )
+}
+
+// ── Short H:MM countdown until a redemption code expires ──
+function Countdown({ to }: { to: Date }) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const ms = Math.max(0, to.getTime() - now)
+  const h = Math.floor(ms / 3_600_000)
+  const m = Math.floor((ms % 3_600_000) / 60_000)
+  return (
+    <Text style={[s.modeHint, { fontFamily: fonts.pixel }]}>
+      ⏳ {h}H {String(m).padStart(2, "0")}M LEFT
+    </Text>
   )
 }
 
@@ -418,7 +455,7 @@ const LANGS: { code: SupportedLocale; label: string }[] = [
   { code: "en", label: "EN" },
 ]
 
-function LanguageSwitcher({ isRainbow }: { isRainbow?: boolean }) {
+function LanguageSwitcher() {
   const [, forceUpdate] = useState(0)
   const current = i18n.language as SupportedLocale
 
@@ -436,17 +473,12 @@ function LanguageSwitcher({ isRainbow }: { isRainbow?: boolean }) {
           <Pressable
             key={code}
             onPress={() => pick(code)}
-            style={[
-              s.langPill,
-              active
-                ? isRainbow ? s.langPillActiveRainbow : s.langPillActive
-                : s.langPillIdle,
-            ]}
+            style={[s.langPill, active ? s.langPillActive : s.langPillIdle]}
           >
             <Text
               style={[
                 s.langPillText,
-                { fontFamily: fonts.bodyBold, color: active ? (isRainbow ? neonColors.cyan : "#5A7A99") : "#A0B0C0" },
+                { fontFamily: fonts.bodyBold, color: active ? "#5A7A99" : "#A0B0C0" },
               ]}
             >
               {label}
@@ -458,85 +490,19 @@ function LanguageSwitcher({ isRainbow }: { isRainbow?: boolean }) {
   )
 }
 
-function MetricCard({ value, label, tone }: { value: string; label: string; tone: "cyan" | "white" | "black" }) {
-  const bg = tone === "cyan" ? colors.cyan : tone === "black" ? "rgba(255,244,254,0.92)" : "#FFFFFF"
-  const fg = colors.ink
-  const content = (
-    <>
-      <Text style={[s.metricValue, { color: fg, fontFamily: fonts.displayHeavy }]}>{value}</Text>
-      <Text style={[s.metricLabel, { color: "#75736A", fontFamily: fonts.bodyBold }]}>
-        {label.toUpperCase()}
-      </Text>
-    </>
-  )
-
-  if (tone === "black") {
-    return (
-      <LavaLampSurface style={s.metricCard} contentStyle={s.metricCardContent}>
-        {content}
-      </LavaLampSurface>
-    )
-  }
-
-  return (
-    <View style={[s.metricCard, { backgroundColor: bg }]}>{content}</View>
-  )
-}
-
-function ActionPill({ label, icon, onPress, dark, isRainbow }: { label: string; icon: string; onPress: () => void; dark?: boolean; isRainbow?: boolean }) {
-  if (isRainbow) {
-    const grad = dark
-      ? (["#FF1155", "#AA00CC", "#0044FF"] as const)
-      : (["#0066FF", "#00BBDD", "#AA00FF"] as const)
-    const shadow = dark ? "#FF1155" : "#0066FF"
-    return (
-      <VolumeGradient
-        colors={grad}
-        shadowColor={shadow}
-        borderRadius={28}
-        onPress={onPress}
-        style={s.actionPillVolume}
-      >
-        <View style={s.actionIconVolume}>
-          <Text style={[s.actionIconText, { color: "rgba(255,255,255,0.95)" }]}>{icon}</Text>
-        </View>
-        <Text style={[s.actionLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]}>{label}</Text>
-      </VolumeGradient>
-    )
-  }
-  return (
-    <Pressable onPress={onPress} style={[s.actionPill, dark ? s.actionPillDark : s.actionPillLight]}>
-      {dark ? <LavaLampSurface style={StyleSheet.absoluteFill} /> : null}
-      <View style={[s.actionIcon, dark ? s.actionIconDark : s.actionIconLight]}>
-        <Text style={[s.actionIconText, { color: dark ? colors.lavaPink : "#FFFFFF" }]}>{icon}</Text>
-      </View>
-      <Text style={[s.actionLabel, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{label}</Text>
-    </Pressable>
-  )
-}
-
 function SectionHeader({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   return (
     <View style={s.sectionHead}>
-      <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: isRainbow ? "#1A1A2E" : "#33322D" }]}>{title}</Text>
-      <Pressable onPress={onPress} style={[s.sectionButton, isRainbow && s.sectionButtonRainbow]}>
-        <Text style={[s.sectionButtonText, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.cyan : "#75736A" }]}>{action}</Text>
+      <View style={s.sectionTitleRow}>
+        <Text style={[s.sectionMark, { fontFamily: fonts.pixel }]}>▸</Text>
+        <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: "#33322D", textTransform: "uppercase", letterSpacing: 0.6 }]}>{title}</Text>
+      </View>
+      <Pressable onPress={onPress} style={s.sectionButton}>
+        <Text style={[s.sectionButtonText, { fontFamily: fonts.pixel, fontSize: 8, color: "#75736A" }]}>{action}</Text>
       </Pressable>
     </View>
   )
 }
-
-// Volumetric gradients for rainbow mode — inspired by the pill-shape reference image
-const OFFER_VOLUME = [
-  { gradient: ["#FF1155", "#AA00CC", "#1100EE"] as const, shadow: "#FF1155" },
-  { gradient: ["#0044FF", "#FF2288", "#FF5500"] as const, shadow: "#0044FF" },
-  { gradient: ["#0077FF", "#00BBDD", "#FF1166"] as const, shadow: "#0077FF" },
-  { gradient: ["#FFB800", "#FF4400", "#220099"] as const, shadow: "#FF4400" },
-  { gradient: ["#BB00FF", "#FF2288", "#0022DD"] as const, shadow: "#BB00FF" },
-  { gradient: ["#00CC88", "#0066FF", "#BB00FF"] as const, shadow: "#00CC88" },
-] as const
 
 function OfferCard({
   title,
@@ -546,7 +512,6 @@ function OfferCard({
   openLabel,
   featured,
   onPress,
-  index = 0,
 }: {
   title: string
   venue: string
@@ -555,55 +520,22 @@ function OfferCard({
   openLabel: string
   featured: boolean
   onPress: () => void
-  index?: number
 }) {
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
-
-  if (isRainbow) {
-    const vol = OFFER_VOLUME[index % OFFER_VOLUME.length]!
-    return (
-      <View style={s.offerPressable}>
-        <VolumeGradient
-          colors={vol.gradient}
-          shadowColor={vol.shadow}
-          borderRadius={34}
-          onPress={onPress}
-          style={s.offerCardVolume}
-        >
-          <View style={s.offerTop}>
-            <View style={[s.offerLogo, s.offerLogoVolume]}>
-              <Text style={[s.offerLogoText, { color: "rgba(255,255,255,0.9)" }]}>✦</Text>
-            </View>
-            <Text style={[s.offerPoints, s.offerPointsVolume, { fontFamily: fonts.bodyBold }]}>
-              {points} {pointsLabel}
-            </Text>
-          </View>
-          <Text style={[s.offerTitle, s.offerTitleVolume, { fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
-          <Text style={[s.offerVenue, s.offerVenueVolume, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
-          <View style={s.offerLinkVolume}>
-            <Text style={[s.offerLinkText, s.offerLinkTextVolume, { fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
-          </View>
-        </VolumeGradient>
-      </View>
-    )
-  }
-
   return (
     <Pressable onPress={onPress} style={s.offerPressable}>
-      <View style={[s.offerCard, featured ? s.offerCardFeatured : s.offerCardBlue]}>
+      <View style={[s.offerCard, featured && s.offerCardFeatured]}>
         <View style={s.offerTop}>
-          <View style={[s.offerLogo, featured ? s.offerLogoDark : s.offerLogoLight]}>
-            <Text style={[s.offerLogoText, { color: "#75736A" }]}>✦</Text>
+          <View style={s.offerLogo}>
+            <Text style={[s.offerLogoText, { color: "#8C887E" }]}>✦</Text>
           </View>
-          <Text style={[s.offerPoints, { color: "#75736A", fontFamily: fonts.bodyBold }]}>
-            {points} {pointsLabel}
+          <Text style={[s.offerPoints, { fontFamily: fonts.pixel }]}>
+            {points} {pointsLabel.toUpperCase()}
           </Text>
         </View>
         <Text style={[s.offerTitle, { color: "#33322D", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
-        <Text style={[s.offerVenue, { color: "#75736A", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+        <Text style={[s.offerVenue, { color: "#8C887E", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
         <View style={s.offerLink}>
-          <Text style={[s.offerLinkText, { color: "#75736A", fontFamily: fonts.bodyBold }]}>{openLabel} ↗</Text>
+          <Text style={[s.offerLinkText, { color: "#75736A", fontFamily: fonts.pixel }]}>{openLabel.toUpperCase()} ↗</Text>
         </View>
       </View>
     </Pressable>
@@ -624,7 +556,6 @@ function VenueCard({
   discount,
   onPress,
   receiptScanLabel,
-  isRainbow,
 }: {
   name: string
   category: string
@@ -639,57 +570,7 @@ function VenueCard({
   discount: number | null
   onPress: () => void
   receiptScanLabel: string
-  isRainbow?: boolean
 }) {
-  if (isRainbow) {
-    return (
-      <VolumeGradient
-        colors={["#1A0055", "#440099", "#0033CC"]}
-        shadowColor="#6600FF"
-        borderRadius={28}
-        onPress={onPress}
-        style={s.venueCardVolume}
-        glossOpacity={0.18}
-      >
-        <View style={[s.venueLogo, s.venueLogoVolume]}>
-          <Text style={[s.venueLogoText, { fontFamily: fonts.displayHeavy, color: "rgba(255,255,255,0.9)" }]}>{logo}</Text>
-        </View>
-        <View style={s.venueMain}>
-          <View style={s.venueTitleRow}>
-            <Text style={[s.venueName, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]} numberOfLines={1}>{name}</Text>
-            <Text style={[s.venueArrow, { color: "rgba(255,255,255,0.7)" }]}>↗</Text>
-          </View>
-          <Text style={[s.venueMeta, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.6)" }]} numberOfLines={1}>
-            {category} · {city}
-          </Text>
-          <Text style={[s.venueAddress, { color: "rgba(255,255,255,0.5)" }]} numberOfLines={1}>{address}</Text>
-          <View style={s.venueChips}>
-            <View style={s.venueChipVolume}>
-              <Text style={[s.venueChipDarkText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]}>
-                {rate ? `${rate.toFixed(3)} pts/RSD` : receiptScanLabel}
-              </Text>
-            </View>
-            <View style={s.venueChipVolume}>
-              <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{distanceLabel(distance)}</Text>
-            </View>
-            <View style={s.venueChipVolume}>
-              <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{ratingLabel(rating, reviews)}</Text>
-            </View>
-            {discount ? (
-              <View style={[s.venueChipVolume, { backgroundColor: "rgba(57,255,20,0.25)" }]}>
-                <Text style={[s.venueChipMintText, { fontFamily: fonts.bodyBold, color: "#AAFFAA" }]}>-{discount}%</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={s.specialLineVolume}>
-            <Text style={[s.specialDot, { color: "rgba(255,255,255,0.6)" }]}>●</Text>
-            <Text style={[s.specialText, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]} numberOfLines={1}>{offer}</Text>
-          </View>
-        </View>
-      </VolumeGradient>
-    )
-  }
-
   return (
     <Pressable onPress={onPress} style={s.venueCard}>
       <View style={s.venueLogo}>
@@ -700,25 +581,25 @@ function VenueCard({
           <Text style={[s.venueName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{name}</Text>
           <Text style={s.venueArrow}>↗</Text>
         </View>
-        <Text style={[s.venueMeta, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+        <Text style={[s.venueMeta, { fontFamily: fonts.pixel, textTransform: "uppercase" }]} numberOfLines={1}>
           {category} · {city}
         </Text>
         <Text style={s.venueAddress} numberOfLines={1}>{address}</Text>
         <View style={s.venueChips}>
           <View style={s.venueChipDark}>
-            <Text style={[s.venueChipDarkText, { fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.venueChipDarkText, { fontFamily: fonts.pixel }]}>
               {rate ? `${rate.toFixed(3)} pts/RSD` : receiptScanLabel}
             </Text>
           </View>
           <View style={s.venueChipLight}>
-            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{distanceLabel(distance)}</Text>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.pixel }]}>{distanceLabel(distance)}</Text>
           </View>
           <View style={s.venueChipLight}>
-            <Text style={[s.venueChipLightText, { fontFamily: fonts.bodyBold }]}>{ratingLabel(rating, reviews)}</Text>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.pixel }]}>{ratingLabel(rating, reviews)}</Text>
           </View>
           {discount ? (
             <View style={s.venueChipMint}>
-              <Text style={[s.venueChipMintText, { fontFamily: fonts.bodyBold }]}>-{discount}%</Text>
+              <Text style={[s.venueChipMintText, { fontFamily: fonts.pixel }]}>-{discount}%</Text>
             </View>
           ) : null}
         </View>
@@ -747,446 +628,94 @@ function VenueSkeleton() {
   )
 }
 
-function BalancePanel({
-  total,
-  available,
-  today,
-  onToday,
-  onHistory,
-  onShare,
-  isRainbow,
-}: {
-  total: number
-  available: number
-  today: number
-  onToday: () => void
-  onHistory: () => void
-  onShare: () => void
-  isRainbow?: boolean
-}) {
-  const { t } = useTranslation("common")
-  if (isRainbow) {
-    return (
-      <VolumeGradient
-        colors={["#FF1155", "#8800EE", "#0033FF"]}
-        shadowColor="#8800EE"
-        borderRadius={34}
-        style={s.balancePanelVolume}
-        glossOpacity={0.22}
-      >
-        <Pressable onPress={onShare} style={s.balanceShareVolume}>
-          <Text style={[s.balanceIcon, { color: "rgba(255,255,255,0.9)" }]}>↗</Text>
-        </Pressable>
-        <View style={s.balanceGrid}>
-          <BalanceTile value={fmt(total)} label={t("totalPointsLabel")} isRainbow accentColor="#FFFFFF" />
-          <BalanceTile value={fmt(available)} label={t("available")} isRainbow accentColor="rgba(255,255,255,0.85)" />
-          <Pressable onPress={onToday} style={[s.balanceTile, s.balanceTileWide, s.balanceTileVolume]}>
-            <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>+{fmt(today)}</Text>
-            <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>{t("canGetToday")}</Text>
-            <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.85)" }]}>{t("openTasks")}</Text>
-          </Pressable>
-        </View>
-        <Pressable onPress={onHistory} style={s.balanceHistoryVolume}>
-          <Text style={[s.balanceIcon, { color: "rgba(255,255,255,0.9)" }]}>◷</Text>
-        </Pressable>
-      </VolumeGradient>
-    )
-  }
-
-  return (
-    <LinearGradient
-      colors={["#EBFEFF", "rgba(255,244,254,0.72)", "#ECFFEB"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={s.balancePanel}
-    >
-      <Pressable onPress={onShare} style={s.balanceShare}>
-        <Text style={[s.balanceIcon, { color: "#75736A" }]}>↗</Text>
-      </Pressable>
-      <View style={s.balanceGrid}>
-        <BalanceTile value={fmt(total)} label={t("totalPointsLabel")} />
-        <BalanceTile value={fmt(available)} label={t("available")} />
-        <Pressable onPress={onToday} style={[s.balanceTile, s.balanceTileWide]}>
-          <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy }]}>+{fmt(today)}</Text>
-          <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold }]}>{t("canGetToday")}</Text>
-          <Text style={[s.balanceTileHint, { fontFamily: fonts.bodyBold }]}>{t("openTasks")}</Text>
-        </Pressable>
-      </View>
-      <Pressable onPress={onHistory} style={s.balanceHistory}>
-        <Text style={[s.balanceIcon, { color: "#75736A" }]}>◷</Text>
-      </Pressable>
-    </LinearGradient>
-  )
-}
-
-function BalanceTile({ value, label, isRainbow, accentColor }: { value: string; label: string; isRainbow?: boolean; accentColor?: string }) {
-  return (
-    <View style={[s.balanceTile, isRainbow && s.balanceTileRainbow]}>
-      <Text style={[s.balanceTileValue, { fontFamily: fonts.displayHeavy, color: isRainbow ? (accentColor ?? neonColors.cyan) : "#33322D" }]}>{value}</Text>
-      <Text style={[s.balanceTileLabel, { fontFamily: fonts.bodyBold, color: isRainbow ? neonColors.muted : "#75736A" }]}>{label}</Text>
-    </View>
-  )
-}
-
-function SoftRgbSliders() {
-  return (
-    <View style={s.rgbSliders}>
-      {[
-        ["#A9B9FF", "#85F5F2", "#CDA9FF"],
-        ["#F199E3", "#F1D09E", "#9FEED3"],
-        ["#85F5F2", "#CDA9FF", "#9FEED3"],
-      ].map((gradient, index) => (
-        <View key={gradient.join("-")} style={s.rgbSliderShell}>
-          <LinearGradient
-            colors={gradient as [string, string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={s.rgbSliderFill}
-          />
-          <View style={[s.rgbSliderKnob, index === 0 ? s.rgbSliderKnobTop : index === 1 ? s.rgbSliderKnobMid : s.rgbSliderKnobLow]}>
-            <Text style={s.rgbSliderKnobText}>+</Text>
-          </View>
-        </View>
-      ))}
-      <View style={s.softSparkle} />
-      <View style={[s.softSparkle, s.softSparkleLow]} />
-    </View>
-  )
-}
-
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 110 },
+  readoutWrap: { marginBottom: 14 },
+
+  // ── Device mode panels (EARN / SPEND) ──
+  lcdAnimWrap: { overflow: "hidden", borderRadius: 18 },
+  scanline: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 3,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    shadowColor: "#FFFFFF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+  },
+  modeTitle: { fontSize: 11, letterSpacing: 1 },
+  modeBig: { fontSize: 30, color: "#3A3F42", marginTop: 6 },
+  modeHint: { fontSize: 8, lineHeight: 14, color: "#8C887E", textAlign: "center", marginTop: 8 },
+  modeStatsRow: { flexDirection: "row", gap: 28, marginTop: 6 },
+  modeStat: { alignItems: "center", gap: 3 },
+  modeStatVal: { fontSize: 11, color: "#3E8E6E" },
+  modeStatLab: { fontSize: 6, color: "#8C887E", letterSpacing: 0.5 },
+  modeErr: { fontSize: 7, lineHeight: 11, color: "#C25A37", textAlign: "center", marginTop: 4 },
+  qrBox: { backgroundColor: "#FFFFFF", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#C4C4BE" },
+  qrCode: { fontSize: 7, color: "#8C887E", letterSpacing: 0.5, marginTop: 2 },
+  rewardScroll: { width: "100%", maxHeight: 150, marginTop: 6 },
+  rewardScrollInner: { gap: 6, paddingBottom: 2 },
+  rewardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#E4E3DF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(110,102,86,0.14)",
+    borderBottomWidth: 3,
+    borderBottomColor: "rgba(110,102,86,0.16)",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 10,
+  },
+  rewardRowOff: { opacity: 0.4 },
+  rewardRowPressed: { borderBottomWidth: 1, transform: [{ translateY: 2 }] },
+  rewardRowName: { fontSize: 12, color: "#33322D", flex: 1 },
+  rewardRowCost: { fontSize: 10, color: "#D98A4E" },
+  backBar: {
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#E4E3DF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(110,102,86,0.14)",
+    borderBottomWidth: 4,
+    borderBottomColor: "rgba(110,102,86,0.18)",
+  },
+  backBarPressed: { borderBottomWidth: 2, transform: [{ translateY: 2 }] },
+  backBarText: { fontSize: 9, letterSpacing: 1, color: "#75736A" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     marginBottom: 14,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 34,
-    padding: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.8)",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 3,
+    paddingHorizontal: 6,
+    paddingTop: 2,
   },
   helloBlock: { flex: 1 },
-  kicker: { fontSize: 11, letterSpacing: 1.8 },
   hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
   citySwitch: { flexDirection: "row", gap: 7, marginTop: 6 },
   cityPill: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   cityPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.32, shadowRadius: 6, elevation: 2 },
   cityPillIdle: { backgroundColor: "rgba(225,230,239,0.68)" },
   cityPillText: { fontSize: 10 },
-  dashboard: {
-    borderRadius: 42,
-    padding: 14,
-    marginBottom: 14,
-    overflow: "hidden",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.88)",
-  },
-  dashboardGlowTop: {
-    position: "absolute",
-    top: -70,
-    left: -34,
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    backgroundColor: "rgba(235,254,255,0.54)",
-  },
-  dashboardGlowBottom: {
-    position: "absolute",
-    right: -76,
-    bottom: 112,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: "rgba(236,255,235,0.46)",
-  },
-  softOrb: { alignSelf: "center", width: 210, height: 210, borderRadius: 105, marginTop: 4, marginBottom: 18, alignItems: "center", justifyContent: "center" },
-  softOrbGlow: { ...StyleSheet.absoluteFillObject, borderRadius: 105, opacity: 0.74 },
-  softOrbCore: {
-    width: 154,
-    height: 154,
-    borderRadius: 77,
-    backgroundColor: "rgba(249,251,255,0.82)",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 9, height: 9 },
-    shadowOpacity: 0.42,
-    shadowRadius: 18,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.86)",
-  },
-  progressOrbWrap: { alignSelf: "center", width: 190, height: 190, borderRadius: 95, marginTop: 0, marginBottom: 12, alignItems: "center", justifyContent: "center" },
-  progressOrbGlow: { ...StyleSheet.absoluteFillObject, borderRadius: 95, opacity: 0.78 },
-  progressOrb: {
-    width: 142,
-    height: 142,
-    borderRadius: 71,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(249,251,255,0.82)",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 9, height: 9 },
-    shadowOpacity: 0.42,
-    shadowRadius: 18,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.9)",
-  },
-  progressOrbFill: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 71, opacity: 0.92 },
-  progressOrbShine: { position: "absolute", top: 15, left: 18, width: 50, height: 30, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.38)" },
-  tierCreature: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
-  tierMark: { width: 48, height: 40, alignItems: "center", justifyContent: "center", marginBottom: 1 },
-  sproutStem: { position: "absolute", bottom: 7, width: 9, height: 28, borderRadius: 8, shadowColor: "#57B286", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.22, shadowRadius: 8 },
-  sproutLeaf: { position: "absolute", width: 29, height: 20, borderRadius: 18, top: 10, shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.24, shadowRadius: 7 },
-  sproutLeafLeft: { left: 6, transform: [{ rotate: "-28deg" }] },
-  sproutLeafRight: { right: 5, transform: [{ rotate: "28deg" }] },
-  markGloss: { position: "absolute", top: 9, left: 15, width: 18, height: 9, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.58)" },
-  flowerPetal: { position: "absolute", left: 17, top: 16, width: 22, height: 28, borderRadius: 16, shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.2, shadowRadius: 7 },
-  flowerCenter: { width: 20, height: 20, borderRadius: 10, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6 },
-  pomegranateBody: { width: 42, height: 40, borderRadius: 22, shadowColor: "#D96AA7", shadowOffset: { width: 4, height: 6 }, shadowOpacity: 0.28, shadowRadius: 9 },
-  pomegranateCrown: { position: "absolute", top: 3, width: 24, height: 14, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
-  pomegranateSeedA: { position: "absolute", left: 20, top: 24, width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.62)" },
-  pomegranateSeedB: { position: "absolute", right: 16, top: 29, width: 5, height: 5, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.46)" },
-  gemTop: { position: "absolute", top: 8, width: 39, height: 17, borderRadius: 7, transform: [{ rotate: "45deg" }], shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.22, shadowRadius: 8 },
-  gemBody: { position: "absolute", top: 18, width: 36, height: 36, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#F199E3", shadowOffset: { width: 4, height: 6 }, shadowOpacity: 0.25, shadowRadius: 9 },
-  gemFacet: { position: "absolute", top: 18, width: 18, height: 18, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.32)", transform: [{ rotate: "45deg" }] },
-  diamondTop: { position: "absolute", top: 7, width: 42, height: 18, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#9DCCFF", shadowOffset: { width: 4, height: 5 }, shadowOpacity: 0.26, shadowRadius: 9 },
-  diamondBody: { position: "absolute", top: 18, width: 39, height: 39, borderRadius: 8, transform: [{ rotate: "45deg" }], shadowColor: "#9DCCFF", shadowOffset: { width: 5, height: 7 }, shadowOpacity: 0.3, shadowRadius: 10 },
-  diamondFacet: { position: "absolute", top: 18, width: 18, height: 18, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.56)", transform: [{ rotate: "45deg" }] },
-  profileRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
+
   profileAvatar: { width: 58, height: 58, borderRadius: 21, alignItems: "center", justifyContent: "center", shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 3 },
   profileAvatarText: { color: "#75736A", fontSize: 24 },
-  profileMain: { flex: 1 },
-  profileName: { color: "#33322D", fontSize: 24, lineHeight: 26, letterSpacing: 0 },
-  profileStats: { flexDirection: "row", gap: 14, marginTop: 5 },
-  profileStat: { color: "#75736A", fontSize: 11, fontWeight: "700" },
-  profileIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
-  profileIconText: { color: "#75736A", fontSize: 16, fontWeight: "900" },
-  actionSplit: { flexDirection: "row", justifyContent: "space-evenly", alignItems: "center", marginTop: 10, marginBottom: 18 },
-  shapeKey: {
-    shadowColor: "#9A958A",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-  },
-  shapeKeyPressed: { transform: [{ translateY: 4 }] },
-  dashboardSectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 },
-  dashboardSectionTitle: { color: "#33322D", fontSize: 25, lineHeight: 28, letterSpacing: 0 },
-  dashboardSectionLink: { color: "#75736A", fontSize: 11 },
-  rgbPanel: {
-    borderRadius: 40,
-    padding: 18,
-    minHeight: 210,
-    marginBottom: 18,
-    overflow: "hidden",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 9, height: 9 },
-    shadowOpacity: 0.38,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  balancePanel: {
-    borderRadius: 34,
-    padding: 12,
-    minHeight: 156,
-    marginBottom: 14,
-    overflow: "hidden",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 9, height: 9 },
-    shadowOpacity: 0.38,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  balanceGrid: { flexDirection: "row", gap: 8, minHeight: 112, alignItems: "stretch", paddingTop: 22, paddingRight: 34 },
-  balanceTile: {
-    flex: 1,
-    minHeight: 100,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.62)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 8,
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.28,
-    shadowRadius: 9,
-    elevation: 2,
-  },
-  balanceTileWide: { flex: 2, backgroundColor: "rgba(255,255,255,0.76)" },
-  balanceTileValue: { color: "#33322D", fontSize: 22, lineHeight: 25, letterSpacing: 0, textAlign: "center" },
-  balanceTileLabel: { color: "#75736A", fontSize: 9, lineHeight: 11, marginTop: 5, textTransform: "uppercase", textAlign: "center" },
-  balanceTileHint: { color: "#75736A", fontSize: 10, marginTop: 8 },
-  balanceShare: { position: "absolute", top: 11, right: 11, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.7)", alignItems: "center", justifyContent: "center", zIndex: 2 },
-  balanceHistory: { position: "absolute", right: 12, bottom: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.78)", alignItems: "center", justifyContent: "center" },
-  balanceIcon: { color: "#75736A", fontSize: 18, fontWeight: "900" },
-  rgbPanelHead: { flexDirection: "row", alignItems: "center", gap: 38, marginBottom: 12, paddingHorizontal: 18 },
-  rgbTiny: { color: "#A5A299", fontSize: 13 },
-  rgbLabel: { color: "#A5A299", fontSize: 13, marginLeft: "auto" },
-  rgbSliders: { minHeight: 148, flexDirection: "row", gap: 28, alignItems: "center", paddingLeft: 28 },
-  rgbSliderShell: {
-    width: 22,
-    height: 132,
-    borderRadius: 13,
-    backgroundColor: "rgba(255,255,255,0.72)",
-    padding: 4,
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.42,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  rgbSliderFill: { flex: 1, borderRadius: 10 },
-  rgbSliderKnob: { position: "absolute", left: 1, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.44)", alignItems: "center", justifyContent: "center" },
-  rgbSliderKnobTop: { top: 16 },
-  rgbSliderKnobMid: { top: 64 },
-  rgbSliderKnobLow: { bottom: 16 },
-  rgbSliderKnobText: { color: "#8FB4C6", fontSize: 13, fontWeight: "800" },
-  softSparkle: { position: "absolute", right: 20, top: 30, width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.82)", shadowColor: "#C9C4B4", shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.34, shadowRadius: 8, elevation: 2 },
-  softSparkleLow: { right: 36, top: 94, width: 30, height: 30, opacity: 0.9 },
-  rewardProgressCard: {
-    borderRadius: 40,
-    padding: 14,
-    minHeight: 184,
-    overflow: "hidden",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  rewardProgressTop: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  rewardProgressTitle: { color: "#33322D", fontSize: 19, lineHeight: 22, letterSpacing: 0 },
-  rewardProgressSub: { color: "#75736A", fontSize: 11, marginTop: 5, maxWidth: 190 },
-  rewardProgressButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 },
-  rewardProgressButtonText: { color: "#75736A", fontSize: 18, fontWeight: "900" },
-  rewardProgressLabel: { color: "#75736A", fontSize: 12, marginTop: 12 },
-  levelBlocks: { flexDirection: "row", gap: 7, marginTop: 8 },
-  levelBlock: { flex: 1, minHeight: 82, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.64)", padding: 7, justifyContent: "space-between", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 1 },
-  levelBlockFuture: { backgroundColor: "rgba(225,230,239,0.42)" },
-  levelCheck: { color: "#75736A", fontSize: 14, fontWeight: "900", minHeight: 18 },
-  levelBlockText: { color: "#75736A", fontSize: 12, textAlign: "center" },
-  blueRewardPill: { marginTop: 12, minHeight: 68, borderRadius: 28, backgroundColor: "#FFFFFF", padding: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between", shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.32, shadowRadius: 12, elevation: 3 },
-  blueRewardText: { color: "#33322D", fontSize: 20, letterSpacing: 0 },
-  blueRewardIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(235,254,255,0.82)", alignItems: "center", justifyContent: "center" },
-  blueRewardIconText: { color: "#75736A", fontSize: 18, fontWeight: "900" },
-  quickStatsPanel: { flexDirection: "row", gap: 0, marginBottom: 12, backgroundColor: "#FFFFFF", borderRadius: 28, overflow: "hidden", shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 3 },
-  quickStat: { flex: 1, minHeight: 82, justifyContent: "center", alignItems: "center" },
-  quickStatValue: { color: "#33322D", fontSize: 30, lineHeight: 32, letterSpacing: 0 },
-  quickStatLabel: { color: "#75736A", fontSize: 9, marginTop: 4, textTransform: "uppercase", letterSpacing: 0.4, textAlign: "center" },
-
-  metrics: { flexDirection: "row", gap: 10, marginBottom: 12 },
-  metricCard: { flex: 1, borderRadius: 24, padding: 13, minHeight: 82, justifyContent: "center" },
-  metricCardContent: { flex: 1, justifyContent: "center" },
-  metricValue: { fontSize: 26, lineHeight: 28, letterSpacing: 0 },
-  metricLabel: { fontSize: 9, marginTop: 5, letterSpacing: 0.8 },
-  modeTabs: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  modeTab: { flex: 1, borderRadius: 99, paddingVertical: 12, alignItems: "center", justifyContent: "center", shadowColor: "#C9C4B4", shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.28, shadowRadius: 8, elevation: 2 },
-  modeTabLight: { backgroundColor: "#FFFFFF" },
-  modeTabBlue: { backgroundColor: "rgba(235,254,255,0.82)" },
-  modeTabRed: { backgroundColor: "rgba(255,244,254,0.82)" },
-  modeTabTextLight: { color: "#33322D", fontSize: 12 },
-  modeTabTextDark: { color: "#75736A", fontSize: 12 },
-  actionRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  actionPill: { flex: 1, borderRadius: 28, padding: 9, flexDirection: "row", alignItems: "center", gap: 10, overflow: "hidden", minHeight: 60, shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 3 },
-  actionPillDark: { backgroundColor: "#FFFFFF" },
-  actionPillLight: { backgroundColor: "#FFFFFF" },
-  actionIcon: { width: 35, height: 35, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  actionIconDark: { backgroundColor: "rgba(235,254,255,0.88)" },
-  actionIconLight: { backgroundColor: "rgba(255,244,254,0.88)" },
-  actionIconText: { fontSize: 16, fontWeight: "900" },
-  actionLabel: { fontSize: 13 },
 
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { color: "#33322D", fontSize: 25, letterSpacing: 0 },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  sectionMark: { fontSize: 9, color: "#f2a66e" },
+  sectionTitle: { color: "#33322D", fontSize: 21, letterSpacing: 0 },
   sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   sectionButtonText: { color: "#75736A", fontSize: 11 },
-  filterRail: { gap: 8, paddingBottom: 12 },
-  filterChip: { borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8 },
-  filterChipActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 1 },
-  filterChipIdle: { backgroundColor: "rgba(249,251,255,0.52)" },
-  filterChipText: { fontSize: 11 },
-  offerRail: { gap: 12, paddingBottom: 20 },
 
-  partnerOfferCard: { width: 140, backgroundColor: "rgba(235,254,255,0.85)", borderRadius: 22, padding: 14, gap: 6 },
-  partnerOfferCardRainbow: { backgroundColor: "rgba(245,236,255,0.85)" },
-  partnerOfferPtsBox: { backgroundColor: "rgba(127,175,194,0.12)", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", flexDirection: "row", alignItems: "baseline", gap: 2 },
-  partnerOfferPtsBoxRainbow: { backgroundColor: "rgba(139,61,255,0.08)" },
-  partnerOfferPts: { fontSize: 18, lineHeight: 20 },
-  partnerOfferPtsLabel: { fontSize: 10 },
-  partnerOfferTitle: { fontSize: 13, lineHeight: 17 },
-  partnerOfferVenue: { fontSize: 11 },
-  offerPressable: { width: 176 },
-  offerCard: { minHeight: 174, borderRadius: 34, padding: 14, overflow: "hidden", shadowColor: "#C9C4B4", shadowOffset: { width: 8, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 3 },
-  offerCardFeatured: { backgroundColor: "rgba(255,244,254,0.92)" },
-  offerCardBlue: { backgroundColor: "rgba(235,254,255,0.92)" },
-  offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  offerLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  offerLogoDark: { backgroundColor: "rgba(255,255,255,0.72)" },
-  offerLogoLight: { backgroundColor: "rgba(255,255,255,0.72)" },
-  offerLogoText: { fontSize: 17, fontWeight: "900" },
-  offerPoints: { backgroundColor: "rgba(255,255,255,0.60)", color: "#33322D", borderRadius: 99, overflow: "hidden", paddingHorizontal: 14, paddingVertical: 8, fontSize: 13 },
-  offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
-  offerVenue: { fontSize: 12, marginTop: 8 },
-  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.58)" },
-  offerLinkLight: { backgroundColor: "rgba(255,255,255,0.72)" },
-  offerLinkDark: { backgroundColor: "rgba(255,255,255,0.14)" },
-  offerLinkText: { fontSize: 12 },
-
-  venueList: { gap: 12 },
-  emptyVenues: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 16, alignItems: "center" },
-  emptyVenuesText: { color: "#75736A", fontSize: 12 },
-  venueSkeleton: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 12, flexDirection: "row", gap: 12 },
-  skeletonLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(225,230,239,0.72)" },
-  skeletonMain: { flex: 1, justifyContent: "center", gap: 8 },
-  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "rgba(225,230,239,0.72)", width: "72%" },
-  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "rgba(225,230,239,0.48)", width: "54%" },
-  skeletonChips: { flexDirection: "row", gap: 6 },
-  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "rgba(225,230,239,0.64)" },
-  venueCard: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
-  venueLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(235,254,255,0.84)", alignItems: "center", justifyContent: "center" },
-  venueLogoText: { color: "#75736A", fontSize: 22 },
-  venueMain: { flex: 1 },
-  venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  venueName: { color: "#33322D", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
-  venueArrow: { color: "#75736A", fontSize: 22 },
-  venueMeta: { color: "#75736A", fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.8 },
-  venueAddress: { color: "#C9C4B4", fontSize: 12, marginTop: 2 },
-  venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
-  venueChipDark: { backgroundColor: "rgba(255,244,254,0.92)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  venueChipDarkText: { color: "#75736A", fontSize: 10 },
-  venueChipLight: { backgroundColor: "rgba(225,230,239,0.58)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  venueChipLightText: { color: "#75736A", fontSize: 10 },
-  venueChipMint: { backgroundColor: "rgba(236,255,235,0.82)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  venueChipMintText: { color: "#75736A", fontSize: 10 },
-  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
-  specialDot: { color: "#9FEED3", fontSize: 10 },
-  specialText: { color: "#75736A", fontSize: 12, flex: 1 },
-
-  // ── Rainbow overrides ────────────────────────────────────────
-  topBarRainbow: {
-    backgroundColor: "#F2F2F6",
-    borderColor: "rgba(180,160,255,0.35)",
-    shadowColor: "#AA00FF",
-    shadowOpacity: 0.18,
-  },
-  cityPillActiveRainbow: {
-    backgroundColor: "rgba(0,245,255,0.14)",
-    shadowColor: "#00F5FF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 3,
-  },
   langSwitch: { flexDirection: "row", gap: 4, marginTop: 6 },
   langPill: { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 4 },
   langPillActive: {
@@ -1198,144 +727,60 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   langPillIdle: { backgroundColor: "rgba(225,230,239,0.55)" },
-  langPillActiveRainbow: {
-    backgroundColor: "rgba(0,245,255,0.18)",
-    shadowColor: "#00F5FF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 2,
-  },
   langPillText: { fontSize: 10, letterSpacing: 0.8 },
 
-  dashboardRainbow: {
-    backgroundColor: "#F2F2F6",
-    borderColor: "rgba(180,160,255,0.25)",
-    shadowColor: "#AA00FF",
-    shadowOpacity: 0.18,
-  },
-  dashboardGlowTopRainbow: { backgroundColor: "rgba(100,0,255,0.06)" },
-  dashboardGlowBottomRainbow: { backgroundColor: "rgba(255,0,100,0.05)" },
+  filterRail: { gap: 8, paddingBottom: 12 },
+  filterChip: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1 },
+  filterChipActive: { backgroundColor: "#EDEDEB", borderColor: "rgba(110,102,86,0.18)", borderBottomWidth: 3, borderBottomColor: "rgba(242,166,110,0.55)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 2 },
+  filterChipIdle: { backgroundColor: "#E4E3DF", borderColor: "rgba(110,102,86,0.10)" },
+  filterChipText: { fontSize: 11 },
+  offerRail: { gap: 12, paddingBottom: 20 },
 
-  balancePanelRainbow: {
-    shadowColor: "#FF2D9B",
-    shadowOpacity: 0.5,
-    borderWidth: 1,
-    borderColor: "rgba(255,45,155,0.18)",
-  },
-  balanceTileRainbow: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    shadowColor: "#8B3DFF",
-    shadowOpacity: 0.3,
-  },
+  partnerOfferCard: { width: 140, backgroundColor: "#EDEDEB", borderRadius: 18, padding: 14, gap: 6, borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)" },
+  partnerOfferPtsBox: { backgroundColor: "#DBDBD7", borderWidth: 1, borderColor: "#C4C4BE", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", flexDirection: "row", alignItems: "baseline", gap: 2 },
+  partnerOfferPts: { fontSize: 18, lineHeight: 20 },
+  partnerOfferPtsLabel: { fontSize: 10 },
+  partnerOfferTitle: { fontSize: 13, lineHeight: 17 },
+  partnerOfferVenue: { fontSize: 11 },
+  offerPressable: { width: 176 },
+  offerCard: { minHeight: 174, borderRadius: 24, padding: 14, overflow: "hidden", backgroundColor: "#EDEDEB", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 5, borderBottomColor: "rgba(110,102,86,0.18)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 4 },
+  offerCardFeatured: { borderBottomColor: "rgba(242,166,110,0.5)" },
+  offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  offerLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  offerLogoText: { fontSize: 16, fontWeight: "900" },
+  offerPoints: { backgroundColor: "#DBDBD7", color: "#3A3F42", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, letterSpacing: 0.5 },
+  offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
+  offerVenue: { fontSize: 12, marginTop: 8 },
+  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  offerLinkText: { fontSize: 8, letterSpacing: 0.5 },
 
-  rewardProgressCardRainbow: {
-    borderWidth: 1,
-    borderColor: "rgba(43,110,255,0.22)",
-    shadowColor: "#2B6EFF",
-    shadowOpacity: 0.4,
-  },
-  levelBlockRainbow: {
-    backgroundColor: "rgba(139,61,255,0.14)",
-  },
-  levelBlockFutureRainbow: { backgroundColor: "rgba(255,255,255,0.04)" },
-
-  blueRewardPillRainbow: {
-    backgroundColor: "#16162E",
-    borderWidth: 1,
-    borderColor: "rgba(255,45,155,0.22)",
-    shadowColor: "#FF2D9B",
-    shadowOpacity: 0.4,
-  },
-
-  quickStatsPanelRainbow: {
-    backgroundColor: "#EEEEF4",
-    shadowColor: "#AA00FF",
-    shadowOpacity: 0.15,
-  },
-
-  modeTabNeonPurple: { backgroundColor: "rgba(139,61,255,0.16)", borderWidth: 1, borderColor: "rgba(139,61,255,0.3)" },
-  modeTabNeonCyan:   { backgroundColor: "rgba(0,245,255,0.10)",  borderWidth: 1, borderColor: "rgba(0,245,255,0.25)" },
-  modeTabNeonPink:   { backgroundColor: "rgba(255,45,155,0.14)", borderWidth: 1, borderColor: "rgba(255,45,155,0.3)" },
-
-  actionPillNeonPink: {
-    backgroundColor: "rgba(255,45,155,0.14)",
-    borderWidth: 1,
-    borderColor: "rgba(255,45,155,0.35)",
-    shadowColor: "#FF2D9B",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  actionPillNeonCyan: {
-    backgroundColor: "rgba(0,245,255,0.10)",
-    borderWidth: 1,
-    borderColor: "rgba(0,245,255,0.28)",
-    shadowColor: "#00F5FF",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  actionIconNeonPink: { backgroundColor: "rgba(255,45,155,0.22)" },
-  actionIconNeonCyan: { backgroundColor: "rgba(0,245,255,0.18)" },
-
-  sectionButtonRainbow: {
-    backgroundColor: "rgba(0,245,255,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(0,245,255,0.22)",
-  },
-
-  filterChipActiveRainbow: {
-    backgroundColor: "rgba(0,245,255,0.14)",
-    borderWidth: 1,
-    borderColor: "rgba(0,245,255,0.3)",
-    shadowColor: "#00F5FF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  filterChipIdleRainbow: { backgroundColor: "rgba(255,255,255,0.04)" },
-
-  offerCardRainbow: {
-    borderWidth: 1,
-    shadowColor: "#FF2D9B",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-
-  // ── Volume (3D gradient pill) styles ────────────────────────
-  offerCardVolume: { minHeight: 190, padding: 14 },
-  offerLogoVolume: { backgroundColor: "rgba(255,255,255,0.2)" },
-  offerPointsVolume: { color: "rgba(255,255,255,0.9)", backgroundColor: "rgba(0,0,0,0.18)" },
-  offerTitleVolume: { color: "#FFFFFF" },
-  offerVenueVolume: { color: "rgba(255,255,255,0.7)" },
-  offerLinkVolume: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 99, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: "rgba(255,255,255,0.2)" },
-  offerLinkTextVolume: { color: "rgba(255,255,255,0.95)" },
-
-  actionPillVolume: { flex: 1, padding: 9, flexDirection: "row", alignItems: "center", gap: 10, minHeight: 60 },
-  actionIconVolume: { width: 35, height: 35, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
-
-  balancePanelVolume: { padding: 12, minHeight: 156, marginBottom: 14 },
-  balanceTileVolume: { backgroundColor: "rgba(255,255,255,0.16)" },
-  balanceShareVolume: { position: "absolute", top: 11, right: 11, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", zIndex: 2 },
-  balanceHistoryVolume: { position: "absolute", right: 12, bottom: 12, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-
-  modeTabVolume: { flex: 1, paddingVertical: 12, alignItems: "center", justifyContent: "center" },
-
-  quickStatsPanelVolume: { flexDirection: "row", gap: 10, marginBottom: 12 },
-  quickStatVolume: { flex: 1, minHeight: 82, justifyContent: "center", alignItems: "center", padding: 10 },
-
-  venueCardVolume: { padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", marginBottom: 0 },
-  venueLogoVolume: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  venueChipVolume: { backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
-  specialLineVolume: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
-
-  // Legacy rainbow styles (kept for toggle switch etc.)
-  venueCardRainbow: { backgroundColor: "#F2F2F6" },
-  venueLogoRainbow: { backgroundColor: "rgba(139,61,255,0.08)" },
+  venueList: { gap: 12 },
+  emptyVenues: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 16, alignItems: "center" },
+  emptyVenuesText: { color: "#75736A", fontSize: 12 },
+  venueSkeleton: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 12, flexDirection: "row", gap: 12 },
+  skeletonLogo: { width: 58, height: 58, borderRadius: 22, backgroundColor: "rgba(225,230,239,0.72)" },
+  skeletonMain: { flex: 1, justifyContent: "center", gap: 8 },
+  skeletonLineWide: { height: 14, borderRadius: 7, backgroundColor: "rgba(225,230,239,0.72)", width: "72%" },
+  skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "rgba(225,230,239,0.48)", width: "54%" },
+  skeletonChips: { flexDirection: "row", gap: 6 },
+  skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "rgba(225,230,239,0.64)" },
+  venueCard: { backgroundColor: "#EDEDEB", borderRadius: 20, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 3 },
+  venueLogo: { width: 56, height: 56, borderRadius: 16, backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)", alignItems: "center", justifyContent: "center" },
+  venueLogoText: { color: "#75736A", fontSize: 22 },
+  venueMain: { flex: 1 },
+  venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  venueName: { color: "#33322D", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
+  venueArrow: { color: "#75736A", fontSize: 22 },
+  venueMeta: { color: "#8C887E", fontSize: 8, marginTop: 4, letterSpacing: 0.4 },
+  venueAddress: { color: "#C9C4B4", fontSize: 12, marginTop: 2 },
+  venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
+  venueChipDark: { backgroundColor: "#DBDBD7", borderRadius: 7, borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 8, paddingVertical: 6 },
+  venueChipDarkText: { color: "#3A3F42", fontSize: 7, letterSpacing: 0.3 },
+  venueChipLight: { backgroundColor: "#E4E3DF", borderRadius: 7, borderWidth: 1, borderColor: "rgba(110,102,86,0.12)", paddingHorizontal: 8, paddingVertical: 6 },
+  venueChipLightText: { color: "#75736A", fontSize: 7, letterSpacing: 0.3 },
+  venueChipMint: { backgroundColor: "#DCEFE6", borderRadius: 7, borderWidth: 1, borderColor: "rgba(95,174,146,0.4)", paddingHorizontal: 8, paddingVertical: 6 },
+  venueChipMintText: { color: "#3E8E5E", fontSize: 7, letterSpacing: 0.3 },
+  specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
+  specialDot: { color: "#9FEED3", fontSize: 10 },
+  specialText: { color: "#75736A", fontSize: 12, flex: 1 },
 })
