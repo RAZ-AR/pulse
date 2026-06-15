@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next"
 import { useRouter, Stack } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import jsQR from "jsqr"
+import { BrowserQRCodeReader } from "@zxing/browser"
+import { DecodeHintType } from "@zxing/library"
 import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
 import { fonts, useTheme } from "../src/lib/theme"
@@ -52,36 +54,54 @@ type OcrFields = {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-// Web-only: open the camera/photo picker, decode any QR in the snapshot with
-// jsQR. Robust for dense Serbian fiscal QRs where Telegram's live scanner
-// (and iOS WebView's missing BarcodeDetector) fail. Returns the QR text or null.
+// Decode a QR from an already-loaded image. ZXing (TRY_HARDER) first — it is
+// far more robust on real photos of dense Serbian fiscal QRs than jsQR — then
+// jsQR at several scales as a fallback (handles cases ZXing misses).
+async function decodeQrFromImage(img: HTMLImageElement): Promise<string | null> {
+  // 1. ZXing with TRY_HARDER
+  try {
+    const hints = new Map<DecodeHintType, unknown>()
+    hints.set(DecodeHintType.TRY_HARDER, true)
+    const reader = new BrowserQRCodeReader(hints)
+    const res = await reader.decodeFromImageElement(img)
+    const text = res.getText()
+    if (text) return text
+  } catch { /* not found — fall through to jsQR */ }
+
+  // 2. jsQR at full + downscaled passes
+  const full = Math.max(img.width, img.height)
+  for (const maxDim of [full, 2400, 1600, 1000]) {
+    const scale = Math.min(1, maxDim / full)
+    const w = Math.max(1, Math.round(img.width * scale))
+    const h = Math.max(1, Math.round(img.height * scale))
+    const canvas = document.createElement("canvas")
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext("2d")
+    if (!ctx) continue
+    ctx.drawImage(img, 0, 0, w, h)
+    const { data, width, height } = ctx.getImageData(0, 0, w, h)
+    const hit = jsQR(data, width, height, { inversionAttempts: "attemptBoth" })?.data
+    if (hit) return hit
+  }
+  return null
+}
+
+// Web-only: open the camera/photo picker, decode any QR in the snapshot.
+// `capture` is NOT forced so the user can also pick a sharp library photo or
+// retake closer. Returns the QR text or null.
 async function decodeQrFromPhoto(): Promise<string | null> {
   if (typeof document === "undefined") return null
   return new Promise((resolve) => {
     const input = document.createElement("input")
     input.type = "file"
     input.accept = "image/*"
-    input.setAttribute("capture", "environment")
     input.onchange = () => {
       const file = input.files?.[0]
       if (!file) return resolve(null)
       const img = new Image()
-      img.onload = () => {
-        const decodeAt = (maxDim: number): string | null => {
-          const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
-          const w = Math.max(1, Math.round(img.width * scale))
-          const h = Math.max(1, Math.round(img.height * scale))
-          const canvas = document.createElement("canvas")
-          canvas.width = w
-          canvas.height = h
-          const ctx = canvas.getContext("2d")
-          if (!ctx) return null
-          ctx.drawImage(img, 0, 0, w, h)
-          const { data, width, height } = ctx.getImageData(0, 0, w, h)
-          return jsQR(data, width, height, { inversionAttempts: "attemptBoth" })?.data ?? null
-        }
-        // Try a downscaled pass first (fast), then full-res for dense codes.
-        const result = decodeAt(2000) ?? decodeAt(Math.max(img.width, img.height))
+      img.onload = async () => {
+        const result = await decodeQrFromImage(img)
         URL.revokeObjectURL(img.src)
         resolve(result)
       }
