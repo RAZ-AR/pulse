@@ -24,6 +24,7 @@ const INK = "#015634"
 const DIM = "#8C887E"
 const EDGE = "rgba(110,102,86,0.20)"           // extruded bottom edge
 const HILITE = "rgba(255,255,255,0.95)"
+const ICON = "#3A3A38"                          // dark-grey key glyphs (non-solid keys)
 
 export type PadAccent = "ink" | "green" | "orange"
 
@@ -66,8 +67,7 @@ export function PadKey({
         pressed && s.padPressed,
       ]}
     >
-      {!solid && <View style={[s.padHairline, { backgroundColor: color }]} />}
-      <Text style={[s.padSymbol, { color: solid ? "#FFFFFF" : color }]}>{symbol}</Text>
+      <Text style={[s.padSymbol, { color: solid ? "#FFFFFF" : ICON }]}>{symbol}</Text>
       <Text style={[s.padLabel, { fontFamily: fonts.pixel, color: solid ? "rgba(255,255,255,0.95)" : DIM }]} numberOfLines={1}>
         {label}
       </Text>
@@ -244,7 +244,6 @@ const s = StyleSheet.create({
     transform: [{ translateY: 3 }],
     shadowOpacity: 0.12,
   },
-  padHairline: { position: "absolute", top: 0, left: "26%", right: "26%", height: 2, borderRadius: 2, opacity: 0.55 },
   padSymbol: { fontSize: 42, lineHeight: 46, fontWeight: "900" },
   padLabel: { fontSize: 7, letterSpacing: 0.5, marginTop: 2 },
 
