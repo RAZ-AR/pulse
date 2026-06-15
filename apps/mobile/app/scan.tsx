@@ -1,8 +1,9 @@
 import { useRef, useState } from "react"
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter, Stack } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
+import jsQR from "jsqr"
 import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
 import { fonts, useTheme } from "../src/lib/theme"
@@ -51,6 +52,46 @@ type OcrFields = {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+// Web-only: open the camera/photo picker, decode any QR in the snapshot with
+// jsQR. Robust for dense Serbian fiscal QRs where Telegram's live scanner
+// (and iOS WebView's missing BarcodeDetector) fail. Returns the QR text or null.
+async function decodeQrFromPhoto(): Promise<string | null> {
+  if (typeof document === "undefined") return null
+  return new Promise((resolve) => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = "image/*"
+    input.setAttribute("capture", "environment")
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return resolve(null)
+      const img = new Image()
+      img.onload = () => {
+        const decodeAt = (maxDim: number): string | null => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+          const w = Math.max(1, Math.round(img.width * scale))
+          const h = Math.max(1, Math.round(img.height * scale))
+          const canvas = document.createElement("canvas")
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext("2d")
+          if (!ctx) return null
+          ctx.drawImage(img, 0, 0, w, h)
+          const { data, width, height } = ctx.getImageData(0, 0, w, h)
+          return jsQR(data, width, height, { inversionAttempts: "attemptBoth" })?.data ?? null
+        }
+        // Try a downscaled pass first (fast), then full-res for dense codes.
+        const result = decodeAt(2000) ?? decodeAt(Math.max(img.width, img.height))
+        URL.revokeObjectURL(img.src)
+        resolve(result)
+      }
+      img.onerror = () => { URL.revokeObjectURL(img.src); resolve(null) }
+      img.src = URL.createObjectURL(file)
+    }
+    input.click()
+  })
+}
+
 export default function ScanScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
@@ -95,6 +136,19 @@ export default function ScanScreen() {
         return true
       })
     }, 50)
+  }
+
+  // ── Photo → jsQR (reliable for dense fiscal QRs) ──────────
+  async function handlePhotoQr() {
+    const data = await decodeQrFromPhoto()
+    if (!data) {
+      showError(
+        t("qrPhotoFailed", "QR not recognised"),
+        t("qrPhotoFailedDesc", "Couldn't read a QR in that photo. Get closer so the QR fills the frame, hold steady, and make sure it's well lit.")
+      )
+      return
+    }
+    void handleQrScanned(data)
   }
 
   // ── QR scan — роутер по типу QR ──────────────────────────
@@ -238,7 +292,7 @@ export default function ScanScreen() {
             </View>
 
             {IS_TELEGRAM && phase.mode === "qr" ? (
-              <TelegramQrPhase onPress={openTelegramQrScanner} theme={theme} t={t} />
+              <TelegramQrPhase onPhoto={handlePhotoQr} onScanner={openTelegramQrScanner} theme={theme} t={t} />
             ) : (
               <CameraPhase
                 mode={phase.mode}
@@ -294,24 +348,30 @@ export default function ScanScreen() {
 // ── TelegramQrPhase — uses Telegram native scanner ───────────
 
 function TelegramQrPhase({
-  onPress, theme, t,
+  onPhoto, onScanner, theme, t,
 }: {
-  onPress: () => void
+  onPhoto: () => void
+  onScanner: () => void
   theme: ReturnType<typeof useTheme>
   t: (key: string, fallback: string) => string
 }) {
   return (
-    <View style={[s.center, { padding: 32, gap: 20 }]}>
-      <Text style={{ fontSize: 72 }}>📷</Text>
+    <View style={[s.center, { padding: 32, gap: 16 }]}>
+      <Text style={{ fontSize: 72 }}>🧾</Text>
       <Text style={[s.dialogTitle, { color: theme.text, fontSize: 22 }]}>
         {t("scanQrCode", "Scan QR code")}
       </Text>
       <Text style={[s.dialogText, { color: theme.textSecondary }]}>
-        {t("tapToScanQr", "Tap the button below to open the camera and scan the QR code from your receipt.")}
+        {t("photoQrHint", "Take a photo of the receipt's QR code — fill the frame and hold steady.")}
       </Text>
-      <Pressable onPress={onPress} style={[s.btn, s.btnPrimary, { paddingHorizontal: 32 }]}>
+      <Pressable onPress={onPhoto} style={[s.btn, s.btnPrimary, { paddingHorizontal: 32 }]}>
         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
-          {t("openCamera", "Open camera")}
+          {t("photographQr", "Photograph QR")}
+        </Text>
+      </Pressable>
+      <Pressable onPress={onScanner} style={{ paddingVertical: 8 }}>
+        <Text style={{ color: theme.textSecondary, fontSize: 13, textDecorationLine: "underline" }}>
+          {t("useLiveScanner", "Use live scanner instead")}
         </Text>
       </Pressable>
     </View>

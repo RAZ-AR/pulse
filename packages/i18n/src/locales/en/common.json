@@ -1,4 +1,9 @@
 {
+  "photographQr": "Photograph QR",
+  "photoQrHint": "Take a photo of the receipt's QR code — fill the frame and hold steady.",
+  "useLiveScanner": "Use live scanner instead",
+  "qrPhotoFailed": "QR not recognised",
+  "qrPhotoFailedDesc": "Couldn't read a QR in that photo. Get closer so the QR fills the frame, hold steady, and make sure it's well lit.",
   "appName": "ayoo",
   "tagline": "Loyalty that competes for you",
   "loading": "Loading...",

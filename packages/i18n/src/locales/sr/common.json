@@ -1,4 +1,9 @@
 {
+  "photographQr": "Slikaj QR",
+  "photoQrHint": "Slikaj QR kod sa računa — neka popuni kadar i drži mirno.",
+  "useLiveScanner": "Koristi live skener",
+  "qrPhotoFailed": "QR nije prepoznat",
+  "qrPhotoFailedDesc": "Nije uspelo čitanje QR-a sa slike. Priđi bliže da QR popuni kadar, drži mirno i uz dobro osvetljenje.",
   "appName": "ayoo",
   "tagline": "Lojalnost koja se takmiči za tebe",
   "loading": "Učitavanje...",
