@@ -23,7 +23,7 @@ import { fonts } from "../lib/theme"
 
 const EGG = PET_SPRITES.EGG!
 const HATCHLING = PET_SPRITES.HATCHLING!
-const HATCH_GREEN = "#4FB286"
+const HATCH_GREEN = "#015634"
 
 export function HatchStage({
   fed,
@@ -118,9 +118,9 @@ export function HatchStage({
 }
 
 const s = StyleSheet.create({
-  counter: { fontSize: 13, color: "#3E8E6E", letterSpacing: 1 },
+  counter: { fontSize: 13, color: "#013d24", letterSpacing: 1 },
   hint: { fontSize: 9, color: "#8C887E", letterSpacing: 1, marginTop: 4 },
-  hintFlash: { color: "#f2a66e" },
+  hintFlash: { color: "#fd4600" },
   scanline: {
     position: "absolute",
     left: 12,

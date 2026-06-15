@@ -19,8 +19,8 @@ import { LinearGradient } from "expo-linear-gradient"
 import { fonts } from "../lib/theme"
 
 // ── Console palette — warm cream hardware body, ink labels ─────
-const BODY = ["#F2F0EA", "#E7E4DC"] as const   // cream shell gradient
-const INK = "#33322D"
+const BODY = ["#E4DCCB", "#DCD4C2"] as const   // beige hardware-body gradient
+const INK = "#015634"
 const DIM = "#8C887E"
 const EDGE = "rgba(110,102,86,0.20)"           // extruded bottom edge
 const HILITE = "rgba(255,255,255,0.95)"
@@ -220,7 +220,7 @@ const s = StyleSheet.create({
   pad: {
     aspectRatio: 1.18,
     borderRadius: 18,
-    backgroundColor: "#EDEDEB",
+    backgroundColor: "#efeeea",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
@@ -272,7 +272,7 @@ const s = StyleSheet.create({
   },
   readoutCell: { flex: 1, alignItems: "center", gap: 5 },
   readoutDivider: { borderLeftWidth: 1, borderLeftColor: "rgba(110,102,86,0.18)" },
-  readoutValue: { fontSize: 14, color: "#3A3F42" },
+  readoutValue: { fontSize: 14, color: "#015634" },
   readoutLabel: { fontSize: 6, letterSpacing: 0.5, color: "#8C887E" },
 
   // ── Consent toggle (hardware switch on the chrome) ──
@@ -295,7 +295,7 @@ const s = StyleSheet.create({
     padding: 2,
     justifyContent: "center",
   },
-  toggleTrackOn: { backgroundColor: "#9FD9C2", borderColor: "#5FAE92" },
+  toggleTrackOn: { backgroundColor: "#015634", borderColor: "#013d24" },
   toggleKnob: {
     width: 22,
     height: 22,

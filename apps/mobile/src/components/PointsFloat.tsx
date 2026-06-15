@@ -52,7 +52,7 @@ export function PointsFloat() {
     <View pointerEvents="none" style={wrap}>
       <Animated.View style={{ opacity, transform: [{ translateY }, { scale }] }}>
         <View style={[s.pill, earn ? s.pillEarn : s.pillSpend]}>
-          <Text style={[s.text, { color: earn ? "#3E8E5E" : "#C25A37", fontFamily: fonts.displayHeavy }]}>
+          <Text style={[s.text, { color: earn ? "#013d24" : "#fd4600", fontFamily: fonts.displayHeavy }]}>
             {sign}{Math.abs(pop.delta).toLocaleString()}
           </Text>
         </View>

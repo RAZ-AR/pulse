@@ -22,15 +22,15 @@ import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT } from "@pulse/shared"
 const PRESETS = [100, 250, 500]
 
 // ── Device (Teenage-Engineering) tokens ──
-const CREAM = "#EDEDEB"
-const INK = "#33322D"
+const CREAM = "#efeeea"
+const INK = "#015634"
 const DIM = "#8C887E"
-const ORANGE = "#f2a66e"
-const ORANGE_EDGE = "#D98A4E"
-const GREEN = "#3E8E6E"
+const ORANGE = "#fd4600"
+const ORANGE_EDGE = "#c83700"
+const GREEN = "#013d24"
 const LCD = "#DBDBD7"
 const LCD_EDGE = "#C4C4BE"
-const LCD_INK = "#3A3F42"
+const LCD_INK = "#015634"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 
@@ -332,7 +332,7 @@ const s = StyleSheet.create({
   heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   kicker: { fontSize: 7, letterSpacing: 0.5, color: DIM, marginBottom: 10, lineHeight: 11 },
   heroValue: { fontSize: 22, color: LCD_INK },
-  limitChip: { ...lcdPlate, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, alignItems: "center", backgroundColor: "#E4E3DF", gap: 4 },
+  limitChip: { ...lcdPlate, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, alignItems: "center", backgroundColor: "#efeeea", gap: 4 },
   limitChipValue: { color: LCD_INK, fontSize: 14 },
   limitChipLabel: { color: DIM, fontSize: 6, letterSpacing: 0.5 },
   limitTrack: { height: 14, borderRadius: 7, backgroundColor: "#CFCFC9", marginTop: 16, overflow: "hidden", borderWidth: 1, borderColor: LCD_EDGE },
@@ -364,10 +364,10 @@ const s = StyleSheet.create({
   optional: { fontSize: 7, color: DIM },
   inputWrap: { ...lcdPlate, borderRadius: 14, marginBottom: 16 },
   input: { paddingHorizontal: 16, paddingVertical: 16, fontSize: 22, lineHeight: 28 },
-  messageWrap: { ...lcdPlate, backgroundColor: "#E4E3DF", borderRadius: 14, marginBottom: 14 },
+  messageWrap: { ...lcdPlate, backgroundColor: "#efeeea", borderRadius: 14, marginBottom: 14 },
   messageInput: { padding: 16, fontSize: 15, minHeight: 86, textAlignVertical: "top" },
 
-  err: { color: "#C25A37", fontSize: 13, marginBottom: 10 },
+  err: { color: "#fd4600", fontSize: 13, marginBottom: 10 },
 
   // ── CTA ──
   mainCta: {
@@ -408,7 +408,7 @@ const s = StyleSheet.create({
   historyMeta: { fontSize: 12, marginTop: 4 },
   historyStatus: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 6, borderWidth: 1 },
   statusClaimed: { backgroundColor: "#DCEFE6", borderColor: "rgba(95,174,146,0.4)" },
-  statusExpired: { backgroundColor: "#E4E3DF", borderColor: EDGE },
+  statusExpired: { backgroundColor: "#efeeea", borderColor: EDGE },
   statusPending: { backgroundColor: "#F6E2D2", borderColor: "rgba(217,138,78,0.4)" },
   historyStatusText: { fontSize: 7, letterSpacing: 0.5 },
 })

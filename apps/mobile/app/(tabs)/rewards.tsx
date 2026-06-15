@@ -6,14 +6,14 @@ import { trpc } from "../../src/lib/trpc"
 import { fonts, useTheme } from "../../src/lib/theme"
 
 // ── Device (Teenage-Engineering) tokens ──
-const ORANGE = "#f2a66e"
-const ORANGE_EDGE = "#D98A4E"
-const INK = "#33322D"
+const ORANGE = "#fd4600"
+const ORANGE_EDGE = "#c83700"
+const INK = "#015634"
 const DIM = "#8C887E"
-const CREAM = "#EDEDEB"
+const CREAM = "#efeeea"
 const LCD = "#DBDBD7"
 const LCD_EDGE = "#C4C4BE"
-const LCD_INK = "#3A3F42"
+const LCD_INK = "#015634"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 
@@ -197,7 +197,7 @@ const s = StyleSheet.create({
   filters: { flexDirection: "row", gap: 10, marginBottom: 18 },
   pill: { paddingHorizontal: 14, paddingVertical: 11, borderRadius: 12, borderWidth: 1 },
   pillActive: { backgroundColor: CREAM, borderColor: EDGE, borderBottomWidth: 3, borderBottomColor: ORANGE },
-  pillIdle: { backgroundColor: "#E4E3DF", borderColor: "rgba(110,102,86,0.1)" },
+  pillIdle: { backgroundColor: "#efeeea", borderColor: "rgba(110,102,86,0.1)" },
   keyPressed: { transform: [{ translateY: 2 }] },
   pillText: { fontSize: 9, letterSpacing: 0.5 },
 
@@ -207,7 +207,7 @@ const s = StyleSheet.create({
   rewardPressable: { width: "48%" },
   rewardCard: { ...clayCard, padding: 14, minHeight: 184, borderRadius: 20 },
   rewardCardFeatured: { borderBottomColor: ORANGE },
-  rewardLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  rewardLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   rewardLogoText: { fontSize: 16, fontWeight: "900", color: "#8C887E" },
   rewardTitle: { fontSize: 19, lineHeight: 22, marginBottom: 7 },
   rewardVenue: { fontSize: 12, marginBottom: 4 },

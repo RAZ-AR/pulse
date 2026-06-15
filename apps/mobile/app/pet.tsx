@@ -82,7 +82,7 @@ export default function PetScreen() {
                 {fmt(p.threshold)} баллов
               </Text>
             </View>
-            <Text style={[s.rowState, { fontFamily: fonts.bodyBold, color: unlocked ? "#57B286" : theme.textMuted }]}>
+            <Text style={[s.rowState, { fontFamily: fonts.bodyBold, color: unlocked ? "#015634" : theme.textMuted }]}>
               {unlocked ? "✓" : "🔒"}
             </Text>
           </View>

@@ -23,8 +23,8 @@ export function PlusKey({ size = 92 }: { size?: number }) {
         </LinearGradient>
       </Defs>
       {/* soft rounded underside (same hue, darker) */}
-      <Rect x={6} y={29 + DROP} width={84} height={T} rx={R} fill="#5FAE92" />
-      <Rect x={29} y={6 + DROP} width={T} height={84} rx={R} fill="#5FAE92" />
+      <Rect x={6} y={29 + DROP} width={84} height={T} rx={R} fill="#015634" />
+      <Rect x={29} y={6 + DROP} width={T} height={84} rx={R} fill="#015634" />
       {/* puffy face */}
       <Rect x={6} y={29} width={84} height={T} rx={R} fill="url(#plusFace)" />
       <Rect x={29} y={6} width={T} height={84} rx={R} fill="url(#plusFace)" />

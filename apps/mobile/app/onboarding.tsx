@@ -261,8 +261,8 @@ function EmailOnboarding() {
 // parent supplies flags + onFinish (TG: completeOnboarding, web: signup).
 const HATCH_GOAL = 500
 const HATCHLING = PET_SPRITES.HATCHLING!
-const GREEN = "#4FB286"
-const GREEN_EDGE = "#3E8E6E"
+const GREEN = "#015634"
+const GREEN_EDGE = "#013d24"
 
 type OnboardData = { name: string; consent: boolean; region: "Belgrade" | "Novi Sad"; referral: string }
 
@@ -402,7 +402,7 @@ function LangChips({ value, onChange }: { value: string; onChange: (lng: Support
     <View style={d.langChips}>
       {(["en", "ru", "sr"] as SupportedLocale[]).map((lng) => (
         <Pressable key={lng} onPress={() => onChange(lng)} hitSlop={6}>
-          <Text style={[d.langChip, { fontFamily: fonts.pixel, color: cur === lng ? "#33322D" : "#B8B4AA" }]}>
+          <Text style={[d.langChip, { fontFamily: fonts.pixel, color: cur === lng ? "#015634" : "#B8B4AA" }]}>
             {lng.toUpperCase()}
           </Text>
         </Pressable>
@@ -416,9 +416,9 @@ const d = StyleSheet.create({
   bigTitle: { fontSize: 34, lineHeight: 38, marginBottom: 6 },
   subtitle: { fontSize: 13, lineHeight: 18 },
 
-  pageBg: { flex: 1, backgroundColor: "#EDEDEB" },
+  pageBg: { flex: 1, backgroundColor: "#efeeea" },
   page: { padding: 18, paddingTop: 48, paddingBottom: 60, flexGrow: 1, justifyContent: "center" },
-  petCaption: { fontSize: 11, letterSpacing: 1, color: "#3E8E6E", marginTop: 6 },
+  petCaption: { fontSize: 11, letterSpacing: 1, color: "#013d24", marginTop: 6 },
   input: {
     backgroundColor: "#DBDBD7",
     borderRadius: 12,
@@ -429,10 +429,10 @@ const d = StyleSheet.create({
     fontSize: 15,
   },
   regionRow: { flexDirection: "row", gap: 10 },
-  regionChip: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center", backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  regionChip: { flex: 1, borderRadius: 12, paddingVertical: 12, alignItems: "center", backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   regionChipOn: { backgroundColor: GREEN, borderColor: GREEN_EDGE },
   regionText: { fontSize: 11, letterSpacing: 1 },
-  error: { fontSize: 8, lineHeight: 12, color: "#C25A37", textAlign: "center" },
+  error: { fontSize: 8, lineHeight: 12, color: "#fd4600", textAlign: "center" },
   langChips: { flexDirection: "row", gap: 6, marginRight: 2 },
   langChip: { fontSize: 9, letterSpacing: 0.5 },
 })

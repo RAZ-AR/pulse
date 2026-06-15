@@ -9,12 +9,12 @@ import { uploadCheckinImage } from "../src/lib/storage"
 import { fonts, useTheme } from "../src/lib/theme"
 
 // ── Device (Teenage-Engineering) tokens ──
-const ORANGE = "#f2a66e"
-const ORANGE_EDGE = "#D98A4E"
-const GREEN = "#3E8E6E"
-const INK = "#33322D"
+const ORANGE = "#fd4600"
+const ORANGE_EDGE = "#c83700"
+const GREEN = "#013d24"
+const INK = "#015634"
 const DIM = "#8C887E"
-const CREAM = "#EDEDEB"
+const CREAM = "#efeeea"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 

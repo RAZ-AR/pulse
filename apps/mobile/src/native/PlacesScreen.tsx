@@ -6,7 +6,7 @@ import { fonts, useTheme } from "../lib/theme"
 import { resolveCity, CITY_OPTIONS } from "../lib/venues"
 import MapScreen from "./MapScreen"
 
-const ORANGE = "#f2a66e"
+const ORANGE = "#fd4600"
 
 type Cat = "CAFE" | "RESTAURANT" | "BEAUTY" | "FITNESS" | "YOGA" | "RETAIL"
 const CATS: { key: Cat; label: string }[] = [
@@ -188,5 +188,5 @@ const s = StyleSheet.create({
   badgeText: { fontSize: 10, color: "#B5651D" },
   empty: { textAlign: "center", marginTop: 40, fontSize: 14 },
   viewToggle: { position: "absolute", alignSelf: "center", backgroundColor: "#fff", borderRadius: 99, paddingHorizontal: 20, paddingVertical: 12, shadowColor: "#9A958A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
-  viewToggleText: { fontSize: 14, color: "#33322D" },
+  viewToggleText: { fontSize: 14, color: "#015634" },
 })

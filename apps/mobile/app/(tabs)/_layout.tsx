@@ -22,7 +22,7 @@ const IND_W    = Math.min(96, SLOT_W - 10)
 const IND_H    = 44
 const IND_TOP  = (DOCK_H - IND_H) / 2
 
-const ORANGE = "#f2a66e"
+const ORANGE = "#fd4600"
 const DARK = "#55534D"   // inactive dock icons — dark grey
 
 // ── Chunky filled "puffy" icon set ────────────────────────────
@@ -302,7 +302,7 @@ const s = StyleSheet.create({
 
   shellGlass: {
     // Volumetric clay pill — light top, extruded bottom edge, soft shadow
-    backgroundColor: "#EDEDEB",
+    backgroundColor: "#efeeea",
     borderTopWidth: 1.5,
     borderLeftWidth: 1.5,
     borderRightWidth: 1.5,
@@ -410,7 +410,7 @@ const s = StyleSheet.create({
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EDEDEB",
+    backgroundColor: "#efeeea",
     borderTopWidth: 1.5,
     borderLeftWidth: 1.5,
     borderRightWidth: 1.5,

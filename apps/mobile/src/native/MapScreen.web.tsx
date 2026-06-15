@@ -254,7 +254,7 @@ const s = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.8,
   },
-  title: { color: "#33322D", fontSize: 38, lineHeight: 42 },
+  title: { color: "#015634", fontSize: 38, lineHeight: 42 },
   citySwitch: { gap: 8, alignItems: "flex-end" },
   locationPill: { minHeight: 38, borderRadius: 99, paddingHorizontal: 14, justifyContent: "center" },
   locationPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },

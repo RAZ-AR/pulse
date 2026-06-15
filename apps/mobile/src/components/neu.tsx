@@ -397,7 +397,7 @@ function PillLabel({ label }: { label: string }) {
   return (
     <Text
       style={{
-        color: "#33322D",
+        color: "#015634",
         fontSize: 10,
         fontWeight: "800",
         letterSpacing: 0.5,
@@ -421,7 +421,7 @@ const s = StyleSheet.create({
   },
   lavaRoot: {
     overflow: "hidden",
-    backgroundColor: "#EDEDEB",
+    backgroundColor: "#efeeea",
   },
   lavaBlob: {
     position: "absolute",

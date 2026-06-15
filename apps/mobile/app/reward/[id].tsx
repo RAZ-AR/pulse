@@ -7,15 +7,15 @@ import { trpc } from "../../src/lib/trpc"
 import { fonts, useTheme } from "../../src/lib/theme"
 
 // ── Device (Teenage-Engineering) tokens ──
-const ORANGE = "#f2a66e"
-const ORANGE_EDGE = "#D98A4E"
-const GREEN = "#3E8E6E"
-const INK = "#33322D"
+const ORANGE = "#fd4600"
+const ORANGE_EDGE = "#c83700"
+const GREEN = "#013d24"
+const INK = "#015634"
 const DIM = "#8C887E"
-const CREAM = "#EDEDEB"
+const CREAM = "#efeeea"
 const LCD = "#DBDBD7"
 const LCD_EDGE = "#C4C4BE"
-const LCD_INK = "#3A3F42"
+const LCD_INK = "#015634"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 
@@ -155,7 +155,7 @@ const s = StyleSheet.create({
     shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
   btnPrimary: { backgroundColor: ORANGE, borderBottomColor: ORANGE_EDGE, borderTopColor: "rgba(255,255,255,0.5)" },
-  btnDisabled: { backgroundColor: "#E4E3DF" },
+  btnDisabled: { backgroundColor: "#efeeea" },
   keyPressed: { borderBottomWidth: 2, transform: [{ translateY: 3 }] },
   cta: { fontSize: 16 },
   ctaDisabled: { fontSize: 14 },

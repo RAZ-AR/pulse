@@ -180,7 +180,7 @@ const EARN_METHOD_RAINBOW: Record<string, readonly [string, string]> = {
   cyan:   ["#00F5FF", "#2B6EFF"],
   black:  ["#FF2D9B", "#8B3DFF"],
   white:  ["#8B3DFF", "#2B6EFF"],
-  purple: ["#FF5500", "#8B3DFF"],
+  purple: ["#fd4600", "#8B3DFF"],
 }
 
 function EarnMethod({
@@ -274,7 +274,7 @@ const s = StyleSheet.create({
   blackLogoText: { color: "#75736A", fontWeight: "900" },
   blackPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
   blackPillText: { color: "#75736A", fontSize: 12 },
-  heroTitle: { color: "#33322D", fontSize: 31, lineHeight: 34, width: 250 },
+  heroTitle: { color: "#015634", fontSize: 31, lineHeight: 34, width: 250 },
   heroSub: { color: "#75736A", fontSize: 13, marginTop: 10 },
   methods: { gap: 10, marginBottom: 24 },
   methodCard: { borderRadius: 32, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3 },

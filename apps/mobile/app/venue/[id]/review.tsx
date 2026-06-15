@@ -171,7 +171,7 @@ const s = StyleSheet.create({
   charCount: { fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 16 },
   reward: { fontSize: 13, marginBottom: 12, textAlign: "center", lineHeight: 18 },
   awardBanner: { backgroundColor: "#EBF6EE", borderRadius: 16, paddingVertical: 12, alignItems: "center", marginBottom: 12 },
-  awardText: { color: "#57B286", fontWeight: "800", fontSize: 16 },
+  awardText: { color: "#015634", fontWeight: "800", fontSize: 16 },
   err: { color: "#DC2626", fontSize: 13, marginBottom: 8 },
   btn: { padding: 14, borderRadius: 99, alignItems: "center", marginTop: 8 },
   btnGhost: { backgroundColor: "transparent", borderWidth: 1, marginTop: 12 },

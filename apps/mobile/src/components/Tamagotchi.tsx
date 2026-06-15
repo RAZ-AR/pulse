@@ -224,5 +224,5 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: LCD.ink,
   },
-  captionFlash: { color: "#f2a66e" },
+  captionFlash: { color: "#fd4600" },
 })

@@ -49,7 +49,7 @@ function getAvatarColor(avatarUrl: string | null | undefined): string | null {
 }
 
 function userTier(points: number) {
-  if (points <= 1000) return { name: "Росток", kind: "sprout", next: 1000, start: 0, colors: ["#ECFFEB", "#9FEED3", "#FFFFFF"] as const }
+  if (points <= 1000) return { name: "Росток", kind: "sprout", next: 1000, start: 0, colors: ["#ECFFEB", "#015634", "#FFFFFF"] as const }
   if (points <= 3000) return { name: "Цветок", kind: "flower", next: 3000, start: 1001, colors: ["#FFF4FE", "#F199E3", "#FFFFFF"] as const }
   if (points <= 5000) return { name: "Гранат", kind: "pomegranate", next: 5000, start: 3001, colors: ["#FFF4FE", "#FF8B8B", "#FFFFFF"] as const }
   if (points <= 7000) return { name: "Рубин", kind: "ruby", next: 7000, start: 5001, colors: ["#FFFFFF", "#F199E3", "#9DCCFF"] as const }
@@ -133,18 +133,18 @@ export default function HomeScreen() {
     { key: "scan",   symbol: "⌁", label: "SCAN",   color: "#3B82F6", onPress: () => router.push("/scan") },
     { key: "check",  symbol: "✓", label: "CHECK",  color: "#14B8A6", onPress: () => router.push("/checkin") },
     { key: "map",    symbol: "⌖", label: "MAP",    color: "#EC4899", onPress: () => router.push("/map") },
-    { key: "earn",   symbol: "+", label: "EARN",   color: "#4FB286", edge: "#3E8E6E", solid: true, onPress: () => setDeviceMode("earn") },
-    { key: "send",   symbol: "−", label: "SEND",   color: "#F2A66E", edge: "#D98A4E", solid: true, onPress: () => setDeviceMode("spend") },
+    { key: "earn",   symbol: "+", label: "EARN",   color: "#015634", edge: "#013d24", solid: true, onPress: () => setDeviceMode("earn") },
+    { key: "send",   symbol: "−", label: "SEND",   color: "#fd4600", edge: "#c83700", solid: true, onPress: () => setDeviceMode("spend") },
     { key: "reward", symbol: "✦", label: "REWARD", color: "#8B5CF6", onPress: () => router.push("/rewards") },
   ]
   const earnPads = [
-    { key: "scan",  symbol: "⌁", label: "SCAN",  color: "#4FB286", edge: "#3E8E6E", solid: true, onPress: () => router.push("/scan") },
+    { key: "scan",  symbol: "⌁", label: "SCAN",  color: "#015634", edge: "#013d24", solid: true, onPress: () => router.push("/scan") },
     { key: "check", symbol: "✓", label: "CHECK", color: "#14B8A6", onPress: () => router.push("/checkin") },
     { key: "hist",  symbol: "≡", label: "LOG",   color: "#8C887E", onPress: () => router.push("/points-history") },
   ]
   const spendPads = [
     { key: "reward", symbol: "✦", label: "REWARD", color: "#8B5CF6", onPress: () => router.push("/rewards") },
-    { key: "gift",   symbol: "♡", label: "GIFT",   color: "#F2A66E", edge: "#D98A4E", solid: true, onPress: () => router.push("/gift") },
+    { key: "gift",   symbol: "♡", label: "GIFT",   color: "#fd4600", edge: "#c83700", solid: true, onPress: () => router.push("/gift") },
     { key: "hist",   symbol: "≡", label: "LOG",    color: "#8C887E", onPress: () => router.push("/points-history") },
   ]
   const modePads = deviceMode === "home" ? homePads : deviceMode === "earn" ? earnPads : spendPads
@@ -360,8 +360,8 @@ export default function HomeScreen() {
 // ── EARN mode panel — live earn stats on the device LCD ──
 function EarnPanel({ total, weekly, today }: { total: number; weekly: number; today: number }) {
   return (
-    <LcdScreen accent="#4FB286">
-      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#3E8E6E" }]}>EARN</Text>
+    <LcdScreen accent="#015634">
+      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#013d24" }]}>EARN</Text>
       <Text style={[s.modeBig, { fontFamily: fonts.pixel }]}>{total.toLocaleString()}</Text>
       <View style={s.modeStatsRow}>
         <View style={s.modeStat}>
@@ -395,8 +395,8 @@ function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: 
 
   if (redemption) {
     return (
-      <LcdScreen accent="#F2A66E">
-        <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#D98A4E" }]}>SHOW TO CASHIER</Text>
+      <LcdScreen accent="#fd4600">
+        <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#c83700" }]}>SHOW TO CASHIER</Text>
         <View style={s.qrBox}>
           <QRCode value={redemption.code} size={132} backgroundColor="#FFFFFF" color="#1F2937" />
         </View>
@@ -407,8 +407,8 @@ function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: 
   }
 
   return (
-    <LcdScreen accent="#F2A66E">
-      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#D98A4E" }]}>SPEND · {available.toLocaleString()}</Text>
+    <LcdScreen accent="#fd4600">
+      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#c83700" }]}>SPEND · {available.toLocaleString()}</Text>
       {err ? <Text style={[s.modeErr, { fontFamily: fonts.pixel }]} numberOfLines={2}>{err}</Text> : null}
       <ScrollView style={s.rewardScroll} contentContainerStyle={s.rewardScrollInner} showsVerticalScrollIndicator={false}>
         {rewards.length === 0 ? (
@@ -495,7 +495,7 @@ function SectionHeader({ title, action, onPress }: { title: string; action: stri
     <View style={s.sectionHead}>
       <View style={s.sectionTitleRow}>
         <Text style={[s.sectionMark, { fontFamily: fonts.pixel }]}>▸</Text>
-        <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: "#33322D", textTransform: "uppercase", letterSpacing: 0.6 }]}>{title}</Text>
+        <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: "#015634", textTransform: "uppercase", letterSpacing: 0.6 }]}>{title}</Text>
       </View>
       <Pressable onPress={onPress} style={s.sectionButton}>
         <Text style={[s.sectionButtonText, { fontFamily: fonts.pixel, fontSize: 8, color: "#75736A" }]}>{action}</Text>
@@ -532,7 +532,7 @@ function OfferCard({
             {points} {pointsLabel.toUpperCase()}
           </Text>
         </View>
-        <Text style={[s.offerTitle, { color: "#33322D", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
+        <Text style={[s.offerTitle, { color: "#015634", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
         <Text style={[s.offerVenue, { color: "#8C887E", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
         <View style={s.offerLink}>
           <Text style={[s.offerLinkText, { color: "#75736A", fontFamily: fonts.pixel }]}>{openLabel.toUpperCase()} ↗</Text>
@@ -648,13 +648,13 @@ const s = StyleSheet.create({
     shadowRadius: 6,
   },
   modeTitle: { fontSize: 11, letterSpacing: 1 },
-  modeBig: { fontSize: 30, color: "#3A3F42", marginTop: 6 },
+  modeBig: { fontSize: 30, color: "#015634", marginTop: 6 },
   modeHint: { fontSize: 8, lineHeight: 14, color: "#8C887E", textAlign: "center", marginTop: 8 },
   modeStatsRow: { flexDirection: "row", gap: 28, marginTop: 6 },
   modeStat: { alignItems: "center", gap: 3 },
-  modeStatVal: { fontSize: 11, color: "#3E8E6E" },
+  modeStatVal: { fontSize: 11, color: "#013d24" },
   modeStatLab: { fontSize: 6, color: "#8C887E", letterSpacing: 0.5 },
-  modeErr: { fontSize: 7, lineHeight: 11, color: "#C25A37", textAlign: "center", marginTop: 4 },
+  modeErr: { fontSize: 7, lineHeight: 11, color: "#fd4600", textAlign: "center", marginTop: 4 },
   qrBox: { backgroundColor: "#FFFFFF", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#C4C4BE" },
   qrCode: { fontSize: 7, color: "#8C887E", letterSpacing: 0.5, marginTop: 2 },
   rewardScroll: { width: "100%", maxHeight: 150, marginTop: 6 },
@@ -663,7 +663,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#E4E3DF",
+    backgroundColor: "#efeeea",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "rgba(110,102,86,0.14)",
@@ -675,12 +675,12 @@ const s = StyleSheet.create({
   },
   rewardRowOff: { opacity: 0.4 },
   rewardRowPressed: { borderBottomWidth: 1, transform: [{ translateY: 2 }] },
-  rewardRowName: { fontSize: 12, color: "#33322D", flex: 1 },
-  rewardRowCost: { fontSize: 10, color: "#D98A4E" },
+  rewardRowName: { fontSize: 12, color: "#015634", flex: 1 },
+  rewardRowCost: { fontSize: 10, color: "#c83700" },
   backBar: {
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#E4E3DF",
+    backgroundColor: "#efeeea",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -711,8 +711,8 @@ const s = StyleSheet.create({
 
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  sectionMark: { fontSize: 9, color: "#f2a66e" },
-  sectionTitle: { color: "#33322D", fontSize: 21, letterSpacing: 0 },
+  sectionMark: { fontSize: 9, color: "#fd4600" },
+  sectionTitle: { color: "#015634", fontSize: 21, letterSpacing: 0 },
   sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   sectionButtonText: { color: "#75736A", fontSize: 11 },
 
@@ -731,27 +731,27 @@ const s = StyleSheet.create({
 
   filterRail: { gap: 8, paddingBottom: 12 },
   filterChip: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1 },
-  filterChipActive: { backgroundColor: "#EDEDEB", borderColor: "rgba(110,102,86,0.18)", borderBottomWidth: 3, borderBottomColor: "rgba(242,166,110,0.55)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 2 },
-  filterChipIdle: { backgroundColor: "#E4E3DF", borderColor: "rgba(110,102,86,0.10)" },
+  filterChipActive: { backgroundColor: "#efeeea", borderColor: "rgba(110,102,86,0.18)", borderBottomWidth: 3, borderBottomColor: "rgba(242,166,110,0.55)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 2 },
+  filterChipIdle: { backgroundColor: "#efeeea", borderColor: "rgba(110,102,86,0.10)" },
   filterChipText: { fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
 
-  partnerOfferCard: { width: 140, backgroundColor: "#EDEDEB", borderRadius: 18, padding: 14, gap: 6, borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)" },
+  partnerOfferCard: { width: 140, backgroundColor: "#efeeea", borderRadius: 18, padding: 14, gap: 6, borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)" },
   partnerOfferPtsBox: { backgroundColor: "#DBDBD7", borderWidth: 1, borderColor: "#C4C4BE", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", flexDirection: "row", alignItems: "baseline", gap: 2 },
   partnerOfferPts: { fontSize: 18, lineHeight: 20 },
   partnerOfferPtsLabel: { fontSize: 10 },
   partnerOfferTitle: { fontSize: 13, lineHeight: 17 },
   partnerOfferVenue: { fontSize: 11 },
   offerPressable: { width: 176 },
-  offerCard: { minHeight: 174, borderRadius: 24, padding: 14, overflow: "hidden", backgroundColor: "#EDEDEB", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 5, borderBottomColor: "rgba(110,102,86,0.18)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 4 },
+  offerCard: { minHeight: 174, borderRadius: 24, padding: 14, overflow: "hidden", backgroundColor: "#efeeea", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 5, borderBottomColor: "rgba(110,102,86,0.18)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 4 },
   offerCardFeatured: { borderBottomColor: "rgba(242,166,110,0.5)" },
   offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  offerLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  offerLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   offerLogoText: { fontSize: 16, fontWeight: "900" },
-  offerPoints: { backgroundColor: "#DBDBD7", color: "#3A3F42", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, letterSpacing: 0.5 },
+  offerPoints: { backgroundColor: "#DBDBD7", color: "#015634", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, letterSpacing: 0.5 },
   offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
   offerVenue: { fontSize: 12, marginTop: 8 },
-  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   offerLinkText: { fontSize: 8, letterSpacing: 0.5 },
 
   venueList: { gap: 12 },
@@ -764,23 +764,23 @@ const s = StyleSheet.create({
   skeletonLine: { height: 10, borderRadius: 5, backgroundColor: "rgba(225,230,239,0.48)", width: "54%" },
   skeletonChips: { flexDirection: "row", gap: 6 },
   skeletonChip: { width: 72, height: 24, borderRadius: 12, backgroundColor: "rgba(225,230,239,0.64)" },
-  venueCard: { backgroundColor: "#EDEDEB", borderRadius: 20, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 3 },
-  venueLogo: { width: 56, height: 56, borderRadius: 16, backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)", alignItems: "center", justifyContent: "center" },
+  venueCard: { backgroundColor: "#efeeea", borderRadius: 20, padding: 12, flexDirection: "row", gap: 12, overflow: "hidden", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 3 },
+  venueLogo: { width: 56, height: 56, borderRadius: 16, backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)", alignItems: "center", justifyContent: "center" },
   venueLogoText: { color: "#75736A", fontSize: 22 },
   venueMain: { flex: 1 },
   venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  venueName: { color: "#33322D", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
+  venueName: { color: "#015634", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
   venueArrow: { color: "#75736A", fontSize: 22 },
   venueMeta: { color: "#8C887E", fontSize: 8, marginTop: 4, letterSpacing: 0.4 },
   venueAddress: { color: "#C9C4B4", fontSize: 12, marginTop: 2 },
   venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginTop: 10 },
   venueChipDark: { backgroundColor: "#DBDBD7", borderRadius: 7, borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 8, paddingVertical: 6 },
-  venueChipDarkText: { color: "#3A3F42", fontSize: 7, letterSpacing: 0.3 },
-  venueChipLight: { backgroundColor: "#E4E3DF", borderRadius: 7, borderWidth: 1, borderColor: "rgba(110,102,86,0.12)", paddingHorizontal: 8, paddingVertical: 6 },
+  venueChipDarkText: { color: "#015634", fontSize: 7, letterSpacing: 0.3 },
+  venueChipLight: { backgroundColor: "#efeeea", borderRadius: 7, borderWidth: 1, borderColor: "rgba(110,102,86,0.12)", paddingHorizontal: 8, paddingVertical: 6 },
   venueChipLightText: { color: "#75736A", fontSize: 7, letterSpacing: 0.3 },
   venueChipMint: { backgroundColor: "#DCEFE6", borderRadius: 7, borderWidth: 1, borderColor: "rgba(95,174,146,0.4)", paddingHorizontal: 8, paddingVertical: 6 },
-  venueChipMintText: { color: "#3E8E5E", fontSize: 7, letterSpacing: 0.3 },
+  venueChipMintText: { color: "#013d24", fontSize: 7, letterSpacing: 0.3 },
   specialLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 8 },
-  specialDot: { color: "#9FEED3", fontSize: 10 },
+  specialDot: { color: "#015634", fontSize: 10 },
   specialText: { color: "#75736A", fontSize: 12, flex: 1 },
 })

@@ -407,7 +407,7 @@ const s = StyleSheet.create({
   sourceText: { fontSize: 10, flexShrink: 1, textAlign: "right" },
   body: { fontSize: 14, lineHeight: 20 },
   offerRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(236,255,235,0.62)", borderRadius: 16, paddingHorizontal: 10, paddingVertical: 9 },
-  offerDot: { color: "#9FEED3", fontSize: 10 },
+  offerDot: { color: "#015634", fontSize: 10 },
   offerText: { color: "#75736A", fontSize: 12, flex: 1 },
 
   partnerOfferRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(139,61,255,0.06)", borderRadius: 18, paddingHorizontal: 14, paddingVertical: 11 },

@@ -6,14 +6,14 @@ import { trpc } from "../src/lib/trpc"
 import { fonts, useTheme } from "../src/lib/theme"
 
 // ── Device (Teenage-Engineering) tokens ──
-const ORANGE_EDGE = "#D98A4E"
-const GREEN = "#3E8E6E"
-const INK = "#33322D"
+const ORANGE_EDGE = "#c83700"
+const GREEN = "#013d24"
+const INK = "#015634"
 const DIM = "#8C887E"
-const CREAM = "#EDEDEB"
+const CREAM = "#efeeea"
 const LCD = "#DBDBD7"
 const LCD_EDGE = "#C4C4BE"
-const LCD_INK = "#3A3F42"
+const LCD_INK = "#015634"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 
@@ -169,8 +169,8 @@ const s = StyleSheet.create({
 
   filters: { flexDirection: "row", gap: 8, marginBottom: 12 },
   filterChip: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  filterChipActive: { backgroundColor: CREAM, borderColor: EDGE, borderBottomWidth: 3, borderBottomColor: "#f2a66e" },
-  filterChipIdle: { backgroundColor: "#E4E3DF", borderColor: "rgba(110,102,86,0.1)" },
+  filterChipActive: { backgroundColor: CREAM, borderColor: EDGE, borderBottomWidth: 3, borderBottomColor: "#fd4600" },
+  filterChipIdle: { backgroundColor: "#efeeea", borderColor: "rgba(110,102,86,0.1)" },
   filterText: { fontSize: 8, letterSpacing: 0.5 },
 
   emptyCard: {

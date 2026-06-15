@@ -14,7 +14,7 @@ type MainTab = "venues" | "players"
 
 const PODIUM_GRADS = [gradients.gold, ["#E8E8E8", "#C0C0C0"] as const, ["#F5C7A0", "#CD7F32"] as const]
 const PODIUM_RAINBOW = [
-  ["#FFB800", "#FF5500"] as const,
+  ["#FFB800", "#fd4600"] as const,
   ["#8B8B8B", "#555555"] as const,
   ["#CD7F32", "#A0522D"] as const,
 ]
