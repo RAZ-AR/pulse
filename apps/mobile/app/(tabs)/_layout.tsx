@@ -88,9 +88,9 @@ function IconGift({ color }: { color: string }) {
 
 // ── Dock contents ─────────────────────────────────────────────
 const DOCK_TABS = [
-  { name: "index",   label: "Home",    Icon: IconHome },
-  { name: "rewards", label: "Rewards", Icon: IconRewards },
-  { name: "map",     label: "Map",     Icon: IconMap },
+  { name: "index",   label: "HOME",    Icon: IconHome },
+  { name: "rewards", label: "REWARDS", Icon: IconRewards },
+  { name: "map",     label: "MAP",     Icon: IconMap },
 ] as const
 
 // All tab routes (order = navigator order; earn/profile have no dock slot)
@@ -207,7 +207,7 @@ function LiquidDock({ state, navigation }: BottomTabBarProps) {
               >
                 <tab.Icon color={isFocused ? ORANGE : DARK} />
                 {isFocused ? (
-                  <Text style={[s.label, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>
+                  <Text style={[s.label, { fontFamily: fonts.pixel }]} numberOfLines={1}>
                     {tab.label}
                   </Text>
                 ) : null}
@@ -358,8 +358,8 @@ const s = StyleSheet.create({
   },
 
   label: {
-    fontSize:      12,
-    letterSpacing: -0.3,
+    fontSize:      8,
+    letterSpacing: 0,
     color: ORANGE,
   },
 

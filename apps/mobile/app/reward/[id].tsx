@@ -4,14 +4,23 @@ import { useTranslation } from "react-i18next"
 import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import QRCode from "react-native-qrcode-svg"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, gradients, neonColors, useTheme } from "../../src/lib/theme"
-import { useColorMode } from "../../src/store/colorMode"
-import { NeuCard, VolumeGradient } from "../../src/components/neu"
+import { fonts, useTheme } from "../../src/lib/theme"
+
+// ── Device (Teenage-Engineering) tokens ──
+const ORANGE = "#f2a66e"
+const ORANGE_EDGE = "#D98A4E"
+const GREEN = "#3E8E6E"
+const INK = "#33322D"
+const DIM = "#8C887E"
+const CREAM = "#EDEDEB"
+const LCD = "#DBDBD7"
+const LCD_EDGE = "#C4C4BE"
+const LCD_INK = "#3A3F42"
+const EDGE = "rgba(110,102,86,0.18)"
+const HILITE = "rgba(255,255,255,0.95)"
 
 export default function RewardDetailScreen() {
   const theme = useTheme()
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const { t } = useTranslation("rewards")
   const router = useRouter()
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -55,107 +64,59 @@ export default function RewardDetailScreen() {
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
         {redemption ? (
           <View style={{ alignItems: "center" }}>
-            <Text style={[s.successTitle, { color: isRainbow ? neonColors.green : theme.text, fontFamily: fonts.displayHeavy }]}>
-              {t("redeemSuccess", "Reward redeemed!")}
-            </Text>
-            <Text style={[s.successDesc, { color: theme.textSecondary }]}>
-              {t("redeemSuccessDescription", "Show this code to the cashier")}
-            </Text>
-            <NeuCard style={[s.qrBox, { backgroundColor: "#FFFFFF" }]}>
-              <QRCode value={redemption.code} size={220} backgroundColor="#FFFFFF" />
-            </NeuCard>
-            <Text style={[s.code, { color: isRainbow ? neonColors.purple : theme.text, fontFamily: fonts.displayHeavy }]}>{redemption.code}</Text>
-            <Text style={[s.expiry, { color: theme.textSecondary }]}>
+            <Text style={[s.successTitle, { color: GREEN, fontFamily: fonts.displayHeavy }]}>{t("redeemSuccess", "Reward redeemed!")}</Text>
+            <Text style={[s.successDesc, { color: DIM }]}>{t("redeemSuccessDescription", "Show this code to the cashier")}</Text>
+            <View style={s.qrBox}>
+              <QRCode value={redemption.code} size={200} backgroundColor="#FFFFFF" color="#1F2937" />
+            </View>
+            <Text style={[s.code, { color: LCD_INK, fontFamily: fonts.pixel }]}>{redemption.code}</Text>
+            <Text style={[s.expiry, { color: DIM, fontFamily: fonts.pixel }]}>
               {t("codeExpiresIn", "Code expires in {{hours}}h", { hours: expiryHours })}
             </Text>
-            {isRainbow ? (
-              <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={99} style={{ padding: 16, alignItems: "center", width: "100%", marginTop: 12 }} onPress={() => router.back()}>
-                <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{t("common:done", "Done")}</Text>
-              </VolumeGradient>
-            ) : (
-              <NeuCard gradient={gradients.black} onPress={() => router.back()} style={{ padding: 16, alignItems: "center", width: "100%", marginTop: 12 }}>
-                <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("common:done", "Done")}</Text>
-              </NeuCard>
-            )}
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [s.btn, s.btnPrimary, pressed && s.keyPressed]}>
+              <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{t("common:done", "Done")}</Text>
+            </Pressable>
           </View>
         ) : (
           <>
-            <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{reward.title}</Text>
-            <Text style={[s.venue, { color: theme.textSecondary }]}>
-              {reward.venue.name} · {reward.venue.city}
-            </Text>
+            <Text style={[s.title, { color: INK, fontFamily: fonts.displayHeavy }]}>{reward.title}</Text>
+            <Text style={[s.venue, { color: DIM }]}>{reward.venue.name} · {reward.venue.city}</Text>
 
-            {isRainbow ? (
-              <VolumeGradient colors={["#8B3DFF", "#2B6EFF", "#00F5FF"]} shadowColor="#8B3DFF" shadowOpacity={0.35} borderRadius={32} style={[s.priceCard, { marginBottom: 16 }]}>
-                <Text style={[s.priceLabel, { fontFamily: fonts.bodyBold, color: "rgba(255,255,255,0.7)" }]}>
-                  {t("pointsCostLabel").toUpperCase()}
-                </Text>
-                <Text style={[s.priceValue, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{reward.pointsCost}</Text>
-                <Text style={[s.priceSub, { color: "rgba(255,255,255,0.65)" }]}>
-                  {t("yourBalance")}: {totalPoints}
-                </Text>
-              </VolumeGradient>
-            ) : (
-              <NeuCard gradient={gradients.black} style={s.priceCard}>
-                <View style={s.priceBlob} />
-                <Text style={[s.priceLabel, { fontFamily: fonts.bodyBold }]}>
-                  {t("pointsCostLabel").toUpperCase()}
-                </Text>
-                <Text style={[s.priceValue, { fontFamily: fonts.displayHeavy }]}>{reward.pointsCost}</Text>
-                <Text style={s.priceSub}>
-                  {t("yourBalance")}: {totalPoints}
-                </Text>
-              </NeuCard>
-            )}
+            {/* Price — recessed LCD plate */}
+            <View style={s.priceCard}>
+              <Text style={[s.priceLabel, { fontFamily: fonts.pixel }]}>{t("pointsCostLabel").toUpperCase()}</Text>
+              <Text style={[s.priceValue, { fontFamily: fonts.pixel }]}>{reward.pointsCost}</Text>
+              <Text style={[s.priceSub, { fontFamily: fonts.pixel }]}>{t("yourBalance").toUpperCase()}: {totalPoints}</Text>
+            </View>
 
             {reward.description ? (
-              <NeuCard style={{ padding: 16, marginBottom: 16 }}>
-                <Text style={[s.descText, { color: theme.text }]}>{reward.description}</Text>
-              </NeuCard>
+              <View style={s.descCard}>
+                <Text style={[s.descText, { color: INK }]}>{reward.description}</Text>
+              </View>
             ) : null}
 
             {stockLeft !== null ? (
-              <Text style={[s.stock, { color: theme.textSecondary }]}>
-                {stockLeft > 0
-                  ? t("stockLeft", { count: stockLeft })
-                  : t("outOfStock", "Out of stock")}
+              <Text style={[s.stock, { color: DIM, fontFamily: fonts.pixel }]}>
+                {stockLeft > 0 ? t("stockLeft", { count: stockLeft }) : t("outOfStock", "Out of stock")}
               </Text>
             ) : null}
 
             {canRedeem ? (
-              isRainbow ? (
-                <VolumeGradient
-                  colors={["#8B3DFF", "#FF2D9B"]}
-                  shadowColor="#8B3DFF"
-                  shadowOpacity={0.35}
-                  borderRadius={99}
-                  style={s.btnGrad}
-                  onPress={() => redeem.mutate({ rewardId: reward.id })}
-                >
-                  <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
-                    {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
-                  </Text>
-                </VolumeGradient>
-              ) : (
-                <NeuCard
-                  gradient={gradients.black}
-                  onPress={() => redeem.mutate({ rewardId: reward.id })}
-                  disabled={redeem.isPending}
-                  style={s.btnGrad}
-                >
-                  <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>
-                    {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
-                  </Text>
-                </NeuCard>
-              )
-            ) : (
-              <Pressable disabled style={[s.btnDisabled, { backgroundColor: theme.bg }, theme.shadowRaisedSm]}>
-                <Text style={[s.ctaDisabled, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                  {totalPoints < reward.pointsCost
-                    ? t("notEnoughPoints", "Not enough points")
-                    : t("unavailable")}
+              <Pressable
+                onPress={() => redeem.mutate({ rewardId: reward.id })}
+                disabled={redeem.isPending}
+                style={({ pressed }) => [s.btn, s.btnPrimary, pressed && s.keyPressed]}
+              >
+                <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>
+                  {redeem.isPending ? t("redeeming") : t("redeemFor", { points: reward.pointsCost })}
                 </Text>
               </Pressable>
+            ) : (
+              <View style={[s.btn, s.btnDisabled]}>
+                <Text style={[s.ctaDisabled, { color: DIM, fontFamily: fonts.bodyBold }]}>
+                  {totalPoints < reward.pointsCost ? t("notEnoughPoints", "Not enough points") : t("unavailable")}
+                </Text>
+              </View>
             )}
           </>
         )}
@@ -169,27 +130,39 @@ const s = StyleSheet.create({
   content: { padding: 18, paddingBottom: 40 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  title: { fontSize: 34, lineHeight: 38 },
+  title: { fontSize: 30, lineHeight: 34, color: INK },
   venue: { fontSize: 13, marginTop: 6, marginBottom: 18 },
 
-  priceCard: { padding: 20, alignItems: "center", marginBottom: 16, overflow: "hidden", borderRadius: 32 },
-  priceBlob: { position: "absolute", top: -40, right: -40, width: 150, height: 150, borderRadius: 75, borderWidth: 1, borderColor: "rgba(167,232,238,0.28)" },
-  priceLabel: { color: "#75736A", fontSize: 11, letterSpacing: 1.5 },
-  priceValue: { color: colors.ink, fontSize: 52, lineHeight: 56, marginTop: 4 },
-  priceSub: { color: "#75736A", fontSize: 12, marginTop: 4 },
+  priceCard: {
+    backgroundColor: LCD, borderWidth: 2, borderColor: LCD_EDGE,
+    padding: 22, alignItems: "center", marginBottom: 16, borderRadius: 16,
+  },
+  priceLabel: { color: DIM, fontSize: 7, letterSpacing: 0.5 },
+  priceValue: { color: LCD_INK, fontSize: 40, lineHeight: 46, marginTop: 8 },
+  priceSub: { color: DIM, fontSize: 7, marginTop: 8, letterSpacing: 0.5 },
 
+  descCard: {
+    backgroundColor: CREAM, borderRadius: 16, padding: 16, marginBottom: 16,
+    borderTopWidth: 1.5, borderTopColor: HILITE, borderBottomWidth: 4, borderBottomColor: EDGE,
+  },
   descText: { fontSize: 14, lineHeight: 20 },
 
-  stock: { fontSize: 12, marginBottom: 12 },
+  stock: { fontSize: 7, marginBottom: 12, letterSpacing: 0.5 },
 
-  btnGrad: { padding: 16, alignItems: "center", borderRadius: 99 },
-  btnDisabled: { padding: 16, borderRadius: 99, alignItems: "center" },
-  cta: { color: colors.ink, fontSize: 16 },
+  btn: {
+    padding: 16, alignItems: "center", borderRadius: 16, width: "100%", marginTop: 12,
+    borderTopWidth: 1.5, borderTopColor: HILITE, borderBottomWidth: 5, borderBottomColor: EDGE,
+    shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
+  },
+  btnPrimary: { backgroundColor: ORANGE, borderBottomColor: ORANGE_EDGE, borderTopColor: "rgba(255,255,255,0.5)" },
+  btnDisabled: { backgroundColor: "#E4E3DF" },
+  keyPressed: { borderBottomWidth: 2, transform: [{ translateY: 3 }] },
+  cta: { fontSize: 16 },
   ctaDisabled: { fontSize: 14 },
 
   successTitle: { fontSize: 22 },
   successDesc: { fontSize: 13, marginTop: 4, marginBottom: 24, textAlign: "center" },
-  qrBox: { padding: 20, marginBottom: 16, borderRadius: 30 },
-  code: { fontSize: 18, letterSpacing: 3, marginBottom: 8 },
-  expiry: { fontSize: 12, marginBottom: 12 },
+  qrBox: { padding: 16, marginBottom: 16, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 2, borderColor: LCD_EDGE },
+  code: { fontSize: 12, letterSpacing: 1, marginBottom: 8 },
+  expiry: { fontSize: 8, marginBottom: 12, letterSpacing: 0.5 },
 })

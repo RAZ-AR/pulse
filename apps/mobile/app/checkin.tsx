@@ -6,8 +6,17 @@ import { CameraView, useCameraPermissions } from "expo-camera"
 import * as Location from "expo-location"
 import { trpc } from "../src/lib/trpc"
 import { uploadCheckinImage } from "../src/lib/storage"
-import { colors, neonColors, fonts, useTheme } from "../src/lib/theme"
-import { useColorMode } from "../src/store/colorMode"
+import { fonts, useTheme } from "../src/lib/theme"
+
+// ── Device (Teenage-Engineering) tokens ──
+const ORANGE = "#f2a66e"
+const ORANGE_EDGE = "#D98A4E"
+const GREEN = "#3E8E6E"
+const INK = "#33322D"
+const DIM = "#8C887E"
+const CREAM = "#EDEDEB"
+const EDGE = "rgba(110,102,86,0.18)"
+const HILITE = "rgba(255,255,255,0.95)"
 
 type Coords = { lat: number; lng: number; accuracy: number }
 type NearbyVenue = {
@@ -31,8 +40,6 @@ const NEARBY_RADIUS_KM = 0.1 // 100m matches CHECKIN_RADIUS_METERS on backend
 export default function CheckinScreen() {
   const theme = useTheme()
   const { t } = useTranslation("checkin")
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const utils = trpc.useUtils()
 
@@ -87,7 +94,7 @@ export default function CheckinScreen() {
       <View style={[s.container, { backgroundColor: theme.bg }]}>
         {phase.kind === "locating" ? (
           <Centered>
-            <ActivityIndicator size="large" color={colors.sky} />
+            <ActivityIndicator size="large" color={ORANGE} />
             <Text style={[s.label, { color: theme.textSecondary }]}>{t("locating", "Finding your location…")}</Text>
           </Centered>
         ) : phase.kind === "noLocation" ? (
@@ -95,7 +102,7 @@ export default function CheckinScreen() {
             <Text style={s.bigIcon}>⌖</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("locationNeeded", "Location needed")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.reason}</Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+            <Pressable onPress={() => router.back()} style={[s.btn, s.btnSecondary]}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:back", "Go back")}</Text>
             </Pressable>
           </Centered>
@@ -113,7 +120,7 @@ export default function CheckinScreen() {
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>
               {t("noVenuesNearbyDesc", "Move closer to a partner venue and try again. Check-ins require being within 100m of a venue.")}
             </Text>
-            <Pressable onPress={() => router.back()} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+            <Pressable onPress={() => router.back()} style={[s.btn, s.btnSecondary]}>
               <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "OK")}</Text>
             </Pressable>
           </Centered>
@@ -161,19 +168,19 @@ export default function CheckinScreen() {
           />
         ) : phase.kind === "uploading" || phase.kind === "submitting" ? (
           <Centered>
-            <ActivityIndicator size="large" color={colors.sky} />
+            <ActivityIndicator size="large" color={ORANGE} />
             <Text style={[s.label, { color: theme.textSecondary }]}>
               {phase.kind === "uploading" ? t("uploading", "Uploading photo…") : t("verifying", "Verifying check-in…")}
             </Text>
           </Centered>
         ) : (
           <Centered>
-            <Text style={[s.bigIcon, { color: isRainbow ? neonColors.green : colors.ink }]}>✓</Text>
+            <Text style={[s.bigIcon, { color: GREEN }]}>✓</Text>
             <Text style={[s.title, { color: theme.text }]}>{t("success", "Checked in!")}</Text>
             <Text style={[s.subtitle, { color: theme.textSecondary }]}>{phase.venue.name}</Text>
-            <Text style={[s.points, { color: isRainbow ? neonColors.green : colors.mint }]}>+{phase.pointsEarned} pts</Text>
+            <Text style={[s.points, { color: GREEN, fontFamily: fonts.pixel }]}>+{phase.pointsEarned} pts</Text>
             {phase.streakBonus > 0 ? (
-              <Text style={[s.streakBonus, { color: isRainbow ? neonColors.pink : colors.pink }]}>
+              <Text style={[s.streakBonus, { color: ORANGE_EDGE }]}>
                 +{phase.streakBonus} {t("streakBonus", "streak bonus")}
               </Text>
             ) : null}
@@ -181,15 +188,12 @@ export default function CheckinScreen() {
               {phase.newStreak} {t("dayStreak", "day streak")}
             </Text>
             {phase.newBadges.length > 0 ? (
-              <Text style={[s.newBadge, { color: isRainbow ? neonColors.cyan : colors.pink }]}>
+              <Text style={[s.newBadge, { color: ORANGE_EDGE }]}>
                 {t("newBadge", "New badge unlocked!")}
               </Text>
             ) : null}
-            <Pressable
-              onPress={() => router.back()}
-              style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF", marginTop: 24 }, theme.shadowRaisedSm]}
-            >
-              <Text style={{ color: theme.text, fontWeight: "700" }}>{t("common:done", "Done")}</Text>
+            <Pressable onPress={() => router.back()} style={[s.btn, s.btnPrimary, { marginTop: 24 }]}>
+              <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>{t("common:done", "Done")}</Text>
             </Pressable>
           </Centered>
         )}
@@ -234,7 +238,7 @@ function VenuePicker({
   if (venues.isLoading) {
     return (
       <Centered>
-        <ActivityIndicator size="large" color={colors.sky} />
+        <ActivityIndicator size="large" color={ORANGE} />
         <Text style={[s.label, { color: theme.textSecondary }]}>{t("findingVenues", "Finding venues nearby…")}</Text>
       </Centered>
     )
@@ -291,7 +295,7 @@ function CameraPhase({
         <Text style={[s.subtitle, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "ayoo needs your camera to verify check-ins.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#FFFFFF" }, theme.shadowRaisedSm]}>
+        <Pressable onPress={requestPermission} style={[s.btn, s.btnSecondary]}>
           <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </Centered>
@@ -326,28 +330,58 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
   label: { fontSize: 13, marginTop: 14 },
-  title: { fontSize: 31, lineHeight: 34, fontFamily: fonts.displayHeavy, marginTop: 8 },
+  title: { fontSize: 26, lineHeight: 30, fontFamily: fonts.displayHeavy, marginTop: 8 },
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 8, textAlign: "center" },
-  bigIcon: { fontSize: 64, fontWeight: "900", color: colors.ink },
-  btn: { padding: 14, paddingHorizontal: 28, borderRadius: 99, alignItems: "center", marginTop: 16 },
+  bigIcon: { fontSize: 60, fontWeight: "900", color: INK },
+  btn: {
+    padding: 15,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    alignItems: "center",
+    marginTop: 16,
+    borderTopWidth: 1.5,
+    borderTopColor: HILITE,
+    borderBottomWidth: 5,
+    borderBottomColor: EDGE,
+    shadowColor: "#9A958A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  btnPrimary: { backgroundColor: ORANGE, borderBottomColor: ORANGE_EDGE, borderTopColor: "rgba(255,255,255,0.5)" },
+  btnPrimaryText: { color: "#FFFFFF", fontSize: 16 },
+  btnSecondary: { backgroundColor: CREAM },
   pickerContent: { padding: 18, paddingBottom: 40 },
-  venueCard: { padding: 14, borderRadius: 30, borderWidth: 1, flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 10 },
-  venueName: { fontSize: 18, fontWeight: "800" },
-  venueSub: { fontSize: 12, marginTop: 2 },
+  venueCard: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: CREAM,
+    borderTopWidth: 1.5,
+    borderTopColor: HILITE,
+    borderBottomWidth: 4,
+    borderBottomColor: EDGE,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
+  venueName: { fontSize: 16, fontFamily: fonts.displayHeavy, color: INK },
+  venueSub: { fontSize: 11, marginTop: 4, fontFamily: fonts.pixel, color: DIM },
   venueArrow: { fontSize: 18 },
   cameraWrap: { flex: 1 },
   camera: { flex: 1 },
   cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "space-between", padding: 24, paddingTop: 24, paddingBottom: 120 },
   venueBanner: { padding: 12, borderRadius: 24, alignSelf: "center" },
-  bannerLabel: { color: colors.ink, fontSize: 10, fontWeight: "700", letterSpacing: 1, opacity: 0.8, textAlign: "center" },
-  bannerName: { color: colors.ink, fontSize: 15, fontWeight: "700", textAlign: "center", marginTop: 2 },
+  bannerLabel: { color: INK, fontSize: 10, fontWeight: "700", letterSpacing: 1, opacity: 0.8, textAlign: "center" },
+  bannerName: { color: INK, fontSize: 15, fontWeight: "700", textAlign: "center", marginTop: 2 },
   frameHint: { color: "#FFF", fontSize: 13, fontWeight: "600", textAlign: "center", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
   shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 40 },
   shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
   backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(249,251,255,0.72)", justifyContent: "center", alignItems: "center" },
-  backBtnText: { color: colors.ink, fontSize: 22, fontWeight: "300" },
-  points: { fontSize: 36, fontWeight: "800", marginTop: 16 },
+  backBtnText: { color: INK, fontSize: 22, fontWeight: "300" },
+  points: { fontSize: 28, marginTop: 16 },
   streakBonus: { fontSize: 14, fontWeight: "700", marginTop: 4 },
   streakInfo: { fontSize: 13, marginTop: 12 },
   newBadge: { fontSize: 14, fontWeight: "700", marginTop: 12 },

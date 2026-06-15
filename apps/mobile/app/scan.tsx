@@ -5,9 +5,21 @@ import { useRouter, Stack } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
 import { trpc } from "../src/lib/trpc"
 import { uploadReceiptImage } from "../src/lib/storage"
-import { colors, neonColors, fonts, useTheme } from "../src/lib/theme"
-import { useColorMode } from "../src/store/colorMode"
+import { fonts, useTheme } from "../src/lib/theme"
 import { IS_TELEGRAM, getTgWebApp } from "../src/lib/telegram"
+
+// ── Device (Teenage-Engineering) tokens ──
+const ORANGE = "#f2a66e"
+const ORANGE_EDGE = "#D98A4E"
+const GREEN = "#3E8E6E"
+const INK = "#33322D"
+const DIM = "#8C887E"
+const CREAM = "#EDEDEB"
+const LCD = "#DBDBD7"
+const LCD_EDGE = "#C4C4BE"
+const LCD_INK = "#3A3F42"
+const EDGE = "rgba(110,102,86,0.18)"
+const HILITE = "rgba(255,255,255,0.95)"
 
 type Mode = "qr" | "photo"
 
@@ -42,8 +54,6 @@ const today = () => new Date().toISOString().slice(0, 10)
 export default function ScanScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const utils = trpc.useUtils()
   const me = trpc.user.me.useQuery()
@@ -213,7 +223,7 @@ export default function ScanScreen() {
                 style={[s.modeBtn, phase.mode === "qr" && s.modeBtnActive]}
                 onPress={() => setPhase({ kind: "camera", mode: "qr" })}
               >
-                <Text style={[s.modeBtnText, { color: phase.mode === "qr" ? colors.skySolid : theme.textSecondary }]}>
+                <Text style={[s.modeBtnText, { color: phase.mode === "qr" ? ORANGE : theme.textSecondary }]}>
                   {t("qrCode", "QR Code")}
                 </Text>
               </Pressable>
@@ -221,7 +231,7 @@ export default function ScanScreen() {
                 style={[s.modeBtn, phase.mode === "photo" && s.modeBtnActive]}
                 onPress={() => setPhase({ kind: "camera", mode: "photo" })}
               >
-                <Text style={[s.modeBtnText, { color: phase.mode === "photo" ? colors.skySolid : theme.textSecondary }]}>
+                <Text style={[s.modeBtnText, { color: phase.mode === "photo" ? ORANGE : theme.textSecondary }]}>
                   {t("photo", "Photo")}
                 </Text>
               </Pressable>
@@ -274,7 +284,6 @@ export default function ScanScreen() {
             date={phase.date}
             onClose={() => router.back()}
             theme={theme}
-            isRainbow={isRainbow}
           />
         )}
       </View>
@@ -300,7 +309,7 @@ function TelegramQrPhase({
       <Text style={[s.dialogText, { color: theme.textSecondary }]}>
         {t("tapToScanQr", "Tap the button below to open the camera and scan the QR code from your receipt.")}
       </Text>
-      <Pressable onPress={onPress} style={[s.btn, { backgroundColor: colors.skySolid, paddingHorizontal: 32 }]}>
+      <Pressable onPress={onPress} style={[s.btn, s.btnPrimary, { paddingHorizontal: 32 }]}>
         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
           {t("openCamera", "Open camera")}
         </Text>
@@ -334,8 +343,8 @@ function CameraPhase({
         <Text style={[s.dialogText, { color: theme.textSecondary }]}>
           {t("cameraNeededDesc", "ayoo needs your camera to scan receipts.")}
         </Text>
-        <Pressable onPress={requestPermission} style={[s.btn, { backgroundColor: "#FFFFFF" }]}>
-          <Text style={{ color: theme.text, fontWeight: "700" }}>{t("grantAccess", "Grant access")}</Text>
+        <Pressable onPress={requestPermission} style={[s.btn, s.btnSecondary]}>
+          <Text style={[s.btnSecondaryText, { fontFamily: fonts.displayHeavy }]}>{t("grantAccess", "Grant access")}</Text>
         </Pressable>
       </View>
     )
@@ -379,7 +388,7 @@ function CameraPhase({
 function LoadingPhase({ label, theme }: { label: string; theme: ReturnType<typeof useTheme> }) {
   return (
     <View style={s.center}>
-      <ActivityIndicator size="large" color={colors.skySolid} />
+      <ActivityIndicator size="large" color={ORANGE} />
       <Text style={[s.loadingLabel, { color: theme.textSecondary }]}>{label}</Text>
     </View>
   )
@@ -401,7 +410,7 @@ function ConfirmPhase({
         {t("confirmReceipt", "Confirm receipt details")}
       </Text>
       {confidence < 0.85 ? (
-        <Text style={[s.lowConf, { color: colors.pink }]}>
+        <Text style={[s.lowConf, { color: ORANGE_EDGE }]}>
           {t("lowConfidence", "Low OCR confidence — please double-check fields below")}
         </Text>
       ) : null}
@@ -410,8 +419,8 @@ function ConfirmPhase({
       <Field label={t("currency", "Currency")} value={ocr.currency} onChangeText={(v) => onChange({ ...ocr, currency: v.toUpperCase() })} theme={theme} />
       <Field label={t("date", "Date (YYYY-MM-DD)")} value={ocr.date} onChangeText={(v) => onChange({ ...ocr, date: v })} theme={theme} />
       <Field label={t("receiptNumber", "Receipt # (optional)")} value={ocr.receiptNumber} onChangeText={(v) => onChange({ ...ocr, receiptNumber: v })} theme={theme} />
-      <Pressable onPress={onSubmit} style={[s.btn, { backgroundColor: "#FFFFFF", marginTop: 12 }]}>
-        <Text style={{ color: theme.text, fontWeight: "700" }}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
+      <Pressable onPress={onSubmit} style={[s.btn, s.btnPrimary, { marginTop: 12 }]}>
+        <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
       </Pressable>
     </ScrollView>
   )
@@ -441,7 +450,7 @@ function ErrorPhase({
         </Text>
         <Pressable
           onPress={onRetry}
-          style={[s.btn, { backgroundColor: colors.skySolid, paddingHorizontal: 40 }]}
+          style={[s.btn, s.btnPrimary, { paddingHorizontal: 40 }]}
         >
           <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
             {t("scanAnother", "Scan another receipt")}
@@ -462,7 +471,7 @@ function ErrorPhase({
       </View>
       <Pressable
         onPress={onRetry}
-        style={[s.btn, { backgroundColor: colors.skySolid, marginTop: 24, paddingHorizontal: 40 }]}
+        style={[s.btn, s.btnPrimary, { marginTop: 24, paddingHorizontal: 40 }]}
       >
         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
           {t("tryAgain", "Try again")}
@@ -474,7 +483,7 @@ function ErrorPhase({
 
 function DonePhase({
   pointsEarned, streakBonus, vendorName, totalRsd, offerTitle,
-  needsManualReview, date, onClose, theme, isRainbow,
+  needsManualReview, date, onClose, theme,
 }: {
   pointsEarned: number
   streakBonus?: number | undefined
@@ -485,11 +494,10 @@ function DonePhase({
   date?: string | undefined
   onClose: () => void
   theme: ReturnType<typeof useTheme>
-  isRainbow?: boolean
 }) {
   const { t } = useTranslation("common")
   const isPending = needsManualReview || pointsEarned === 0
-  const accentColor = isRainbow ? neonColors.green : colors.mint
+  const accentColor = GREEN
   const formattedDate = date
     ? new Date(date).toLocaleDateString("sr-RS", { day: "2-digit", month: "short", year: "numeric" })
     : null
@@ -569,13 +577,8 @@ function DonePhase({
         <Text style={[s.donePoints, { color: accentColor }]}>+{pointsEarned} pts</Text>
       ) : null}
 
-      <Pressable
-        onPress={onClose}
-        style={[s.btn, { backgroundColor: isRainbow ? "#F2F2F6" : colors.skySolid, marginTop: 24, paddingHorizontal: 48 }]}
-      >
-        <Text style={{ color: isRainbow ? theme.text : "#FFF", fontWeight: "700", fontSize: 16 }}>
-          {t("done", "Done")}
-        </Text>
+      <Pressable onPress={onClose} style={[s.btn, s.btnPrimary, { marginTop: 24, paddingHorizontal: 48 }]}>
+        <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>{t("done", "Done")}</Text>
       </Pressable>
     </View>
   )
@@ -618,9 +621,9 @@ const s = StyleSheet.create({
   },
   modeBtnActive: {
     borderBottomWidth: 2,
-    borderBottomColor: colors.skySolid,
+    borderBottomColor: ORANGE,
   },
-  modeBtnText: { fontSize: 14, fontWeight: "700" },
+  modeBtnText: { fontSize: 13, fontFamily: fonts.pixel, letterSpacing: 0.5 },
   cameraWrap: { flex: 1 },
   camera: { flex: 1 },
   cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center", padding: 24 },
@@ -632,23 +635,47 @@ const s = StyleSheet.create({
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
   loadingLabel: { fontSize: 13, marginTop: 14 },
   confirmContent: { padding: 18, paddingBottom: 40 },
-  confirmTitle: { fontSize: 31, lineHeight: 34, fontFamily: fonts.displayHeavy, marginBottom: 6 },
+  confirmTitle: { fontSize: 26, lineHeight: 30, fontFamily: fonts.displayHeavy, marginBottom: 6, color: INK },
   lowConf: { fontSize: 12, marginBottom: 16 },
   field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 11, fontWeight: "700", marginBottom: 6, letterSpacing: 0.8 },
-  input: { borderWidth: 1, borderRadius: 18, padding: 13, fontSize: 15, backgroundColor: "#FFFFFF" },
-  btn: { padding: 14, borderRadius: 99, alignItems: "center" },
-  dialogTitle: { fontSize: 26, fontWeight: "800", marginBottom: 8, textAlign: "center" },
+  fieldLabel: { fontSize: 7, fontFamily: fonts.pixel, marginBottom: 8, letterSpacing: 0.5, color: DIM },
+  input: { borderWidth: 2, borderColor: LCD_EDGE, borderRadius: 14, padding: 14, fontSize: 15, backgroundColor: LCD, color: LCD_INK },
+
+  // ── Device keys ──
+  btn: {
+    padding: 15,
+    borderRadius: 16,
+    alignItems: "center",
+    borderTopWidth: 1.5,
+    borderTopColor: HILITE,
+    borderBottomWidth: 5,
+    borderBottomColor: EDGE,
+    shadowColor: "#9A958A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  btnPrimary: { backgroundColor: ORANGE, borderBottomColor: ORANGE_EDGE, borderTopColor: "rgba(255,255,255,0.5)" },
+  btnPrimaryText: { color: "#FFFFFF", fontSize: 16 },
+  btnSecondary: { backgroundColor: CREAM },
+  btnSecondaryText: { color: INK, fontSize: 16 },
+
+  dialogTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, color: INK, marginBottom: 8, textAlign: "center" },
   dialogText: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
-  doneIconWrap: { width: 80, height: 80, borderRadius: 40, justifyContent: "center", alignItems: "center" },
+  doneIconWrap: { width: 80, height: 80, borderRadius: 22, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: LCD_EDGE },
   doneIcon: { fontSize: 40 },
   doneTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, textAlign: "center" },
-  donePoints: { fontSize: 32, fontWeight: "800", marginTop: 12 },
+  donePoints: { fontSize: 30, fontFamily: fonts.pixel, marginTop: 12 },
   receiptCard: {
     width: "100%",
     marginTop: 20,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    backgroundColor: CREAM,
+    borderTopWidth: 1.5,
+    borderTopColor: HILITE,
+    borderBottomWidth: 5,
+    borderBottomColor: EDGE,
     padding: 20,
     gap: 4,
   },

@@ -3,8 +3,19 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, useTheme } from "../../src/lib/theme"
-import { LavaLampSurface, NeuCard } from "../../src/components/neu"
+import { fonts, useTheme } from "../../src/lib/theme"
+
+// ── Device (Teenage-Engineering) tokens ──
+const ORANGE = "#f2a66e"
+const ORANGE_EDGE = "#D98A4E"
+const INK = "#33322D"
+const DIM = "#8C887E"
+const CREAM = "#EDEDEB"
+const LCD = "#DBDBD7"
+const LCD_EDGE = "#C4C4BE"
+const LCD_INK = "#3A3F42"
+const EDGE = "rgba(110,102,86,0.18)"
+const HILITE = "rgba(255,255,255,0.95)"
 
 export default function RewardsScreen() {
   const theme = useTheme()
@@ -33,51 +44,36 @@ export default function RewardsScreen() {
       scrollEventThrottle={16}
       removeClippedSubviews
     >
-      <LavaLampSurface intensity="glass" style={[s.hero, theme.shadowRaised]}>
+      {/* ── Hero — cream device card with LCD balance cells ── */}
+      <View style={s.hero}>
         <View style={s.heroHead}>
           <View>
-            <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>REWARDS</Text>
-            <Text style={[s.title, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
-              {t("title", "Rewards")}
-            </Text>
+            <Text style={[s.kicker, { fontFamily: fonts.pixel }]}>REWARDS</Text>
+            <Text style={[s.title, { fontFamily: fonts.displayHeavy, color: INK }]}>{t("title", "Rewards")}</Text>
           </View>
           <View style={s.pointsPill}>
-            <Text style={[s.pointsPillText, { fontFamily: fonts.bodyBold }]}>
-              {total.toLocaleString()} {t("pts")}
-            </Text>
+            <Text style={[s.pointsPillText, { fontFamily: fonts.pixel }]}>{total.toLocaleString()} {t("pts").toUpperCase()}</Text>
           </View>
         </View>
-        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
-          {t("subtitle", "Redeem points for real perks")}
-        </Text>
+        <Text style={[s.heroSub, { fontFamily: fonts.bodyBold, color: DIM }]}>{t("subtitle", "Redeem points for real perks")}</Text>
         <View style={s.balanceRow}>
           <View style={s.balanceCell}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
-              {total.toLocaleString()}
-            </Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
-              {t("common:available", "Available").toUpperCase()}
-            </Text>
+            <Text style={[s.balanceValue, { fontFamily: fonts.pixel }]}>{total.toLocaleString()}</Text>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.pixel }]}>{t("common:available", "Available").toUpperCase()}</Text>
           </View>
-          <View style={[s.balanceCell, s.balanceCellLight]}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy, color: theme.text }]}>
-              {welcomePoints}
-            </Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>
-              {t("common:welcome", "Welcome").toUpperCase()}
-            </Text>
+          <View style={s.balanceCell}>
+            <Text style={[s.balanceValue, { fontFamily: fonts.pixel }]}>{welcomePoints}</Text>
+            <Text style={[s.balanceLabel, { fontFamily: fonts.pixel }]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
           </View>
         </View>
-      </LavaLampSurface>
+      </View>
 
       {showExpiryWarning ? (
         <View style={s.expiryBanner}>
-          <Text style={[s.expiryText, { fontFamily: fonts.bodyBold, color: "#C0392B" }]}>
+          <Text style={[s.expiryText, { fontFamily: fonts.bodyBold }]}>
             ⚠️ {welcomePoints} welcome pts истекают через {welcomeDaysLeft === 0 ? "сегодня" : `${welcomeDaysLeft} дн.`}
           </Text>
-          <Text style={[s.expirySub, { color: "#666" }]}>
-            Потратьте баллы сейчас — они не сгорят у партнёров
-          </Text>
+          <Text style={[s.expirySub, { color: DIM }]}>Потратьте баллы сейчас — они не сгорят у партнёров</Text>
         </View>
       ) : null}
 
@@ -87,15 +83,14 @@ export default function RewardsScreen() {
       </View>
 
       {filtered.length === 0 ? (
-        <NeuCard style={{ padding: 24, alignItems: "center", marginTop: 4 }}>
-          <Text style={{ color: theme.textSecondary }}>{t("noRewardsAvailable")}</Text>
-        </NeuCard>
+        <View style={s.emptyCard}>
+          <Text style={{ color: DIM, fontFamily: fonts.bodyBold }}>{t("noRewardsAvailable")}</Text>
+        </View>
       ) : (
         <View style={s.grid}>
           {filtered.map((r, i) => {
             const canRedeem = total >= r.pointsCost
             const stockLeft = r.stockLimit !== null ? r.stockLimit - r.redeemedCount : null
-            const featured = i % 3 === 0
             return (
               <RewardCard
                 key={r.id}
@@ -106,7 +101,7 @@ export default function RewardsScreen() {
                 leftLabel={stockLeft !== null && stockLeft <= 5 ? t("left", { count: stockLeft }) : null}
                 useLabel={t("use")}
                 canRedeem={canRedeem}
-                featured={featured}
+                featured={i % 3 === 0}
                 onPress={() => router.push({ pathname: "/reward/[id]", params: { id: r.id } })}
               />
             )
@@ -118,18 +113,9 @@ export default function RewardsScreen() {
 }
 
 function FilterPill({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  if (active) {
-    return (
-      <Pressable onPress={onPress}>
-        <LavaLampSurface style={s.pill} contentStyle={s.pillContent}>
-          <Text style={[s.pillText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{label}</Text>
-        </LavaLampSurface>
-      </Pressable>
-    )
-  }
   return (
-    <Pressable onPress={onPress} style={[s.pill, s.pillIdle]}>
-      <Text style={[s.pillText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{label}</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => [s.pill, active ? s.pillActive : s.pillIdle, pressed && s.keyPressed]}>
+      <Text style={[s.pillText, { color: active ? ORANGE_EDGE : DIM, fontFamily: fonts.pixel }]}>{label}</Text>
     </Pressable>
   )
 }
@@ -147,88 +133,89 @@ function RewardCard({
   featured: boolean
   onPress: () => void
 }) {
-  const content = (
-    <>
-      <View style={[s.rewardLogo, featured ? s.rewardLogoDark : s.rewardLogoLight]}>
-        <Text style={[s.rewardLogoText, { color: featured ? "#FFFFFF" : colors.ink }]}>✦</Text>
-      </View>
-      <Text style={[s.rewardTitle, { color: colors.ink, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
-        {title}
-      </Text>
-      <Text style={[s.rewardVenue, { color: "#75736A", fontFamily: fonts.bodyBold }]} numberOfLines={1}>
-        {venue}
-      </Text>
-      {leftLabel ? <Text style={[s.stockHint, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{leftLabel}</Text> : null}
-      <View style={{ flex: 1 }} />
-      <View style={s.rewardFoot}>
-        <View>
-          <Text style={[s.rewardCost, { color: colors.ink, fontFamily: fonts.displayHeavy }]}>{points}</Text>
-          <Text style={[s.rewardCostUnit, { color: "#75736A" }]}>{ptsLabel}</Text>
-        </View>
-        {canRedeem ? (
-          <View style={[s.useBadge, { backgroundColor: "rgba(255,255,255,0.58)" }]}>
-            <Text style={[s.useBadgeText, { color: colors.ink, fontFamily: fonts.bodyBold }]}>{useLabel}</Text>
-          </View>
-        ) : null}
-      </View>
-    </>
-  )
-
   return (
     <Pressable onPress={onPress} style={s.rewardPressable}>
-      {featured ? (
-        <View style={[s.rewardCard, s.rewardCardCyan]}>{content}</View>
-      ) : (
-        <LavaLampSurface intensity="glass" style={s.rewardCard}>{content}</LavaLampSurface>
-      )}
+      <View style={[s.rewardCard, featured && s.rewardCardFeatured]}>
+        <View style={s.rewardLogo}>
+          <Text style={s.rewardLogoText}>✦</Text>
+        </View>
+        <Text style={[s.rewardTitle, { color: INK, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
+        <Text style={[s.rewardVenue, { color: DIM, fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+        {leftLabel ? <Text style={[s.stockHint, { fontFamily: fonts.pixel }]}>{leftLabel}</Text> : null}
+        <View style={{ flex: 1 }} />
+        <View style={s.rewardFoot}>
+          <View style={s.costChip}>
+            <Text style={[s.rewardCost, { fontFamily: fonts.pixel }]}>{points}</Text>
+            <Text style={[s.rewardCostUnit, { fontFamily: fonts.pixel }]}>{ptsLabel.toUpperCase()}</Text>
+          </View>
+          {canRedeem ? (
+            <View style={s.useBadge}>
+              <Text style={[s.useBadgeText, { color: "#FFFFFF", fontFamily: fonts.pixel }]}>{useLabel.toUpperCase()}</Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
     </Pressable>
   )
 }
+
+const clayCard = {
+  backgroundColor: CREAM,
+  borderTopWidth: 1.5,
+  borderTopColor: HILITE,
+  borderBottomWidth: 5,
+  borderBottomColor: EDGE,
+  shadowColor: "#9A958A",
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.28,
+  shadowRadius: 16,
+  elevation: 5,
+} as const
+
+const lcdPlate = { backgroundColor: LCD, borderWidth: 2, borderColor: LCD_EDGE } as const
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 110 },
 
-  expiryBanner: { backgroundColor: "rgba(255,59,48,0.08)", borderRadius: 18, padding: 14, marginBottom: 12 },
-  expiryText: { fontSize: 13, marginBottom: 3 },
-  expirySub: { fontSize: 12 },
-
-  hero: { borderRadius: 32, padding: 18, marginBottom: 14, overflow: "hidden" },
-  heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 },
-  kicker: { color: "#A5A299", fontSize: 11, letterSpacing: 1.8 },
-  title: { fontSize: 36, lineHeight: 40 },
-  pointsPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 15, paddingVertical: 10 },
-  pointsPillText: { color: "#75736A", fontSize: 12 },
+  hero: { ...clayCard, borderRadius: 26, padding: 16, marginBottom: 14 },
+  heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
+  kicker: { color: DIM, fontSize: 7, letterSpacing: 0.5, marginBottom: 6 },
+  title: { fontSize: 30, lineHeight: 34 },
+  pointsPill: { ...lcdPlate, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
+  pointsPillText: { color: LCD_INK, fontSize: 9, letterSpacing: 0.5 },
   heroSub: { fontSize: 13, marginBottom: 16 },
   balanceRow: { flexDirection: "row", gap: 10 },
-  balanceCell: { flex: 1, backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 24, padding: 14 },
-  balanceCellLight: { backgroundColor: "rgba(235,254,255,0.74)" },
-  balanceLabel: { fontSize: 10, letterSpacing: 1 },
-  balanceValue: { fontSize: 34, lineHeight: 36 },
+  balanceCell: { ...lcdPlate, flex: 1, borderRadius: 14, padding: 14, alignItems: "flex-start", gap: 8 },
+  balanceLabel: { fontSize: 6, letterSpacing: 0.5, color: DIM },
+  balanceValue: { fontSize: 20, color: LCD_INK },
+
+  expiryBanner: { backgroundColor: "#F6E2D2", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "rgba(217,138,78,0.4)" },
+  expiryText: { fontSize: 13, marginBottom: 3, color: ORANGE_EDGE },
+  expirySub: { fontSize: 12 },
 
   filters: { flexDirection: "row", gap: 10, marginBottom: 18 },
-  pill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 99 },
-  pillContent: { alignItems: "center" },
-  pillIdle: { backgroundColor: "#FFFFFF" },
-  pillText: { fontSize: 13 },
+  pill: { paddingHorizontal: 14, paddingVertical: 11, borderRadius: 12, borderWidth: 1 },
+  pillActive: { backgroundColor: CREAM, borderColor: EDGE, borderBottomWidth: 3, borderBottomColor: ORANGE },
+  pillIdle: { backgroundColor: "#E4E3DF", borderColor: "rgba(110,102,86,0.1)" },
+  keyPressed: { transform: [{ translateY: 2 }] },
+  pillText: { fontSize: 9, letterSpacing: 0.5 },
+
+  emptyCard: { ...clayCard, padding: 24, alignItems: "center", borderRadius: 18, marginTop: 4 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   rewardPressable: { width: "48%" },
-  rewardCard: {
-    padding: 14, minHeight: 180, borderRadius: 34, overflow: "hidden",
-    shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3,
-  },
-  rewardCardCyan: { backgroundColor: "rgba(235,254,255,0.92)" },
-  rewardLogo: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", marginBottom: 22 },
-  rewardLogoDark: { backgroundColor: colors.lavaPink },
-  rewardLogoLight: { backgroundColor: "#FFFFFF" },
-  rewardLogoText: { fontSize: 17, fontWeight: "900" },
-  rewardTitle: { fontSize: 21, lineHeight: 23, marginBottom: 7 },
+  rewardCard: { ...clayCard, padding: 14, minHeight: 184, borderRadius: 20 },
+  rewardCardFeatured: { borderBottomColor: ORANGE },
+  rewardLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: "#E4E3DF", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
+  rewardLogoText: { fontSize: 16, fontWeight: "900", color: "#8C887E" },
+  rewardTitle: { fontSize: 19, lineHeight: 22, marginBottom: 7 },
   rewardVenue: { fontSize: 12, marginBottom: 4 },
-  stockHint: { fontSize: 10, opacity: 0.85 },
+  stockHint: { fontSize: 6, color: ORANGE_EDGE, marginTop: 2 },
   rewardFoot: { marginTop: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  rewardCost: { fontSize: 25, lineHeight: 27 },
-  rewardCostUnit: { fontSize: 10, fontWeight: "700" },
-  useBadge: { borderRadius: 99, paddingHorizontal: 12, paddingVertical: 7 },
-  useBadgeText: { fontSize: 12 },
+  costChip: { ...lcdPlate, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 6, alignItems: "center" },
+  rewardCost: { fontSize: 14, color: LCD_INK, lineHeight: 16 },
+  rewardCostUnit: { fontSize: 5, color: DIM, marginTop: 2 },
+  useBadge: { backgroundColor: ORANGE, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 8, borderBottomWidth: 3, borderBottomColor: ORANGE_EDGE },
+  useBadgeText: { fontSize: 7, letterSpacing: 0.5 },
 })

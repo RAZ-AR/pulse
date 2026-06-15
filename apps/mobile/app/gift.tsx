@@ -16,19 +16,28 @@ import { IconPlane } from "../src/components/icons"
 import { Stack, useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../src/lib/trpc"
-import { colors, fonts, gradients, neonColors, useTheme } from "../src/lib/theme"
-import { useColorMode } from "../src/store/colorMode"
-import { LavaLampSurface, NeuCard, NeuInset, VolumeGradient } from "../src/components/neu"
+import { fonts, useTheme } from "../src/lib/theme"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT } from "@pulse/shared"
 
 const PRESETS = [100, 250, 500]
+
+// ── Device (Teenage-Engineering) tokens ──
+const CREAM = "#EDEDEB"
+const INK = "#33322D"
+const DIM = "#8C887E"
+const ORANGE = "#f2a66e"
+const ORANGE_EDGE = "#D98A4E"
+const GREEN = "#3E8E6E"
+const LCD = "#DBDBD7"
+const LCD_EDGE = "#C4C4BE"
+const LCD_INK = "#3A3F42"
+const EDGE = "rgba(110,102,86,0.18)"
+const HILITE = "rgba(255,255,255,0.95)"
 
 type DoneData = { shareUrl: string; shareText: string; amount: number }
 
 export default function GiftScreen() {
   const theme = useTheme()
-  const { mode } = useColorMode()
-  const isRainbow = mode === "rainbow"
   const router = useRouter()
   const { t } = useTranslation("gift")
   const utils = trpc.useUtils()
@@ -114,42 +123,38 @@ export default function GiftScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-          {/* Balance hero */}
-          <LavaLampSurface style={s.hero} contentStyle={s.heroContent} intensity="glass">
-            <View style={s.heroTop}>
-              <View>
-                <Text style={[s.kicker, { color: isRainbow ? "#1A1A2E" : theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                  {t("availableToGift", "Available to gift").toUpperCase()}
-                </Text>
-                <Text style={[s.heroValue, { color: isRainbow ? "#1A1A2E" : theme.text, fontFamily: fonts.displayHeavy }]}>
-                  {maxGiftNow.toLocaleString()} pts
-                </Text>
+          {/* ── Balance hero — cream device card with a recessed LCD ── */}
+          <View style={s.hero}>
+            <View style={s.heroLcd}>
+              <View style={s.heroTop}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.kicker, { fontFamily: fonts.pixel }]}>{t("availableToGift", "Available to gift").toUpperCase()}</Text>
+                  <Text style={[s.heroValue, { fontFamily: fonts.pixel }]}>{maxGiftNow.toLocaleString()} PTS</Text>
+                </View>
+                <View style={s.limitChip}>
+                  <Text style={[s.limitChipValue, { fontFamily: fonts.pixel }]}>{remainingDailyLimit}</Text>
+                  <Text style={[s.limitChipLabel, { fontFamily: fonts.pixel }]}>{t("remaining", "left").toUpperCase()}</Text>
+                </View>
               </View>
-              <View style={s.limitOrb}>
-                <Text style={[s.limitOrbValue, { fontFamily: fonts.displayHeavy }]}>{remainingDailyLimit}</Text>
-                <Text style={[s.limitOrbLabel, { fontFamily: fonts.bodyBold }]}>{t("remaining", "left")}</Text>
+              <View style={s.limitTrack}>
+                <View style={[s.limitFill, { width: `${progress * 100}%` }]} />
+              </View>
+              <View style={s.heroMeta}>
+                <Text style={[s.metaText, { fontFamily: fonts.pixel }]}>{sentToday} {t("sentToday", "sent today").toUpperCase()}</Text>
+                <Text style={[s.metaText, { fontFamily: fonts.pixel }]}>{GIFT_DAILY_LIMIT} {t("dailyLimit", "daily limit").toUpperCase()}</Text>
               </View>
             </View>
-            <View style={s.limitTrack}>
-              <View style={[s.limitFill, { width: `${progress * 100}%`, backgroundColor: isRainbow ? neonColors.cyan : "rgba(241,153,227,0.58)" }]} />
-            </View>
-            <View style={s.heroMeta}>
-              <Text style={[s.metaText, { color: isRainbow ? "#1A1A2E" : theme.textSecondary }]}>{sentToday} pts {t("sentToday", "sent today")}</Text>
-              <Text style={[s.metaText, { color: isRainbow ? "#1A1A2E" : theme.textSecondary }]}>{GIFT_DAILY_LIMIT} pts {t("dailyLimit", "daily limit")}</Text>
-            </View>
-          </LavaLampSurface>
+          </View>
 
           {done ? (
             // ── Done state ────────────────────────────────────────
             <View style={s.doneWrap}>
-              <LavaLampSurface style={s.doneOrb} contentStyle={s.doneOrbInner} intensity="glass">
-                <Text style={{ fontSize: 52 }}>🎁</Text>
-              </LavaLampSurface>
-              <Text style={[s.doneTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("linkCreated", "Link created!")}</Text>
-              <Text style={[s.doneSub, { color: theme.textSecondary }]}>
+              <Text style={{ fontSize: 52, marginBottom: 12 }}>🎁</Text>
+              <Text style={[s.doneTitle, { color: INK, fontFamily: fonts.displayHeavy }]}>{t("linkCreated", "Link created!")}</Text>
+              <Text style={[s.doneSub, { color: DIM }]}>
                 {done.amount} pts — {t("linkShared", "link opened for sharing")}
               </Text>
-              <Text style={[s.doneHint, { color: theme.textSecondary }]}>
+              <Text style={[s.doneHint, { color: DIM }]}>
                 {t("doneHint", "Points will be credited when your friend opens the link")}
               </Text>
 
@@ -160,67 +165,48 @@ export default function GiftScreen() {
                   style={s.qrImg}
                 />
               </View>
-              <Text style={[s.doneHint, { color: theme.textSecondary }]}>
+              <Text style={[s.doneHint, { color: DIM }]}>
                 {t("qrHint", "A friend or partner scans it — the points go to them")}
               </Text>
 
-              <View style={s.btnRow}>
-                <Pressable onPress={shareAgain} style={{ flex: 1 }}>
-                  {isRainbow ? (
-                    <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.30} borderRadius={99} style={s.primaryBtn}>
-                      <Text style={[s.ctaText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>{t("shareAgain", "Share again")}</Text>
-                    </VolumeGradient>
-                  ) : (
-                    <NeuCard gradient={gradients.pinkBlue} style={s.primaryBtn}>
-                      <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("shareAgain", "Share again")}</Text>
-                    </NeuCard>
-                  )}
-                </Pressable>
-              </View>
+              <Pressable onPress={shareAgain} style={({ pressed }) => [s.mainCta, pressed && s.keyPressed]}>
+                <View style={s.ctaRow}>
+                  <IconPlane color="#FFFFFF" size={20} />
+                  <Text style={[s.ctaText, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{t("shareAgain", "Share again")}</Text>
+                </View>
+              </Pressable>
               <Pressable onPress={reset} style={s.secondaryPressable}>
-                <Text style={[s.secondaryText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>{t("sendAnother", "Send another")}</Text>
+                <Text style={[s.secondaryText, { color: DIM, fontFamily: fonts.pixel }]}>{t("sendAnother", "Send another").toUpperCase()}</Text>
               </Pressable>
             </View>
           ) : (
             // ── Compose state ─────────────────────────────────────
             <>
-              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("howMuch", "How much to gift?")}</Text>
+              <View style={s.sectionHead}>
+                <Text style={[s.sectionMark, { fontFamily: fonts.pixel }]}>▸</Text>
+                <Text style={[s.sectionTitle, { color: INK, fontFamily: fonts.displayHeavy }]}>{t("howMuch", "How much to gift?")}</Text>
+              </View>
 
-              {/* Preset chips */}
+              {/* Preset keys */}
               <View style={s.presetRow}>
                 {PRESETS.map((value) => {
                   const selected = amount === String(value)
                   const disabled = value > maxGiftNow
-                  if (selected && isRainbow) {
-                    return (
-                      <VolumeGradient
-                        key={value}
-                        colors={["#8B3DFF", "#2B6EFF"]}
-                        shadowColor="#8B3DFF"
-                        shadowOpacity={0.30}
-                        borderRadius={18}
-                        onPress={() => !disabled && selectPreset(value)}
-                        style={[s.preset, { flex: 1, opacity: disabled ? 0.35 : 1 }]}
-                      >
-                        <Text style={[s.presetText, { color: "#FFF", fontFamily: fonts.bodyBold }]}>{value}</Text>
-                      </VolumeGradient>
-                    )
-                  }
                   return (
-                    <Pressable key={value} onPress={() => !disabled && selectPreset(value)} style={{ flex: 1, opacity: disabled ? 0.35 : 1 }}>
-                      <NeuCard small gradient={selected ? gradients.pinkBlue : gradients.pearl} style={s.preset}>
-                        <Text style={[s.presetText, { color: selected ? colors.ink : theme.textSecondary, fontFamily: fonts.bodyBold }]}>{value}</Text>
-                      </NeuCard>
+                    <Pressable
+                      key={value}
+                      onPress={() => !disabled && selectPreset(value)}
+                      style={({ pressed }) => [s.preset, selected && s.presetActive, disabled && s.presetOff, pressed && !disabled && s.keyPressed]}
+                    >
+                      <Text style={[s.presetText, { fontFamily: fonts.pixel, color: selected ? ORANGE_EDGE : DIM }]}>{value}</Text>
                     </Pressable>
                   )
                 })}
               </View>
 
-              {/* Custom amount input */}
-              <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
-                {t("customAmount", "Custom amount").toUpperCase()}
-              </Text>
-              <NeuInset style={s.inputWrap}>
+              {/* Custom amount — recessed LCD input */}
+              <Text style={[s.label, { fontFamily: fonts.pixel }]}>{t("customAmount", "Custom amount").toUpperCase()}</Text>
+              <View style={s.inputWrap}>
                 <TextInput
                   value={amount}
                   onChangeText={(v) => {
@@ -228,59 +214,47 @@ export default function GiftScreen() {
                     setError("")
                   }}
                   placeholder={t("minAmount", "from {{n}}", { n: GIFT_MIN_AMOUNT })}
-                  placeholderTextColor={theme.textMuted}
+                  placeholderTextColor={DIM}
                   keyboardType="number-pad"
-                  style={[s.input, { color: theme.text, fontFamily: fonts.displayHeavy }]}
+                  style={[s.input, { color: LCD_INK, fontFamily: fonts.pixel }]}
                 />
-              </NeuInset>
+              </View>
 
               {/* Optional message */}
-              <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.label, { fontFamily: fonts.pixel }]}>
                 {t("message", "Message").toUpperCase()} <Text style={s.optional}>· {t("optional", "optional")}</Text>
               </Text>
-              <NeuInset style={s.messageWrap}>
+              <View style={s.messageWrap}>
                 <TextInput
                   value={message}
                   onChangeText={setMessage}
                   placeholder={t("messagePlaceholder", "For coffee tomorrow ☕")}
-                  placeholderTextColor={theme.textMuted}
+                  placeholderTextColor={DIM}
                   maxLength={200}
                   multiline
-                  style={[s.messageInput, { color: theme.text, fontFamily: fonts.body }]}
+                  style={[s.messageInput, { color: INK, fontFamily: fonts.body }]}
                 />
-              </NeuInset>
+              </View>
 
               {error ? <Text style={s.err}>{error}</Text> : null}
 
-              {/* Main CTA */}
+              {/* Main CTA — solid orange device key */}
               <Pressable
                 onPress={send}
                 disabled={createLink.isPending || !canSend}
-                style={{ opacity: createLink.isPending || !canSend ? 0.5 : 1 }}
+                style={({ pressed }) => [s.mainCta, (createLink.isPending || !canSend) && s.ctaOff, pressed && !(createLink.isPending || !canSend) && s.keyPressed]}
               >
-                {isRainbow ? (
-                  <VolumeGradient colors={["#8B3DFF", "#2B6EFF"]} shadowColor="#8B3DFF" shadowOpacity={0.30} borderRadius={99} style={s.mainCta}>
-                    {createLink.isPending ? (
-                      <ActivityIndicator color="#FFF" />
-                    ) : (
-                      <Text style={[s.ctaText, { color: "#FFF", fontFamily: fonts.displayHeavy }]}>🎁  {t("giftBtn", "Gift")}</Text>
-                    )}
-                  </VolumeGradient>
+                {createLink.isPending ? (
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <NeuCard gradient={gradients.pinkBlue} style={s.mainCta}>
-                    {createLink.isPending ? (
-                      <ActivityIndicator color={colors.ink} />
-                    ) : (
-                      <View style={s.ctaRow}>
-                        <IconPlane color="#f2a66e" size={20} />
-                        <Text style={[s.ctaText, { color: theme.text, fontFamily: fonts.displayHeavy }]}>{t("giftBtn", "Gift")}</Text>
-                      </View>
-                    )}
-                  </NeuCard>
+                  <View style={s.ctaRow}>
+                    <IconPlane color="#FFFFFF" size={20} />
+                    <Text style={[s.ctaText, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{t("giftBtn", "Gift")}</Text>
+                  </View>
                 )}
               </Pressable>
 
-              <Text style={[s.hint, { color: theme.textSecondary }]}>
+              <Text style={[s.hint, { color: DIM }]}>
                 {t("shareHint", "Telegram, WhatsApp or another sharing method will open")}
               </Text>
             </>
@@ -289,41 +263,31 @@ export default function GiftScreen() {
           {/* ── История отправленных подарков ── */}
           {(history.data?.length ?? 0) > 0 ? (
             <>
-              <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 28 }]}>{t("history", "History")}</Text>
+              <View style={[s.sectionHead, { marginTop: 28 }]}>
+                <Text style={[s.sectionMark, { fontFamily: fonts.pixel }]}>▸</Text>
+                <Text style={[s.sectionTitle, { color: INK, fontFamily: fonts.displayHeavy }]}>{t("history", "History")}</Text>
+              </View>
               <View style={s.historyList}>
                 {history.data!.map((link) => {
                   const claimed = link.status === "CLAIMED"
                   const expired = link.status === "EXPIRED"
                   return (
-                    <View key={link.id} style={[s.historyRow, { backgroundColor: isRainbow ? "#F2F2F6" : "#FFFFFF" }]}>
+                    <View key={link.id} style={s.historyRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={[s.historyAmount, { color: claimed ? (isRainbow ? neonColors.green : colors.mint) : theme.text, fontFamily: fonts.displayHeavy }]}>
-                          {link.amount} pts
+                        <Text style={[s.historyAmount, { color: claimed ? GREEN : INK, fontFamily: fonts.pixel }]}>
+                          {link.amount} PTS
                         </Text>
                         {link.recipient ? (
-                          <Text style={[s.historyMeta, { color: theme.textSecondary }]}>
+                          <Text style={[s.historyMeta, { color: DIM }]}>
                             → {link.recipient.name ?? t("unknownUser", "user")}
                           </Text>
                         ) : null}
                         {link.message ? (
-                          <Text style={[s.historyMeta, { color: theme.textSecondary }]} numberOfLines={1}>{link.message}</Text>
+                          <Text style={[s.historyMeta, { color: DIM }]} numberOfLines={1}>{link.message}</Text>
                         ) : null}
                       </View>
-                      <View style={[s.historyStatus, {
-                        backgroundColor: claimed
-                          ? (isRainbow ? "rgba(57,255,20,0.12)" : "rgba(178,255,200,0.4)")
-                          : expired
-                          ? "rgba(163,160,200,0.18)"
-                          : (isRainbow ? "rgba(43,110,255,0.10)" : "rgba(235,254,255,0.8)"),
-                      }]}>
-                        <Text style={[s.historyStatusText, {
-                          color: claimed
-                            ? (isRainbow ? neonColors.green : "#5EC67A")
-                            : expired
-                            ? theme.textSecondary
-                            : (isRainbow ? neonColors.cyan : "#75736A"),
-                          fontFamily: fonts.bodyBold,
-                        }]}>
+                      <View style={[s.historyStatus, claimed ? s.statusClaimed : expired ? s.statusExpired : s.statusPending]}>
+                        <Text style={[s.historyStatusText, { fontFamily: fonts.pixel, color: claimed ? GREEN : expired ? DIM : ORANGE_EDGE }]}>
                           {claimed ? t("statusClaimed", "received") : expired ? t("statusExpired", "expired") : t("statusPending", "waiting")}
                         </Text>
                       </View>
@@ -339,74 +303,112 @@ export default function GiftScreen() {
   )
 }
 
+const clayCard = {
+  backgroundColor: CREAM,
+  borderTopWidth: 1.5,
+  borderTopColor: HILITE,
+  borderBottomWidth: 5,
+  borderBottomColor: EDGE,
+  shadowColor: "#9A958A",
+  shadowOffset: { width: 0, height: 10 },
+  shadowOpacity: 0.32,
+  shadowRadius: 18,
+  elevation: 6,
+} as const
+
+const lcdPlate = {
+  backgroundColor: LCD,
+  borderWidth: 2,
+  borderColor: LCD_EDGE,
+} as const
+
 const s = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 18, paddingBottom: 60 },
 
-  hero: { borderRadius: 36, marginBottom: 22 },
-  heroContent: { padding: 18 },
-  heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 14 },
-  kicker: { fontSize: 11, letterSpacing: 0.8, marginBottom: 4 },
-  heroValue: { fontSize: 34, lineHeight: 38 },
-  limitOrb: {
-    width: 74, height: 74, borderRadius: 37,
-    backgroundColor: "rgba(255,255,255,0.72)",
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.9)",
-    shadowColor: "#C9C4B4", shadowOpacity: 0.26, shadowRadius: 14, shadowOffset: { width: 6, height: 8 },
+  // ── Hero ──
+  hero: { ...clayCard, borderRadius: 26, padding: 12, marginBottom: 22 },
+  heroLcd: { ...lcdPlate, borderRadius: 16, padding: 16 },
+  heroTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  kicker: { fontSize: 7, letterSpacing: 0.5, color: DIM, marginBottom: 10, lineHeight: 11 },
+  heroValue: { fontSize: 22, color: LCD_INK },
+  limitChip: { ...lcdPlate, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, alignItems: "center", backgroundColor: "#E4E3DF", gap: 4 },
+  limitChipValue: { color: LCD_INK, fontSize: 14 },
+  limitChipLabel: { color: DIM, fontSize: 6, letterSpacing: 0.5 },
+  limitTrack: { height: 14, borderRadius: 7, backgroundColor: "#CFCFC9", marginTop: 16, overflow: "hidden", borderWidth: 1, borderColor: LCD_EDGE },
+  limitFill: { height: "100%", borderRadius: 7, backgroundColor: ORANGE },
+  heroMeta: { flexDirection: "row", justifyContent: "space-between", marginTop: 8, gap: 8 },
+  metaText: { fontSize: 6, lineHeight: 10, color: DIM },
+
+  // ── Section header ──
+  sectionHead: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 },
+  sectionMark: { fontSize: 9, color: ORANGE },
+  sectionTitle: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
+
+  // ── Preset keys ──
+  presetRow: { flexDirection: "row", gap: 10, marginBottom: 18 },
+  preset: {
+    flex: 1,
+    ...clayCard,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
   },
-  limitOrbValue: { color: colors.ink, fontSize: 20, lineHeight: 22 },
-  limitOrbLabel: { color: "#75736A", fontSize: 10, textTransform: "uppercase" },
-  limitTrack: { height: 18, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.6)", marginTop: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
-  limitFill: { height: "100%", borderRadius: 99 },
-  heroMeta: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
-  metaText: { fontSize: 11 },
+  presetActive: { borderBottomColor: ORANGE, borderBottomWidth: 5 },
+  presetOff: { opacity: 0.4 },
+  presetText: { fontSize: 15 },
+  keyPressed: { borderBottomWidth: 2, transform: [{ translateY: 3 }], shadowOpacity: 0.12 },
 
-  sectionTitle: { fontSize: 28, lineHeight: 32, marginBottom: 16 },
-
-  presetRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
-  preset: { paddingVertical: 12, alignItems: "center", borderRadius: 18 },
-  presetText: { fontSize: 16 },
-
-  label: { fontSize: 11, letterSpacing: 0.5, marginBottom: 8 },
-  optional: { fontSize: 11, fontWeight: "500", letterSpacing: 0 },
-  inputWrap: { marginBottom: 16, borderRadius: 24 },
-  input: { paddingHorizontal: 16, paddingVertical: 12, fontSize: 28, lineHeight: 34 },
-  messageWrap: { marginBottom: 14, borderRadius: 24 },
+  // ── Inputs ──
+  label: { fontSize: 7, letterSpacing: 0.5, color: DIM, marginBottom: 8 },
+  optional: { fontSize: 7, color: DIM },
+  inputWrap: { ...lcdPlate, borderRadius: 14, marginBottom: 16 },
+  input: { paddingHorizontal: 16, paddingVertical: 16, fontSize: 22, lineHeight: 28 },
+  messageWrap: { ...lcdPlate, backgroundColor: "#E4E3DF", borderRadius: 14, marginBottom: 14 },
   messageInput: { padding: 16, fontSize: 15, minHeight: 86, textAlignVertical: "top" },
 
-  err: { color: "#DC2626", fontSize: 13, marginBottom: 10 },
-  mainCta: { padding: 16, alignItems: "center", borderRadius: 99, marginBottom: 12 },
+  err: { color: "#C25A37", fontSize: 13, marginBottom: 10 },
+
+  // ── CTA ──
+  mainCta: {
+    backgroundColor: ORANGE,
+    borderRadius: 18,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 12,
+    borderTopWidth: 1.5,
+    borderTopColor: "rgba(255,255,255,0.5)",
+    borderBottomWidth: 5,
+    borderBottomColor: ORANGE_EDGE,
+    shadowColor: "#9A958A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  ctaOff: { opacity: 0.45 },
+  ctaRow: { flexDirection: "row", alignItems: "center", gap: 9 },
   ctaText: { fontSize: 16 },
   hint: { fontSize: 12, textAlign: "center", lineHeight: 18 },
 
-  doneWrap: { alignItems: "center", paddingTop: 20 },
-  doneOrb: { width: 142, height: 142, borderRadius: 71, marginBottom: 18 },
-  doneOrbInner: { flex: 1, alignItems: "center", justifyContent: "center" },
-  doneTitle: { fontSize: 34, lineHeight: 38 },
+  // ── Done ──
+  doneWrap: { alignItems: "center", paddingTop: 10 },
+  doneTitle: { fontSize: 28, lineHeight: 32 },
   doneSub: { fontSize: 15, marginTop: 8, textAlign: "center" },
-  doneHint: { fontSize: 12, marginTop: 6, marginBottom: 22, textAlign: "center", lineHeight: 18, paddingHorizontal: 20 },
-  qrCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 16,
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
-  },
+  doneHint: { fontSize: 12, marginTop: 6, marginBottom: 20, textAlign: "center", lineHeight: 18, paddingHorizontal: 20 },
+  qrCard: { backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 2, borderColor: LCD_EDGE },
   qrImg: { width: 200, height: 200 },
-  ctaRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  btnRow: { flexDirection: "row", gap: 10, width: "100%", marginBottom: 12 },
-  primaryBtn: { padding: 14, alignItems: "center", borderRadius: 99 },
-  secondaryPressable: { padding: 12, alignItems: "center" },
-  secondaryText: { fontSize: 14 },
+  secondaryPressable: { padding: 12, alignItems: "center", marginTop: 4 },
+  secondaryText: { fontSize: 8, letterSpacing: 0.5 },
 
+  // ── History ──
   historyList: { gap: 8 },
-  historyRow: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 24, gap: 10 },
-  historyAmount: { fontSize: 18 },
-  historyMeta: { fontSize: 12, marginTop: 2 },
-  historyStatus: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 },
-  historyStatusText: { fontSize: 11 },
+  historyRow: { ...clayCard, flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 16, gap: 10, borderBottomWidth: 4 },
+  historyAmount: { fontSize: 13 },
+  historyMeta: { fontSize: 12, marginTop: 4 },
+  historyStatus: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 6, borderWidth: 1 },
+  statusClaimed: { backgroundColor: "#DCEFE6", borderColor: "rgba(95,174,146,0.4)" },
+  statusExpired: { backgroundColor: "#E4E3DF", borderColor: EDGE },
+  statusPending: { backgroundColor: "#F6E2D2", borderColor: "rgba(217,138,78,0.4)" },
+  historyStatusText: { fontSize: 7, letterSpacing: 0.5 },
 })
