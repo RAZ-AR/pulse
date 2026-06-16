@@ -4,6 +4,7 @@ import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, neonColors, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
+import { AyooLogo } from "../../src/components/AyooLogo"
 import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
 
 const TX_ICONS: Record<string, string> = {
@@ -67,8 +68,8 @@ export default function EarnScreen() {
       <LavaLampSurface intensity="glass" style={[s.hero, isRainbow ? {} : theme.shadowRaised]}>
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
-          <View style={s.blackLogo}>
-            <Text style={[s.blackLogoText, isRainbow ? { color: "#8B3DFF" } : {}]}>P</Text>
+          <View style={[s.brandLogo, isRainbow && s.brandLogoRainbow]}>
+            <AyooLogo width={68} height={31} />
           </View>
           <View style={s.blackPill}>
             <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("activePlan")}</Text>
@@ -270,8 +271,8 @@ const s = StyleSheet.create({
   hero: { borderRadius: 32, padding: 18, minHeight: 214, marginBottom: 12, overflow: "hidden" },
   heroOrb: { position: "absolute", right: -52, top: -42, width: 170, height: 170, borderRadius: 85, borderWidth: 1, borderColor: "rgba(167,232,238,0.32)" },
   heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 34 },
-  blackLogo: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
-  blackLogoText: { color: "#75736A", fontWeight: "900" },
+  brandLogo: { width: 76, height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
+  brandLogoRainbow: { backgroundColor: "rgba(255,255,255,0.82)" },
   blackPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
   blackPillText: { color: "#75736A", fontSize: 12 },
   heroTitle: { color: "#015634", fontSize: 31, lineHeight: 34, width: 250 },

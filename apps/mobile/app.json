@@ -4,9 +4,15 @@
     "slug": "ayoo",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "ayoo",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f7f3e9"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.ayoo.app"
@@ -14,6 +20,7 @@
     "android": {
       "package": "com.ayoo.app",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F1115"
       },
       "permissions": [
@@ -50,6 +57,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
       "router": {

@@ -17,17 +17,19 @@ if (!html.includes("telegram-web-app.js")) {
   console.log("✓ telegram-web-app.js already present")
 }
 
-// 1b. Inject the Press Start 2P pixel font (used by the tamagotchi LCD)
+// 1b. Inject web fonts: pixel LCD + editorial serif headings.
 const fontLink =
   '<link rel="preconnect" href="https://fonts.googleapis.com">' +
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-  '<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">\n  '
-if (!html.includes("Press+Start+2P")) {
+  '<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Press+Start+2P&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">\n  '
+if (!html.includes("Instrument+Serif") || !html.includes("Press+Start+2P") || !html.includes("Roboto:wght")) {
+  html = html.replace(/<link href="https:\/\/fonts\.googleapis\.com\/css2\?family=Press\+Start\+2P&display=swap" rel="stylesheet">\s*/g, "")
+  html = html.replace(/<link href="https:\/\/fonts\.googleapis\.com\/css2\?family=Instrument\+Serif:ital@0;1&family=Press\+Start\+2P&display=swap" rel="stylesheet">\s*/g, "")
   html = html.replace("</head>", fontLink + "</head>")
   fs.writeFileSync(htmlPath, html)
-  console.log("✓ Injected Press Start 2P font into index.html")
+  console.log("✓ Injected web fonts into index.html")
 } else {
-  console.log("✓ Press Start 2P font already present")
+  console.log("✓ web fonts already present")
 }
 
 // 2. Add vercel.json for SPA routing.

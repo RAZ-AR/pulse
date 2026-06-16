@@ -173,7 +173,7 @@ export default function HomeScreen() {
           )}
         </Pressable>
         <View style={s.helloBlock}>
-          <Text style={[s.hello, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+          <Text style={[s.hello, { color: theme.text, fontFamily: fonts.serif }]}>
             {t("hiName", { name: me.data?.name?.split(" ")[0] ?? "Demo" })}
           </Text>
           <View style={s.citySwitch}>
@@ -285,13 +285,13 @@ export default function HomeScreen() {
                 style={s.partnerOfferCard}
               >
                 <View style={s.partnerOfferPtsBox}>
-                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.displayHeavy, color: "#75736A" }]}>+{offer.pointsReward}</Text>
-                  <Text style={[s.partnerOfferPtsLabel, { color: "#75736A" }]}>pts</Text>
+                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.robotoBlack, fontWeight: "900", color: "#75736A" }]}>+{offer.pointsReward}</Text>
+                  <Text style={[s.partnerOfferPtsLabel, { fontFamily: fonts.robotoMedium, fontWeight: "500", color: "#75736A" }]}>pts</Text>
                 </View>
-                <Text style={[s.partnerOfferTitle, { color: "#2C3E50", fontFamily: fonts.bodyBold }]} numberOfLines={2}>
+                <Text style={[s.partnerOfferTitle, { color: "#2C3E50", fontFamily: fonts.robotoBold, fontWeight: "700" }]} numberOfLines={2}>
                   {offer.title}
                 </Text>
-                <Text style={[s.partnerOfferVenue, { color: "#75736A" }]} numberOfLines={1}>
+                <Text style={[s.partnerOfferVenue, { color: "#75736A", fontFamily: fonts.roboto, fontWeight: "400" }]} numberOfLines={1}>
                   {offer.venue.name}
                 </Text>
               </Pressable>
@@ -310,7 +310,7 @@ export default function HomeScreen() {
               onPress={() => setActiveFilterKey(filter.key)}
               style={[s.filterChip, isActive ? s.filterChipActive : s.filterChipIdle]}
             >
-              <Text style={[s.filterChipText, { color: isActive ? "#75736A" : colors.ink, fontFamily: fonts.bodyBold }]}>
+              <Text style={[s.filterChipText, { color: isActive ? "#75736A" : colors.ink, fontFamily: fonts.robotoMedium, fontWeight: "500" }]}>
                 {filter.label}
               </Text>
             </Pressable>
@@ -326,7 +326,7 @@ export default function HomeScreen() {
         ) : null}
         {!nearby.isLoading && visibleNearby.length === 0 ? (
           <View style={s.emptyVenues}>
-            <Text style={[s.emptyVenuesText, { fontFamily: fonts.bodyBold }]}>
+            <Text style={[s.emptyVenuesText, { fontFamily: fonts.robotoMedium, fontWeight: "500" }]}>
               {selectedCity.label}: {t("venue:noVenuesYet", "No venues yet")}
             </Text>
           </View>
@@ -495,7 +495,7 @@ function SectionHeader({ title, action, onPress }: { title: string; action: stri
     <View style={s.sectionHead}>
       <View style={s.sectionTitleRow}>
         <Text style={[s.sectionMark, { fontFamily: fonts.pixel }]}>▸</Text>
-        <Text style={[s.sectionTitle, { fontFamily: fonts.displayHeavy, color: "#015634", textTransform: "uppercase", letterSpacing: 0.6 }]}>{title}</Text>
+        <Text style={[s.sectionTitle, { fontFamily: fonts.serif, color: "#015634" }]}>{title}</Text>
       </View>
       <Pressable onPress={onPress} style={s.sectionButton}>
         <Text style={[s.sectionButtonText, { fontFamily: fonts.pixel, fontSize: 8, color: "#75736A" }]}>{action}</Text>
@@ -528,14 +528,14 @@ function OfferCard({
           <View style={s.offerLogo}>
             <Text style={[s.offerLogoText, { color: "#8C887E" }]}>✦</Text>
           </View>
-          <Text style={[s.offerPoints, { fontFamily: fonts.pixel }]}>
+          <Text style={[s.offerPoints, { fontFamily: fonts.robotoBlack, fontWeight: "900" }]}>
             {points} {pointsLabel.toUpperCase()}
           </Text>
         </View>
-        <Text style={[s.offerTitle, { color: "#015634", fontFamily: fonts.displayHeavy }]} numberOfLines={2}>{title}</Text>
-        <Text style={[s.offerVenue, { color: "#8C887E", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{venue}</Text>
+        <Text style={[s.offerTitle, { color: "#015634", fontFamily: fonts.robotoBold, fontWeight: "700" }]} numberOfLines={2}>{title}</Text>
+        <Text style={[s.offerVenue, { color: "#8C887E", fontFamily: fonts.robotoMedium, fontWeight: "500" }]} numberOfLines={1}>{venue}</Text>
         <View style={s.offerLink}>
-          <Text style={[s.offerLinkText, { color: "#75736A", fontFamily: fonts.pixel }]}>{openLabel.toUpperCase()} ↗</Text>
+          <Text style={[s.offerLinkText, { color: "#75736A", fontFamily: fonts.robotoBold, fontWeight: "700" }]}>{openLabel.toUpperCase()} ↗</Text>
         </View>
       </View>
     </Pressable>
@@ -574,38 +574,38 @@ function VenueCard({
   return (
     <Pressable onPress={onPress} style={s.venueCard}>
       <View style={s.venueLogo}>
-        <Text style={[s.venueLogoText, { fontFamily: fonts.displayHeavy }]}>{logo}</Text>
+        <Text style={[s.venueLogoText, { fontFamily: fonts.robotoBold, fontWeight: "700" }]}>{logo}</Text>
       </View>
       <View style={s.venueMain}>
         <View style={s.venueTitleRow}>
-          <Text style={[s.venueName, { fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{name}</Text>
+          <Text style={[s.venueName, { fontFamily: fonts.robotoBold, fontWeight: "700" }]} numberOfLines={1}>{name}</Text>
           <Text style={s.venueArrow}>↗</Text>
         </View>
-        <Text style={[s.venueMeta, { fontFamily: fonts.pixel, textTransform: "uppercase" }]} numberOfLines={1}>
+        <Text style={[s.venueMeta, { fontFamily: fonts.robotoMedium, fontWeight: "500", textTransform: "uppercase" }]} numberOfLines={1}>
           {category} · {city}
         </Text>
-        <Text style={s.venueAddress} numberOfLines={1}>{address}</Text>
+        <Text style={[s.venueAddress, { fontFamily: fonts.roboto, fontWeight: "400" }]} numberOfLines={1}>{address}</Text>
         <View style={s.venueChips}>
           <View style={s.venueChipDark}>
-            <Text style={[s.venueChipDarkText, { fontFamily: fonts.pixel }]}>
+            <Text style={[s.venueChipDarkText, { fontFamily: fonts.robotoBold, fontWeight: "700" }]}>
               {rate ? `${rate.toFixed(3)} pts/RSD` : receiptScanLabel}
             </Text>
           </View>
           <View style={s.venueChipLight}>
-            <Text style={[s.venueChipLightText, { fontFamily: fonts.pixel }]}>{distanceLabel(distance)}</Text>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.robotoMedium, fontWeight: "500" }]}>{distanceLabel(distance)}</Text>
           </View>
           <View style={s.venueChipLight}>
-            <Text style={[s.venueChipLightText, { fontFamily: fonts.pixel }]}>{ratingLabel(rating, reviews)}</Text>
+            <Text style={[s.venueChipLightText, { fontFamily: fonts.robotoMedium, fontWeight: "500" }]}>{ratingLabel(rating, reviews)}</Text>
           </View>
           {discount ? (
             <View style={s.venueChipMint}>
-              <Text style={[s.venueChipMintText, { fontFamily: fonts.pixel }]}>-{discount}%</Text>
+              <Text style={[s.venueChipMintText, { fontFamily: fonts.robotoBold, fontWeight: "700" }]}>-{discount}%</Text>
             </View>
           ) : null}
         </View>
         <View style={s.specialLine}>
           <Text style={s.specialDot}>●</Text>
-          <Text style={[s.specialText, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{offer}</Text>
+          <Text style={[s.specialText, { fontFamily: fonts.robotoMedium, fontWeight: "500" }]} numberOfLines={1}>{offer}</Text>
         </View>
       </View>
     </Pressable>
@@ -699,7 +699,7 @@ const s = StyleSheet.create({
     paddingTop: 2,
   },
   helloBlock: { flex: 1 },
-  hello: { fontSize: 24, lineHeight: 28, letterSpacing: 0 },
+  hello: { fontSize: 44, lineHeight: 50, letterSpacing: 0 },
   citySwitch: { flexDirection: "row", gap: 7, marginTop: 6 },
   cityPill: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   cityPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.32, shadowRadius: 6, elevation: 2 },
@@ -712,7 +712,7 @@ const s = StyleSheet.create({
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   sectionMark: { fontSize: 9, color: "#fd4600" },
-  sectionTitle: { color: "#015634", fontSize: 21, letterSpacing: 0 },
+  sectionTitle: { color: "#015634", fontSize: 39, lineHeight: 44, letterSpacing: 0 },
   sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   sectionButtonText: { color: "#75736A", fontSize: 11 },
 

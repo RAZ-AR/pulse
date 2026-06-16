@@ -35,9 +35,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
       <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[#0F1115]">
-            ayoo <span className="text-[#6B7280] font-normal text-lg">Merchant</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="ayoo" className="h-9 w-auto" />
+            <span className="text-[#6B7280] font-normal text-lg">Merchant</span>
+          </div>
           <p className="mt-1 text-sm text-[#6B7280]">Sign in to manage your venue</p>
         </div>
 

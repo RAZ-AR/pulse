@@ -17,6 +17,7 @@ import { useEffect, useRef } from "react"
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { fonts } from "../lib/theme"
+import { AyooLogo } from "./AyooLogo"
 
 // ── Console palette — warm cream hardware body, ink labels ─────
 const BODY = ["#E4DCCB", "#DCD4C2"] as const   // beige hardware-body gradient
@@ -118,7 +119,9 @@ export function Readout({ cells }: { cells: { label: string; value: string }[] }
 function BrandPlate({ right }: { right?: React.ReactNode }) {
   return (
     <View style={s.plate}>
-      <Text style={[s.brand, { fontFamily: fonts.displayHeavy }]}>ayoo</Text>
+      <View style={s.brand}>
+        <AyooLogo width={87} height={39} />
+      </View>
       <View style={s.plateRight}>
         {right}
         <Text style={[s.model, { fontFamily: fonts.pixel }]}>SP·133</Text>
@@ -197,7 +200,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 4,
   },
-  brand: { fontSize: 22, letterSpacing: -0.5, color: INK },
+  brand: { width: 87, height: 39, justifyContent: "center" },
   plateRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   model: { fontSize: 7, letterSpacing: 0.5, color: DIM },
   grille: { flexDirection: "row", gap: 3 },

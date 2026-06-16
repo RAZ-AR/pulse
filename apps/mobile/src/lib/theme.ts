@@ -208,11 +208,16 @@ export function useTheme(): Theme {
 }
 
 export const fonts = {
-  display: "SpaceGrotesk_700Bold",
-  displayHeavy: "SpaceGrotesk_800ExtraBold",
-  displayBlack: "SpaceGrotesk_700Bold",
-  body: "SpaceGrotesk_500Medium",
-  bodyBold: "SpaceGrotesk_700Bold",
+  display: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_700Bold",
+  displayHeavy: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_800ExtraBold",
+  displayBlack: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_700Bold",
+  serif: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_700Bold",
+  roboto: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_500Medium",
+  robotoMedium: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_600SemiBold",
+  robotoBold: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_700Bold",
+  robotoBlack: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_800ExtraBold",
+  body: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_500Medium",
+  bodyBold: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_700Bold",
   // Retro LCD pixel font — Press Start 2P on web (Telegram), native fallback.
   pixel: Platform.OS === "web" ? "\"Press Start 2P\", monospace" : "SpaceGrotesk_700Bold",
 }
