@@ -7,7 +7,7 @@ import jsQR from "jsqr"
 import { BrowserQRCodeReader } from "@zxing/browser"
 import { DecodeHintType } from "@zxing/library"
 import { trpc } from "../src/lib/trpc"
-import { uploadReceiptImage } from "../src/lib/storage"
+import { uploadReceiptFile, uploadReceiptImage } from "../src/lib/storage"
 import { fonts, useTheme } from "../src/lib/theme"
 import { IS_TELEGRAM, getTgWebApp } from "../src/lib/telegram"
 
@@ -24,7 +24,7 @@ const LCD_INK = "#015634"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 
-type Mode = "qr" | "photo"
+type Mode = "qr" | "photo" | "number"
 
 type Phase =
   | { kind: "camera"; mode: Mode }
@@ -54,9 +54,9 @@ type OcrFields = {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-// Decode a QR from an already-loaded image. ZXing (TRY_HARDER) first — it is
-// far more robust on real photos of dense Serbian fiscal QRs than jsQR — then
-// jsQR at several scales as a fallback (handles cases ZXing misses).
+// Decode a QR from an already-loaded image. ZXing (TRY_HARDER) first, then
+// jsQR over a few canvas variants. Serbian fiscal QRs are dense; small changes
+// in crop/contrast often decide whether the browser can read them.
 async function decodeQrFromImage(img: HTMLImageElement): Promise<string | null> {
   // 1. ZXing with TRY_HARDER
   try {
@@ -68,7 +68,7 @@ async function decodeQrFromImage(img: HTMLImageElement): Promise<string | null> 
     if (text) return text
   } catch { /* not found — fall through to jsQR */ }
 
-  // 2. jsQR at full + downscaled passes
+  // 2. jsQR at full + downscaled passes, with center crops and contrast passes.
   const full = Math.max(img.width, img.height)
   for (const maxDim of [full, 2400, 1600, 1000]) {
     const scale = Math.min(1, maxDim / full)
@@ -80,11 +80,53 @@ async function decodeQrFromImage(img: HTMLImageElement): Promise<string | null> 
     const ctx = canvas.getContext("2d")
     if (!ctx) continue
     ctx.drawImage(img, 0, 0, w, h)
-    const { data, width, height } = ctx.getImageData(0, 0, w, h)
-    const hit = jsQR(data, width, height, { inversionAttempts: "attemptBoth" })?.data
+    const hit = decodeQrFromCanvas(ctx, w, h)
     if (hit) return hit
   }
   return null
+}
+
+function decodeQrFromCanvas(ctx: CanvasRenderingContext2D, width: number, height: number): string | null {
+  const boxes = [
+    { x: 0, y: 0, w: width, h: height },
+    centerCrop(width, height, 0.9),
+    centerCrop(width, height, 0.75),
+    centerCrop(width, height, 0.6),
+  ]
+
+  for (const box of boxes) {
+    if (box.w < 80 || box.h < 80) continue
+    const image = ctx.getImageData(box.x, box.y, box.w, box.h)
+    const raw = jsQR(image.data, image.width, image.height, { inversionAttempts: "attemptBoth" })?.data
+    if (raw) return raw
+
+    const contrast = highContrast(image)
+    const hit = jsQR(contrast.data, contrast.width, contrast.height, { inversionAttempts: "attemptBoth" })?.data
+    if (hit) return hit
+  }
+  return null
+}
+
+function centerCrop(width: number, height: number, ratio: number) {
+  const size = Math.round(Math.min(width, height) * ratio)
+  return {
+    x: Math.max(0, Math.round((width - size) / 2)),
+    y: Math.max(0, Math.round((height - size) / 2)),
+    w: size,
+    h: size,
+  }
+}
+
+function highContrast(image: ImageData): ImageData {
+  const out = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height)
+  for (let i = 0; i < out.data.length; i += 4) {
+    const gray = out.data[i]! * 0.299 + out.data[i + 1]! * 0.587 + out.data[i + 2]! * 0.114
+    const v = gray > 145 ? 255 : 0
+    out.data[i] = v
+    out.data[i + 1] = v
+    out.data[i + 2] = v
+  }
+  return out
 }
 
 // Web-only: open the camera/photo picker, decode any QR in the snapshot.
@@ -112,6 +154,17 @@ async function decodeQrFromPhoto(): Promise<string | null> {
   })
 }
 
+async function pickReceiptPhotoFile(): Promise<File | null> {
+  if (typeof document === "undefined") return null
+  return new Promise((resolve) => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = "image/*"
+    input.onchange = () => resolve(input.files?.[0] ?? null)
+    input.click()
+  })
+}
+
 export default function ScanScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
@@ -128,6 +181,9 @@ export default function ScanScreen() {
   const scanQrMutation = trpc.transaction.scanQrReceipt.useMutation()
   const redeemOfferMutation = trpc.offer.redeem.useMutation()
   const confirmMutation = trpc.transaction.confirmReceipt.useMutation({
+    onSuccess: () => utils.user.me.invalidate(),
+  })
+  const fiscalMutation = trpc.transaction.submitFiscalNumber.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
 
@@ -169,6 +225,46 @@ export default function ScanScreen() {
       return
     }
     void handleQrScanned(data)
+  }
+
+  async function handleReceiptPhotoFallback() {
+    if (!userId) {
+      showError(t("scanFailed", "Scan failed"), t("notSignedIn", "Not signed in"))
+      return
+    }
+    if (Platform.OS !== "web") {
+      setPhase({ kind: "camera", mode: "photo" })
+      return
+    }
+
+    try {
+      const file = await pickReceiptPhotoFile()
+      if (!file) return
+
+      setPhase({ kind: "uploading" })
+      const imageUrl = await uploadReceiptFile(file, userId)
+
+      setPhase({ kind: "scanning", imageUrl })
+      const result = await scanMutation.mutateAsync({ imageUrl })
+
+      const d = result.ocrData
+      setPhase({
+        kind: "confirm",
+        imageUrl,
+        receiptHash: result.receiptHash,
+        confidence: result.confidence,
+        scanToken: result.scanToken,
+        ocr: {
+          vendor: d.vendor ?? "",
+          amount: d.total !== null ? String(d.total) : "",
+          currency: d.currency ?? "RSD",
+          date: d.date ?? today(),
+          receiptNumber: d.receiptNumber ?? "",
+        },
+      })
+    } catch (e) {
+      showError(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e), "photo")
+    }
   }
 
   // ── QR scan — роутер по типу QR ──────────────────────────
@@ -277,6 +373,24 @@ export default function ScanScreen() {
     }
   }
 
+  async function handleFiscalSubmit(fiscalNumber: string, amountRsd: number) {
+    setPhase({ kind: "submitting" })
+    try {
+      const res = await fiscalMutation.mutateAsync({ fiscalNumber, amountRsd })
+      setPhase({
+        kind: "done",
+        pointsEarned: res.pointsEarned,
+        streakBonus: res.streakBonus ?? undefined,
+        totalRsd: res.totalRsd,
+        needsManualReview: res.needsManualReview,
+      })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      const alreadyScanned = msg.toLowerCase().includes("already been submitted") || msg.includes("CONFLICT")
+      setPhase({ kind: "error", message: alreadyScanned ? "" : `${t("scanFailed", "Scan failed")}\n\n${msg}`, mode: "number", alreadyScanned })
+    }
+  }
+
   const currentMode = phase.kind === "camera" ? phase.mode : "qr"
 
   return (
@@ -293,25 +407,22 @@ export default function ScanScreen() {
           <>
             {/* Mode toggle */}
             <View style={[s.modeRow, { borderBottomColor: theme.border }]}>
-              <Pressable
-                style={[s.modeBtn, phase.mode === "qr" && s.modeBtnActive]}
-                onPress={() => setPhase({ kind: "camera", mode: "qr" })}
-              >
-                <Text style={[s.modeBtnText, { color: phase.mode === "qr" ? ORANGE : theme.textSecondary }]}>
-                  {t("qrCode", "QR Code")}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[s.modeBtn, phase.mode === "photo" && s.modeBtnActive]}
-                onPress={() => setPhase({ kind: "camera", mode: "photo" })}
-              >
-                <Text style={[s.modeBtnText, { color: phase.mode === "photo" ? ORANGE : theme.textSecondary }]}>
-                  {t("photo", "Photo")}
-                </Text>
-              </Pressable>
+              {(["qr", "photo", "number"] as Mode[]).map((m) => (
+                <Pressable
+                  key={m}
+                  style={[s.modeBtn, phase.mode === m && s.modeBtnActive]}
+                  onPress={() => setPhase({ kind: "camera", mode: m })}
+                >
+                  <Text style={[s.modeBtnText, { color: phase.mode === m ? ORANGE : theme.textSecondary }]}>
+                    {m === "qr" ? t("qrCode", "QR") : m === "photo" ? t("photo", "Photo") : t("fiscalNumberTab", "Номер")}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
 
-            {IS_TELEGRAM && phase.mode === "qr" ? (
+            {phase.mode === "number" ? (
+              <NumberEntryPhase onSubmit={handleFiscalSubmit} theme={theme} t={t} />
+            ) : IS_TELEGRAM && phase.mode === "qr" ? (
               <TelegramQrPhase onPhoto={handlePhotoQr} onScanner={openTelegramQrScanner} theme={theme} t={t} />
             ) : (
               <CameraPhase
@@ -345,6 +456,7 @@ export default function ScanScreen() {
             message={phase.message}
             alreadyScanned={phase.alreadyScanned}
             onRetry={() => setPhase({ kind: "camera", mode: phase.mode })}
+            onPhotoFallback={handleReceiptPhotoFallback}
             theme={theme}
           />
         ) : (
@@ -395,6 +507,74 @@ function TelegramQrPhase({
         </Text>
       </Pressable>
     </View>
+  )
+}
+
+// ── NumberEntryPhase — manual fiscal receipt number ───────────
+
+function NumberEntryPhase({
+  onSubmit, theme, t,
+}: {
+  onSubmit: (fiscalNumber: string, amountRsd: number) => void
+  theme: ReturnType<typeof useTheme>
+  t: (key: string, fallback: string) => string
+}) {
+  const [num, setNum] = useState("")
+  const [amt, setAmt] = useState("")
+
+  const FISCAL_RE = /^[A-Z0-9]{1,20}-[A-Z0-9]{1,20}-\d{1,10}$/i
+  const isValid = FISCAL_RE.test(num.trim()) && parseFloat(amt) > 0
+
+  function handleSubmit() {
+    const amountRsd = parseFloat(amt)
+    if (!isValid) return
+    onSubmit(num.trim().toUpperCase(), amountRsd)
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 24, gap: 20 }}>
+      <View style={{ gap: 6 }}>
+        <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>
+          {t("fiscalNumber", "Номер фискального чека")}
+        </Text>
+        <TextInput
+          value={num}
+          onChangeText={setNum}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          placeholder="ААББ1234-ВВГГ5678-99"
+          placeholderTextColor={DIM}
+          style={[s.input, { borderColor: theme.border, color: theme.text }]}
+        />
+        <Text style={{ fontSize: 11, color: DIM, marginTop: 2 }}>
+          {t("fiscalNumberHint", "Напечатан в нижней части чека")}
+        </Text>
+      </View>
+
+      <View style={{ gap: 6 }}>
+        <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>
+          {t("amountRsd", "Сумма (RSD)")}
+        </Text>
+        <TextInput
+          value={amt}
+          onChangeText={setAmt}
+          keyboardType="decimal-pad"
+          placeholder="1470"
+          placeholderTextColor={DIM}
+          style={[s.input, { borderColor: theme.border, color: theme.text }]}
+        />
+      </View>
+
+      <Pressable
+        onPress={handleSubmit}
+        style={[s.btn, s.btnPrimary, { opacity: isValid ? 1 : 0.45 }]}
+        disabled={!isValid}
+      >
+        <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>
+          {t("confirmAndEarn", "Подтвердить и получить баллы")}
+        </Text>
+      </Pressable>
+    </ScrollView>
   )
 }
 
@@ -509,11 +689,12 @@ function ConfirmPhase({
 // ── ErrorPhase ────────────────────────────────────────────────
 
 function ErrorPhase({
-  message, alreadyScanned, onRetry, theme,
+  message, alreadyScanned, onRetry, onPhotoFallback, theme,
 }: {
   message: string
   alreadyScanned?: boolean | undefined
   onRetry: () => void
+  onPhotoFallback: () => void
   theme: ReturnType<typeof useTheme>
 }) {
   const { t } = useTranslation("common")
@@ -555,6 +736,11 @@ function ErrorPhase({
       >
         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
           {t("tryAgain", "Try again")}
+        </Text>
+      </Pressable>
+      <Pressable onPress={onPhotoFallback} style={{ paddingVertical: 16 }}>
+        <Text style={{ color: theme.textSecondary, fontSize: 13, textDecorationLine: "underline" }}>
+          {t("scanWholeReceiptPhoto", "Scan whole receipt as photo")}
         </Text>
       </Pressable>
     </View>

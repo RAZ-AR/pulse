@@ -809,6 +809,77 @@ export const transactionRouter = router({
       }
     }),
 
+  /**
+   * Submit a fiscal receipt number manually (no QR needed).
+   * User enters the printed receipt number + amount → 1% points, deduped by number.
+   */
+  submitFiscalNumber: protectedProcedure
+    .input(z.object({
+      fiscalNumber: z.string()
+        .min(5)
+        .max(60)
+        .regex(/^[A-Z0-9]{1,20}-[A-Z0-9]{1,20}-\d{1,10}$/i, "Format: XXXXXXXX-XXXXXXXX-12345"),
+      amountRsd: z.number().positive(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const receiptNumber = input.fiscalNumber.toUpperCase().trim()
+
+      // Dedup — one receipt number can only be claimed once across all users
+      const existing = await ctx.db.transaction.findFirst({
+        where: { receiptNumber },
+        select: { id: true },
+      })
+      if (existing) {
+        throw new TRPCError({ code: "CONFLICT", message: "This receipt has already been submitted." })
+      }
+
+      await checkReceiptScanLimits(ctx.userId)
+
+      const user = await ctx.db.user.findUnique({
+        where: { id: ctx.userId },
+        select: { earnedPoints: true, currentStreak: true, longestStreak: true, lastCheckinAt: true, totalEarnedLifetime: true, stepsToday: true },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" })
+
+      const needsManualReview = input.amountRsd > RECEIPT_MANUAL_REVIEW_THRESHOLD
+      const stepMult = stepMultiplier(user.stepsToday)
+      const rawPoints = input.amountRsd * SCAN_POINTS_PER_CURRENCY * stepMult
+      const pointsEarned = needsManualReview ? 0 : Math.max(1, Math.floor(rawPoints))
+
+      const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
+      const totalPoints = pointsEarned + streak.milestoneBonus
+
+      const result = await runReceiptTx(ctx.db, {
+        userId: ctx.userId,
+        venueId: null,
+        amount: input.amountRsd,
+        currency: "RSD",
+        earnedPoints: pointsEarned,
+        totalPoints,
+        streak,
+        status: needsManualReview ? "PENDING" : "VERIFIED",
+        record: {
+          receiptNumber,
+          ocrConfidence: 0.5,
+          ocrRawData: { source: "fiscal_number_manual", fiscalNumber: receiptNumber },
+        },
+      })
+
+      await notifyBadges(ctx.db, ctx.userId, result.newBadges)
+      await notifyPetEvolution(ctx.db, ctx.userId, totalPoints)
+
+      return {
+        transactionId: result.transaction.id,
+        pointsEarned: totalPoints,
+        streakBonus: streak.milestoneBonus,
+        newStreak: streak.currentStreak,
+        newTotalPoints: result.updatedUser.earnedPoints + result.updatedUser.welcomePoints,
+        status: (needsManualReview ? "PENDING" : "VERIFIED") as "PENDING" | "VERIFIED",
+        needsManualReview,
+        totalRsd: input.amountRsd,
+      }
+    }),
+
   history: protectedProcedure
     .input(
       z.object({
