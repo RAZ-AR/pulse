@@ -45,12 +45,16 @@ export function decodeSerbiaQrUrl(url: string): SerbiaQrData {
   const totalCounter = readUint32LE(data, 17)
   const transactionTypeCounter = readUint32LE(data, 21)
   const totalPara = readUint64LE(data, 25)   // in para (1/100 of 1/100 RSD = 1/10000 RSD)
-  const tsMs = readUint64LE(data, 33)        // unix ms
 
   const totalRsd = totalPara / 10000
 
-  const dt = new Date(tsMs)
-  // Serbia is UTC+1 (winter) / UTC+2 (summer); simplest: use ISO and slice
+  // Serbian ESIR uses .NET DateTime.Ticks: 100-nanosecond intervals since 0001-01-01 UTC.
+  // Convert to Unix ms before constructing Date.
+  const tsTicks = readUint64LEBigInt(data, 33)
+  const DOTNET_TO_UNIX_TICKS = 621355968000000000n
+  const tsUnixMs = Number((tsTicks - DOTNET_TO_UNIX_TICKS) / 10000n)
+  const dt = new Date(tsUnixMs)
+  if (isNaN(dt.getTime())) throw new Error(`Invalid receipt timestamp: ${tsTicks}`)
   const date = dt.toISOString().slice(0, 10)
   const time = dt.toISOString().slice(11, 16)
 
@@ -169,6 +173,11 @@ function readUint32LE(bytes: Uint8Array, offset: number): number {
 function readUint64LE(bytes: Uint8Array, offset: number): number {
   const lo = readUint32LE(bytes, offset)
   const hi = readUint32LE(bytes, offset + 4)
-  // Safe for values up to 2^53 — enough for timestamps and RSD amounts
   return hi * 0x100000000 + lo
+}
+
+function readUint64LEBigInt(bytes: Uint8Array, offset: number): bigint {
+  const lo = BigInt(readUint32LE(bytes, offset))
+  const hi = BigInt(readUint32LE(bytes, offset + 4))
+  return (hi << 32n) | lo
 }
