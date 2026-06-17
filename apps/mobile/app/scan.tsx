@@ -1,13 +1,9 @@
 import { useRef, useState } from "react"
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter, Stack } from "expo-router"
 import { CameraView, useCameraPermissions } from "expo-camera"
-import jsQR from "jsqr"
-import { BrowserQRCodeReader } from "@zxing/browser"
-import { DecodeHintType } from "@zxing/library"
 import { trpc } from "../src/lib/trpc"
-import { uploadReceiptFile, uploadReceiptImage } from "../src/lib/storage"
 import { fonts, useTheme } from "../src/lib/theme"
 import { IS_TELEGRAM, getTgWebApp } from "../src/lib/telegram"
 
@@ -16,197 +12,38 @@ const ORANGE = "#fd4600"
 const ORANGE_EDGE = "#c83700"
 const GREEN = "#013d24"
 const INK = "#015634"
-const DIM = "#8C887E"
 const CREAM = "#efeeea"
-const LCD = "#DBDBD7"
 const LCD_EDGE = "#C4C4BE"
-const LCD_INK = "#015634"
 const EDGE = "rgba(110,102,86,0.18)"
 const HILITE = "rgba(255,255,255,0.95)"
 
-type Mode = "qr" | "photo" | "number"
-
 type Phase =
-  | { kind: "camera"; mode: Mode }
-  | { kind: "uploading" }
-  | { kind: "scanning"; imageUrl: string }
-  | { kind: "confirm"; imageUrl: string; ocr: OcrFields; receiptHash: string | null; confidence: number; scanToken: string }
+  | { kind: "camera" }
   | { kind: "submitting" }
-  | { kind: "error"; message: string; mode: Mode; alreadyScanned?: boolean }
-  | {
-      kind: "done"
-      pointsEarned: number
-      streakBonus?: number | undefined
-      vendorName?: string | undefined
-      totalRsd?: number | undefined
-      offerTitle?: string | undefined
-      needsManualReview?: boolean | undefined
-      date?: string | undefined
-    }
-
-type OcrFields = {
-  vendor: string
-  amount: string
-  currency: string
-  date: string
-  receiptNumber: string
-}
-
-const today = () => new Date().toISOString().slice(0, 10)
-
-// Decode a QR from an already-loaded image. ZXing (TRY_HARDER) first, then
-// jsQR over a few canvas variants. Serbian fiscal QRs are dense; small changes
-// in crop/contrast often decide whether the browser can read them.
-async function decodeQrFromImage(img: HTMLImageElement): Promise<string | null> {
-  // 1. ZXing with TRY_HARDER
-  try {
-    const hints = new Map<DecodeHintType, unknown>()
-    hints.set(DecodeHintType.TRY_HARDER, true)
-    const reader = new BrowserQRCodeReader(hints)
-    const res = await reader.decodeFromImageElement(img)
-    const text = res.getText()
-    if (text) return text
-  } catch { /* not found — fall through to jsQR */ }
-
-  // 2. jsQR at full + downscaled passes, with center crops and contrast passes.
-  const full = Math.max(img.width, img.height)
-  for (const maxDim of [full, 2400, 1600, 1000]) {
-    const scale = Math.min(1, maxDim / full)
-    const w = Math.max(1, Math.round(img.width * scale))
-    const h = Math.max(1, Math.round(img.height * scale))
-    const canvas = document.createElement("canvas")
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext("2d")
-    if (!ctx) continue
-    ctx.drawImage(img, 0, 0, w, h)
-    const hit = decodeQrFromCanvas(ctx, w, h)
-    if (hit) return hit
-  }
-  return null
-}
-
-function decodeQrFromCanvas(ctx: CanvasRenderingContext2D, width: number, height: number): string | null {
-  const boxes = [
-    { x: 0, y: 0, w: width, h: height },
-    centerCrop(width, height, 0.9),
-    centerCrop(width, height, 0.75),
-    centerCrop(width, height, 0.6),
-  ]
-
-  for (const box of boxes) {
-    if (box.w < 80 || box.h < 80) continue
-    const image = ctx.getImageData(box.x, box.y, box.w, box.h)
-    const raw = jsQR(image.data, image.width, image.height, { inversionAttempts: "attemptBoth" })?.data
-    if (raw) return raw
-
-    const contrast = highContrast(image)
-    const hit = jsQR(contrast.data, contrast.width, contrast.height, { inversionAttempts: "attemptBoth" })?.data
-    if (hit) return hit
-  }
-  return null
-}
-
-function centerCrop(width: number, height: number, ratio: number) {
-  const size = Math.round(Math.min(width, height) * ratio)
-  return {
-    x: Math.max(0, Math.round((width - size) / 2)),
-    y: Math.max(0, Math.round((height - size) / 2)),
-    w: size,
-    h: size,
-  }
-}
-
-function highContrast(image: ImageData): ImageData {
-  const out = new ImageData(new Uint8ClampedArray(image.data), image.width, image.height)
-  for (let i = 0; i < out.data.length; i += 4) {
-    const gray = out.data[i]! * 0.299 + out.data[i + 1]! * 0.587 + out.data[i + 2]! * 0.114
-    const v = gray > 145 ? 255 : 0
-    out.data[i] = v
-    out.data[i + 1] = v
-    out.data[i + 2] = v
-  }
-  return out
-}
-
-// Web-only: open the camera/photo picker, decode any QR in the snapshot.
-// `capture` is NOT forced so the user can also pick a sharp library photo or
-// retake closer. Returns the QR text or null.
-async function decodeQrFromPhoto(): Promise<string | null> {
-  if (typeof document === "undefined") return null
-  return new Promise((resolve) => {
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = "image/*"
-    input.onchange = () => {
-      const file = input.files?.[0]
-      if (!file) return resolve(null)
-      const img = new Image()
-      img.onload = async () => {
-        const result = await decodeQrFromImage(img)
-        URL.revokeObjectURL(img.src)
-        resolve(result)
-      }
-      img.onerror = () => { URL.revokeObjectURL(img.src); resolve(null) }
-      img.src = URL.createObjectURL(file)
-    }
-    input.click()
-  })
-}
-
-async function pickReceiptPhotoFile(): Promise<File | null> {
-  if (typeof document === "undefined") return null
-  return new Promise((resolve) => {
-    const input = document.createElement("input")
-    input.type = "file"
-    input.accept = "image/*"
-    input.onchange = () => resolve(input.files?.[0] ?? null)
-    input.click()
-  })
-}
+  | { kind: "error"; message: string; alreadyUsed?: boolean }
+  | { kind: "done"; pointsEarned: number; offerTitle?: string }
 
 export default function ScanScreen() {
   const theme = useTheme()
   const { t } = useTranslation("common")
   const router = useRouter()
   const utils = trpc.useUtils()
-  const me = trpc.user.me.useQuery()
-  const userId = me.data?.id
 
   const [permission, requestPermission] = useCameraPermissions()
   const cameraRef = useRef<CameraView | null>(null)
-  const [phase, setPhase] = useState<Phase>({ kind: "camera", mode: "qr" })
+  const [phase, setPhase] = useState<Phase>({ kind: "camera" })
 
-  const scanMutation = trpc.transaction.scanReceipt.useMutation()
-  const scanQrMutation = trpc.transaction.scanQrReceipt.useMutation()
   const redeemOfferMutation = trpc.offer.redeem.useMutation()
-  const confirmMutation = trpc.transaction.confirmReceipt.useMutation({
-    onSuccess: () => utils.user.me.invalidate(),
-  })
-  const fiscalMutation = trpc.transaction.submitFiscalNumber.useMutation({
-    onSuccess: () => utils.user.me.invalidate(),
-  })
 
-  // ── Show error (works in both native and Telegram WebView) ──
-  function showError(title: string, message: string, mode: Mode = "qr") {
-    const alreadyScanned =
-      message.toLowerCase().includes("already been scanned") ||
-      message.toLowerCase().includes("already scanned") ||
-      message.includes("CONFLICT")
-    setPhase({ kind: "error", message: alreadyScanned ? "" : `${title}\n\n${message}`, mode, alreadyScanned })
-  }
-
-  // ── Telegram native QR scanner ───────────────────────────
-  function openTelegramQrScanner() {
+  function openTelegramScanner() {
     const tg = getTgWebApp()
     if (!tg?.showScanQrPopup) {
-      showError("Ошибка", "QR scanning not available in this Telegram version")
+      setPhase({ kind: "error", message: t("scanFailed", "Scan failed") + ": Telegram QR unavailable" })
       return
     }
-    // Reset any stale scan state
-    setPhase({ kind: "camera", mode: "qr" })
+    setPhase({ kind: "camera" })
     setTimeout(() => {
-      tg.showScanQrPopup({ text: "Point at the QR code on the receipt" }, (data: string) => {
+      tg.showScanQrPopup({ text: "Point at the ayoo QR code" }, (data: string) => {
         tg.closeScanQrPopup?.()
         void handleQrScanned(data)
         return true
@@ -214,260 +51,64 @@ export default function ScanScreen() {
     }, 50)
   }
 
-  // ── Photo → jsQR (reliable for dense fiscal QRs) ──────────
-  async function handlePhotoQr() {
-    const data = await decodeQrFromPhoto()
-    if (!data) {
-      showError(
-        t("qrPhotoFailed", "QR not recognised"),
-        t("qrPhotoFailedDesc", "Couldn't read a QR in that photo. Get closer so the QR fills the frame, hold steady, and make sure it's well lit.")
-      )
-      return
-    }
-    void handleQrScanned(data)
-  }
-
-  async function handleReceiptPhotoFallback() {
-    if (!userId) {
-      showError(t("scanFailed", "Scan failed"), t("notSignedIn", "Not signed in"))
-      return
-    }
-    if (Platform.OS !== "web") {
-      setPhase({ kind: "camera", mode: "photo" })
-      return
-    }
-
-    try {
-      const file = await pickReceiptPhotoFile()
-      if (!file) return
-
-      setPhase({ kind: "uploading" })
-      const imageUrl = await uploadReceiptFile(file, userId)
-
-      setPhase({ kind: "scanning", imageUrl })
-      const result = await scanMutation.mutateAsync({ imageUrl })
-
-      const d = result.ocrData
-      setPhase({
-        kind: "confirm",
-        imageUrl,
-        receiptHash: result.receiptHash,
-        confidence: result.confidence,
-        scanToken: result.scanToken,
-        ocr: {
-          vendor: d.vendor ?? "",
-          amount: d.total !== null ? String(d.total) : "",
-          currency: d.currency ?? "RSD",
-          date: d.date ?? today(),
-          receiptNumber: d.receiptNumber ?? "",
-        },
-      })
-    } catch (e) {
-      showError(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e), "photo")
-    }
-  }
-
-  // ── QR scan — роутер по типу QR ──────────────────────────
-
   async function handleQrScanned(data: string) {
     if (phase.kind === "submitting" || phase.kind === "done") return
     setPhase({ kind: "submitting" })
 
     try {
-      // 1. ayoo offer QR: ayoo://offer/<token>
       const offerMatch = data.match(/^ayoo:\/\/offer\/(.+)$/)
       if (offerMatch) {
-        const token = offerMatch[1]!
-        const res = await redeemOfferMutation.mutateAsync({ token })
+        const res = await redeemOfferMutation.mutateAsync({ token: offerMatch[1]! })
         utils.user.me.invalidate()
         setPhase({ kind: "done", pointsEarned: res.pointsEarned, offerTitle: res.offerTitle })
         return
       }
 
-      // 2. Serbian fiscal QR: suf.purs.gov.rs/v/?vl=...
-      if (data.includes("suf.purs.gov.rs")) {
-        const res = await scanQrMutation.mutateAsync({ qrUrl: data })
-        utils.user.me.invalidate()
-        setPhase({
-          kind: "done",
-          pointsEarned: res.pointsEarned,
-          streakBonus: res.streakBonus ?? undefined,
-          vendorName: res.vendorName ?? undefined,
-          totalRsd: res.totalRsd,
-          needsManualReview: res.needsManualReview,
-          date: res.date ?? undefined,
-        })
-        return
-      }
-
-      // 3. Unknown QR — show what was scanned so user can report
-      showError(
-        t("unknownQr", "Unknown QR code"),
-        t("unknownQrDesc", "This QR is not a Serbian fiscal receipt.\n\nScanned: ") + data.slice(0, 80)
-      )
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      showError(t("scanFailed", "Scan failed"), msg)
-    }
-  }
-
-  // ── Photo scan (AI OCR) ───────────────────────────────────
-
-  async function handleCapture() {
-    if (phase.kind !== "camera" || !cameraRef.current || !userId) return
-    try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7, base64: false })
-      if (!photo?.uri) throw new Error("No photo URI")
-
-      setPhase({ kind: "uploading" })
-      const imageUrl = await uploadReceiptImage(photo.uri, userId)
-
-      setPhase({ kind: "scanning", imageUrl })
-      const result = await scanMutation.mutateAsync({ imageUrl })
-
-      const d = result.ocrData
       setPhase({
-        kind: "confirm",
-        imageUrl,
-        receiptHash: result.receiptHash,
-        confidence: result.confidence,
-        scanToken: result.scanToken,
-        ocr: {
-          vendor: d.vendor ?? "",
-          amount: d.total !== null ? String(d.total) : "",
-          currency: d.currency ?? "RSD",
-          date: d.date ?? today(),
-          receiptNumber: d.receiptNumber ?? "",
-        },
-      })
-    } catch (e) {
-      showError(t("scanFailed", "Scan failed"), e instanceof Error ? e.message : String(e), "photo")
-    }
-  }
-
-  async function handleConfirm() {
-    if (phase.kind !== "confirm") return
-    const amount = parseFloat(phase.ocr.amount)
-    if (isNaN(amount) || amount <= 0) {
-      showError(t("invalidAmount", "Enter a valid amount"), "")
-      return
-    }
-    if (!phase.ocr.vendor.trim()) {
-      Alert.alert(t("invalidVendor", "Enter a vendor name"))
-      return
-    }
-    setPhase({ kind: "submitting" })
-    try {
-      const res = await confirmMutation.mutateAsync({
-        scanToken: phase.scanToken,
-        imageUrl: phase.imageUrl,
-        vendor: phase.ocr.vendor.trim(),
-        amount,
-        currency: phase.ocr.currency.trim().toUpperCase().slice(0, 3) || "RSD",
-        date: phase.ocr.date,
-        ...(phase.ocr.receiptNumber.trim() ? { receiptNumber: phase.ocr.receiptNumber.trim() } : {}),
-      })
-      setPhase({ kind: "done", pointsEarned: res.pointsEarned })
-    } catch (e) {
-      showError(t("submitFailed", "Submit failed"), e instanceof Error ? e.message : String(e))
-    }
-  }
-
-  async function handleFiscalSubmit(fiscalNumber: string, amountRsd: number) {
-    setPhase({ kind: "submitting" })
-    try {
-      const res = await fiscalMutation.mutateAsync({ fiscalNumber, amountRsd })
-      setPhase({
-        kind: "done",
-        pointsEarned: res.pointsEarned,
-        streakBonus: res.streakBonus ?? undefined,
-        totalRsd: res.totalRsd,
-        needsManualReview: res.needsManualReview,
+        kind: "error",
+        message: t("unknownQr", "Unknown QR code") + "\n\n" + t("unknownQrDesc", "This QR is not a recognised ayoo code."),
       })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
-      const alreadyScanned = msg.toLowerCase().includes("already been submitted") || msg.includes("CONFLICT")
-      setPhase({ kind: "error", message: alreadyScanned ? "" : `${t("scanFailed", "Scan failed")}\n\n${msg}`, mode: "number", alreadyScanned })
+      const alreadyUsed = msg.toLowerCase().includes("already") || msg.includes("CONFLICT")
+      setPhase({ kind: "error", message: alreadyUsed ? "" : t("scanFailed", "Scan failed") + "\n\n" + msg, alreadyUsed })
     }
   }
-
-  const currentMode = phase.kind === "camera" ? phase.mode : "qr"
 
   return (
     <>
       <Stack.Screen options={{
         headerShown: true,
-        title: t("scanReceipt", "Scan receipt"),
+        title: t("scanQrCode", "Scan QR"),
         headerStyle: { backgroundColor: theme.bg },
         headerTintColor: theme.text,
       }} />
-      <View style={[s.container, { backgroundColor: theme.bg }]}>
-
+      <View style={[s.root, { backgroundColor: theme.bg }]}>
         {phase.kind === "camera" ? (
-          <>
-            {/* Mode toggle */}
-            <View style={[s.modeRow, { borderBottomColor: theme.border }]}>
-              {(["qr", "photo", "number"] as Mode[]).map((m) => (
-                <Pressable
-                  key={m}
-                  style={[s.modeBtn, phase.mode === m && s.modeBtnActive]}
-                  onPress={() => setPhase({ kind: "camera", mode: m })}
-                >
-                  <Text style={[s.modeBtnText, { color: phase.mode === m ? ORANGE : theme.textSecondary }]}>
-                    {m === "qr" ? t("qrCode", "QR") : m === "photo" ? t("photo", "Photo") : t("fiscalNumberTab", "Номер")}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {phase.mode === "number" ? (
-              <NumberEntryPhase onSubmit={handleFiscalSubmit} theme={theme} t={t} />
-            ) : IS_TELEGRAM && phase.mode === "qr" ? (
-              <TelegramQrPhase onPhoto={handlePhotoQr} onScanner={openTelegramQrScanner} theme={theme} t={t} />
-            ) : (
-              <CameraPhase
-                mode={phase.mode}
-                permission={permission}
-                requestPermission={requestPermission}
-                cameraRef={cameraRef}
-                onCapture={handleCapture}
-                onQrScanned={handleQrScanned}
-                theme={theme}
-              />
-            )}
-          </>
-        ) : phase.kind === "uploading" || phase.kind === "scanning" ? (
-          <LoadingPhase
-            label={phase.kind === "uploading" ? t("uploading", "Uploading…") : t("readingReceipt", "Reading receipt…")}
-            theme={theme}
-          />
-        ) : phase.kind === "confirm" ? (
-          <ConfirmPhase
-            ocr={phase.ocr}
-            onChange={(ocr) => setPhase({ ...phase, ocr })}
-            onSubmit={handleConfirm}
-            confidence={phase.confidence}
-            theme={theme}
-          />
+          IS_TELEGRAM ? (
+            <TelegramPhase onScanner={openTelegramScanner} theme={theme} t={t} />
+          ) : (
+            <CameraPhase
+              permission={permission}
+              requestPermission={requestPermission}
+              cameraRef={cameraRef}
+              onQrScanned={handleQrScanned}
+              theme={theme}
+            />
+          )
         ) : phase.kind === "submitting" ? (
           <LoadingPhase label={t("submitting", "Submitting…")} theme={theme} />
         ) : phase.kind === "error" ? (
           <ErrorPhase
             message={phase.message}
-            alreadyScanned={phase.alreadyScanned}
-            onRetry={() => setPhase({ kind: "camera", mode: phase.mode })}
-            onPhotoFallback={handleReceiptPhotoFallback}
+            alreadyUsed={phase.alreadyUsed}
+            onRetry={() => setPhase({ kind: "camera" })}
             theme={theme}
           />
         ) : (
           <DonePhase
             pointsEarned={phase.pointsEarned}
-            streakBonus={phase.streakBonus}
-            vendorName={phase.vendorName}
-            totalRsd={phase.totalRsd}
             offerTitle={phase.offerTitle}
-            needsManualReview={phase.needsManualReview}
-            date={phase.date}
             onClose={() => router.back()}
             theme={theme}
           />
@@ -477,140 +118,64 @@ export default function ScanScreen() {
   )
 }
 
-// ── TelegramQrPhase — uses Telegram native scanner ───────────
+// ── TelegramPhase ─────────────────────────────────────────────
 
-function TelegramQrPhase({
-  onPhoto, onScanner, theme, t,
+function TelegramPhase({
+  onScanner, theme, t,
 }: {
-  onPhoto: () => void
   onScanner: () => void
   theme: ReturnType<typeof useTheme>
   t: (key: string, fallback: string) => string
 }) {
   return (
     <View style={[s.center, { padding: 32, gap: 16 }]}>
-      <Text style={{ fontSize: 72 }}>🧾</Text>
-      <Text style={[s.dialogTitle, { color: theme.text, fontSize: 22 }]}>
+      <Text style={{ fontSize: 72 }}>📷</Text>
+      <Text style={[s.title, { color: theme.text }]}>
         {t("scanQrCode", "Scan QR code")}
       </Text>
-      <Text style={[s.dialogText, { color: theme.textSecondary }]}>
-        {t("photoQrHint", "Take a photo of the receipt's QR code — fill the frame and hold steady.")}
+      <Text style={[s.subtitle, { color: theme.textSecondary }]}>
+        {t("pointAtPartnerQr", "Point the camera at the partner's QR code to earn points.")}
       </Text>
-      <Pressable onPress={onPhoto} style={[s.btn, s.btnPrimary, { paddingHorizontal: 32 }]}>
+      <Pressable onPress={onScanner} style={[s.btn, s.btnPrimary, { paddingHorizontal: 32 }]}>
         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
-          {t("photographQr", "Photograph QR")}
-        </Text>
-      </Pressable>
-      <Pressable onPress={onScanner} style={{ paddingVertical: 8 }}>
-        <Text style={{ color: theme.textSecondary, fontSize: 13, textDecorationLine: "underline" }}>
-          {t("useLiveScanner", "Use live scanner instead")}
+          {t("openScanner", "Open scanner")}
         </Text>
       </Pressable>
     </View>
   )
 }
 
-// ── NumberEntryPhase — manual fiscal receipt number ───────────
-
-function NumberEntryPhase({
-  onSubmit, theme, t,
-}: {
-  onSubmit: (fiscalNumber: string, amountRsd: number) => void
-  theme: ReturnType<typeof useTheme>
-  t: (key: string, fallback: string) => string
-}) {
-  const [num, setNum] = useState("")
-  const [amt, setAmt] = useState("")
-
-  const FISCAL_RE = /^[A-Z0-9]{1,20}-[A-Z0-9]{1,20}-\d{1,10}$/i
-  const isValid = FISCAL_RE.test(num.trim()) && parseFloat(amt) > 0
-
-  function handleSubmit() {
-    const amountRsd = parseFloat(amt)
-    if (!isValid) return
-    onSubmit(num.trim().toUpperCase(), amountRsd)
-  }
-
-  return (
-    <ScrollView contentContainerStyle={{ padding: 24, gap: 20 }}>
-      <View style={{ gap: 6 }}>
-        <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>
-          {t("fiscalNumber", "Номер фискального чека")}
-        </Text>
-        <TextInput
-          value={num}
-          onChangeText={setNum}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          placeholder="ААББ1234-ВВГГ5678-99"
-          placeholderTextColor={DIM}
-          style={[s.input, { borderColor: theme.border, color: theme.text }]}
-        />
-        <Text style={{ fontSize: 11, color: DIM, marginTop: 2 }}>
-          {t("fiscalNumberHint", "Напечатан в нижней части чека")}
-        </Text>
-      </View>
-
-      <View style={{ gap: 6 }}>
-        <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>
-          {t("amountRsd", "Сумма (RSD)")}
-        </Text>
-        <TextInput
-          value={amt}
-          onChangeText={setAmt}
-          keyboardType="decimal-pad"
-          placeholder="1470"
-          placeholderTextColor={DIM}
-          style={[s.input, { borderColor: theme.border, color: theme.text }]}
-        />
-      </View>
-
-      <Pressable
-        onPress={handleSubmit}
-        style={[s.btn, s.btnPrimary, { opacity: isValid ? 1 : 0.45 }]}
-        disabled={!isValid}
-      >
-        <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>
-          {t("confirmAndEarn", "Подтвердить и получить баллы")}
-        </Text>
-      </Pressable>
-    </ScrollView>
-  )
-}
-
 // ── CameraPhase ───────────────────────────────────────────────
 
 function CameraPhase({
-  mode, permission, requestPermission, cameraRef, onCapture, onQrScanned, theme,
+  permission, requestPermission, cameraRef, onQrScanned, theme,
 }: {
-  mode: Mode
   permission: ReturnType<typeof useCameraPermissions>[0]
   requestPermission: ReturnType<typeof useCameraPermissions>[1]
   cameraRef: { current: CameraView | null }
-  onCapture: () => void
-  onQrScanned: (url: string) => void
+  onQrScanned: (data: string) => void
   theme: ReturnType<typeof useTheme>
 }) {
   const { t } = useTranslation("common")
-  const [qrScanned, setQrScanned] = useState(false)
+  const [scanned, setScanned] = useState(false)
 
-  if (!permission) return <View style={s.center}><ActivityIndicator color={theme.text} /></View>
+  if (!permission) return <View style={s.center}><ActivityIndicator color={ORANGE} /></View>
 
   if (!permission.granted) {
     return (
       <View style={[s.center, { padding: 24 }]}>
-        <Text style={[s.dialogTitle, { color: theme.text }]}>{t("cameraNeeded", "Camera access needed")}</Text>
-        <Text style={[s.dialogText, { color: theme.textSecondary }]}>
-          {t("cameraNeededDesc", "ayoo needs your camera to scan receipts.")}
+        <Text style={[s.title, { color: theme.text }]}>{t("cameraNeeded", "Camera access needed")}</Text>
+        <Text style={[s.subtitle, { color: theme.textSecondary }]}>
+          {t("cameraNeededDesc", "ayoo needs your camera to scan QR codes.")}
         </Text>
         <Pressable onPress={requestPermission} style={[s.btn, s.btnSecondary]}>
-          <Text style={[s.btnSecondaryText, { fontFamily: fonts.displayHeavy }]}>{t("grantAccess", "Grant access")}</Text>
+          <Text style={[s.btnSecondaryText, { fontFamily: fonts.displayHeavy }]}>
+            {t("grantAccess", "Grant access")}
+          </Text>
         </Pressable>
       </View>
     )
   }
-
-  const isQr = mode === "qr"
 
   return (
     <View style={s.cameraWrap}>
@@ -618,32 +183,18 @@ function CameraPhase({
         ref={cameraRef}
         style={s.camera}
         facing="back"
-        barcodeScannerSettings={isQr ? { barcodeTypes: ["qr"] } : undefined}
-        onBarcodeScanned={isQr && !qrScanned ? (e) => {
-          setQrScanned(true)
-          onQrScanned(e.data)
-        } : undefined}
+        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+        onBarcodeScanned={!scanned ? (e) => { setScanned(true); onQrScanned(e.data) } : undefined}
       />
-      <View style={s.cameraOverlay}>
-        <View style={[s.frame, isQr && s.frameQr]} />
-        <Text style={s.frameHint}>
-          {isQr
-            ? t("frameQrHint", "Point at the QR code on the receipt")
-            : t("framingHint", "Position the receipt in the frame")}
-        </Text>
+      <View style={s.overlay}>
+        <View style={s.frame} />
+        <Text style={s.frameHint}>{t("frameQrHint", "Point at the QR code")}</Text>
       </View>
-      {!isQr && (
-        <View style={s.shutterRow}>
-          <Pressable onPress={onCapture} style={s.shutter}>
-            <View style={s.shutterInner} />
-          </Pressable>
-        </View>
-      )}
     </View>
   )
 }
 
-// ── Other phases ──────────────────────────────────────────────
+// ── LoadingPhase ──────────────────────────────────────────────
 
 function LoadingPhase({ label, theme }: { label: string; theme: ReturnType<typeof useTheme> }) {
   return (
@@ -654,195 +205,67 @@ function LoadingPhase({ label, theme }: { label: string; theme: ReturnType<typeo
   )
 }
 
-function ConfirmPhase({
-  ocr, onChange, onSubmit, confidence, theme,
-}: {
-  ocr: OcrFields
-  onChange: (next: OcrFields) => void
-  onSubmit: () => void
-  confidence: number
-  theme: ReturnType<typeof useTheme>
-}) {
-  const { t } = useTranslation("common")
-  return (
-    <ScrollView contentContainerStyle={s.confirmContent}>
-      <Text style={[s.confirmTitle, { color: theme.text }]}>
-        {t("confirmReceipt", "Confirm receipt details")}
-      </Text>
-      {confidence < 0.85 ? (
-        <Text style={[s.lowConf, { color: ORANGE_EDGE }]}>
-          {t("lowConfidence", "Low OCR confidence — please double-check fields below")}
-        </Text>
-      ) : null}
-      <Field label={t("vendor", "Vendor")} value={ocr.vendor} onChangeText={(v) => onChange({ ...ocr, vendor: v })} theme={theme} />
-      <Field label={t("amount", "Amount")} value={ocr.amount} onChangeText={(v) => onChange({ ...ocr, amount: v })} keyboardType="decimal-pad" theme={theme} />
-      <Field label={t("currency", "Currency")} value={ocr.currency} onChangeText={(v) => onChange({ ...ocr, currency: v.toUpperCase() })} theme={theme} />
-      <Field label={t("date", "Date (YYYY-MM-DD)")} value={ocr.date} onChangeText={(v) => onChange({ ...ocr, date: v })} theme={theme} />
-      <Field label={t("receiptNumber", "Receipt # (optional)")} value={ocr.receiptNumber} onChangeText={(v) => onChange({ ...ocr, receiptNumber: v })} theme={theme} />
-      <Pressable onPress={onSubmit} style={[s.btn, s.btnPrimary, { marginTop: 12 }]}>
-        <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>{t("confirmAndEarn", "Confirm and earn points")}</Text>
-      </Pressable>
-    </ScrollView>
-  )
-}
-
 // ── ErrorPhase ────────────────────────────────────────────────
 
 function ErrorPhase({
-  message, alreadyScanned, onRetry, onPhotoFallback, theme,
+  message, alreadyUsed, onRetry, theme,
 }: {
   message: string
-  alreadyScanned?: boolean | undefined
+  alreadyUsed?: boolean
   onRetry: () => void
-  onPhotoFallback: () => void
   theme: ReturnType<typeof useTheme>
 }) {
   const { t } = useTranslation("common")
-
-  if (alreadyScanned) {
-    return (
-      <View style={[s.center, { padding: 28 }]}>
-        <Text style={{ fontSize: 64, marginBottom: 16 }}>🧾</Text>
-        <Text style={[s.doneTitle, { color: theme.text, textAlign: "center", marginBottom: 12 }]}>
-          {t("receiptAlreadyScanned", "Receipt already used")}
-        </Text>
-        <Text style={[{ color: theme.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 20, marginBottom: 28 }]}>
-          {t("receiptAlreadyScannedDesc", "This receipt has already been scanned and points were awarded. Each receipt can only be used once.")}
-        </Text>
-        <Pressable
-          onPress={onRetry}
-          style={[s.btn, s.btnPrimary, { paddingHorizontal: 40 }]}
-        >
-          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
-            {t("scanAnother", "Scan another receipt")}
-          </Text>
-        </Pressable>
-      </View>
-    )
-  }
-
   return (
     <View style={[s.center, { padding: 28 }]}>
-      <Text style={{ fontSize: 52, marginBottom: 12 }}>⚠️</Text>
+      <Text style={{ fontSize: 52, marginBottom: 12 }}>{alreadyUsed ? "🧾" : "⚠️"}</Text>
       <Text style={[s.doneTitle, { color: theme.text, marginBottom: 12 }]}>
-        {t("scanFailed", "Scan failed")}
+        {alreadyUsed ? t("offerAlreadyUsed", "Already used") : t("scanFailed", "Scan failed")}
       </Text>
-      <View style={[s.receiptCard, { backgroundColor: theme.surface, borderColor: "#FFD0D0" }]}>
-        <Text style={{ color: theme.text, fontSize: 13, lineHeight: 18 }}>{message}</Text>
-      </View>
-      <Pressable
-        onPress={onRetry}
-        style={[s.btn, s.btnPrimary, { marginTop: 24, paddingHorizontal: 40 }]}
-      >
-        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
-          {t("tryAgain", "Try again")}
+      {alreadyUsed ? (
+        <Text style={[s.subtitle, { color: theme.textSecondary, textAlign: "center" }]}>
+          {t("offerAlreadyUsedDesc", "This QR code has already been redeemed.")}
         </Text>
-      </Pressable>
-      <Pressable onPress={onPhotoFallback} style={{ paddingVertical: 16 }}>
-        <Text style={{ color: theme.textSecondary, fontSize: 13, textDecorationLine: "underline" }}>
-          {t("scanWholeReceiptPhoto", "Scan whole receipt as photo")}
-        </Text>
+      ) : message ? (
+        <View style={[s.card, { backgroundColor: theme.surface, borderColor: "#FFD0D0" }]}>
+          <Text style={{ color: theme.text, fontSize: 13, lineHeight: 18 }}>{message}</Text>
+        </View>
+      ) : null}
+      <Pressable onPress={onRetry} style={[s.btn, s.btnPrimary, { marginTop: 24, paddingHorizontal: 40 }]}>
+        <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>{t("tryAgain", "Try again")}</Text>
       </Pressable>
     </View>
   )
 }
 
+// ── DonePhase ─────────────────────────────────────────────────
+
 function DonePhase({
-  pointsEarned, streakBonus, vendorName, totalRsd, offerTitle,
-  needsManualReview, date, onClose, theme,
+  pointsEarned, offerTitle, onClose, theme,
 }: {
   pointsEarned: number
-  streakBonus?: number | undefined
-  vendorName?: string | undefined
-  totalRsd?: number | undefined
-  offerTitle?: string | undefined
-  needsManualReview?: boolean | undefined
-  date?: string | undefined
+  offerTitle?: string
   onClose: () => void
   theme: ReturnType<typeof useTheme>
 }) {
   const { t } = useTranslation("common")
-  const isPending = needsManualReview || pointsEarned === 0
-  const accentColor = GREEN
-  const formattedDate = date
-    ? new Date(date).toLocaleDateString("sr-RS", { day: "2-digit", month: "short", year: "numeric" })
-    : null
-
   return (
     <View style={[s.center, { padding: 24 }]}>
-      {/* Status icon */}
-      <View style={[s.doneIconWrap, { backgroundColor: isPending ? "#FFF8E7" : "#E8FFF4" }]}>
-        <Text style={s.doneIcon}>{isPending ? "🕓" : "✅"}</Text>
+      <View style={[s.doneIconWrap, { backgroundColor: "#E8FFF4", borderColor: LCD_EDGE }]}>
+        <Text style={s.doneIcon}>✅</Text>
       </View>
-
       <Text style={[s.doneTitle, { color: theme.text, marginTop: 16 }]}>
-        {isPending ? t("pendingReview", "Pending review") : t("pointsAwarded", "Points awarded!")}
+        {t("pointsAwarded", "Points awarded!")}
       </Text>
-
-      {/* Receipt card */}
-      {(vendorName || offerTitle || totalRsd) ? (
-        <View style={[s.receiptCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          {offerTitle ? (
-            <Text style={[s.receiptVendor, { color: theme.text }]}>{offerTitle}</Text>
-          ) : vendorName ? (
-            <Text style={[s.receiptVendor, { color: theme.text }]}>{vendorName}</Text>
-          ) : null}
-
-          {totalRsd ? (
-            <Text style={[s.receiptAmount, { color: theme.textSecondary }]}>
-              {totalRsd.toLocaleString("sr-RS")} RSD
-            </Text>
-          ) : null}
-
-          {formattedDate ? (
-            <Text style={[s.receiptDate, { color: theme.textMuted ?? theme.textSecondary }]}>
-              {formattedDate}
-            </Text>
-          ) : null}
-
-          {/* Divider */}
-          <View style={[s.receiptDivider, { borderColor: theme.border }]} />
-
-          {/* Points row */}
-          {isPending ? (
-            <Text style={[s.receiptReviewText, { color: theme.textSecondary }]}>
-              {t("largeReceiptReview", "Large receipts go through manual review. Points will appear soon.")}
-            </Text>
-          ) : (
-            <View style={s.receiptPointsRows}>
-              <View style={s.receiptPointsRow}>
-                <Text style={[s.receiptPointsLabel, { color: theme.textSecondary }]}>
-                  {t("receiptPoints", "Receipt")}
-                </Text>
-                <Text style={[s.receiptPointsValue, { color: accentColor }]}>
-                  +{pointsEarned - (streakBonus ?? 0)} pts
-                </Text>
-              </View>
-              {streakBonus ? (
-                <View style={s.receiptPointsRow}>
-                  <Text style={[s.receiptPointsLabel, { color: theme.textSecondary }]}>
-                    🔥 {t("streakBonus", "Streak bonus")}
-                  </Text>
-                  <Text style={[s.receiptPointsValue, { color: accentColor }]}>
-                    +{streakBonus} pts
-                  </Text>
-                </View>
-              ) : null}
-              <View style={[s.receiptPointsRow, s.receiptTotalRow]}>
-                <Text style={[s.receiptTotalLabel, { color: theme.text }]}>
-                  {t("total", "Total")}
-                </Text>
-                <Text style={[s.receiptTotalValue, { color: accentColor }]}>
-                  +{pointsEarned} pts
-                </Text>
-              </View>
-            </View>
-          )}
+      {offerTitle ? (
+        <View style={[s.card, { backgroundColor: CREAM, borderColor: theme.border, marginTop: 20 }]}>
+          <Text style={[s.cardVendor, { color: theme.text }]}>{offerTitle}</Text>
+          <View style={[s.divider, { borderColor: theme.border }]} />
+          <Text style={[s.cardPoints, { color: GREEN }]}>+{pointsEarned} pts</Text>
         </View>
-      ) : !isPending ? (
-        <Text style={[s.donePoints, { color: accentColor }]}>+{pointsEarned} pts</Text>
-      ) : null}
-
+      ) : (
+        <Text style={[s.bigPoints, { color: GREEN }]}>+{pointsEarned} pts</Text>
+      )}
       <Pressable onPress={onClose} style={[s.btn, s.btnPrimary, { marginTop: 24, paddingHorizontal: 48 }]}>
         <Text style={[s.btnPrimaryText, { fontFamily: fonts.displayHeavy }]}>{t("done", "Done")}</Text>
       </Pressable>
@@ -850,111 +273,43 @@ function DonePhase({
   )
 }
 
-function Field({
-  label, value, onChangeText, keyboardType, theme,
-}: {
-  label: string
-  value: string
-  onChangeText: (v: string) => void
-  keyboardType?: "default" | "decimal-pad"
-  theme: ReturnType<typeof useTheme>
-}) {
-  return (
-    <View style={s.field}>
-      <Text style={[s.fieldLabel, { color: theme.textSecondary }]}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType ?? "default"}
-        style={[s.input, { borderColor: theme.border, color: theme.text }]}
-        placeholderTextColor={theme.textSecondary}
-      />
-    </View>
-  )
-}
+// ── Styles ────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  container: { flex: 1 },
+  root: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  modeRow: {
-    flexDirection: "row",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  modeBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  modeBtnActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: ORANGE,
-  },
-  modeBtnText: { fontSize: 13, fontFamily: fonts.pixel, letterSpacing: 0.5 },
   cameraWrap: { flex: 1 },
   camera: { flex: 1 },
-  cameraOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center", padding: 24 },
-  frame: { width: "100%", aspectRatio: 0.6, borderWidth: 2, borderColor: "#FFF", borderRadius: 30, opacity: 0.86 },
-  frameQr: { width: 220, aspectRatio: 1, borderRadius: 16 },
-  frameHint: { color: "#FFF", marginTop: 12, fontSize: 13, fontWeight: "600", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-  shutterRow: { position: "absolute", bottom: 32, left: 0, right: 0, alignItems: "center" },
-  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 3, borderColor: "#FFF", justifyContent: "center", alignItems: "center" },
-  shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: "#FFF" },
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "center", alignItems: "center", padding: 24 },
+  frame: { width: 220, aspectRatio: 1, borderWidth: 2, borderColor: "#FFF", borderRadius: 16, opacity: 0.86 },
+  frameHint: {
+    color: "#FFF", marginTop: 12, fontSize: 13, fontWeight: "600",
+    textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
+  },
   loadingLabel: { fontSize: 13, marginTop: 14 },
-  confirmContent: { padding: 18, paddingBottom: 40 },
-  confirmTitle: { fontSize: 26, lineHeight: 30, fontFamily: fonts.displayHeavy, marginBottom: 6, color: INK },
-  lowConf: { fontSize: 12, marginBottom: 16 },
-  field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 7, fontFamily: fonts.pixel, marginBottom: 8, letterSpacing: 0.5, color: DIM },
-  input: { borderWidth: 2, borderColor: LCD_EDGE, borderRadius: 14, padding: 14, fontSize: 15, backgroundColor: LCD, color: LCD_INK },
-
-  // ── Device keys ──
+  title: { fontSize: 24, fontFamily: fonts.displayHeavy, color: INK, marginBottom: 8, textAlign: "center" },
+  subtitle: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
+  doneIconWrap: { width: 80, height: 80, borderRadius: 22, justifyContent: "center", alignItems: "center", borderWidth: 2 },
+  doneIcon: { fontSize: 40 },
+  doneTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, textAlign: "center" },
+  bigPoints: { fontSize: 30, fontFamily: fonts.pixel, marginTop: 12 },
+  card: {
+    width: "100%", borderRadius: 16, padding: 20, gap: 4,
+    borderTopWidth: 1.5, borderTopColor: HILITE,
+    borderBottomWidth: 5, borderBottomColor: EDGE,
+  },
+  cardVendor: { fontSize: 18, fontWeight: "700", marginBottom: 2 },
+  cardPoints: { fontSize: 22, fontWeight: "800" },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 14 },
   btn: {
-    padding: 15,
-    borderRadius: 16,
-    alignItems: "center",
-    borderTopWidth: 1.5,
-    borderTopColor: HILITE,
-    borderBottomWidth: 5,
-    borderBottomColor: EDGE,
-    shadowColor: "#9A958A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 5,
+    padding: 15, borderRadius: 16, alignItems: "center",
+    borderTopWidth: 1.5, borderTopColor: HILITE,
+    borderBottomWidth: 5, borderBottomColor: EDGE,
+    shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28, shadowRadius: 14, elevation: 5,
   },
   btnPrimary: { backgroundColor: ORANGE, borderBottomColor: ORANGE_EDGE, borderTopColor: "rgba(255,255,255,0.5)" },
   btnPrimaryText: { color: "#FFFFFF", fontSize: 16 },
   btnSecondary: { backgroundColor: CREAM },
   btnSecondaryText: { color: INK, fontSize: 16 },
-
-  dialogTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, color: INK, marginBottom: 8, textAlign: "center" },
-  dialogText: { fontSize: 13, marginBottom: 20, textAlign: "center", lineHeight: 18 },
-  doneIconWrap: { width: 80, height: 80, borderRadius: 22, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: LCD_EDGE },
-  doneIcon: { fontSize: 40 },
-  doneTitle: { fontSize: 24, fontFamily: fonts.displayHeavy, textAlign: "center" },
-  donePoints: { fontSize: 30, fontFamily: fonts.pixel, marginTop: 12 },
-  receiptCard: {
-    width: "100%",
-    marginTop: 20,
-    borderRadius: 16,
-    backgroundColor: CREAM,
-    borderTopWidth: 1.5,
-    borderTopColor: HILITE,
-    borderBottomWidth: 5,
-    borderBottomColor: EDGE,
-    padding: 20,
-    gap: 4,
-  },
-  receiptVendor: { fontSize: 18, fontWeight: "700", marginBottom: 2 },
-  receiptAmount: { fontSize: 15 },
-  receiptDate: { fontSize: 12, marginTop: 2 },
-  receiptDivider: { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 14 },
-  receiptPointsRows: { gap: 8 },
-  receiptPointsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  receiptTotalRow: { marginTop: 4, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(0,0,0,0.08)" },
-  receiptPointsLabel: { fontSize: 14 },
-  receiptPointsValue: { fontSize: 14, fontWeight: "700" },
-  receiptTotalLabel: { fontSize: 16, fontWeight: "700" },
-  receiptTotalValue: { fontSize: 22, fontWeight: "800" },
-  receiptReviewText: { fontSize: 13, lineHeight: 18, textAlign: "center" },
 })
