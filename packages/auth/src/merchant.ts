@@ -23,30 +23,46 @@ export const {
     Credentials({
       name: "Merchant Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Login", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = credentialsSchema.safeParse(credentials)
-        if (!parsed.success) return null
+        try {
+          console.log("[auth] authorize called, email:", (credentials as any)?.email)
 
-        // Promo access: login "promo" + password from env (default "promo123")
-        if (parsed.data.email === "promo") {
-          if (parsed.data.password !== PROMO_PASSWORD) return null
-          const first = await db.merchant.findFirst({ select: { id: true, email: true, name: true } })
-          if (!first) return null
-          return { id: first.id, email: first.email, name: "Promo" }
+          const parsed = credentialsSchema.safeParse(credentials)
+          if (!parsed.success) {
+            console.log("[auth] parse failed:", parsed.error.message)
+            return null
+          }
+
+          if (parsed.data.email === "promo") {
+            console.log("[auth] promo path, match:", parsed.data.password === PROMO_PASSWORD)
+            if (parsed.data.password !== PROMO_PASSWORD) return null
+
+            console.log("[auth] promo querying DB...")
+            const first = await db.merchant.findFirst({
+              select: { id: true, email: true, name: true },
+            })
+            console.log("[auth] promo merchant found:", !!first, first?.id)
+            if (!first) return null
+
+            return { id: first.id, email: first.email, name: "Promo" }
+          }
+
+          const merchant = await db.merchant.findUnique({
+            where: { email: parsed.data.email },
+          })
+          if (!merchant || !merchant.passwordHash) return null
+
+          const valid = await compare(parsed.data.password, merchant.passwordHash)
+          if (!valid) return null
+
+          return { id: merchant.id, email: merchant.email, name: merchant.name }
+        } catch (err) {
+          console.error("[auth] authorize threw:", err)
+          return null
         }
-
-        const merchant = await db.merchant.findUnique({
-          where: { email: parsed.data.email },
-        })
-        if (!merchant || !merchant.passwordHash) return null
-
-        const valid = await compare(parsed.data.password, merchant.passwordHash)
-        if (!valid) return null
-
-        return { id: merchant.id, email: merchant.email, name: merchant.name }
       },
     }),
   ],
