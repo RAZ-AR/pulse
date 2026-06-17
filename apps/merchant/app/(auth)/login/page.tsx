@@ -45,13 +45,13 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[#0F1115] mb-1">
-              Email
+              Логин
             </label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@venue.com"
+              placeholder="promo"
               required
               className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm focus:outline-none focus:ring-2 focus:ring-[#3DBEFF] disabled:opacity-50"
               disabled={loading}
