@@ -157,6 +157,7 @@ export const offerRouter = router({
       title:        z.string().min(3).max(120),
       description:  z.string().max(300).optional(),
       pointsReward: z.number().int().positive(),
+      startsAt:     z.string().datetime().optional(),
       endsAt:       z.string().datetime().optional(),
       usageLimit:   z.number().int().positive().optional(),
     }))
@@ -193,6 +194,7 @@ export const offerRouter = router({
           description:  input.description ?? null,
           pointsReward: input.pointsReward,
           costPoints,
+          startsAt:     input.startsAt ? new Date(input.startsAt) : new Date(),
           endsAt:       input.endsAt ? new Date(input.endsAt) : null,
           usageLimit:   input.usageLimit ?? null,
         },

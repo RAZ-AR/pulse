@@ -12,6 +12,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             { href: "/dashboard", label: "Dashboard" },
             { href: "/dashboard/analytics", label: "Analytics" },
             { href: "/dashboard/purchase", label: "New Purchase" },
+            { href: "/dashboard/promos", label: "Promo QR" },
             { href: "/dashboard/redeem", label: "Redeem Reward" },
             { href: "/dashboard/rewards", label: "Rewards" },
             { href: "/dashboard/checkins", label: "Check-ins" },
