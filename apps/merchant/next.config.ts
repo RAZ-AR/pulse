@@ -10,6 +10,9 @@ const config: NextConfig = {
     "@pulse/trpc",
   ],
   outputFileTracingRoot: path.join(__dirname, "../../"),
+  outputFileTracingIncludes: {
+    "/api/**": ["packages/db/generated/**/*.node"],
+  },
 }
 
 export default config
