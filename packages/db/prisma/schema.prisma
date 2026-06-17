@@ -236,7 +236,7 @@ model Merchant {
   status         MerchantStatus @default(PENDING)
 
   // Points balance (funded by redemptions, used to create offers)
-  pointsBalance  Int          @default(0)
+  pointsBalance  Int          @default(1000)
 
   // Branding
   logoUrl String?

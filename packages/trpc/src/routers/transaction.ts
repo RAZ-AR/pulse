@@ -909,4 +909,61 @@ export const transactionRouter = router({
 
       return { transactions, nextCursor }
     }),
+
+  /** Merchant accepts loyalty points from a customer (customer pays with points). */
+  spendPoints: merchantProcedure
+    .input(z.object({
+      userId:  z.string(),
+      venueId: z.string(),
+      points:  z.number().int().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const venue = await ctx.db.venue.findFirst({
+        where: { id: input.venueId, ownerId: ctx.merchantId },
+        select: { id: true },
+      })
+      if (!venue) throw new TRPCError({ code: "FORBIDDEN", message: "Venue not found" })
+
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.userId },
+        select: { id: true, earnedPoints: true },
+      })
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" })
+
+      if (user.earnedPoints < input.points) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Недостаточно баллов. Доступно: ${user.earnedPoints}`,
+        })
+      }
+
+      await ctx.db.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: input.userId },
+          data: {
+            earnedPoints: { decrement: input.points },
+            spentPoints:  { increment: input.points },
+          },
+        })
+        await tx.merchant.update({
+          where: { id: ctx.merchantId },
+          data: { pointsBalance: { increment: input.points } },
+        })
+        await tx.transaction.create({
+          data: {
+            userId:      input.userId,
+            venueId:     input.venueId,
+            type:        "REWARD_REDEEMED",
+            pointsEarned: -input.points,
+            status:      "VERIFIED",
+            verifiedAt:  new Date(),
+          },
+        })
+      })
+
+      return {
+        pointsSpent:     input.points,
+        newEarnedPoints: user.earnedPoints - input.points,
+      }
+    }),
 })
