@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 
 // Edge-compatible auth — no bcryptjs/Prisma, only JWT verification
 export const { auth: merchantAuthEdge } = NextAuth({
+  trustHost: true,
   providers: [],
   session: { strategy: "jwt" },
   callbacks: {

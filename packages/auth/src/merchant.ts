@@ -17,6 +17,7 @@ export const {
   signIn: merchantSignIn,
   signOut: merchantSignOut,
 } = NextAuth({
+  trustHost: true,
   session: { strategy: "jwt" },
   providers: [
     Credentials({
