@@ -74,7 +74,10 @@ export const offerRouter = router({
 
       const offer = await ctx.db.offer.findUnique({
         where: { qrToken: input.token },
-        include: { merchant: { select: { id: true, pointsBalance: true } } },
+        select: {
+          id: true, active: true, endsAt: true, usageLimit: true, usageCount: true,
+          pointsReward: true, costPoints: true, merchantId: true, venueId: true, title: true,
+        },
       })
       if (!offer) throw new TRPCError({ code: "NOT_FOUND", message: "Offer not found" })
       if (!offer.active) throw new TRPCError({ code: "BAD_REQUEST", message: "This offer is no longer active" })
@@ -89,11 +92,6 @@ export const offerRouter = router({
       })
       if (alreadyUsed) throw new TRPCError({ code: "CONFLICT", message: "You've already used this offer" })
 
-      // Проверить баланс партнёра
-      if (offer.merchant.pointsBalance < offer.costPoints) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Offer temporarily unavailable" })
-      }
-
       const result = await ctx.db.$transaction(async (tx) => {
         // Создать redemption
         await tx.offerRedemption.create({
@@ -104,12 +102,6 @@ export const offerRouter = router({
         await tx.offer.update({
           where: { id: offer.id },
           data: { usageCount: { increment: 1 } },
-        })
-
-        // Списать с баланса партнёра
-        await tx.merchant.update({
-          where: { id: offer.merchantId },
-          data: { pointsBalance: { decrement: offer.costPoints } },
         })
 
         // Начислить баллы юзеру
