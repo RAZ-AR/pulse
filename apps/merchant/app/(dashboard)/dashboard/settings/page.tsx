@@ -5,7 +5,7 @@ import { trpc } from "../../../../src/lib/trpc"
 import { useVenue } from "../../../../src/context/venue-context"
 
 export default function SettingsPage() {
-  const { venue, venueId } = useVenue()
+  const { venue } = useVenue()
   const { refetch } = trpc.merchant.dashboard.useQuery()
 
   // Rate settings

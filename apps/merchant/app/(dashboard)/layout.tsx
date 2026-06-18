@@ -93,6 +93,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Sign out */}
       <div className="px-4 py-3 border-t border-[#E5E7EB]">
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/api/auth/signout" className="flex items-center gap-2 text-xs text-[#9CA3AF] hover:text-[#ef4444] transition-colors">
           <span>⎋</span> Выйти
         </a>

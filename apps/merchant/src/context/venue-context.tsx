@@ -34,7 +34,8 @@ export function VenueProvider({ children }: { children: React.ReactNode }) {
     if (!venueId && venues.length > 0 && venues[0]) {
       setVenueId(venues[0].id)
     }
-  }, [venues, venueId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
 
   const resolvedId = venueId || venues[0]?.id || ""
   const venue = venues.find(v => v.id === resolvedId)
