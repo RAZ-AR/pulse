@@ -11,7 +11,7 @@ const config: NextConfig = {
   ],
   outputFileTracingRoot: path.join(__dirname, "../../"),
   outputFileTracingIncludes: {
-    "/api/**": ["packages/db/generated/**/*.node"],
+    "/**": ["packages/db/generated/**/*.node"],
   },
 }
 
