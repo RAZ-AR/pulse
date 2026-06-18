@@ -53,7 +53,7 @@ export default function DashboardPage() {
         <MetricCard
           label="Баллов сегодня"
           value={stats ? stats.today.pointsIssued.toLocaleString("ru-RU") : "—"}
-          sub={stats ? `${stats.today.transactions} транзакций` : undefined}
+          {...(stats ? { sub: `${stats.today.transactions} транзакций` } : {})}
           accent="#fd4600"
         />
         <MetricCard
@@ -64,7 +64,7 @@ export default function DashboardPage() {
         <MetricCard
           label="Баллов за месяц"
           value={stats ? stats.month.pointsIssued.toLocaleString("ru-RU") : "—"}
-          sub={stats ? `${stats.month.transactions} транзакций` : undefined}
+          {...(stats ? { sub: `${stats.month.transactions} транзакций` } : {})}
         />
       </div>
 
