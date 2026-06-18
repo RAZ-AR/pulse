@@ -11,8 +11,8 @@ const RANGES = [
 ] as const
 
 export default function AnalyticsPage() {
-  const { venueId } = useVenue()
-  const venueName = dash?.venues[0]?.name
+  const { venueId, venue } = useVenue()
+  const venueName = venue?.name
 
   const [days, setDays] = useState<7 | 30 | 90>(30)
   const { data, isLoading } = trpc.merchant.analytics.useQuery(
