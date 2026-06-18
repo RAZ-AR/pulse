@@ -23,6 +23,8 @@ type DetailVenue = {
   address: string
   city: string
   country: string
+  lat: number
+  lng: number
   isPartner: boolean
   pointsPerCurrency: number | null
   currency: string | null
@@ -33,6 +35,7 @@ type DetailVenue = {
   maxDiscountPercent: number
   googleRating: number | null
   googleReviews: number | null
+  googleMapsUrl?: string | null
   sourceProvider?: string | null
   sourcePlaceId?: string | null
   sourceUrl?: string | null
@@ -54,6 +57,10 @@ type DetailVenue = {
 
 function isDemoVenue(venue: DetailVenue) {
   return venue.id.startsWith("demo_")
+}
+
+function catLabel(c: string) {
+  return { CAFE: "Кафе", RESTAURANT: "Рестораны", BEAUTY: "Красота", FITNESS: "Фитнес", YOGA: "Йога", RETAIL: "Магазины", SERVICE: "Услуги", OTHER: "Места" }[c] ?? c
 }
 
 function venueOffers(venue: DetailVenue) {
@@ -98,8 +105,18 @@ export default function VenueDetailScreen() {
     { enabled: !id.startsWith("demo_") }
   )
   const demoVenue = DEMO_VENUES.find((item) => item.id === id)
+  const currentVenue = (venue.data ?? demoVenue) as DetailVenue | undefined
+  const nearby = trpc.venue.discover.useQuery(
+    {
+      city: currentVenue?.city ?? "",
+      categories: currentVenue?.category ? [currentVenue.category as any] : undefined,
+      sort: "rating",
+      limit: 8,
+    },
+    { enabled: !!currentVenue }
+  )
 
-  if (venue.isLoading && !demoVenue) {
+  if (venue.isLoading && !currentVenue) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
         <Text style={{ color: theme.textSecondary }}>{t("common:loading", "Loading…")}</Text>
@@ -107,7 +124,7 @@ export default function VenueDetailScreen() {
     )
   }
 
-  const v = (venue.data ?? demoVenue) as DetailVenue | undefined
+  const v = currentVenue
   if (!v) {
     return (
       <View style={[s.center, { backgroundColor: theme.bg }]}>
@@ -125,6 +142,10 @@ export default function VenueDetailScreen() {
   const activeOffers = partnerOffers.data?.offers ?? []
   const contacts = contactRows(v)
   const importSourceLabel = sourceLabel(v)
+  const googleMapsUrl = v.googleMapsUrl
+    ?? (v.sourcePlaceId ? `https://www.google.com/maps/place/?q=place_id:${v.sourcePlaceId}` : null)
+    ?? (v.sourceProvider === "google_maps" && v.sourceUrl ? v.sourceUrl : null)
+  const nearbyItems = (nearby.data?.items ?? []).filter((n) => n.id !== v.id).slice(0, 6)
 
   return (
     <>
@@ -151,6 +172,14 @@ export default function VenueDetailScreen() {
             ) : null}
             {v.address ? (
               <Text style={[s.subtle, { color: theme.textSecondary, marginTop: 2 }]}>{v.address}</Text>
+            ) : null}
+            {googleMapsUrl ? (
+              <Pressable
+                onPress={() => Linking.openURL(googleMapsUrl)}
+                style={s.mapsBtn}
+              >
+                <Text style={[s.mapsBtnText, { fontFamily: fonts.bodyBold }]}>📍 Открыть в Google Maps</Text>
+              </Pressable>
             ) : null}
           </View>
           {v.subscriptionTier === "FEATURED" ? (
@@ -341,6 +370,37 @@ export default function VenueDetailScreen() {
           </Text>
         )}
 
+        {/* Nearby similar venues */}
+        {nearbyItems.length > 0 ? (
+          <>
+            <Text style={[s.heading, { color: theme.text, fontFamily: fonts.displayHeavy, marginTop: 8 }]}>
+              Ещё {catLabel(v.category)}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -18, marginBottom: 20 }}>
+              <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 18 }}>
+                {nearbyItems.map((n) => (
+                  <Pressable
+                    key={n.id}
+                    style={[s.nearbyCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
+                    onPress={() => router.push({ pathname: "/venue/[id]", params: { id: n.id } })}
+                  >
+                    <Text style={[s.nearbyName, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{n.name}</Text>
+                    {n.googleRating ? (
+                      <Text style={[s.nearbyMeta, { color: theme.textSecondary }]}>★ {n.googleRating.toFixed(1)}</Text>
+                    ) : null}
+                    <Text style={[s.nearbyAddr, { color: theme.textMuted }]} numberOfLines={1}>{n.address}</Text>
+                    {n.isPartner ? (
+                      <View style={s.nearbyBadge}>
+                        <Text style={[s.nearbyBadgeText, { fontFamily: fonts.bodyBold }]}>⭐ Партнёр</Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          </>
+        ) : null}
+
         {/* Reviews */}
         <View style={s.reviewsHead}>
           <Text style={[s.heading, { color: theme.text, fontFamily: fonts.displayHeavy, marginBottom: 0 }]}>
@@ -435,4 +495,14 @@ const s = StyleSheet.create({
   reviewAuthor: { fontSize: 14, flex: 1, marginRight: 8 },
   reviewStars: { fontSize: 13, color: "#FF85D2" },
   reviewText: { fontSize: 13, lineHeight: 18 },
+
+  mapsBtn: { marginTop: 8, alignSelf: "flex-start", backgroundColor: "#E8F4FD", borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
+  mapsBtnText: { fontSize: 12, color: "#1A73E8" },
+
+  nearbyCard: { width: 160, borderRadius: 18, padding: 12, borderWidth: 1, borderBottomWidth: 3, gap: 3 },
+  nearbyName: { fontSize: 14 },
+  nearbyMeta: { fontSize: 12 },
+  nearbyAddr: { fontSize: 11 },
+  nearbyBadge: { marginTop: 4, alignSelf: "flex-start", backgroundColor: "#FBEADC", borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
+  nearbyBadgeText: { fontSize: 10, color: "#B5651D" },
 })

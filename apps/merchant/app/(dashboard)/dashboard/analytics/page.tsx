@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { trpc } from "../../../../src/lib/trpc"
+import { useVenue } from "../../../../src/context/venue-context"
 
 const RANGES = [
   { days: 7, label: "7 days" },
@@ -10,8 +11,7 @@ const RANGES = [
 ] as const
 
 export default function AnalyticsPage() {
-  const { data: dash } = trpc.merchant.dashboard.useQuery()
-  const venueId = dash?.venues[0]?.id ?? ""
+  const { venueId } = useVenue()
   const venueName = dash?.venues[0]?.name
 
   const [days, setDays] = useState<7 | 30 | 90>(30)

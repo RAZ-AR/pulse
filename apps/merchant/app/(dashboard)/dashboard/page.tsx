@@ -1,74 +1,77 @@
 "use client"
 
 import { trpc } from "../../../src/lib/trpc"
+import { useVenue } from "../../../src/context/venue-context"
 
 export default function DashboardPage() {
-  const { data: dash } = trpc.merchant.dashboard.useQuery()
+  const { venue, venueId, loading: venueLoading } = useVenue()
 
-  const firstVenueId = dash?.venues[0]?.id
-  const { data: stats } = trpc.merchant.stats.useQuery(
-    { venueId: firstVenueId! },
-    { enabled: !!firstVenueId }
+  const { data: stats, isLoading: statsLoading } = trpc.merchant.stats.useQuery(
+    { venueId: venueId! },
+    { enabled: !!venueId }
   )
 
-  const venue = dash?.venues[0]
+  if (venueLoading) {
+    return (
+      <div className="p-6 lg:p-8">
+        <div className="space-y-4">
+          <div className="h-8 w-48 bg-[#F3F4F6] rounded-lg animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[1,2,3].map(i => <div key={i} className="h-28 bg-[#F3F4F6] rounded-xl animate-pulse" />)}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-[#0F1115]">Dashboard</h2>
+    <div className="p-6 lg:p-8 max-w-5xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-[#0F1115]">{venue ? venue.name : "Дашборд"}</h1>
         {venue && (
-          <p className="text-sm text-[#6B7280] mt-1">{venue.name}</p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${venue.isPartner ? "bg-[#d1fae5] text-[#065f46]" : "bg-[#fef3c7] text-[#92400e]"}`}>
+              {venue.isPartner ? "Партнёр" : "Базовый"}
+            </span>
+            {venue.pointsPerCurrency && (
+              <span className="text-xs text-[#6B7280]">{venue.pointsPerCurrency} pts / {venue.currency ?? "₽"}</span>
+            )}
+            <span className="text-xs text-[#9CA3AF]">·</span>
+            <span className="text-xs text-[#6B7280]">{venue._count.transactions} транзакций · {venue._count.rewards} наград</span>
+          </div>
         )}
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <MetricCard
-          label="Points issued today"
-          value={stats ? stats.today.pointsIssued.toLocaleString() : "—"}
-          {...(stats ? { sub: `${stats.today.transactions} transactions` } : {})}
-        />
-        <MetricCard
-          label="Rewards redeemed"
-          value={stats ? stats.allTime.rewardsRedeemed.toLocaleString() : "—"}
-          sub="all time"
-        />
-        <MetricCard
-          label="Points this month"
-          value={stats ? stats.month.pointsIssued.toLocaleString() : "—"}
-          {...(stats ? { sub: `${stats.month.transactions} transactions` } : {})}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard label="Баллов сегодня"  value={statsLoading ? null : (stats?.today.pointsIssued ?? 0)}  sub={stats ? `${stats.today.transactions} транзакций` : undefined} color="green" />
+        <StatCard label="Баллов за месяц" value={statsLoading ? null : (stats?.month.pointsIssued ?? 0)}  sub={stats ? `${stats.month.transactions} транзакций` : undefined} color="blue" />
+        <StatCard label="Наград погашено" value={statsLoading ? null : (stats?.allTime.rewardsRedeemed ?? 0)} sub="за всё время" color="orange" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weekly summary */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-6">
-          <h3 className="text-sm font-semibold text-[#0F1115] mb-4">This week</h3>
-          <div className="space-y-2">
-            <StatRow label="Points issued" value={(stats?.week.pointsIssued ?? 0).toLocaleString()} />
-            <StatRow label="Transactions" value={(stats?.week.transactions ?? 0).toLocaleString()} />
-            <StatRow label="All-time transactions" value={(stats?.allTime.transactions ?? 0).toLocaleString()} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-[#E5E7EB] p-5">
+          <h3 className="text-sm font-semibold text-[#0F1115] mb-4">За неделю</h3>
+          <div className="space-y-3">
+            <StatRow label="Баллов выдано"    value={statsLoading ? "…" : (stats?.week.pointsIssued ?? 0).toLocaleString()} />
+            <StatRow label="Транзакций"        value={statsLoading ? "…" : (stats?.week.transactions ?? 0).toLocaleString()} />
+            <StatRow label="Всего транзакций"  value={statsLoading ? "…" : (stats?.allTime.transactions ?? 0).toLocaleString()} />
           </div>
         </div>
 
-        {/* Top customers */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-6">
-          <h3 className="text-sm font-semibold text-[#0F1115] mb-4">Top customers</h3>
+        <div className="bg-white rounded-xl border border-[#E5E7EB] p-5">
+          <h3 className="text-sm font-semibold text-[#0F1115] mb-4">Топ клиентов</h3>
           {!stats || stats.topCustomers.length === 0 ? (
-            <p className="text-sm text-[#9CA3AF]">No purchase data yet</p>
+            <p className="text-sm text-[#9CA3AF]">Данных пока нет</p>
           ) : (
-            <ol className="space-y-2">
+            <ol className="space-y-2.5">
               {stats.topCustomers.map((c, i) => (
-                <li key={c.userId} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 text-xs text-[#9CA3AF] text-right">{i + 1}</span>
-                    <div className="w-7 h-7 rounded-full bg-[#F3F4F6] flex items-center justify-center text-xs font-medium text-[#6B7280]">
-                      {(c.name[0] ?? "?").toUpperCase()}
-                    </div>
-                    <span className="text-sm text-[#0F1115]">{c.name}</span>
+                <li key={c.userId} className="flex items-center gap-3">
+                  <span className="w-5 text-xs text-[#9CA3AF] text-right shrink-0">{i + 1}</span>
+                  <div className="w-7 h-7 rounded-full bg-[#F3F4F6] flex items-center justify-center text-xs font-medium text-[#6B7280] shrink-0">
+                    {(c.name[0] ?? "?").toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-[#0F1115]">{c.pointsEarned} pts</span>
+                  <span className="text-sm text-[#0F1115] flex-1 truncate">{c.name}</span>
+                  <span className="text-sm font-semibold text-[#015634] shrink-0">+{c.pointsEarned} pts</span>
                 </li>
               ))}
             </ol>
@@ -76,27 +79,22 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="mt-6 flex gap-3 flex-wrap">
-        <a href="/dashboard/purchase" className="inline-flex items-center px-4 py-2 bg-[#0F1115] text-white text-sm font-medium rounded-xl hover:bg-[#1f2228] transition-colors">
-          New Purchase
-        </a>
-        <a href="/dashboard/redeem" className="inline-flex items-center px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB] transition-colors">
-          Validate Reward
-        </a>
-        <a href="/dashboard/analytics" className="inline-flex items-center px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB] transition-colors">
-          View Analytics →
-        </a>
+      <div className="flex flex-wrap gap-3">
+        <a href="/dashboard/purchase" className="px-4 py-2 bg-[#0F1115] text-white text-sm font-medium rounded-xl hover:bg-[#1f2228] transition-colors">+ Новая покупка</a>
+        <a href="/dashboard/promos"   className="px-4 py-2 bg-[#fd4600] text-white text-sm font-medium rounded-xl hover:bg-[#c83700] transition-colors">⬛ Promo QR</a>
+        <a href="/dashboard/redeem"   className="px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB] transition-colors">✓ Погасить</a>
+        <a href="/dashboard/analytics" className="px-4 py-2 border border-[#D1D5DB] text-[#374151] text-sm font-medium rounded-xl hover:bg-[#F9FAFB] transition-colors">↗ Аналитика</a>
       </div>
     </div>
   )
 }
 
-function MetricCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function StatCard({ label, value, sub, color }: { label: string; value: number | null; sub?: string; color: "green"|"blue"|"orange" }) {
+  const cls = { green: "text-[#16a34a]", blue: "text-[#2563eb]", orange: "text-[#ea580c]" }
   return (
     <div className="bg-white rounded-xl p-5 border border-[#E5E7EB]">
       <p className="text-xs text-[#6B7280] font-medium uppercase tracking-wide">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-[#0F1115]">{value}</p>
+      <p className={`mt-2 text-3xl font-bold ${cls[color]}`}>{value === null ? <span className="text-[#D1D5DB]">—</span> : value.toLocaleString()}</p>
       {sub && <p className="mt-1 text-xs text-[#9CA3AF]">{sub}</p>}
     </div>
   )
@@ -104,9 +102,9 @@ function MetricCard({ label, value, sub }: { label: string; value: string; sub?:
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between text-sm">
+    <div className="flex justify-between items-center text-sm">
       <span className="text-[#6B7280]">{label}</span>
-      <span className="font-medium text-[#0F1115]">{value}</span>
+      <span className="font-semibold text-[#0F1115]">{value}</span>
     </div>
   )
 }

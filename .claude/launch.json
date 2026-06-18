@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Design Preview :9090",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "9090"],
+      "port": 9090
+    },
+    {
+      "name": "API (Next.js :3000)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@pulse/api", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Merchant (Next.js :3001)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@pulse/merchant", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "Mobile (Expo :8081)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@pulse/mobile", "start", "--web"],
+      "port": 8081,
+      "autoPort": false
+    }
+  ]
+}

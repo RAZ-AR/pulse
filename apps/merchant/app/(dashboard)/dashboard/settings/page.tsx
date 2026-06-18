@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { trpc } from "../../../../src/lib/trpc"
+import { useVenue } from "../../../../src/context/venue-context"
 
 export default function SettingsPage() {
-  const { data: dash, refetch } = trpc.merchant.dashboard.useQuery()
-  const venue = dash?.venues[0]
+  const { venue, venueId } = useVenue()
+  const { refetch } = trpc.merchant.dashboard.useQuery()
 
   // Rate settings
   const [rate, setRate] = useState("")

@@ -1,0 +1,117 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: ayoo
+      - generic [ref=e5]:
+        - button "For you" [ref=e6] [cursor=pointer]
+        - button "For business" [ref=e7] [cursor=pointer]
+      - generic [ref=e8]:
+        - button "RU" [ref=e9] [cursor=pointer]
+        - button "EN" [ref=e10] [cursor=pointer]
+        - button "SR" [ref=e11] [cursor=pointer]
+  - main [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - heading "Adopt a pet that levels up every time you go out." [level=1] [ref=e16]
+        - paragraph [ref=e17]: Venues compete for your visit — and you level up a pet for it. Free, in Telegram.
+        - link "Take your pet to Telegram" [ref=e18] [cursor=pointer]:
+          - /url: https://t.me/ayoo_loyalty_bot?startapp=pet-HATCHLING
+          - generic [ref=e19]: Take your pet to Telegram
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e24]: HUNGER
+          - generic [ref=e28]: HYGIENE
+          - generic [ref=e32]: SMARTS
+          - generic [ref=e36]: ACTIVE
+          - generic [ref=e40]: ENERGY
+          - generic [ref=e44]: HAPPY
+        - generic [ref=e47]:
+          - generic [ref=e50]: "0"
+          - generic [ref=e52]: tap 3 times
+        - generic [ref=e53]:
+          - button "🍔" [ref=e54] [cursor=pointer]
+          - button "🎮" [ref=e55] [cursor=pointer]
+          - button "📊" [ref=e56] [cursor=pointer]
+    - generic [ref=e58]:
+      - heading "How it works" [level=2] [ref=e59]
+      - paragraph [ref=e60]: Three taps between you and a happy pet.
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - generic [ref=e63]: 🏪
+          - generic [ref=e64]: "01"
+          - heading "Walk into a venue" [level=3] [ref=e65]
+          - paragraph [ref=e66]: Any partner café, bar or shop in your city.
+        - generic [ref=e67]:
+          - generic [ref=e68]: 🧾
+          - generic [ref=e69]: "02"
+          - heading "Scan the receipt" [level=3] [ref=e70]
+          - paragraph [ref=e71]: Points land instantly in Telegram.
+        - generic [ref=e72]:
+          - generic [ref=e73]: 👾
+          - generic [ref=e74]: "03"
+          - heading "Your pet grows" [level=3] [ref=e75]
+          - paragraph [ref=e76]: Points feed your pet and unlock new ones.
+    - generic [ref=e78]:
+      - heading "The collection grows with you" [level=2] [ref=e79]
+      - paragraph [ref=e80]: How far will yours go?
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - img "HATCHLING" [ref=e84]
+          - generic [ref=e85]: Hatchling
+          - generic [ref=e86]: 500 pts
+        - generic [ref=e87]:
+          - img "KID" [ref=e89]
+          - generic [ref=e90]: Kid
+          - generic [ref=e91]: 1,500 pts
+        - generic [ref=e92]:
+          - img "FOX" [ref=e94]
+          - generic [ref=e95]: Fox
+          - generic [ref=e96]: 3,000 pts
+        - generic [ref=e97]:
+          - img "DRAGON" [ref=e99]
+          - generic [ref=e100]: Dragon
+          - generic [ref=e101]: 5,000 pts
+        - generic [ref=e102]:
+          - img "PHOENIX" [ref=e104]
+          - generic [ref=e105]: Phoenix
+          - generic [ref=e106]: 8,000 pts
+    - generic [ref=e108]:
+      - heading "Venues compete for you" [level=2] [ref=e109]
+      - paragraph [ref=e110]: Belgrade & Novi Sad · point rates up to 10×.
+      - generic [ref=e111]:
+        - generic [ref=e114]:
+          - heading "Belgrade" [level=3] [ref=e115]
+          - paragraph [ref=e116]: live point rates
+        - generic [ref=e119]:
+          - heading "Novi Sad" [level=3] [ref=e120]
+          - paragraph [ref=e121]: live point rates
+    - generic [ref=e123]:
+      - heading "Hi-score" [level=2] [ref=e124]
+      - generic [ref=e125]:
+        - generic [ref=e126]:
+          - generic [ref=e127]: 2.1M
+          - generic [ref=e128]: points awarded
+        - generic [ref=e129]:
+          - generic [ref=e130]: 14K
+          - generic [ref=e131]: pets hatched
+        - generic [ref=e132]:
+          - generic [ref=e133]: "120"
+          - generic [ref=e134]: venues
+    - generic [ref=e136]:
+      - heading "Loved in the wild" [level=2] [ref=e137]
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - paragraph [ref=e140]: “I scan everything now just to feed my dragon.”
+          - generic [ref=e141]: — Mila, Belgrade
+        - generic [ref=e142]:
+          - paragraph [ref=e143]: “Cashback that's actually fun. My kid named ours.”
+          - generic [ref=e144]: — Stefan, Novi Sad
+        - generic [ref=e145]:
+          - paragraph [ref=e146]: “Free, in Telegram, no app store. Just works.”
+          - generic [ref=e147]: — Ana, Belgrade
+    - generic [ref=e149]:
+      - heading "Your pet is hungry for the real thing →" [level=2] [ref=e150]
+      - img "QR" [ref=e152]
+      - link "Take your pet to Telegram" [ref=e153] [cursor=pointer]:
+        - /url: https://t.me/ayoo_loyalty_bot?startapp=pet-HATCHLING
+        - generic [ref=e154]: Take your pet to Telegram

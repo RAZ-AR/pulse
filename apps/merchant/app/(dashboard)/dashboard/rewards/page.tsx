@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { trpc } from "../../../../src/lib/trpc"
+import { useVenue } from "../../../../src/context/venue-context"
 
 type NewReward = {
   title: string
@@ -13,8 +14,7 @@ type NewReward = {
 const EMPTY: NewReward = { title: "", description: "", pointsCost: "", stockLimit: "" }
 
 export default function RewardsPage() {
-  const { data: dash } = trpc.merchant.dashboard.useQuery()
-  const venueId = dash?.venues[0]?.id ?? ""
+  const { venueId } = useVenue()
 
   const { data: rewardData, refetch } = trpc.reward.list.useQuery(
     { venueId, limit: 50 },

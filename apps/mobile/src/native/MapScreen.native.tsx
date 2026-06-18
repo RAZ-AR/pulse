@@ -45,30 +45,36 @@ export default function MapScreen() {
     }))
   }, [hasLocation, selectedCity.lat, selectedCity.lng])
 
-  // Request location once on mount
+  // Watch user position — updates map center when moving
   useEffect(() => {
-    let cancelled = false
+    let sub: Location.LocationSubscription | null = null
     ;(async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync()
         if (status !== "granted") {
-          if (!cancelled) setDenied(true)
+          setDenied(true)
           return
         }
+        // Initial fix
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-        if (cancelled) return
-        setRegion({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-          latitudeDelta: 0.03,
-          longitudeDelta: 0.03,
-        })
+        setRegion({ latitude: loc.coords.latitude, longitude: loc.coords.longitude, latitudeDelta: 0.03, longitudeDelta: 0.03 })
         setHasLocation(true)
+        // Watch for movement (min 30m distance to avoid jitter)
+        sub = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.Balanced, distanceInterval: 30, timeInterval: 15000 },
+          (newLoc) => {
+            setRegion((prev) => ({
+              ...prev,
+              latitude: newLoc.coords.latitude,
+              longitude: newLoc.coords.longitude,
+            }))
+          }
+        )
       } catch {
-        if (!cancelled) setDenied(true)
+        setDenied(true)
       }
     })()
-    return () => { cancelled = true }
+    return () => { sub?.remove() }
   }, [])
 
   // Approximate radius from latitudeDelta (rough — 1 degree ≈ 111 km)
@@ -82,7 +88,10 @@ export default function MapScreen() {
       ...(activeFilter.category ? { category: activeFilter.category } : {}),
       limit: 50,
     },
-    { enabled: hasLocation || true }, // also load with default region
+    {
+      enabled: hasLocation || true,
+      refetchInterval: 60_000, // refresh venue data every 60s
+    },
   )
 
   return (

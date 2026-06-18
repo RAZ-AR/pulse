@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { fonts, useTheme } from "../lib/theme"
@@ -8,15 +8,26 @@ import MapScreen from "./MapScreen"
 
 const ORANGE = "#fd4600"
 
-type Cat = "CAFE" | "RESTAURANT" | "BEAUTY" | "FITNESS" | "YOGA" | "RETAIL"
-const CATS: { key: Cat; label: string }[] = [
-  { key: "CAFE", label: "Кафе" },
-  { key: "RESTAURANT", label: "Рестораны" },
-  { key: "BEAUTY", label: "Красота" },
-  { key: "FITNESS", label: "Фитнес" },
-  { key: "YOGA", label: "Йога" },
-  { key: "RETAIL", label: "Магазины" },
+type Cat = "CAFE" | "RESTAURANT" | "BEAUTY" | "FITNESS" | "YOGA" | "RETAIL" | "SERVICE" | "OTHER"
+
+const CATS: { key: Cat; label: string; emoji: string }[] = [
+  { key: "CAFE", label: "Кафе", emoji: "☕" },
+  { key: "RESTAURANT", label: "Рестораны", emoji: "🍽" },
+  { key: "RETAIL", label: "Магазины", emoji: "🛍" },
+  { key: "BEAUTY", label: "Красота", emoji: "💄" },
+  { key: "FITNESS", label: "Фитнес", emoji: "💪" },
+  { key: "YOGA", label: "Йога", emoji: "🧘" },
+  { key: "SERVICE", label: "Услуги", emoji: "⚙️" },
+  { key: "OTHER", label: "Другое", emoji: "📍" },
 ]
+
+function catEmoji(c: string) {
+  return CATS.find((x) => x.key === c)?.emoji ?? "📍"
+}
+
+function catLabel(c: string) {
+  return CATS.find((x) => x.key === c)?.label ?? c
+}
 
 export default function PlacesScreen() {
   const theme = useTheme()
@@ -30,6 +41,8 @@ export default function PlacesScreen() {
   const [partnerOnly, setPartnerOnly] = useState(false)
   const [hasOffer, setHasOffer] = useState(false)
 
+  const sectionMode = !cat && !query.trim() && !partnerOnly && !hasOffer
+
   const q = trpc.venue.discover.useInfiniteQuery(
     {
       city: city.name,
@@ -40,11 +53,16 @@ export default function PlacesScreen() {
       ...(partnerOnly ? { partnerOnly: true } : {}),
       ...(hasOffer ? { hasOffer: true } : {}),
       sort: "partner",
-      limit: 20,
+      limit: sectionMode ? 60 : 20,
     },
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   )
   const items = q.data?.pages.flatMap((p) => p.items) ?? []
+
+  // Build sections for section mode
+  const sections = sectionMode
+    ? CATS.map((c) => ({ ...c, items: items.filter((v) => v.category === c.key) })).filter((s) => s.items.length > 0)
+    : []
 
   if (view === "map") {
     return (
@@ -57,62 +75,118 @@ export default function PlacesScreen() {
     )
   }
 
-  return (
-    <View style={[s.root, { backgroundColor: theme.bg }]}>
-      <View style={s.header}>
-        <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>Места</Text>
-        <Text style={[s.sub, { color: theme.textSecondary }]}>{city.label} · {CITY_OPTIONS.length} городов</Text>
+  const Header = (
+    <View style={s.header}>
+      <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>Места</Text>
+      <Text style={[s.sub, { color: theme.textSecondary }]}>{city.label} · {CITY_OPTIONS.length} города</Text>
 
-        <View style={[s.search, { borderColor: theme.border }]}>
-          <Text style={{ color: theme.textMuted }}>⌕</Text>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Поиск места"
-            placeholderTextColor={theme.textMuted}
-            style={[s.searchInput, { color: theme.text, fontFamily: fonts.body }]}
-          />
-        </View>
-
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={CATS}
-          keyExtractor={(c) => c.key}
-          contentContainerStyle={s.chipsRow}
-          renderItem={({ item }) => {
-            const on = cat === item.key
-            return (
-              <Pressable onPress={() => setCat(on ? null : item.key)} style={[s.chip, on && s.chipOn]}>
-                <Text style={[s.chipText, { fontFamily: fonts.bodyBold, color: on ? "#fff" : theme.textSecondary }]}>{item.label}</Text>
-              </Pressable>
-            )
-          }}
+      <View style={[s.search, { borderColor: theme.border }]}>
+        <Text style={{ color: theme.textMuted }}>⌕</Text>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Кафе, рестораны, магазины…"
+          placeholderTextColor={theme.textMuted}
+          style={[s.searchInput, { color: theme.text, fontFamily: fonts.body }]}
         />
-
-        <View style={s.filterRow}>
-          <Pressable onPress={() => setPartnerOnly((v) => !v)} style={[s.fchip, partnerOnly && s.fchipOn]}>
-            <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: partnerOnly ? ORANGE : theme.textSecondary }]}>⭐ Партнёры</Text>
+        {query.length > 0 && (
+          <Pressable onPress={() => setQuery("")}>
+            <Text style={{ color: theme.textMuted, fontSize: 16 }}>×</Text>
           </Pressable>
-          <Pressable onPress={() => setHasOffer((v) => !v)} style={[s.fchip, hasOffer && s.fchipOn]}>
-            <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: hasOffer ? ORANGE : theme.textSecondary }]}>🎁 Со спецпредложением</Text>
-          </Pressable>
-          <Pressable onPress={() => setView("map")} style={s.fchip}>
-            <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>🗺 Карта</Text>
-          </Pressable>
-        </View>
+        )}
       </View>
 
       <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={CATS}
+        keyExtractor={(c) => c.key}
+        contentContainerStyle={s.chipsRow}
+        renderItem={({ item }) => {
+          const on = cat === item.key
+          return (
+            <Pressable onPress={() => setCat(on ? null : item.key)} style={[s.chip, on && s.chipOn]}>
+              <Text style={[s.chipText, { fontFamily: fonts.bodyBold, color: on ? "#fff" : theme.textSecondary }]}>
+                {item.emoji} {item.label}
+              </Text>
+            </Pressable>
+          )
+        }}
+      />
+
+      <View style={s.filterRow}>
+        <Pressable onPress={() => setPartnerOnly((v) => !v)} style={[s.fchip, partnerOnly && s.fchipOn]}>
+          <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: partnerOnly ? ORANGE : theme.textSecondary }]}>⭐ Партнёры</Text>
+        </Pressable>
+        <Pressable onPress={() => setHasOffer((v) => !v)} style={[s.fchip, hasOffer && s.fchipOn]}>
+          <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: hasOffer ? ORANGE : theme.textSecondary }]}>🎁 Акции</Text>
+        </Pressable>
+        <Pressable onPress={() => setView("map")} style={s.fchip}>
+          <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>🗺 Карта</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+
+  if (q.isLoading) {
+    return (
+      <View style={[s.root, { backgroundColor: theme.bg }]}>
+        {Header}
+        <ActivityIndicator color={theme.textSecondary} style={{ marginTop: 40 }} />
+      </View>
+    )
+  }
+
+  // Section mode: grouped horizontal rows
+  if (sectionMode && sections.length > 0) {
+    return (
+      <View style={[s.root, { backgroundColor: theme.bg }]}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+          {Header}
+          {sections.map((section) => (
+            <View key={section.key} style={s.section}>
+              <View style={s.sectionHeader}>
+                <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+                  {section.emoji} {section.label}
+                </Text>
+                <Pressable onPress={() => setCat(section.key)}>
+                  <Text style={[s.sectionMore, { color: ORANGE, fontFamily: fonts.bodyBold }]}>Все →</Text>
+                </Pressable>
+              </View>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={section.items}
+                keyExtractor={(v) => v.id}
+                contentContainerStyle={s.horizontalList}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={{ width: 220 }}
+                    onPress={() => router.push(`/venue/${item.id}` as Parameters<typeof router.push>[0])}
+                  >
+                    <VenueCardHorizontal v={item} theme={theme} />
+                  </Pressable>
+                )}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    )
+  }
+
+  // Filter mode: vertical list
+  return (
+    <View style={[s.root, { backgroundColor: theme.bg }]}>
+      <FlatList
         data={items}
         keyExtractor={(v) => v.id}
+        ListHeaderComponent={Header}
         contentContainerStyle={s.list}
         onEndReachedThreshold={0.5}
         onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage() }}
         ListEmptyComponent={
-          q.isLoading
-            ? <ActivityIndicator color={theme.textSecondary} style={{ marginTop: 40 }} />
-            : <Text style={[s.empty, { color: theme.textMuted }]}>Ничего не нашлось</Text>
+          <Text style={[s.empty, { color: theme.textMuted }]}>Ничего не нашлось</Text>
         }
         ListFooterComponent={q.isFetchingNextPage ? <ActivityIndicator color={theme.textSecondary} style={{ margin: 16 }} /> : null}
         renderItem={({ item }) => (
@@ -125,13 +199,35 @@ export default function PlacesScreen() {
   )
 }
 
+function VenueCardHorizontal({ v, theme }: { v: any; theme: ReturnType<typeof useTheme> }) {
+  const rating = v.googleRating ? v.googleRating.toFixed(1) : null
+  const km = v.distanceMeters != null ? (v.distanceMeters / 1000).toFixed(1) + " км" : null
+  return (
+    <View style={[s.hcard, theme.shadowRaisedSm, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      <View style={[s.hcardIcon, { backgroundColor: theme.bgLight }]}>
+        <Text style={{ fontSize: 22 }}>{catEmoji(v.category)}</Text>
+      </View>
+      <Text style={[s.hcardName, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{v.name}</Text>
+      <Text style={[s.hcardAddr, { color: theme.textMuted }]} numberOfLines={1}>{v.address}</Text>
+      <View style={s.hcardMeta}>
+        {rating ? <Text style={[s.hcardRating, { color: theme.textSecondary }]}>★ {rating}</Text> : null}
+        {km ? <Text style={[s.hcardDist, { color: theme.textMuted }]}>{km}</Text> : null}
+      </View>
+      <View style={s.badges}>
+        {v.isPartner ? <Badge text="⭐ Партнёр" /> : null}
+        {v.hasOffer ? <Badge text="🎁 Акция" /> : null}
+      </View>
+    </View>
+  )
+}
+
 function VenueCard({ v, theme }: { v: any; theme: ReturnType<typeof useTheme> }) {
   const km = v.distanceMeters != null ? (v.distanceMeters / 1000).toFixed(1) + " км" : null
   const rating = v.googleRating ? v.googleRating.toFixed(1) : null
   return (
     <View style={[s.card, theme.shadowRaisedSm, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       <View style={[s.cardIcon, { backgroundColor: theme.bgLight }]}>
-        <Text style={[s.cardIconText, { fontFamily: fonts.displayHeavy, color: theme.textSecondary }]}>{(v.name || "?").slice(0, 1).toUpperCase()}</Text>
+        <Text style={{ fontSize: 20 }}>{catEmoji(v.category)}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[s.cardName, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{v.name}</Text>
@@ -141,7 +237,7 @@ function VenueCard({ v, theme }: { v: any; theme: ReturnType<typeof useTheme> })
         <Text style={[s.cardAddr, { color: theme.textMuted }]} numberOfLines={1}>{v.address}</Text>
         <View style={s.badges}>
           {v.isPartner ? <Badge text="⭐ Партнёр" /> : null}
-          {v.hasOffer ? <Badge text="🎁 Оффер" /> : null}
+          {v.hasOffer ? <Badge text="🎁 Акция" /> : null}
           {v.pointsPerCurrency ? <Badge text={`💰 ${v.pointsPerCurrency}×`} /> : null}
         </View>
       </View>
@@ -155,10 +251,6 @@ function Badge({ text }: { text: string }) {
       <Text style={[s.badgeText, { fontFamily: fonts.bodyBold }]}>{text}</Text>
     </View>
   )
-}
-
-function catLabel(c: string) {
-  return { CAFE: "Кафе", RESTAURANT: "Ресторан", BEAUTY: "Красота", FITNESS: "Фитнес", YOGA: "Йога", RETAIL: "Магазин", SERVICE: "Услуги", OTHER: "Другое" }[c] ?? c
 }
 
 const s = StyleSheet.create({
@@ -176,10 +268,25 @@ const s = StyleSheet.create({
   fchip: { paddingHorizontal: 12, height: 32, borderRadius: 99, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.7)" },
   fchipOn: { backgroundColor: "#FBEADC" },
   fchipText: { fontSize: 12 },
+
+  // Section mode
+  section: { marginBottom: 8 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 18, marginBottom: 10, marginTop: 6 },
+  sectionTitle: { fontSize: 20 },
+  sectionMore: { fontSize: 13 },
+  horizontalList: { paddingHorizontal: 18, gap: 12 },
+  hcard: { borderRadius: 20, padding: 14, borderWidth: 1, borderBottomWidth: 3 },
+  hcardIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  hcardName: { fontSize: 15, marginBottom: 2 },
+  hcardAddr: { fontSize: 11, marginBottom: 6 },
+  hcardMeta: { flexDirection: "row", gap: 8 },
+  hcardRating: { fontSize: 12 },
+  hcardDist: { fontSize: 12 },
+
+  // List mode
   list: { padding: 16, paddingBottom: 110, gap: 12 },
   card: { flexDirection: "row", gap: 12, borderRadius: 22, padding: 14, borderWidth: 1, borderBottomWidth: 4 },
   cardIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  cardIconText: { fontSize: 18 },
   cardName: { fontSize: 16 },
   cardMeta: { fontSize: 13, marginTop: 2 },
   cardAddr: { fontSize: 12, marginTop: 2 },

@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { trpc } from "../../../../src/lib/trpc"
+import { useVenue } from "../../../../src/context/venue-context"
 
 function formatDate(d: Date | string) {
   return new Date(d).toLocaleString("en-GB", {
@@ -10,8 +11,7 @@ function formatDate(d: Date | string) {
 }
 
 export default function CheckinsPage() {
-  const { data: dash } = trpc.merchant.dashboard.useQuery()
-  const venueId = dash?.venues[0]?.id ?? ""
+  const { venueId } = useVenue()
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     trpc.merchant.checkins.useInfiniteQuery(

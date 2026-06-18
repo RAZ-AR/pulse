@@ -1,0 +1,16 @@
+- generic [ref=e64]:
+  - generic [ref=e66] [cursor=pointer]: ← Назад
+  - generic [ref=e67]: Как тебя зовут?
+  - generic [ref=e68]: Кассиры будут видеть это имя, когда начисляют тебе баллы.
+  - generic [ref=e69]: ИМЯ
+  - textbox "Твоё имя" [ref=e71]
+  - generic [ref=e72]: HOME CITY
+  - generic [ref=e73]:
+    - generic [ref=e75] [cursor=pointer]: Belgrade
+    - generic [ref=e77] [cursor=pointer]: Novi Sad
+  - generic [ref=e78]:
+    - text: РЕФЕРАЛЬНЫЙ КОД (НЕОБЯЗАТЕЛЬНО)
+    - generic [ref=e79]: · необязательно
+  - textbox "ABC123" [ref=e81]
+  - generic [ref=e82]: Введи код друга, чтобы получить бонусные баллы
+  - generic [ref=e86] [cursor=pointer]: Начать

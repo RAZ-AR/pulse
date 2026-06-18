@@ -1,0 +1,34 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: ayoo
+      - generic [ref=e5]:
+        - button "For you" [ref=e6] [cursor=pointer]
+        - button "For business" [ref=e7] [cursor=pointer]
+      - generic [ref=e8]:
+        - button "RU" [ref=e9] [cursor=pointer]
+        - button "EN" [ref=e10] [cursor=pointer]
+        - button "SR" [ref=e11] [cursor=pointer]
+  - main [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - heading "Adopt a pet that levels up every time you go out." [level=1] [ref=e16]
+        - paragraph [ref=e17]: Venues compete for your visit — and you level up a pet for it. Free, in Telegram.
+        - link "Take your pet to Telegram" [ref=e18] [cursor=pointer]:
+          - /url: https://t.me/ayoo_loyalty_bot?startapp=pet-HATCHLING
+          - generic [ref=e19]: Take your pet to Telegram
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e24]: HUNGER
+          - generic [ref=e28]: HYGIENE
+          - generic [ref=e32]: SMARTS
+          - generic [ref=e36]: ACTIVE
+          - generic [ref=e40]: ENERGY
+          - generic [ref=e44]: HAPPY
+        - generic [ref=e47]:
+          - generic [ref=e50]: "0"
+          - generic [ref=e52]: tap 3 times
+        - generic [ref=e53]:
+          - button "🍔" [ref=e54] [cursor=pointer]
+          - button "🎮" [ref=e55] [cursor=pointer]
+          - button "📊" [ref=e56] [cursor=pointer]

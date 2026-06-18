@@ -1,6 +1,7 @@
 "use client"
 
 import { trpc } from "../../../../src/lib/trpc"
+import { useVenue } from "../../../../src/context/venue-context"
 
 const TYPE_LABELS: Record<string, string> = {
   PARTNER_PURCHASE: "Purchase",
@@ -21,8 +22,7 @@ function formatDate(d: Date | string) {
 }
 
 export default function TransactionsPage() {
-  const { data: dash } = trpc.merchant.dashboard.useQuery()
-  const venueId = dash?.venues[0]?.id ?? ""
+  const { venueId } = useVenue()
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     trpc.merchant.transactions.useInfiniteQuery(
