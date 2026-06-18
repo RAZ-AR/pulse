@@ -43,9 +43,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Баллов сегодня"  value={statsLoading ? null : (stats?.today.pointsIssued ?? 0)}  sub={stats ? `${stats.today.transactions} транзакций` : undefined} color="green" />
-        <StatCard label="Баллов за месяц" value={statsLoading ? null : (stats?.month.pointsIssued ?? 0)}  sub={stats ? `${stats.month.transactions} транзакций` : undefined} color="blue" />
-        <StatCard label="Наград погашено" value={statsLoading ? null : (stats?.allTime.rewardsRedeemed ?? 0)} sub="за всё время" color="orange" />
+        <StatCard label="Баллов сегодня"  value={statsLoading ? null : (stats?.today.pointsIssued ?? 0)}  color="green"  {...(stats ? { sub: `${stats.today.transactions} транзакций` } : {})} />
+        <StatCard label="Баллов за месяц" value={statsLoading ? null : (stats?.month.pointsIssued ?? 0)}  color="blue"   {...(stats ? { sub: `${stats.month.transactions} транзакций` } : {})} />
+        <StatCard label="Наград погашено" value={statsLoading ? null : (stats?.allTime.rewardsRedeemed ?? 0)} color="orange" sub="за всё время" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
