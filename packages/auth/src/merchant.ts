@@ -1,15 +1,55 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import { createHash, createHmac } from "node:crypto"
 import { compare } from "bcryptjs"
 import { db } from "@pulse/db"
 import { z } from "zod"
 
+// ── Schemas ───────────────────────────────────────────────────
+
 const credentialsSchema = z.object({
-  email: z.string().min(1),
-  password: z.string().min(1),
+  type:         z.enum(["password", "telegram"]).default("password"),
+  email:        z.string().optional(),
+  password:     z.string().optional(),
+  telegramData: z.string().optional(),
 })
 
 const PROMO_PASSWORD = process.env.PROMO_PASSWORD ?? "promo123"
+
+// ── Telegram Login Widget verification ───────────────────────
+// https://core.telegram.org/widgets/login#checking-authorization
+
+function verifyTelegramWidget(raw: string): Record<string, string> | null {
+  const botToken = process.env.PARTNER_TELEGRAM_BOT_TOKEN
+  if (!botToken) return null
+
+  let data: Record<string, string>
+  try {
+    data = JSON.parse(raw)
+  } catch {
+    return null
+  }
+
+  const { hash, ...fields } = data
+  if (!hash) return null
+
+  // Reject stale auth (> 24 h)
+  const age = Date.now() / 1000 - parseInt(fields.auth_date ?? "0")
+  if (age > 86400) return null
+
+  const checkString = Object.entries(fields)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n")
+
+  // Widget uses SHA256(bot_token) as HMAC key, unlike WebApp initData
+  const secretKey = createHash("sha256").update(botToken).digest()
+  const expected  = createHmac("sha256", secretKey).update(checkString).digest("hex")
+
+  return expected === hash ? data : null
+}
+
+// ── Auth instance ─────────────────────────────────────────────
 
 export const {
   handlers: merchantHandlers,
@@ -23,32 +63,44 @@ export const {
     Credentials({
       name: "Merchant Credentials",
       credentials: {
-        email: { label: "Login", type: "text" },
-        password: { label: "Password", type: "password" },
+        type:         { label: "Type",          type: "text"     },
+        email:        { label: "Login",         type: "text"     },
+        password:     { label: "Password",      type: "password" },
+        telegramData: { label: "Telegram Data", type: "text"     },
       },
       async authorize(credentials) {
         try {
-          console.log("[auth] authorize called, email:", (credentials as any)?.email)
-
           const parsed = credentialsSchema.safeParse(credentials)
-          if (!parsed.success) {
-            console.log("[auth] parse failed:", parsed.error.message)
-            return null
+          if (!parsed.success) return null
+
+          // ── Telegram Login Widget ──────────────────────────
+          if (parsed.data.type === "telegram") {
+            if (!parsed.data.telegramData) return null
+
+            const data = verifyTelegramWidget(parsed.data.telegramData)
+            if (!data) return null
+
+            const merchant = await db.merchant.findFirst({
+              where:  { telegramChatId: String(data.id) },
+              select: { id: true, email: true, name: true },
+            })
+            if (!merchant) return null
+
+            return { id: merchant.id, email: merchant.email ?? "", name: merchant.name }
           }
 
+          // ── Promo access ───────────────────────────────────
           if (parsed.data.email === "promo") {
-            console.log("[auth] promo path, match:", parsed.data.password === PROMO_PASSWORD)
             if (parsed.data.password !== PROMO_PASSWORD) return null
-
-            console.log("[auth] promo querying DB...")
             const first = await db.merchant.findFirst({
               select: { id: true, email: true, name: true },
             })
-            console.log("[auth] promo merchant found:", !!first, first?.id)
             if (!first) return null
-
-            return { id: first.id, email: first.email, name: "Promo" }
+            return { id: first.id, email: first.email ?? "", name: "Promo" }
           }
+
+          // ── Regular email + password ───────────────────────
+          if (!parsed.data.email || !parsed.data.password) return null
 
           const merchant = await db.merchant.findUnique({
             where: { email: parsed.data.email },
@@ -58,9 +110,9 @@ export const {
           const valid = await compare(parsed.data.password, merchant.passwordHash)
           if (!valid) return null
 
-          return { id: merchant.id, email: merchant.email, name: merchant.name }
+          return { id: merchant.id, email: merchant.email ?? "", name: merchant.name }
         } catch (err) {
-          console.error("[auth] authorize threw:", err)
+          console.error("[auth] authorize error:", err)
           return null
         }
       },
@@ -68,9 +120,7 @@ export const {
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) {
-        token.merchantId = user.id
-      }
+      if (user) token.merchantId = user.id
       return token
     },
     session({ session, token }) {
@@ -83,6 +133,6 @@ export const {
   },
   pages: {
     signIn: "/login",
-    error: "/login",
+    error:  "/login",
   },
 })
