@@ -79,7 +79,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             <Link
               key={href}
               href={href}
-              onClick={onClose}
+              {...(onClose ? { onClick: onClose } : {})}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 active ? "bg-[#0F1115] text-white font-medium" : "text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#0F1115]"
               }`}
