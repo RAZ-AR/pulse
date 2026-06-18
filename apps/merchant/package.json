@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "next build && cp ../../packages/db/generated/libquery_engine-rhel-openssl-3.0.x.so.node .next/server/",
+    "build": "mkdir -p generated && cp ../../packages/db/generated/libquery_engine-rhel-openssl-3.0.x.so.node generated/ && next build",
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
