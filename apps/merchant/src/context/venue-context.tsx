@@ -10,6 +10,8 @@ type Venue = {
   pointsPerCurrency: number | null
   currency: string | null
   subscriptionTier: string | null
+  boostMultiplier: number | null
+  boostUntil: Date | null
   _count: { transactions: number; rewards: number }
 }
 
