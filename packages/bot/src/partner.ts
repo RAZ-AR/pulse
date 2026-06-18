@@ -1,9 +1,20 @@
 import { Telegraf, Scenes, session } from "telegraf"
+import { createHmac } from "node:crypto"
 import { db } from "./lib/db"
 import { registerScene } from "./scenes/register"
 import { newOfferScene } from "./scenes/new-offer"
 import { acceptPaymentScene } from "./scenes/accept-payment"
 import type { Context } from "./types"
+
+function createBotLoginToken(merchantId: string): string {
+  const botToken = process.env.PARTNER_TELEGRAM_BOT_TOKEN ?? ""
+  const payload  = Buffer.from(JSON.stringify({
+    merchantId,
+    exp: Math.floor(Date.now() / 1000) + 600, // 10 minutes
+  })).toString("base64url")
+  const sig = createHmac("sha256", botToken).update(payload).digest("base64url")
+  return `${payload}.${sig}`
+}
 
 // ── Инициализация ─────────────────────────────────────────
 
@@ -35,11 +46,34 @@ partnerBot.use(async (ctx, next) => {
 
 // ── /start ────────────────────────────────────────────────
 
+async function sendLoginLink(ctx: Context): Promise<void> {
+  const merchant = ctx.merchantData
+  if (!merchant) {
+    await ctx.reply("Вы не зарегистрированы. Используйте /register")
+    return
+  }
+  const token    = createBotLoginToken(merchant.id)
+  const baseUrl  = process.env.MERCHANT_WEB_URL ?? "https://merchant.ayoo.space"
+  const loginUrl = `${baseUrl}/api/auth/bot-login?token=${token}`
+  await ctx.reply(
+    "🔐 Нажмите кнопку для входа в кабинет партнёра.\n_Ссылка действует 10 минут._",
+    {
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: [[{ text: "Войти в кабинет →", url: loginUrl }]] },
+    }
+  )
+}
+
 partnerBot.start(async (ctx) => {
   // Deep-link from staff invite: /start staff_<token>
   const startParam = (ctx.message as { text?: string } | undefined)?.text?.split(" ")[1] ?? ""
   if (startParam.startsWith("staff_")) {
     await handleStaffInvite(ctx, startParam.slice("staff_".length))
+    return
+  }
+  // Deep-link from merchant login page: /start login
+  if (startParam === "login") {
+    await sendLoginLink(ctx)
     return
   }
 
@@ -197,6 +231,10 @@ partnerBot.command("register", async (ctx) => {
   }
   return ctx.scene.enter("register")
 })
+
+// ── /login ────────────────────────────────────────────────
+
+partnerBot.command("login", sendLoginLink)
 
 // ── /newoffer ─────────────────────────────────────────────
 

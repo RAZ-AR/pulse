@@ -8,13 +8,33 @@ import { z } from "zod"
 // ── Schemas ───────────────────────────────────────────────────
 
 const credentialsSchema = z.object({
-  type:         z.enum(["password", "telegram"]).default("password"),
-  email:        z.string().optional(),
-  password:     z.string().optional(),
-  telegramData: z.string().optional(),
+  type:          z.enum(["password", "telegram", "bot_token"]).default("password"),
+  email:         z.string().optional(),
+  password:      z.string().optional(),
+  telegramData:  z.string().optional(),
+  botLoginToken: z.string().optional(),
 })
 
 const PROMO_PASSWORD = process.env.PROMO_PASSWORD ?? "promo123"
+
+// ── Bot magic-link token ──────────────────────────────────────
+// Format: base64url(JSON) + "." + HMAC-SHA256(base64url(JSON), botToken)
+
+export function verifyBotLoginToken(token: string): { merchantId: string } | null {
+  const botToken = process.env.PARTNER_TELEGRAM_BOT_TOKEN
+  if (!botToken) return null
+  const dot = token.lastIndexOf(".")
+  if (dot < 0) return null
+  const payload = token.slice(0, dot)
+  const sig     = token.slice(dot + 1)
+  const expected = createHmac("sha256", botToken).update(payload).digest("base64url")
+  if (expected !== sig) return null
+  try {
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString())
+    if (!data.merchantId || data.exp < Math.floor(Date.now() / 1000)) return null
+    return { merchantId: data.merchantId }
+  } catch { return null }
+}
 
 // ── Telegram Login Widget verification ───────────────────────
 // https://core.telegram.org/widgets/login#checking-authorization
@@ -72,6 +92,18 @@ export const {
         try {
           const parsed = credentialsSchema.safeParse(credentials)
           if (!parsed.success) return null
+
+          // ── Bot magic-link ─────────────────────────────────
+          if (parsed.data.type === "bot_token") {
+            const result = verifyBotLoginToken(parsed.data.botLoginToken ?? "")
+            if (!result) return null
+            const merchant = await db.merchant.findUnique({
+              where:  { id: result.merchantId },
+              select: { id: true, email: true, name: true },
+            })
+            if (!merchant) return null
+            return { id: merchant.id, email: merchant.email ?? "", name: merchant.name }
+          }
 
           // ── Telegram Login Widget ──────────────────────────
           if (parsed.data.type === "telegram") {

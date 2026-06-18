@@ -1,44 +1,21 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
 export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) {
-  const router  = useRouter()
-  const tgRef   = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   const [email,    setEmail]    = useState("")
   const [password, setPassword] = useState("")
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
 
-  // ── Telegram Login Widget ──────────────────────────────────
-  useEffect(() => {
-    if (!tgBotUsername || !tgRef.current) return
-
-    const container = tgRef.current
-    const authUrl   = `${window.location.origin}/api/auth/telegram`
-
-    const script = document.createElement("script")
-    script.src = "https://telegram.org/js/telegram-widget.js?22"
-    script.setAttribute("data-telegram-login", tgBotUsername)
-    script.setAttribute("data-size",           "large")
-    script.setAttribute("data-radius",         "12")
-    script.setAttribute("data-request-access", "write")
-    script.setAttribute("data-auth-url",       authUrl)
-    script.async = true
-    container.appendChild(script)
-
-    return () => { container.innerHTML = "" }
-  }, [tgBotUsername])
-
-  // ── Email / password submit ────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-
     try {
       const res = await signIn("credentials", {
         type:     "password",
@@ -58,6 +35,10 @@ export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) 
     }
   }
 
+  const tgLoginUrl = tgBotUsername
+    ? `https://t.me/${tgBotUsername}?start=login`
+    : null
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
       <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-sm border border-[#E5E7EB]">
@@ -72,12 +53,20 @@ export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) 
         </div>
 
         {/* Telegram button */}
-        {tgBotUsername ? (
+        {tgLoginUrl && (
           <>
-            <div ref={tgRef} className="flex justify-center mb-4" />
+            <a
+              href={tgLoginUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#0F1115] hover:bg-[#F9FAFB] transition-colors mb-4"
+            >
+              <TelegramIcon />
+              Войти через Telegram
+            </a>
             <Divider />
           </>
-        ) : null}
+        )}
 
         {/* Email / password form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,5 +118,13 @@ function Divider() {
       <span className="text-xs text-[#9CA3AF]">или</span>
       <div className="flex-1 h-px bg-[#E5E7EB]" />
     </div>
+  )
+}
+
+function TelegramIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.7 8.02c-.12.56-.46.7-.93.43l-2.57-1.89-1.24 1.19c-.14.13-.25.25-.51.25l.18-2.6 4.7-4.25c.21-.18-.04-.28-.32-.1L7.9 14.47l-2.53-.79c-.55-.17-.56-.55.11-.81l9.87-3.81c.46-.17.86.11.69.74z" fill="#229ED9"/>
+    </svg>
   )
 }
