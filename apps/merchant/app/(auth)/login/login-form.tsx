@@ -14,6 +14,12 @@ interface TelegramUser {
   hash: string
 }
 
+declare global {
+  interface Window {
+    onTelegramMerchantAuth?: (user: TelegramUser) => void
+  }
+}
+
 export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) {
   const router  = useRouter()
   const tgRef   = useRef<HTMLDivElement>(null)
@@ -29,7 +35,7 @@ export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) 
 
     const container = tgRef.current
 
-    ;(window as any).onTelegramMerchantAuth = async (tgUser: TelegramUser) => {
+    window.onTelegramMerchantAuth = async (tgUser: TelegramUser) => {
       setLoading(true)
       setError(null)
       try {
@@ -61,7 +67,7 @@ export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) 
     container.appendChild(script)
 
     return () => {
-      delete (window as any).onTelegramMerchantAuth
+      delete window.onTelegramMerchantAuth
       container.innerHTML = ""
     }
   }, [tgBotUsername, router])
