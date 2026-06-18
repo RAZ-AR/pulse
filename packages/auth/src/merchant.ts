@@ -75,17 +75,30 @@ export const {
 
           // ── Telegram Login Widget ──────────────────────────
           if (parsed.data.type === "telegram") {
-            if (!parsed.data.telegramData) return null
+            if (!parsed.data.telegramData) {
+              console.error("[tg-auth] no telegramData")
+              return null
+            }
 
             const data = verifyTelegramWidget(parsed.data.telegramData)
-            if (!data) return null
+            if (!data) {
+              console.error("[tg-auth] HMAC verification failed, token present:", !!process.env.PARTNER_TELEGRAM_BOT_TOKEN)
+              return null
+            }
+
+            console.error("[tg-auth] verified ok, id:", data.id)
 
             const merchant = await db.merchant.findFirst({
               where:  { telegramChatId: String(data.id) },
               select: { id: true, email: true, name: true },
             })
-            if (!merchant) return null
 
+            if (!merchant) {
+              console.error("[tg-auth] no merchant with telegramChatId:", String(data.id))
+              return null
+            }
+
+            console.error("[tg-auth] found merchant:", merchant.id)
             return { id: merchant.id, email: merchant.email ?? "", name: merchant.name }
           }
 
