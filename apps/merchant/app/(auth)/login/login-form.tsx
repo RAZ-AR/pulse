@@ -4,22 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
-interface TelegramUser {
-  id: number
-  first_name?: string
-  last_name?: string
-  username?: string
-  photo_url?: string
-  auth_date: number
-  hash: string
-}
-
-declare global {
-  interface Window {
-    onTelegramMerchantAuth?: (user: TelegramUser) => void
-  }
-}
-
 export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) {
   const router  = useRouter()
   const tgRef   = useRef<HTMLDivElement>(null)
@@ -34,43 +18,20 @@ export default function LoginForm({ tgBotUsername }: { tgBotUsername: string }) 
     if (!tgBotUsername || !tgRef.current) return
 
     const container = tgRef.current
-
-    window.onTelegramMerchantAuth = async (tgUser: TelegramUser) => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await signIn("credentials", {
-          type:         "telegram",
-          telegramData: JSON.stringify(tgUser),
-          redirect:     false,
-        })
-        if (res?.error) {
-          setError("Telegram-аккаунт не привязан к мерчанту. Зарегистрируйтесь через бота.")
-        } else {
-          router.push("/dashboard")
-        }
-      } catch {
-        setError("Ошибка входа через Telegram. Попробуйте снова.")
-      } finally {
-        setLoading(false)
-      }
-    }
+    const authUrl   = `${window.location.origin}/api/auth/telegram`
 
     const script = document.createElement("script")
     script.src = "https://telegram.org/js/telegram-widget.js?22"
-    script.setAttribute("data-telegram-login",  tgBotUsername)
-    script.setAttribute("data-size",            "large")
-    script.setAttribute("data-radius",          "12")
-    script.setAttribute("data-request-access",  "write")
-    script.setAttribute("data-onauth",          "onTelegramMerchantAuth")
+    script.setAttribute("data-telegram-login", tgBotUsername)
+    script.setAttribute("data-size",           "large")
+    script.setAttribute("data-radius",         "12")
+    script.setAttribute("data-request-access", "write")
+    script.setAttribute("data-auth-url",       authUrl)
     script.async = true
     container.appendChild(script)
 
-    return () => {
-      delete window.onTelegramMerchantAuth
-      container.innerHTML = ""
-    }
-  }, [tgBotUsername, router])
+    return () => { container.innerHTML = "" }
+  }, [tgBotUsername])
 
   // ── Email / password submit ────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
