@@ -156,7 +156,8 @@ export const PET_SPRITES: Record<string, SpriteFrames> = {
 
 // ── Pixel sprite renderer ─────────────────────────────────────
 // Renders a pixel sprite. `px` controls pixel size.
-export function PixelSprite({ rows, px = 5 }: { rows: string[]; px?: number }) {
+export function PixelSprite({ rows, px = 5, ink }: { rows: string[]; px?: number; ink?: string }) {
+  const fill = (ch: string) => (ch === "K" ? (ink ?? C.K) : (C[ch] ?? "transparent"))
   return (
     <View style={{ gap: 0 }}>
       {rows.map((row, ri) => (
@@ -164,7 +165,7 @@ export function PixelSprite({ rows, px = 5 }: { rows: string[]; px?: number }) {
           {row.split("").map((ch, ci) => (
             <View
               key={ci}
-              style={{ width: px, height: px, backgroundColor: C[ch] ?? "transparent" }}
+              style={{ width: px, height: px, backgroundColor: fill(ch) }}
             />
           ))}
         </View>
@@ -174,9 +175,9 @@ export function PixelSprite({ rows, px = 5 }: { rows: string[]; px?: number }) {
 }
 
 // ── Small collected-pet icon (static, no animation) ───────────
-export function PetIcon({ petKey, px = 3 }: { petKey: string; px?: number }) {
+export function PetIcon({ petKey, px = 3, ink }: { petKey: string; px?: number; ink?: string }) {
   const frames = PET_SPRITES[petKey] ?? PET_SPRITES.HATCHLING!
-  return <PixelSprite rows={frames[0]} px={px} />
+  return <PixelSprite rows={frames[0]} px={px} {...(ink ? { ink } : {})} />
 }
 
 // ── The current pet: big, animated, roams the habitat ─────────
@@ -187,9 +188,10 @@ type Props = {
   onPress?: (() => void) | undefined
   pixelSize?: number | undefined
   walkRange?: number | undefined
+  ink?: string | undefined
 }
 
-export function AyooPet({ petKey, streak, petName, onPress, pixelSize = 6, walkRange = 60 }: Props) {
+export function AyooPet({ petKey, streak, petName, onPress, pixelSize = 6, walkRange = 60, ink }: Props) {
   const frames = PET_SPRITES[petKey] ?? PET_SPRITES.HATCHLING!
 
   // Frame toggle for idle animation
@@ -270,7 +272,7 @@ export function AyooPet({ petKey, streak, petName, onPress, pixelSize = 6, walkR
               { transform: [{ translateX: petTranslateX }, { translateY: petTranslateY }, { scale: tapScale }] },
             ]}
           >
-            <PixelSprite rows={frames[frame] ?? frames[0]} px={pixelSize} />
+            <PixelSprite rows={frames[frame] ?? frames[0]} px={pixelSize} {...(ink ? { ink } : {})} />
           </Animated.View>
           {isHungry && <View style={p.hungryDot} />}
         </View>

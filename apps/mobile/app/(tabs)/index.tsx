@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import QRCode from "react-native-qrcode-svg"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
-import { DeviceChrome, Keypad, Readout, LcdScreen } from "../../src/components/console"
+import { DeviceChrome, LcdScreen, ModuleGrid, ScreenToggle } from "../../src/components/console"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
@@ -67,6 +67,18 @@ const PET_MOODS: Record<string, string[]> = {
   sr: ["ZDRAVO", "VOLIM", "<3", "MLJAC", "IGRA", "ZAGRLI"],
 }
 
+// Brushed-aluminum body tints — the COLOR key shuffles between these.
+const BODY_COLORS: readonly (readonly [string, string])[] = [
+  ["#DBDBD6", "#BCBCB6"], // silver
+  ["#B6D2EC", "#88AAD0"], // steel blue
+  ["#AEE0C0", "#82C39C"], // sage
+  ["#EDD7A4", "#D4B772"], // sand
+  ["#D2BFEE", "#AC92D6"], // lilac
+  ["#F0C3CC", "#D8929E"], // rose
+  ["#AEE6DA", "#82C8B6"], // mint
+  ["#F2C9A6", "#DCA876"], // peach
+]
+
 export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
@@ -75,6 +87,10 @@ export default function HomeScreen() {
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
   const [deviceMode, setDeviceMode] = useState<"home" | "earn" | "spend">("home")
+  // Screen theme — dark glass (default) or the original light LCD.
+  const [screenDark, setScreenDark] = useState(true)
+  // Body tint — the COLOR key shuffles it.
+  const [bodyColor, setBodyColor] = useState<readonly [string, string]>(BODY_COLORS[0]!)
   // LCD switch animation — content fades/scales in while a scanline sweeps down.
   const lcdAnim = useRef(new Animated.Value(1)).current
   const scanAnim = useRef(new Animated.Value(1)).current
@@ -128,27 +144,6 @@ export default function HomeScreen() {
     { label: "HAPPY",   value: Math.min(total / Math.max(tier.next, 1), 1) },
   ]
 
-  // Keypad re-legends per device mode (HOME → EARN/SPEND switch in place).
-  const homePads = [
-    { key: "scan",   symbol: "⌁", label: "SCAN",   color: "#3B82F6", onPress: () => router.push("/scan") },
-    { key: "check",  symbol: "✓", label: "CHECK",  color: "#14B8A6", onPress: () => router.push("/checkin") },
-    { key: "map",    symbol: "⌖", label: "MAP",    color: "#EC4899", onPress: () => router.push("/map") },
-    { key: "earn",   symbol: "+", label: "EARN",   color: "#015634", edge: "#013d24", solid: true, onPress: () => setDeviceMode("earn") },
-    { key: "send",   symbol: "−", label: "SEND",   color: "#fd4600", edge: "#c83700", solid: true, onPress: () => setDeviceMode("spend") },
-    { key: "reward", symbol: "✦", label: "REWARD", color: "#8B5CF6", onPress: () => router.push("/rewards") },
-  ]
-  const earnPads = [
-    { key: "scan",  symbol: "⌁", label: "SCAN",  color: "#015634", edge: "#013d24", solid: true, onPress: () => router.push("/scan") },
-    { key: "check", symbol: "✓", label: "CHECK", color: "#14B8A6", onPress: () => router.push("/checkin") },
-    { key: "hist",  symbol: "≡", label: "LOG",   color: "#8C887E", onPress: () => router.push("/points-history") },
-  ]
-  const spendPads = [
-    { key: "reward", symbol: "✦", label: "REWARD", color: "#8B5CF6", onPress: () => router.push("/rewards") },
-    { key: "gift",   symbol: "♡", label: "GIFT",   color: "#fd4600", edge: "#c83700", solid: true, onPress: () => router.push("/gift") },
-    { key: "hist",   symbol: "≡", label: "LOG",    color: "#8C887E", onPress: () => router.push("/points-history") },
-  ]
-  const modePads = deviceMode === "home" ? homePads : deviceMode === "earn" ? earnPads : spendPads
-
   return (
     <ScrollView
       style={[s.scroll, { backgroundColor: theme.bg }]}
@@ -196,7 +191,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <DeviceChrome>
+      <DeviceChrome colors={bodyColor} right={<ScreenToggle dark={screenDark} onToggle={() => setScreenDark((v) => !v)} />}>
         <Animated.View
           style={[
             deviceMode !== "home" && s.lcdAnimWrap,
@@ -215,12 +210,18 @@ export default function HomeScreen() {
               words={petWords}
               earnedLabel={t("earnedThisWeek")}
               spentLabel={t("spentThisWeek")}
+              dark={screenDark}
+              info={[
+                { label: "STREAK",  value: `${streak}d` },
+                { label: "WELCOME", value: `${welcomeDays}d` },
+                { label: "QUESTS",  value: `${activeChallenges.length}` },
+              ]}
               onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
             />
           ) : deviceMode === "earn" ? (
-            <EarnPanel total={total} weekly={weeklyEarned} today={todayAvailable} />
+            <EarnPanel total={total} weekly={weeklyEarned} today={todayAvailable} dark={screenDark} />
           ) : (
-            <SpendPanel rewards={rewardItems} available={total} />
+            <SpendPanel rewards={rewardItems} available={total} dark={screenDark} />
           )}
           {/* scanline sweep on mode switch (earn/spend only) */}
           {deviceMode !== "home" ? (
@@ -237,26 +238,30 @@ export default function HomeScreen() {
           ) : null}
         </Animated.View>
 
-        {/* Keypad — re-legends per device mode, like K.O. II SHIFT layers */}
-        <Keypad pads={modePads} />
+        {/* Reference control grid — fixed hardware modules, like a lock-screen device */}
+        <ModuleGrid
+          map={{ glyph: "⌖", label: "MAP", onPress: () => router.push("/map") }}
+          check={{ glyph: "✓", label: "CHECK", onPress: () => router.push("/checkin") }}
+          color={{ swatches: BODY_COLORS, onPick: setBodyColor }}
+          reward={{ glyph: "▶", label: "REWARD", onPress: () => router.push("/rewards") }}
+          scan={{ glyph: "+", label: "SCAN", onPress: () => router.push("/scan") }}
+          earn={{ glyph: "→", label: "SEND", color: "#E23B22", onPress: () => router.push("/gift") }}
+          matrixTint={bodyColor[1]}
+          onStatus={() => router.push("/pet" as Parameters<typeof router.push>[0])}
+        />
+
+        <View style={s.deviceFooter}>
+          <Text style={[s.deviceFooterText, { fontFamily: fonts.pixel }]}>--- ayoo! --- beta 1 ---</Text>
+        </View>
 
         {deviceMode !== "home" ? (
-          <Pressable onPress={() => setDeviceMode("home")} style={({ pressed }) => [s.backBar, pressed && s.backBarPressed]}>
-            <Text style={[s.backBarText, { fontFamily: fonts.pixel }]}>◀ BACK</Text>
+          <Pressable onPress={() => setDeviceMode("home")} style={({ pressed }) => [s.backBar, !screenDark && s.backBarLight, pressed && s.backBarPressed]}>
+            <Text style={[s.backBarText, !screenDark && s.backBarTextLight, { fontFamily: fonts.pixel }]}>◀ BACK</Text>
           </Pressable>
         ) : null}
       </DeviceChrome>
 
-      {/* LCD readout — live device status at a glance */}
-      <View style={s.readoutWrap}>
-        <Readout
-          cells={[
-            { label: "STREAK",  value: `${me.data?.currentStreak ?? 0}d` },
-            { label: "WELCOME", value: `${welcomeDays}d` },
-            { label: "QUESTS",  value: `${activeChallenges.length}` },
-          ]}
-        />
-      </View>
+      <View style={s.afterDevice} />
 
       <SectionHeader title={t("specialOffers")} action={t("allRewards")} onPress={() => router.push("/rewards")} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.offerRail}>
@@ -357,30 +362,40 @@ export default function HomeScreen() {
   )
 }
 
+// Monochrome screen colours per theme (accents green/red stay coloured).
+function screenInk(dark: boolean) {
+  return { ink: dark ? "#CFE3C4" : "#3A3F47", dim: dark ? "#8A887F" : "#9AA0AB" }
+}
+
 // ── EARN mode panel — live earn stats on the device LCD ──
-function EarnPanel({ total, weekly, today }: { total: number; weekly: number; today: number }) {
+function EarnPanel({ total, weekly, today, dark }: { total: number; weekly: number; today: number; dark: boolean }) {
+  const { ink, dim } = screenInk(dark)
   return (
-    <LcdScreen accent="#015634">
-      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#013d24" }]}>EARN</Text>
-      <Text style={[s.modeBig, { fontFamily: fonts.pixel }]}>{total.toLocaleString()}</Text>
+    <LcdScreen accent="#4FA988" dark={dark}>
+      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#4FA988" }]}>EARN</Text>
+      <Text style={[s.modeBig, { fontFamily: fonts.pixel, color: ink }]}>{total.toLocaleString()}</Text>
       <View style={s.modeStatsRow}>
         <View style={s.modeStat}>
-          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel }]}>+{weekly.toLocaleString()}</Text>
-          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel }]}>WEEK</Text>
+          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel, color: ink }]}>+{weekly.toLocaleString()}</Text>
+          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel, color: dim }]}>WEEK</Text>
         </View>
         <View style={s.modeStat}>
-          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel }]}>+{today.toLocaleString()}</Text>
-          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel }]}>TODAY</Text>
+          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel, color: ink }]}>+{today.toLocaleString()}</Text>
+          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel, color: dim }]}>TODAY</Text>
         </View>
       </View>
-      <Text style={[s.modeHint, { fontFamily: fonts.pixel }]}>SCAN ↓ A RECEIPT TO EARN</Text>
+      <Text style={[s.modeHint, { fontFamily: fonts.pixel, color: dim }]}>SCAN ↓ A RECEIPT TO EARN</Text>
     </LcdScreen>
   )
 }
 
 // ── SPEND mode panel — pick a reward → redeem QR right on the LCD ──
-function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: number }) {
+function SpendPanel({ rewards, available, dark }: { rewards: RewardItem[]; available: number; dark: boolean }) {
   const utils = trpc.useUtils()
+  const { ink, dim } = screenInk(dark)
+  const rowBg = dark ? "#1A1B16" : "#efeeea"
+  const rowBorder = dark ? "rgba(255,255,255,0.10)" : "rgba(110,102,86,0.14)"
+  const rowEdge = dark ? "rgba(0,0,0,0.45)" : "rgba(110,102,86,0.16)"
   const [redemption, setRedemption] = useState<{ code: string; title: string; expiresAt: Date } | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const redeem = trpc.reward.redeem.useMutation({
@@ -395,24 +410,24 @@ function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: 
 
   if (redemption) {
     return (
-      <LcdScreen accent="#fd4600">
-        <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#c83700" }]}>SHOW TO CASHIER</Text>
+      <LcdScreen accent="#E23B22" dark={dark}>
+        <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#E23B22" }]}>SHOW TO CASHIER</Text>
         <View style={s.qrBox}>
           <QRCode value={redemption.code} size={132} backgroundColor="#FFFFFF" color="#1F2937" />
         </View>
-        <Text style={[s.qrCode, { fontFamily: fonts.pixel }]} numberOfLines={1}>{redemption.code}</Text>
-        <Countdown to={redemption.expiresAt} />
+        <Text style={[s.qrCode, { fontFamily: fonts.pixel, color: dim }]} numberOfLines={1}>{redemption.code}</Text>
+        <Countdown to={redemption.expiresAt} dim={dim} />
       </LcdScreen>
     )
   }
 
   return (
-    <LcdScreen accent="#fd4600">
-      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#c83700" }]}>SPEND · {available.toLocaleString()}</Text>
+    <LcdScreen accent="#E23B22" dark={dark}>
+      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#E23B22" }]}>SPEND · {available.toLocaleString()}</Text>
       {err ? <Text style={[s.modeErr, { fontFamily: fonts.pixel }]} numberOfLines={2}>{err}</Text> : null}
       <ScrollView style={s.rewardScroll} contentContainerStyle={s.rewardScrollInner} showsVerticalScrollIndicator={false}>
         {rewards.length === 0 ? (
-          <Text style={[s.modeHint, { fontFamily: fonts.pixel }]}>NO REWARDS YET</Text>
+          <Text style={[s.modeHint, { fontFamily: fonts.pixel, color: dim }]}>NO REWARDS YET</Text>
         ) : rewards.map((r) => {
           const afford = available >= r.pointsCost && !redeem.isPending
           return (
@@ -420,10 +435,10 @@ function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: 
               key={r.id}
               disabled={!afford}
               onPress={() => { setErr(null); redeem.mutate({ rewardId: r.id }) }}
-              style={({ pressed }) => [s.rewardRow, !afford && s.rewardRowOff, pressed && s.rewardRowPressed]}
+              style={({ pressed }) => [s.rewardRow, { backgroundColor: rowBg, borderColor: rowBorder, borderBottomColor: rowEdge }, !afford && s.rewardRowOff, pressed && s.rewardRowPressed]}
             >
-              <Text style={[s.rewardRowName, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{r.title}</Text>
-              <Text style={[s.rewardRowCost, { fontFamily: fonts.pixel }]}>{r.pointsCost}</Text>
+              <Text style={[s.rewardRowName, { fontFamily: fonts.bodyBold, color: ink }]} numberOfLines={1}>{r.title}</Text>
+              <Text style={[s.rewardRowCost, { fontFamily: fonts.pixel, color: "#E23B22" }]}>{r.pointsCost}</Text>
             </Pressable>
           )
         })}
@@ -433,7 +448,7 @@ function SpendPanel({ rewards, available }: { rewards: RewardItem[]; available: 
 }
 
 // ── Short H:MM countdown until a redemption code expires ──
-function Countdown({ to }: { to: Date }) {
+function Countdown({ to, dim }: { to: Date; dim: string }) {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
@@ -443,7 +458,7 @@ function Countdown({ to }: { to: Date }) {
   const h = Math.floor(ms / 3_600_000)
   const m = Math.floor((ms % 3_600_000) / 60_000)
   return (
-    <Text style={[s.modeHint, { fontFamily: fonts.pixel }]}>
+    <Text style={[s.modeHint, { fontFamily: fonts.pixel, color: dim }]}>
       ⏳ {h}H {String(m).padStart(2, "0")}M LEFT
     </Text>
   )
@@ -631,7 +646,10 @@ function VenueSkeleton() {
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 110 },
-  readoutWrap: { marginBottom: 14 },
+  afterDevice: { height: 24 },
+  // enlarged device bottom — beta signature in pixel font
+  deviceFooter: { alignItems: "center", paddingTop: 10, paddingBottom: 16, marginTop: 2 },
+  deviceFooterText: { fontSize: 9, letterSpacing: 1.5, color: "#8A887F" },
 
   // ── Device mode panels (EARN / SPEND) ──
   lcdAnimWrap: { overflow: "hidden", borderRadius: 18 },
@@ -648,48 +666,50 @@ const s = StyleSheet.create({
     shadowRadius: 6,
   },
   modeTitle: { fontSize: 11, letterSpacing: 1 },
-  modeBig: { fontSize: 30, color: "#015634", marginTop: 6 },
-  modeHint: { fontSize: 8, lineHeight: 14, color: "#8C887E", textAlign: "center", marginTop: 8 },
+  modeBig: { fontSize: 30, color: "#CFE3C4", marginTop: 6 },
+  modeHint: { fontSize: 8, lineHeight: 14, color: "#8A887F", textAlign: "center", marginTop: 8 },
   modeStatsRow: { flexDirection: "row", gap: 28, marginTop: 6 },
   modeStat: { alignItems: "center", gap: 3 },
-  modeStatVal: { fontSize: 11, color: "#013d24" },
-  modeStatLab: { fontSize: 6, color: "#8C887E", letterSpacing: 0.5 },
-  modeErr: { fontSize: 7, lineHeight: 11, color: "#fd4600", textAlign: "center", marginTop: 4 },
+  modeStatVal: { fontSize: 11, color: "#CFE3C4" },
+  modeStatLab: { fontSize: 6, color: "#8A887F", letterSpacing: 0.5 },
+  modeErr: { fontSize: 7, lineHeight: 11, color: "#E8917F", textAlign: "center", marginTop: 4 },
   qrBox: { backgroundColor: "#FFFFFF", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#C4C4BE" },
-  qrCode: { fontSize: 7, color: "#8C887E", letterSpacing: 0.5, marginTop: 2 },
+  qrCode: { fontSize: 7, color: "#8A887F", letterSpacing: 0.5, marginTop: 2 },
   rewardScroll: { width: "100%", maxHeight: 150, marginTop: 6 },
   rewardScrollInner: { gap: 6, paddingBottom: 2 },
   rewardRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#efeeea",
+    backgroundColor: "#1A1B16",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(110,102,86,0.14)",
+    borderColor: "rgba(255,255,255,0.10)",
     borderBottomWidth: 3,
-    borderBottomColor: "rgba(110,102,86,0.16)",
+    borderBottomColor: "rgba(0,0,0,0.45)",
     paddingHorizontal: 12,
     paddingVertical: 9,
     gap: 10,
   },
   rewardRowOff: { opacity: 0.4 },
   rewardRowPressed: { borderBottomWidth: 1, transform: [{ translateY: 2 }] },
-  rewardRowName: { fontSize: 12, color: "#015634", flex: 1 },
-  rewardRowCost: { fontSize: 10, color: "#c83700" },
+  rewardRowName: { fontSize: 12, color: "#CFE3C4", flex: 1 },
+  rewardRowCost: { fontSize: 10, color: "#E8917F" },
   backBar: {
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#efeeea",
+    backgroundColor: "#1A1B16",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(110,102,86,0.14)",
+    borderColor: "rgba(255,255,255,0.10)",
     borderBottomWidth: 4,
-    borderBottomColor: "rgba(110,102,86,0.18)",
+    borderBottomColor: "rgba(0,0,0,0.45)",
   },
+  backBarLight: { backgroundColor: "#efeeea", borderColor: "rgba(110,102,86,0.14)", borderBottomColor: "rgba(110,102,86,0.18)" },
   backBarPressed: { borderBottomWidth: 2, transform: [{ translateY: 2 }] },
-  backBarText: { fontSize: 9, letterSpacing: 1, color: "#75736A" },
+  backBarText: { fontSize: 9, letterSpacing: 1, color: "#CFCEC6" },
+  backBarTextLight: { color: "#75736A" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",

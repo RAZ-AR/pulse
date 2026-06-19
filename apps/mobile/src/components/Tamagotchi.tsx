@@ -9,6 +9,9 @@
  *  └─────────────────────────────────┘
  *
  * Pure presentational. All values come in as props.
+ * `dark` flips the screen theme: dark glass + light monochrome (default),
+ * or the original light-grey LCD. Coloured details (the red "speak" flash)
+ * stay coloured in both.
  */
 
 import { useEffect, useState } from "react"
@@ -32,17 +35,50 @@ export function petDefaultName(petKey: string): string {
   return PET_NAMES[petKey] ?? "Pet"
 }
 
-// ── LCD palette — light device, neutral grey screen ────────────
-const CASE_GRADIENT = ["#FFFFFF", "#E9EDF4"] as const
-const LCD = {
-  caseBorder:  "rgba(255,255,255,0.9)",
-  caseEdge:    "#D7DCE6",
-  screen:      "#DBDBDB",
-  screenEdge:  "#C4C4C4",
-  dot:         "#CBCBCB",
-  ink:         "#3A3F47",
-  inkDim:      "#9AA0AB",
-  track:       "#CFCFCF",
+// ── Two screen palettes — light (original) / dark (deep-glass green) ──
+type Lcd = {
+  case: readonly [string, string]
+  caseBorder: string
+  caseEdge: string
+  caseShadow: string
+  statsBg: string
+  screen: string
+  screenEdge: string
+  dot: string
+  ink: string
+  inkDim: string
+  track: string
+  petInk: string | undefined  // light pet on dark glass; undefined = default dark ink
+}
+
+const LCD_LIGHT: Lcd = {
+  case: ["#FFFFFF", "#E9EDF4"],
+  caseBorder: "rgba(255,255,255,0.9)",
+  caseEdge: "#D7DCE6",
+  caseShadow: "#C9C4B4",
+  statsBg: "rgba(255,255,255,0.55)",
+  screen: "#DBDBDB",
+  screenEdge: "#C4C4C4",
+  dot: "#CBCBCB",
+  ink: "#3A3F47",
+  inkDim: "#9AA0AB",
+  track: "#CFCFCF",
+  petInk: undefined,
+}
+
+const LCD_DARK: Lcd = {
+  case: ["#34342E", "#1C1C18"],
+  caseBorder: "rgba(255,255,255,0.10)",
+  caseEdge: "#0E0E0C",
+  caseShadow: "#000000",
+  statsBg: "rgba(255,255,255,0.04)",
+  screen: "#0E0F0C",
+  screenEdge: "#000000",
+  dot: "rgba(255,255,255,0.06)",
+  ink: "#CFE3C4",
+  inkDim: "#6E7466",
+  track: "#23241E",
+  petInk: "#CFE3C4",
 }
 
 export type Stat = { label: string; value: number }
@@ -58,7 +94,9 @@ export function TamagotchiWindow({
   earnedLabel,
   spentLabel,
   words,
+  info,
   onOpen,
+  dark = true,
 }: {
   petKey: string
   streak: number
@@ -70,9 +108,12 @@ export function TamagotchiWindow({
   earnedLabel: string
   spentLabel: string
   words?: string[] | undefined
+  info?: { label: string; value: string }[] | undefined
   onOpen?: (() => void) | undefined
+  dark?: boolean
 }) {
   const name = (petName?.trim() || petDefaultName(petKey))
+  const lcd = dark ? LCD_DARK : LCD_LIGHT
 
   // Every so often the pet "says" a localized word, then goes back to its name.
   const [flash, setFlash] = useState<string | null>(null)
@@ -90,27 +131,32 @@ export function TamagotchiWindow({
     return () => clearTimeout(outer)
   }, [words])
   return (
-    <LinearGradient colors={CASE_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.case}>
+    <LinearGradient
+      colors={lcd.case}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[s.case, { borderColor: lcd.caseBorder, borderBottomColor: lcd.caseEdge, shadowColor: lcd.caseShadow }]}
+    >
       {/* ── Status bars ── */}
-      <View style={s.statsBox}>
+      <View style={[s.statsBox, { borderColor: lcd.caseEdge, backgroundColor: lcd.statsBg }]}>
         {stats.map((stat) => (
           <View key={stat.label} style={s.statCol}>
-            <Text style={[s.statLabel, { fontFamily: fonts.pixel }]} numberOfLines={1} adjustsFontSizeToFit>
+            <Text style={[s.statLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]} numberOfLines={1} adjustsFontSizeToFit>
               {stat.label}
             </Text>
-            <View style={s.statTrack}>
-              <View style={[s.statFill, { width: `${Math.round(Math.max(0, Math.min(1, stat.value)) * 100)}%` }]} />
+            <View style={[s.statTrack, { backgroundColor: lcd.track, borderColor: lcd.caseEdge }]}>
+              <View style={[s.statFill, { backgroundColor: lcd.ink, width: `${Math.round(Math.max(0, Math.min(1, stat.value)) * 100)}%` }]} />
             </View>
           </View>
         ))}
       </View>
 
       {/* ── LCD screen — tap to open the pet collection ── */}
-      <Pressable style={s.screen} onPress={onOpen}>
+      <Pressable style={[s.screen, { backgroundColor: lcd.screen, borderColor: lcd.screenEdge }]} onPress={onOpen}>
         <Svg style={StyleSheet.absoluteFill as object} width="100%" height="100%">
           <Defs>
             <Pattern id="lcdDots" width={7} height={7} patternUnits="userSpaceOnUse">
-              <Rect width={1.4} height={1.4} fill={LCD.dot} />
+              <Rect width={1.4} height={1.4} fill={lcd.dot} />
             </Pattern>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#lcdDots)" />
@@ -118,27 +164,42 @@ export function TamagotchiWindow({
 
         {/* coin counter, top-right */}
         <View style={s.coinRow}>
-          <Text style={[s.coinNum, { fontFamily: fonts.pixel }]}>{coins}</Text>
-          <View style={s.coin} />
+          <Text style={[s.coinNum, { fontFamily: fonts.pixel, color: lcd.ink }]}>{coins}</Text>
+          <View style={[s.coin, { backgroundColor: lcd.track, borderColor: lcd.ink }]} />
         </View>
 
         {/* weekly earned / spent, top-left — LCD style */}
         <View style={s.weekWrap}>
-          <Text style={[s.weekNum, { fontFamily: fonts.pixel }]}>+{weeklyEarned.toLocaleString()}</Text>
-          <Text style={[s.weekLabel, { fontFamily: fonts.pixel }]}>{earnedLabel}</Text>
-          <Text style={[s.weekNum, s.weekNumSpent, { fontFamily: fonts.pixel }]}>-{weeklySpent.toLocaleString()}</Text>
-          <Text style={[s.weekLabel, { fontFamily: fonts.pixel }]}>{spentLabel}</Text>
+          <Text style={[s.weekNum, { fontFamily: fonts.pixel, color: lcd.ink }]}>+{weeklyEarned.toLocaleString()}</Text>
+          <Text style={[s.weekLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>{earnedLabel}</Text>
+          <Text style={[s.weekNum, s.weekNumSpent, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>-{weeklySpent.toLocaleString()}</Text>
+          <Text style={[s.weekLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>{spentLabel}</Text>
         </View>
 
         {/* the pet roams the screen — tapping it makes it jump (no navigation) */}
         <View style={s.petStage}>
-          <AyooPet petKey={petKey} streak={streak} pixelSize={6} walkRange={46} />
+          <AyooPet petKey={petKey} streak={streak} pixelSize={6} walkRange={46} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
         </View>
 
-        {/* pet name caption — sometimes the pet "speaks" a word */}
-        <Text style={[s.caption, { fontFamily: fonts.pixel }, flash ? s.captionFlash : null]} numberOfLines={1}>
+        {/* pet name caption — sometimes the pet "speaks" a word (red, stays coloured) */}
+        <Text
+          style={[s.caption, { fontFamily: fonts.pixel, color: lcd.ink }, flash ? s.captionFlash : null]}
+          numberOfLines={1}
+        >
           {flash ?? name}
         </Text>
+
+        {/* device status, bottom-right — STREAK / WELCOME / QUESTS */}
+        {info && info.length > 0 ? (
+          <View style={s.infoWrap}>
+            {info.map((c) => (
+              <View key={c.label} style={s.infoRow}>
+                <Text style={[s.infoVal, { fontFamily: fonts.pixel, color: lcd.ink }]} numberOfLines={1}>{c.value}</Text>
+                <Text style={[s.infoLab, { fontFamily: fonts.pixel, color: lcd.inkDim }]} numberOfLines={1}>{c.label}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </Pressable>
     </LinearGradient>
   )
@@ -149,13 +210,10 @@ const s = StyleSheet.create({
     borderRadius: 28,
     padding: 12,
     borderWidth: 1,
-    borderColor: LCD.caseBorder,
     borderBottomWidth: 3,
-    borderBottomColor: LCD.caseEdge,
     gap: 10,
-    shadowColor: "#C9C4B4",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45,
+    shadowOpacity: 0.5,
     shadowRadius: 18,
     elevation: 6,
   },
@@ -169,29 +227,23 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: LCD.caseEdge,
-    backgroundColor: "rgba(255,255,255,0.55)",
   },
   statCol: { flex: 1, alignItems: "center", gap: 5 },
-  statLabel: { fontSize: 5, letterSpacing: 0, color: LCD.inkDim, textAlign: "center" },
+  statLabel: { fontSize: 5, letterSpacing: 0, textAlign: "center" },
   statTrack: {
     width: "100%",
     height: 6,
     borderRadius: 3,
-    backgroundColor: LCD.track,
     borderWidth: 1,
-    borderColor: LCD.caseEdge,
     overflow: "hidden",
   },
-  statFill: { height: "100%", backgroundColor: LCD.ink },
+  statFill: { height: "100%" },
 
   // ── LCD screen ──
   screen: {
     height: 220,
     borderRadius: 16,
-    backgroundColor: LCD.screen,
     borderWidth: 2,
-    borderColor: LCD.screenEdge,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
@@ -204,25 +256,28 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 9,
   },
-  coinNum: { fontSize: 39, lineHeight: 42, color: LCD.ink },
+  coinNum: { fontSize: 39, lineHeight: 42 },
   weekWrap: { position: "absolute", top: 10, left: 12 },
-  weekNum: { fontSize: 17, color: LCD.ink },
-  weekNumSpent: { color: LCD.inkDim, marginTop: 9 },
-  weekLabel: { fontSize: 6, lineHeight: 9, color: LCD.inkDim, marginTop: 3 },
+  weekNum: { fontSize: 17 },
+  weekNumSpent: { marginTop: 9 },
+  weekLabel: { fontSize: 6, lineHeight: 9, marginTop: 3 },
   coin: {
     width: 30,
     height: 36,
     borderRadius: 6,
-    backgroundColor: LCD.track,
     borderWidth: 3,
-    borderColor: LCD.ink,
   },
   petStage: { alignItems: "center", justifyContent: "center" },
   caption: {
     position: "absolute",
     bottom: 14,
     fontSize: 12,
-    color: LCD.ink,
   },
-  captionFlash: { color: "#fd4600" },
+  captionFlash: { color: "#E23B22" },
+
+  // device status, bottom-right corner
+  infoWrap: { position: "absolute", bottom: 10, right: 12, alignItems: "flex-end", gap: 5 },
+  infoRow: { flexDirection: "row", alignItems: "baseline", gap: 5 },
+  infoVal: { fontSize: 12, lineHeight: 14 },
+  infoLab: { fontSize: 5, letterSpacing: 0.5 },
 })
