@@ -4,6 +4,9 @@ import { useState, useEffect } from "react"
 import { trpc } from "../../../../src/lib/trpc"
 import { useVenue } from "../../../../src/context/venue-context"
 import { AddressAutocomplete, type PickedPlace } from "../../../../src/components/AddressAutocomplete"
+import { MapPicker } from "../../../../src/components/MapPicker"
+
+const BELGRADE = { lat: 44.8125, lng: 20.4612 }
 
 export default function SettingsPage() {
   const { venue } = useVenue()
@@ -55,17 +58,20 @@ export default function SettingsPage() {
     })
   }
 
+  // Dragging the pin updates coordinates; the address text stays as typed/picked.
+  function handlePinMove(lat: number, lng: number) {
+    setPicked((prev) => ({ address: prev?.address ?? venueAddress.trim(), city: prev?.city ?? "Belgrade", lat, lng }))
+  }
+
   function handleVenueSave() {
     if (!venue) return
     updateVenue.mutate({
       venueId: venue.id,
       ...(venueName.trim() && venueName !== venue.name && { name: venueName.trim() }),
       ...(venueAddress.trim() && { address: venueAddress.trim() }),
-      // Coordinates ride along only when an address was picked from the list,
+      // Coordinates ride along whenever a point was set (picked or dragged),
       // so the venue moves to the right spot on the client map.
-      ...(picked && picked.address === venueAddress.trim()
-        ? { city: picked.city, lat: picked.lat, lng: picked.lng }
-        : {}),
+      ...(picked ? { city: picked.city, lat: picked.lat, lng: picked.lng } : {}),
     })
   }
 
@@ -169,11 +175,20 @@ export default function SettingsPage() {
               onPick={(p) => { setVenueAddress(p.address); setPicked(p) }}
               placeholder="Начните вводить адрес…"
             />
-            {picked && picked.address === venueAddress.trim() ? (
+            {picked ? (
               <p className="mt-1 text-xs text-[#059669]">📍 {picked.city || "—"} · {picked.lat.toFixed(5)}, {picked.lng.toFixed(5)}</p>
             ) : venueAddress.trim() ? (
-              <p className="mt-1 text-xs text-[#9CA3AF]">Выберите вариант из списка, чтобы обновить точку на карте</p>
+              <p className="mt-1 text-xs text-[#9CA3AF]">Выберите вариант из списка или поставьте точку на карте</p>
             ) : null}
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#374151] mb-1">Точка на карте <span className="text-[#9CA3AF]">(перетащите пин для точного места)</span></label>
+            <MapPicker
+              lat={picked?.lat ?? BELGRADE.lat}
+              lng={picked?.lng ?? BELGRADE.lng}
+              onMove={handlePinMove}
+            />
           </div>
         </div>
         <div className="flex items-center gap-3 mt-4">

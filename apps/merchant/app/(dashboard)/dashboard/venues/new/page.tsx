@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 import { trpc } from "../../../../../src/lib/trpc"
 import { useVenue } from "../../../../../src/context/venue-context"
 import { AddressAutocomplete, type PickedPlace } from "../../../../../src/components/AddressAutocomplete"
+import { MapPicker } from "../../../../../src/components/MapPicker"
+
+const BELGRADE = { lat: 44.8125, lng: 20.4612 }
 
 const CATEGORIES = [
   { key: "CAFE", label: "Кафе" },
@@ -37,18 +40,24 @@ export default function NewVenuePage() {
     onError: (e) => setErr(e.message),
   })
 
-  const ready = name.trim().length > 0 && place != null && place.address === address.trim()
+  // Dragging the pin updates coordinates; the address text stays as typed/picked.
+  function handlePinMove(lat: number, lng: number) {
+    setPlace((prev) => ({ address: prev?.address ?? address.trim(), city: prev?.city ?? "Belgrade", lat, lng }))
+  }
+
+  const ready = name.trim().length > 0 && address.trim().length > 0 && place != null
 
   function handleCreate() {
     setErr("")
     if (!name.trim()) { setErr("Введите название"); return }
-    if (!place) { setErr("Выберите адрес из списка — нужны координаты"); return }
+    if (!address.trim()) { setErr("Введите адрес"); return }
+    if (!place) { setErr("Уточните точку на карте или выберите адрес из списка"); return }
     const pts = rate ? parseFloat(rate) : undefined
     if (rate && (isNaN(pts!) || pts! <= 0)) { setErr("Некорректный курс баллов"); return }
     create.mutate({
       name: name.trim(),
       category,
-      address: place.address,
+      address: address.trim(),
       city: place.city || "Belgrade",
       lat: place.lat,
       lng: place.lng,
@@ -94,11 +103,20 @@ export default function NewVenuePage() {
             onPick={(p) => { setAddress(p.address); setPlace(p) }}
             placeholder="Начните вводить адрес…"
           />
-          {place && place.address === address.trim() ? (
+          {place ? (
             <p className="mt-1 text-xs text-[#059669]">📍 {place.city || "—"} · {place.lat.toFixed(5)}, {place.lng.toFixed(5)}</p>
           ) : address.trim() ? (
-            <p className="mt-1 text-xs text-[#9CA3AF]">Выберите вариант из списка, чтобы зафиксировать точку</p>
+            <p className="mt-1 text-xs text-[#9CA3AF]">Выберите вариант из списка или поставьте точку на карте</p>
           ) : null}
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[#374151] mb-1">Точка на карте <span className="text-[#9CA3AF]">(перетащите пин для точного места)</span></label>
+          <MapPicker
+            lat={place?.lat ?? BELGRADE.lat}
+            lng={place?.lng ?? BELGRADE.lng}
+            onMove={handlePinMove}
+          />
         </div>
 
         <div>
