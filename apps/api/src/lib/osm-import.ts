@@ -13,8 +13,9 @@ const OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 export type City = { name: string; country: string; bbox: [number, number, number, number] } // [south, west, north, east]
 
 export const CITIES: City[] = [
-  { name: "Belgrade", country: "Serbia", bbox: [44.70, 20.30, 44.92, 20.62] },
-  { name: "Novi Sad", country: "Serbia", bbox: [45.19, 19.74, 45.33, 19.92] },
+  // Widened to cover the metro area (New Belgrade, Zemun, outskirts).
+  { name: "Belgrade", country: "Serbia", bbox: [44.66, 20.25, 44.95, 20.70] },
+  { name: "Novi Sad", country: "Serbia", bbox: [45.16, 19.70, 45.36, 19.95] },
 ]
 
 type OsmElement = {
@@ -30,10 +31,12 @@ function buildQuery(bbox: [number, number, number, number]): string {
   const b = bbox.join(",")
   return `[out:json][timeout:180];
 (
-  nwr["amenity"~"^(cafe|bar|pub|restaurant|fast_food)$"]["name"](${b});
+  nwr["amenity"~"^(cafe|bar|pub|restaurant|fast_food|ice_cream|food_court|biergarten|nightclub|cinema|theatre|marketplace|pharmacy)$"]["name"](${b});
   nwr["shop"]["name"](${b});
-  nwr["leisure"~"^(fitness_centre|sports_centre|spa)$"]["name"](${b});
+  nwr["leisure"~"^(fitness_centre|sports_centre|spa|dance)$"]["name"](${b});
   nwr["amenity"~"^(gym)$"]["name"](${b});
+  nwr["tourism"~"^(hotel|hostel|guest_house|museum|gallery|attraction)$"]["name"](${b});
+  nwr["craft"~"^(bakery|confectionery|brewery)$"]["name"](${b});
 );
 out center tags;`
 }
@@ -43,16 +46,22 @@ function categoryOf(tags: Record<string, string>): VenueCategory {
   const shop = tags.shop ?? ""
   const leisure = tags.leisure ?? ""
   const sport = tags.sport ?? ""
+  const tourism = tags.tourism ?? ""
+  const craft = tags.craft ?? ""
 
   if (sport.includes("yoga") || tags.yoga === "yes") return "YOGA"
-  if (leisure === "fitness_centre" || leisure === "sports_centre" || amenity === "gym") {
+  if (leisure === "fitness_centre" || leisure === "sports_centre" || leisure === "dance" || amenity === "gym") {
     return sport.includes("yoga") ? "YOGA" : "FITNESS"
   }
   if (["hairdresser", "beauty", "nail_salon", "cosmetics", "massage", "tattoo"].includes(shop) || leisure === "spa") {
     return "BEAUTY"
   }
-  if (amenity === "cafe" || amenity === "bar" || amenity === "pub") return "CAFE"
-  if (amenity === "restaurant" || amenity === "fast_food") return "RESTAURANT"
+  if (amenity === "cafe" || amenity === "bar" || amenity === "pub" || amenity === "ice_cream" || amenity === "biergarten") return "CAFE"
+  if (amenity === "restaurant" || amenity === "fast_food" || amenity === "food_court") return "RESTAURANT"
+  if (craft === "bakery" || craft === "confectionery") return "CAFE"
+  if (craft === "brewery") return "RESTAURANT"
+  if (["nightclub", "cinema", "theatre", "museum", "gallery", "attraction"].includes(amenity) || ["museum", "gallery", "attraction"].includes(tourism)) return "OTHER"
+  if (["hotel", "hostel", "guest_house"].includes(tourism)) return "SERVICE"
   if (shop) return "RETAIL"
   return "SERVICE"
 }
