@@ -308,6 +308,11 @@ export const merchantRouter = router({
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(500).optional(),
         address: z.string().optional(),
+        // Coordinates + city travel together with the address so the pin on the
+        // client map actually moves when a merchant picks a new place.
+        city: z.string().min(1).optional(),
+        lat: z.number().min(-90).max(90).optional(),
+        lng: z.number().min(-180).max(180).optional(),
         workingHours: WorkingHoursSchema.optional(),
         enableRewards: z.boolean().optional(),
         enableDiscount: z.boolean().optional(),
@@ -315,7 +320,7 @@ export const merchantRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { venueId, name, description, address, workingHours, enableRewards, enableDiscount, maxDiscountPercent } = input
+      const { venueId, name, description, address, city, lat, lng, workingHours, enableRewards, enableDiscount, maxDiscountPercent } = input
       const venue = await ctx.db.venue.findFirst({
         where: { id: venueId, ownerId: ctx.merchantId },
       })
@@ -326,6 +331,9 @@ export const merchantRouter = router({
           ...(name !== undefined ? { name } : {}),
           ...(description !== undefined ? { description: description ?? null } : {}),
           ...(address !== undefined ? { address } : {}),
+          ...(city !== undefined ? { city } : {}),
+          ...(lat !== undefined ? { lat } : {}),
+          ...(lng !== undefined ? { lng } : {}),
           ...(workingHours !== undefined ? { workingHours } : {}),
           ...(enableRewards !== undefined ? { enableRewards } : {}),
           ...(enableDiscount !== undefined ? { enableDiscount } : {}),

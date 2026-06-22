@@ -69,6 +69,15 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             )}
           </div>
         )}
+        {!loading && (
+          <Link
+            href="/dashboard/venues/new"
+            {...(onClose ? { onClick: onClose } : {})}
+            className="mt-3 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[#D1D5DB] text-xs font-medium text-[#6B7280] hover:border-[#0F1115] hover:text-[#0F1115] transition-colors"
+          >
+            <span className="text-sm">＋</span> Добавить заведение
+          </Link>
+        )}
       </div>
 
       {/* Nav */}
