@@ -1,35 +1,40 @@
 /**
- * HatchStage — the onboarding "birth" scene shown on the device LCD.
+ * HatchStage — the onboarding "birth" scene shown on the device LCD (light screen).
  *
- *   ┌ LcdScreen ───────────────────┐
- *   │            +120 / 500         │  ← welcome points fed so far
- *   │             ▒ 🥚 ▒            │  ← egg shakes; hatches at goal
- *   │             TAP +             │
+ *   ┌ LcdScreen (light) ────────────┐
+ *   │            +300 / 500          │  ← animated count-up, "+100" floats up
+ *   │             ▒ 🥚 ▒            │  ← egg cracks more each tap
+ *   │             TAP               │
  *   └───────────────────────────────┘
  *
- * Controlled: parent owns `fed` (incremented by the big green + key) and the
- * goal (500 welcome points). When fed reaches goal the egg plays a one-shot
- * hatch sequence (hard shake → scanline flash → EGG swaps to HATCHLING → "HI")
- * and calls `onHatched` once.
- *
- * Pure presentational otherwise — no data fetching.
+ * Controlled: parent owns `fed` (+100 per tap). The egg shows 5 crack stages
+ * over the first 4 taps; on the 5th tap (fed === goal) it hatches into the
+ * HATCHLING with a pop + "HI", and the parent swaps the dot key for an arrow.
  */
 
 import { useEffect, useRef, useState } from "react"
-import { Animated, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, StyleSheet, Text, View } from "react-native"
 import { LcdScreen } from "./console"
 import { PixelSprite, PET_SPRITES } from "./AyooPet"
 import { fonts } from "../lib/theme"
 
-const EGG = PET_SPRITES.EGG!
 const HATCHLING = PET_SPRITES.HATCHLING!
 const HATCH_GREEN = "#015634"
+
+// Egg with progressively more cracks (0 = whole … 4 = about to hatch).
+const EGG_STAGES: string[][] = [
+  ["..KKKK..", ".KKKKKK.", "KKKKKKKK", "KKKKKKKK", "KKKKKKKK", "KKKKKKKK", ".KKKKKK.", "..KKKK.."],
+  ["..KKKK..", ".KKKKKK.", "KKKKKKKK", "KKK..KKK", "KKKKKKKK", "KKKKKKKK", ".KKKKKK.", "..KKKK.."],
+  ["..KKKK..", ".KKKKKK.", "KKKK.KKK", "KKK..KKK", "KKKK.KKK", "KKKKKKKK", ".KKKKKK.", "..KKKK.."],
+  ["..KKKK..", ".KKK.KK.", "KKKK.KKK", "KKK..KKK", "KKK.KKKK", "KKKK.KKK", ".KKKKKK.", "..KKKK.."],
+  ["..KK.K..", ".KK.KK..", "KKK.KKKK", "KK..K.KK", "KK.KK.KK", "KKK.KKKK", ".KK.KKK.", "..KKKK.."],
+]
 
 export function HatchStage({
   fed,
   goal,
   hatchWord = "HI",
-  tapHint = "TAP +",
+  tapHint = "TAP",
   onHatched,
 }: {
   fed: number
@@ -40,6 +45,7 @@ export function HatchStage({
 }) {
   const hatched = fed >= goal
   const shown = Math.min(fed, goal)
+  const crack = Math.min(EGG_STAGES.length - 1, Math.floor(fed / 100))
 
   // Idle frame toggle (gives the sprite its 2-frame life).
   const [frame, setFrame] = useState(0)
@@ -48,88 +54,94 @@ export function HatchStage({
     return () => clearInterval(id)
   }, [])
 
-  // Gentle idle shake while still an egg; a sharp wobble on each feed tap.
-  const shake = useRef(new Animated.Value(0)).current
+  // Animated count-up of the welcome points.
+  const [displayed, setDisplayed] = useState(0)
+  const count = useRef(new Animated.Value(0)).current
   useEffect(() => {
-    if (hatched) return
-    Animated.sequence([
-      Animated.timing(shake, { toValue: 1, duration: 60, useNativeDriver: true }),
-      Animated.timing(shake, { toValue: -1, duration: 60, useNativeDriver: true }),
-      Animated.timing(shake, { toValue: 0, duration: 60, useNativeDriver: true }),
-    ]).start()
-  }, [fed, hatched, shake])
+    const id = count.addListener(({ value }) => setDisplayed(Math.round(value)))
+    return () => count.removeListener(id)
+  }, [count])
+  useEffect(() => {
+    Animated.timing(count, { toValue: shown, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start()
+  }, [shown, count])
 
-  // One-shot hatch: scanline sweep + sprite pop, fired when `hatched` flips true.
-  const scan = useRef(new Animated.Value(0)).current
+  // On each feed tap: counter pop, a "+100" floats up, the egg wobbles.
   const pop = useRef(new Animated.Value(1)).current
+  const floatY = useRef(new Animated.Value(0)).current
+  const floatOp = useRef(new Animated.Value(0)).current
+  const shake = useRef(new Animated.Value(0)).current
+  const prev = useRef(fed)
+  useEffect(() => {
+    if (fed > prev.current) {
+      Animated.sequence([
+        Animated.timing(pop, { toValue: 1.18, duration: 110, useNativeDriver: true }),
+        Animated.spring(pop, { toValue: 1, friction: 5, useNativeDriver: true }),
+      ]).start()
+      if (!hatched) {
+        floatY.setValue(8)
+        floatOp.setValue(1)
+        Animated.parallel([
+          Animated.timing(floatY, { toValue: -26, duration: 650, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(floatOp, { toValue: 0, duration: 650, useNativeDriver: true }),
+        ]).start()
+        Animated.sequence([
+          Animated.timing(shake, { toValue: 1, duration: 55, useNativeDriver: true }),
+          Animated.timing(shake, { toValue: -1, duration: 55, useNativeDriver: true }),
+          Animated.timing(shake, { toValue: 0, duration: 55, useNativeDriver: true }),
+        ]).start()
+      }
+    }
+    prev.current = fed
+  }, [fed, hatched, pop, floatY, floatOp, shake])
+
+  // One-shot hatch: sprite pop + a flashing greeting word.
+  const hatchPop = useRef(new Animated.Value(1)).current
   const [flash, setFlash] = useState(false)
   const fired = useRef(false)
   useEffect(() => {
     if (!hatched || fired.current) return
     fired.current = true
     setFlash(true)
-    Animated.parallel([
-      Animated.timing(scan, { toValue: 1, duration: 420, useNativeDriver: true }),
-      Animated.sequence([
-        Animated.timing(pop, { toValue: 1.45, duration: 140, useNativeDriver: true }),
-        Animated.spring(pop, { toValue: 1, friction: 4, useNativeDriver: true }),
-      ]),
+    Animated.sequence([
+      Animated.timing(hatchPop, { toValue: 1.5, duration: 150, useNativeDriver: true }),
+      Animated.spring(hatchPop, { toValue: 1, friction: 4, useNativeDriver: true }),
     ]).start()
     onHatched?.()
     const t = setTimeout(() => setFlash(false), 1800)
     return () => clearTimeout(t)
-  }, [hatched, scan, pop, onHatched])
+  }, [hatched, hatchPop, onHatched])
 
-  const rows = hatched ? HATCHLING : EGG
+  const spriteRows = hatched ? (HATCHLING[frame] ?? HATCHLING[0]!) : EGG_STAGES[crack]!
   const shakeX = shake.interpolate({ inputRange: [-1, 1], outputRange: [-4, 4] })
 
   return (
-    <LcdScreen accent={HATCH_GREEN}>
-      {/* counter */}
-      <Text style={[s.counter, { fontFamily: fonts.pixel }]}>
-        +{shown} / {goal}
-      </Text>
+    <LcdScreen accent={HATCH_GREEN} dark={false}>
+      {/* counter — animated, with a floating "+100" on each tap */}
+      <View style={s.counterRow}>
+        <Animated.Text style={[s.counter, { fontFamily: fonts.pixel, transform: [{ scale: pop }] }]}>
+          +{displayed} / {goal}
+        </Animated.Text>
+        <Animated.Text style={[s.floatPlus, { fontFamily: fonts.pixel, opacity: floatOp, transform: [{ translateY: floatY }] }]}>
+          +100
+        </Animated.Text>
+      </View>
 
-      {/* egg / hatchling */}
-      <Animated.View style={{ transform: [{ translateX: shakeX }, { scale: pop }] }}>
-        <PixelSprite rows={rows[frame] ?? rows[0]} px={9} />
+      {/* egg (cracks each tap) / hatchling */}
+      <Animated.View style={{ transform: [{ translateX: shakeX }, { scale: hatchPop }] }}>
+        <PixelSprite rows={spriteRows} px={9} />
       </Animated.View>
 
-      {/* hint / hatch word */}
       <Text style={[s.hint, { fontFamily: fonts.pixel }, flash && s.hintFlash]}>
         {hatched ? hatchWord : tapHint}
       </Text>
-
-      {/* scanline sweep on hatch */}
-      {hatched ? (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            s.scanline,
-            {
-              opacity: scan.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 0.85, 0.85, 0] }),
-              transform: [{ translateY: scan.interpolate({ inputRange: [0, 1], outputRange: [-90, 90] }) }],
-            },
-          ]}
-        />
-      ) : null}
     </LcdScreen>
   )
 }
 
 const s = StyleSheet.create({
-  counter: { fontSize: 13, color: "#013d24", letterSpacing: 1 },
+  counterRow: { alignItems: "center", justifyContent: "center", minHeight: 22 },
+  counter: { fontSize: 15, color: HATCH_GREEN, letterSpacing: 1 },
+  floatPlus: { position: "absolute", top: -4, fontSize: 12, color: "#fd4600", letterSpacing: 1 },
   hint: { fontSize: 9, color: "#8C887E", letterSpacing: 1, marginTop: 4 },
   hintFlash: { color: "#fd4600" },
-  scanline: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    height: 3,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    shadowColor: "#FFFFFF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-  },
 })

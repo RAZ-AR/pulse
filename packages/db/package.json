@@ -10,6 +10,7 @@
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
+    "db:wipe-users": "tsx src/wipe-users.ts",
     "db:import:venues": "tsx src/import-venues.ts",
     "db:fetch:google-venues": "tsx src/fetch-google-venues.ts"
   },

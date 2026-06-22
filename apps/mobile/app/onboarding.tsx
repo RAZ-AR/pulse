@@ -304,11 +304,11 @@ function DeviceOnboarding({
   // ── HATCH ──
   if (step === "hatch") {
     const pads = hatched
-      ? [{ key: "next", symbol: "→", label: t("next", "NEXT"), color: GREEN, edge: GREEN_EDGE, solid: true, onPress: afterHatch }]
-      : [{ key: "earn", symbol: "+", label: t("earnKey", "EARN"), color: GREEN, edge: GREEN_EDGE, solid: true, onPress: () => setFed((f) => Math.min(HATCH_GOAL, f + 100)) }]
+      ? [{ key: "next", symbol: "→", label: "", color: GREEN, edge: GREEN_EDGE, solid: true, onPress: afterHatch }]
+      : [{ key: "feed", symbol: "●", label: "", color: GREEN, edge: GREEN_EDGE, solid: true, onPress: () => setFed((f) => Math.min(HATCH_GOAL, f + 100)) }]
     return (
       <Shell langSwitcher={langSwitcher}>
-        <HatchStage fed={fed} goal={HATCH_GOAL} hatchWord={t("petHi", "HI")} tapHint={t("tapPlus", "TAP +")} />
+        <HatchStage fed={fed} goal={HATCH_GOAL} hatchWord={t("petHi", "HI")} tapHint={t("tapPlus", "TAP")} />
         <Keypad pads={pads} />
       </Shell>
     )

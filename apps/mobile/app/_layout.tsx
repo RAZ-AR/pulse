@@ -123,11 +123,13 @@ function AuthGate() {
     }
   }, [hydrated, navReady, token, telegramMode, demoMode, tg?.initData, demoSignIn, signIn])
 
-  // 2) Drop stale token only on UNAUTHORIZED (invalid/expired JWT), not on 5xx errors.
+  // 2) Drop stale token on UNAUTHORIZED (invalid/expired JWT) or NOT_FOUND
+  //    (the token's user no longer exists, e.g. after a DB reset) — but not on
+  //    5xx errors. Dropping it lets the auto sign-in re-fire → fresh onboarding.
   useEffect(() => {
     if (!me.error || !token) return
     const code = (me.error as { data?: { code?: string } })?.data?.code
-    if (code !== "UNAUTHORIZED") return
+    if (code !== "UNAUTHORIZED" && code !== "NOT_FOUND") return
     if (typeof window !== "undefined") {
       try { window.localStorage.setItem("_auth_err", "Session rejected by server") } catch { /* ignore */ }
     }
