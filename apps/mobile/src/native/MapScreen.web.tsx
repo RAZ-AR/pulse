@@ -1,6 +1,5 @@
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
@@ -8,6 +7,131 @@ import { colors, neonColors, fonts, useTheme } from "../lib/theme"
 import { LavaLampSurface, VolumeGradient } from "../components/neu"
 import { useColorMode } from "../store/colorMode"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../lib/venues"
+
+// --- MapLibre GL (web only) ---------------------------------------------
+// Loaded from CDN so there's no npm dependency or bundler config. Free OSM
+// raster tiles by default; drop a free MapTiler key below for vector tiles.
+const MAPTILER_KEY = "" // https://cloud.maptiler.com → free key → prettier map
+const OSM_STYLE = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap",
+    },
+  },
+  layers: [{ id: "osm", type: "raster", source: "osm" }],
+}
+const MAP_STYLE = MAPTILER_KEY
+  ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`
+  : (OSM_STYLE as unknown as string)
+
+const MAPLIBRE_VER = "4.7.1"
+let mapLibrePromise: Promise<any> | null = null
+function loadMapLibre(): Promise<any> {
+  if (typeof window === "undefined") return Promise.reject(new Error("no window"))
+  const w = window as any
+  if (w.maplibregl) return Promise.resolve(w.maplibregl)
+  if (mapLibrePromise) return mapLibrePromise
+  mapLibrePromise = new Promise((resolve, reject) => {
+    const css = document.createElement("link")
+    css.rel = "stylesheet"
+    css.href = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VER}/dist/maplibre-gl.css`
+    document.head.appendChild(css)
+    const js = document.createElement("script")
+    js.src = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VER}/dist/maplibre-gl.js`
+    js.onload = () => resolve(w.maplibregl)
+    js.onerror = () => reject(new Error("maplibre failed to load"))
+    document.head.appendChild(js)
+  })
+  return mapLibrePromise
+}
+
+type MapVenue = { id: string; name: string; lat: number; lng: number; isPartner: boolean }
+
+function LiveMap({
+  venues,
+  center,
+  onPick,
+}: {
+  venues: MapVenue[]
+  center: { lat: number; lng: number }
+  onPick: (id: string) => void
+}) {
+  const hostRef = useRef<any>(null)
+  const mapRef = useRef<any>(null)
+  const glRef = useRef<any>(null)
+  const markersRef = useRef<any[]>([])
+  const pickRef = useRef(onPick)
+  pickRef.current = onPick
+
+  // Init the map once.
+  useEffect(() => {
+    let cancelled = false
+    loadMapLibre()
+      .then((gl) => {
+        if (cancelled || !hostRef.current || mapRef.current) return
+        glRef.current = gl
+        const map = new gl.Map({
+          container: hostRef.current,
+          style: MAP_STYLE,
+          center: [center.lng, center.lat],
+          zoom: 12,
+        })
+        map.addControl(new gl.NavigationControl({ showCompass: false }), "top-right")
+        map.addControl(
+          new gl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: true,
+          }),
+          "top-right",
+        )
+        mapRef.current = map
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+      mapRef.current?.remove()
+      mapRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Recenter when the chosen city changes.
+  useEffect(() => {
+    mapRef.current?.flyTo({ center: [center.lng, center.lat], zoom: 12 })
+  }, [center.lat, center.lng])
+
+  // Sync markers whenever the venue list changes.
+  useEffect(() => {
+    const gl = glRef.current
+    const map = mapRef.current
+    if (!gl || !map) return
+    let raf = 0
+    const draw = () => {
+      markersRef.current.forEach((m) => m.remove())
+      markersRef.current = venues
+        .filter((v) => typeof v.lat === "number" && typeof v.lng === "number")
+        .map((v) => {
+          const marker = new gl.Marker({ color: v.isPartner ? "#E5392A" : "#015634" })
+            .setLngLat([v.lng, v.lat])
+            .addTo(map)
+          const el = marker.getElement()
+          el.style.cursor = "pointer"
+          el.title = v.name
+          el.addEventListener("click", () => pickRef.current(v.id))
+          return marker
+        })
+    }
+    if (map.loaded()) draw()
+    else map.once("load", () => { raf = requestAnimationFrame(draw) })
+    return () => { if (raf) cancelAnimationFrame(raf) }
+  }, [venues])
+
+  return <View ref={hostRef} style={s.mapLive} />
+}
 
 function ratingLabel(rating: number | null | undefined, reviews: number | null | undefined) {
   if (!rating) return "Google rating soon"
@@ -43,11 +167,10 @@ export default function MapWebScreen() {
   })
   const demoVenues = getDemoVenues(selectedCity.name, activeFilter)
   const visibleVenues = venues.data?.length ? venues.data : demoVenues
-  const partnerCount = visibleVenues.filter((venue) => venue.isPartner).length
-  const bestRate = visibleVenues.reduce<number | null>((best, venue) => {
-    if (!venue.pointsPerCurrency) return best
-    return best === null ? venue.pointsPerCurrency : Math.max(best, venue.pointsPerCurrency)
-  }, null)
+  const openVenue = useCallback(
+    (id: string) => router.push({ pathname: "/venue/[id]", params: { id } }),
+    [router],
+  )
 
   return (
     <ScrollView
@@ -80,50 +203,11 @@ export default function MapWebScreen() {
       </LavaLampSurface>
 
       <View style={[s.mapPanel, theme.shadowRaised]}>
-        <LinearGradient
-          colors={["rgba(235,254,255,0.96)", "rgba(255,244,254,0.82)", "rgba(236,255,235,0.86)"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
+        <LiveMap
+          venues={visibleVenues}
+          center={{ lat: selectedCity.lat, lng: selectedCity.lng }}
+          onPick={openVenue}
         />
-        <View style={s.mapBubbleTop} />
-        <View style={s.mapBubbleBottom} />
-        <View style={s.mapGrid}>
-          {visibleVenues.slice(0, 9).map((venue, index) => (
-            <Pressable
-              key={venue.id}
-              onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
-              style={[
-                s.pin,
-                {
-                  left: `${12 + ((index * 29) % 72)}%`,
-                  top: `${18 + ((index * 19) % 62)}%`,
-                },
-                index === 0 && (isRainbow ? s.pinFeaturedRainbow : s.pinFeatured),
-              ]}
-            >
-              <Text style={[s.pinText, { fontFamily: fonts.displayHeavy }]}>
-                {venue.name.slice(0, 1).toUpperCase()}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={s.mapStats}>
-          <View style={s.mapStat}>
-            <Text style={[s.mapStatValue, { fontFamily: fonts.displayHeavy }]}>{visibleVenues.length}</Text>
-            <Text style={[s.mapStatLabel, { fontFamily: fonts.bodyBold }]}>venues</Text>
-          </View>
-          <View style={s.mapStat}>
-            <Text style={[s.mapStatValue, { fontFamily: fonts.displayHeavy }]}>{partnerCount}</Text>
-            <Text style={[s.mapStatLabel, { fontFamily: fonts.bodyBold }]}>partners</Text>
-          </View>
-          <View style={s.mapStat}>
-            <Text style={[s.mapStatValue, { fontFamily: fonts.displayHeavy }]}>
-              {bestRate ? bestRate.toFixed(3) : "—"}
-            </Text>
-            <Text style={[s.mapStatLabel, { fontFamily: fonts.bodyBold }]}>best pts</Text>
-          </View>
-        </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filters}>
@@ -269,87 +353,15 @@ const s = StyleSheet.create({
   filterText: { fontSize: 11 },
   list: { gap: 12 },
   mapPanel: {
-    minHeight: 270,
+    height: 300,
     borderRadius: 40,
     marginBottom: 14,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.84)",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#EEF1F4",
   },
-  mapBubbleTop: {
-    position: "absolute",
-    top: -70,
-    right: -34,
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: "rgba(255,255,255,0.44)",
-  },
-  mapBubbleBottom: {
-    position: "absolute",
-    bottom: 58,
-    left: -44,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(249,251,255,0.34)",
-  },
-  mapGrid: {
-    flex: 1,
-    margin: 16,
-    borderRadius: 30,
-    backgroundColor: "rgba(249,251,255,0.34)",
-    overflow: "hidden",
-  },
-  pin: {
-    position: "absolute",
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.78)",
-    shadowColor: "#C9C4B4",
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.34,
-    shadowRadius: 9,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.88)",
-  },
-  pinFeatured: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "rgba(255,244,254,0.92)",
-  },
-  pinFeaturedRainbow: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: "rgba(139,61,255,0.22)",
-    borderColor: "rgba(139,61,255,0.44)",
-  },
-  pinText: { color: colors.ink, fontSize: 16 },
-  mapStats: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 16,
-    flexDirection: "row",
-    gap: 8,
-  },
-  mapStat: {
-    flex: 1,
-    minHeight: 64,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.70)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mapStatValue: { color: colors.ink, fontSize: 24, lineHeight: 26 },
-  mapStatLabel: { color: "#75736A", fontSize: 9, textTransform: "uppercase", marginTop: 4 },
+  mapLive: { flex: 1, width: "100%", height: "100%" },
   card: { backgroundColor: "#FFFFFF", borderRadius: 34, padding: 12, shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.24, shadowRadius: 12, elevation: 2 },
   cardRainbow: { backgroundColor: "#F2F2F6", shadowColor: "#8B3DFF", shadowOpacity: 0.14 },
   row: { flexDirection: "row", gap: 12 },
