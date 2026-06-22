@@ -5,6 +5,7 @@ import { trpc } from "../../../../src/lib/trpc"
 import { useVenue } from "../../../../src/context/venue-context"
 import { AddressAutocomplete, type PickedPlace } from "../../../../src/components/AddressAutocomplete"
 import { MapPicker } from "../../../../src/components/MapPicker"
+import { reverseGeocode } from "../../../../src/lib/places"
 
 const BELGRADE = { lat: 44.8125, lng: 20.4612 }
 
@@ -58,9 +59,15 @@ export default function SettingsPage() {
     })
   }
 
-  // Dragging the pin updates coordinates; the address text stays as typed/picked.
-  function handlePinMove(lat: number, lng: number) {
+  // Pin drag/click sets the coordinates immediately, then reverse-geocodes to
+  // fill the address field — "pick the spot right on the map".
+  async function handlePinMove(lat: number, lng: number) {
     setPicked((prev) => ({ address: prev?.address ?? venueAddress.trim(), city: prev?.city ?? "Belgrade", lat, lng }))
+    const r = await reverseGeocode(lat, lng)
+    if (r?.address) {
+      setVenueAddress(r.address)
+      setPicked((prev) => ({ address: r.address, city: r.city || prev?.city || "Belgrade", lat, lng }))
+    }
   }
 
   function handleVenueSave() {

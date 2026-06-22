@@ -35,11 +35,14 @@ export function AddressAutocomplete({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
-  const skipNext = useRef(false)
+  // Only the input's own onChange flips this — so external value updates
+  // (a list pick, or an address filled from the map) never reopen the dropdown.
+  const typing = useRef(false)
 
   // Debounced lookup as the merchant types.
   useEffect(() => {
-    if (skipNext.current) { skipNext.current = false; return }
+    if (!typing.current) return
+    typing.current = false
     const q = value.trim()
     if (q.length < 2) { setItems([]); setOpen(false); return }
     setLoading(true)
@@ -70,7 +73,6 @@ export function AddressAutocomplete({
   }, [])
 
   const pick = (p: Prediction) => {
-    skipNext.current = true
     onChange(p.mainText)
     setOpen(false)
     setItems([])
@@ -83,7 +85,7 @@ export function AddressAutocomplete({
     <div ref={boxRef} className="relative">
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => { typing.current = true; onChange(e.target.value) }}
         onFocus={() => { if (items.length) setOpen(true) }}
         placeholder={placeholder}
         autoComplete="off"
