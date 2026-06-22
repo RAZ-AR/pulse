@@ -388,7 +388,7 @@ function PetStage({ caption, asleep = false }: { caption: string; asleep?: boole
     return () => clearInterval(id)
   }, [asleep])
   return (
-    <LcdScreen accent={GREEN}>
+    <LcdScreen accent={GREEN} dark={false}>
       <PixelSprite rows={asleep ? HATCHLING[0] : HATCHLING[frame] ?? HATCHLING[0]} px={9} />
       <Text style={[d.petCaption, { fontFamily: fonts.pixel }]}>{caption}</Text>
     </LcdScreen>
