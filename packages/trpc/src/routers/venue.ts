@@ -178,7 +178,8 @@ export const venueRouter = router({
         minRating: z.number().min(0).max(5).optional(),
         lat: z.number().optional(),
         lng: z.number().optional(),
-        sort: z.enum(["partner", "rating", "rate", "name"]).default("partner"),
+        radiusKm: z.number().min(0.1).max(50).default(25),
+        sort: z.enum(["distance", "partner", "rating", "rate", "name"]).default("partner"),
         cursor: z.number().min(0).default(0),
         limit: z.number().min(1).max(50).default(20),
       })
@@ -194,6 +195,32 @@ export const venueRouter = router({
         ...(typeof input.minRating === "number" ? { googleRating: { gte: input.minRating } } : {}),
         ...(input.hasOffer ? { offers: { some: activeOffer } } : {}),
       }
+      const fullSelect = { ...venuePublicSelect, offers: { where: activeOffer, select: { id: true }, take: 1 } }
+      const toItem = <T extends { offers: { id: string }[]; lat: number; lng: number }>(v: T, d: number | null) => {
+        const { offers, ...rest } = v
+        return { ...rest, hasOffer: offers.length > 0, distanceMeters: d }
+      }
+
+      // Distance sort: Postgres can't ORDER BY haversine cheaply, so we rank in
+      // memory. Two steps keep it light: pull only id+coords for the whole city,
+      // sort, then hydrate just the page. Falls through to SQL sort if no coords.
+      if (input.sort === "distance" && input.lat != null && input.lng != null) {
+        const box = boundingBox(input.lat, input.lng, input.radiusKm)
+        const coords = await ctx.db.venue.findMany({
+          where: { ...where, lat: { gte: box.minLat, lte: box.maxLat }, lng: { gte: box.minLng, lte: box.maxLng } },
+          select: { id: true, lat: true, lng: true },
+        })
+        const ranked = coords
+          .map((v) => ({ id: v.id, d: Math.round(haversineMeters(input.lat!, input.lng!, v.lat, v.lng)) }))
+          .sort((a, b) => a.d - b.d)
+        const pageRefs = ranked.slice(input.cursor, input.cursor + input.limit)
+        const dById = new Map(pageRefs.map((r) => [r.id, r.d]))
+        const rows = await ctx.db.venue.findMany({ where: { id: { in: pageRefs.map((r) => r.id) } }, select: fullSelect })
+        const byId = new Map(rows.map((r) => [r.id, r]))
+        const items = pageRefs.map((r) => toItem(byId.get(r.id)!, dById.get(r.id) ?? null)).filter(Boolean)
+        return { items, nextCursor: input.cursor + input.limit < ranked.length ? input.cursor + input.limit : null }
+      }
+
       const orderBy =
         input.sort === "rating" ? [{ googleRating: { sort: "desc" as const, nulls: "last" as const } }]
         : input.sort === "rate" ? [{ pointsPerCurrency: { sort: "desc" as const, nulls: "last" as const } }]
@@ -205,21 +232,13 @@ export const venueRouter = router({
         orderBy,
         skip: input.cursor,
         take: input.limit + 1,
-        select: { ...venuePublicSelect, offers: { where: activeOffer, select: { id: true }, take: 1 } },
+        select: fullSelect,
       })
 
       const hasMore = rows.length > input.limit
-      const items = rows.slice(0, input.limit).map((v) => {
-        const { offers, ...rest } = v
-        return {
-          ...rest,
-          hasOffer: offers.length > 0,
-          distanceMeters:
-            input.lat != null && input.lng != null
-              ? Math.round(haversineMeters(input.lat, input.lng, v.lat, v.lng))
-              : null,
-        }
-      })
+      const items = rows.slice(0, input.limit).map((v) =>
+        toItem(v, input.lat != null && input.lng != null ? Math.round(haversineMeters(input.lat, input.lng, v.lat, v.lng)) : null),
+      )
       return { items, nextCursor: hasMore ? input.cursor + input.limit : null }
     }),
 

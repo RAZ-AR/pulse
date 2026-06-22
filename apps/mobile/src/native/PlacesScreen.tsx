@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import { useRouter } from "expo-router"
 import { trpc } from "../lib/trpc"
 import { fonts, useTheme } from "../lib/theme"
@@ -9,6 +9,7 @@ import MapScreen from "./MapScreen"
 const ORANGE = "#fd4600"
 
 type Cat = "CAFE" | "RESTAURANT" | "BEAUTY" | "FITNESS" | "YOGA" | "RETAIL" | "SERVICE" | "OTHER"
+type Sort = "distance" | "rating" | "rate"
 
 const CATS: { key: Cat; label: string; emoji: string }[] = [
   { key: "CAFE", label: "Кафе", emoji: "☕" },
@@ -19,6 +20,12 @@ const CATS: { key: Cat; label: string; emoji: string }[] = [
   { key: "YOGA", label: "Йога", emoji: "🧘" },
   { key: "SERVICE", label: "Услуги", emoji: "⚙️" },
   { key: "OTHER", label: "Другое", emoji: "📍" },
+]
+
+const SORTS: { key: Sort; label: string }[] = [
+  { key: "distance", label: "Рядом" },
+  { key: "rating", label: "Рейтинг" },
+  { key: "rate", label: "Баллы" },
 ]
 
 function catEmoji(c: string) {
@@ -40,29 +47,24 @@ export default function PlacesScreen() {
   const [cat, setCat] = useState<Cat | null>(null)
   const [partnerOnly, setPartnerOnly] = useState(false)
   const [hasOffer, setHasOffer] = useState(false)
-
-  const sectionMode = !cat && !query.trim() && !partnerOnly && !hasOffer
+  const [sort, setSort] = useState<Sort>("distance")
 
   const q = trpc.venue.discover.useInfiniteQuery(
     {
       city: city.name,
       lat: city.lat,
       lng: city.lng,
+      radiusKm: city.radiusKm,
+      sort,
+      limit: 30,
       ...(query.trim() ? { query: query.trim() } : {}),
       ...(cat ? { categories: [cat] } : {}),
       ...(partnerOnly ? { partnerOnly: true } : {}),
       ...(hasOffer ? { hasOffer: true } : {}),
-      sort: "partner",
-      limit: sectionMode ? 60 : 20,
     },
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   )
   const items = q.data?.pages.flatMap((p) => p.items) ?? []
-
-  // Build sections for section mode
-  const sections = sectionMode
-    ? CATS.map((c) => ({ ...c, items: items.filter((v) => v.category === c.key) })).filter((s) => s.items.length > 0)
-    : []
 
   if (view === "map") {
     return (
@@ -125,57 +127,23 @@ export default function PlacesScreen() {
           <Text style={[s.fchipText, { fontFamily: fonts.bodyBold, color: theme.textSecondary }]}>🗺 Карта</Text>
         </Pressable>
       </View>
+
+      <View style={s.sortRow}>
+        <Text style={[s.sortLabel, { color: theme.textMuted }]}>Сортировка</Text>
+        {SORTS.map((opt) => {
+          const on = sort === opt.key
+          return (
+            <Pressable key={opt.key} onPress={() => setSort(opt.key)} style={[s.sortChip, on && s.sortChipOn]}>
+              <Text style={[s.sortChipText, { fontFamily: fonts.bodyBold, color: on ? "#fff" : theme.textSecondary }]}>
+                {opt.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
     </View>
   )
 
-  if (q.isLoading) {
-    return (
-      <View style={[s.root, { backgroundColor: theme.bg }]}>
-        {Header}
-        <ActivityIndicator color={theme.textSecondary} style={{ marginTop: 40 }} />
-      </View>
-    )
-  }
-
-  // Section mode: grouped horizontal rows
-  if (sectionMode && sections.length > 0) {
-    return (
-      <View style={[s.root, { backgroundColor: theme.bg }]}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
-          {Header}
-          {sections.map((section) => (
-            <View key={section.key} style={s.section}>
-              <View style={s.sectionHeader}>
-                <Text style={[s.sectionTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-                  {section.emoji} {section.label}
-                </Text>
-                <Pressable onPress={() => setCat(section.key)}>
-                  <Text style={[s.sectionMore, { color: ORANGE, fontFamily: fonts.bodyBold }]}>Все →</Text>
-                </Pressable>
-              </View>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={section.items}
-                keyExtractor={(v) => v.id}
-                contentContainerStyle={s.horizontalList}
-                renderItem={({ item }) => (
-                  <Pressable
-                    style={{ width: 220 }}
-                    onPress={() => router.push(`/venue/${item.id}` as Parameters<typeof router.push>[0])}
-                  >
-                    <VenueCardHorizontal v={item} theme={theme} />
-                  </Pressable>
-                )}
-              />
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    )
-  }
-
-  // Filter mode: vertical list
   return (
     <View style={[s.root, { backgroundColor: theme.bg }]}>
       <FlatList
@@ -186,7 +154,9 @@ export default function PlacesScreen() {
         onEndReachedThreshold={0.5}
         onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) q.fetchNextPage() }}
         ListEmptyComponent={
-          <Text style={[s.empty, { color: theme.textMuted }]}>Ничего не нашлось</Text>
+          q.isLoading
+            ? <ActivityIndicator color={theme.textSecondary} style={{ marginTop: 40 }} />
+            : <Text style={[s.empty, { color: theme.textMuted }]}>Ничего не нашлось</Text>
         }
         ListFooterComponent={q.isFetchingNextPage ? <ActivityIndicator color={theme.textSecondary} style={{ margin: 16 }} /> : null}
         renderItem={({ item }) => (
@@ -195,28 +165,6 @@ export default function PlacesScreen() {
           </Pressable>
         )}
       />
-    </View>
-  )
-}
-
-function VenueCardHorizontal({ v, theme }: { v: any; theme: ReturnType<typeof useTheme> }) {
-  const rating = v.googleRating ? v.googleRating.toFixed(1) : null
-  const km = v.distanceMeters != null ? (v.distanceMeters / 1000).toFixed(1) + " км" : null
-  return (
-    <View style={[s.hcard, theme.shadowRaisedSm, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <View style={[s.hcardIcon, { backgroundColor: theme.bgLight }]}>
-        <Text style={{ fontSize: 22 }}>{catEmoji(v.category)}</Text>
-      </View>
-      <Text style={[s.hcardName, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={1}>{v.name}</Text>
-      <Text style={[s.hcardAddr, { color: theme.textMuted }]} numberOfLines={1}>{v.address}</Text>
-      <View style={s.hcardMeta}>
-        {rating ? <Text style={[s.hcardRating, { color: theme.textSecondary }]}>★ {rating}</Text> : null}
-        {km ? <Text style={[s.hcardDist, { color: theme.textMuted }]}>{km}</Text> : null}
-      </View>
-      <View style={s.badges}>
-        {v.isPartner ? <Badge text="⭐ Партнёр" /> : null}
-        {v.hasOffer ? <Badge text="🎁 Акция" /> : null}
-      </View>
     </View>
   )
 }
@@ -264,26 +212,17 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 14, height: 34, borderRadius: 99, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.7)" },
   chipOn: { backgroundColor: ORANGE },
   chipText: { fontSize: 13 },
-  filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 8 },
+  filterRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 10 },
   fchip: { paddingHorizontal: 12, height: 32, borderRadius: 99, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.7)" },
   fchipOn: { backgroundColor: "#FBEADC" },
   fchipText: { fontSize: 12 },
 
-  // Section mode
-  section: { marginBottom: 8 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 18, marginBottom: 10, marginTop: 6 },
-  sectionTitle: { fontSize: 20 },
-  sectionMore: { fontSize: 13 },
-  horizontalList: { paddingHorizontal: 18, gap: 12 },
-  hcard: { borderRadius: 20, padding: 14, borderWidth: 1, borderBottomWidth: 3 },
-  hcardIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  hcardName: { fontSize: 15, marginBottom: 2 },
-  hcardAddr: { fontSize: 11, marginBottom: 6 },
-  hcardMeta: { flexDirection: "row", gap: 8 },
-  hcardRating: { fontSize: 12 },
-  hcardDist: { fontSize: 12 },
+  sortRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  sortLabel: { fontSize: 12, marginRight: 2 },
+  sortChip: { paddingHorizontal: 12, height: 30, borderRadius: 99, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.7)" },
+  sortChipOn: { backgroundColor: "#015634" },
+  sortChipText: { fontSize: 12 },
 
-  // List mode
   list: { padding: 16, paddingBottom: 110, gap: 12 },
   card: { flexDirection: "row", gap: 12, borderRadius: 22, padding: 14, borderWidth: 1, borderBottomWidth: 4 },
   cardIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
