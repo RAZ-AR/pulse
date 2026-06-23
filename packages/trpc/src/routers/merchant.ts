@@ -538,8 +538,10 @@ export const merchantRouter = router({
 
       const todayStart = new Date()
       todayStart.setHours(0, 0, 0, 0)
+      const weekStart = new Date(todayStart)
+      weekStart.setDate(weekStart.getDate() - 6) // 7 buckets incl. today
 
-      const [todayStats, activeRewards] = await Promise.all([
+      const [todayStats, activeRewards, weekTxns] = await Promise.all([
         ctx.db.transaction.aggregate({
           where: { venueId: input.venueId, type: "PARTNER_PURCHASE", createdAt: { gte: todayStart } },
           _sum: { pointsEarned: true },
@@ -550,13 +552,34 @@ export const merchantRouter = router({
           select: { id: true, title: true, pointsCost: true, redeemedCount: true },
           orderBy: { pointsCost: "asc" },
         }),
+        ctx.db.transaction.findMany({
+          where: { venueId: input.venueId, type: "PARTNER_PURCHASE", createdAt: { gte: weekStart } },
+          select: { pointsEarned: true, createdAt: true },
+        }),
       ])
+
+      // Bucket the last 7 days (oldest → today) for the home bar chart.
+      const week = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart)
+        d.setDate(weekStart.getDate() + i)
+        return { date: d.toISOString().slice(0, 10), points: 0, transactions: 0 }
+      })
+      const idxByDate = new Map(week.map((b, i) => [b.date, i]))
+      for (const t of weekTxns) {
+        const key = new Date(t.createdAt).toISOString().slice(0, 10)
+        const i = idxByDate.get(key)
+        if (i != null) { week[i]!.points += t.pointsEarned ?? 0; week[i]!.transactions += 1 }
+      }
+      const weekPointsTotal = week.reduce((s, b) => s + b.points, 0)
+      const weekAvg = weekPointsTotal / 7
 
       return {
         today: {
           transactions: todayStats._count._all,
           pointsIssued: todayStats._sum.pointsEarned ?? 0,
         },
+        week,
+        weekAvg,
         activeRewards,
         venue,
       }

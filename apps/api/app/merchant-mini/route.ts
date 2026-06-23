@@ -11,14 +11,16 @@ const MINI_APP_VERSION = "cabinet-v2"
 const BASE_STYLES = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #F5F5F7;
-  color: #1A1A1A;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #D6FF3D;
+  color: #101410;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
+  letter-spacing: -0.2px;
 }
+button, input { font-family: inherit; }
 button { cursor: pointer; border: none; outline: none; background: none; }
-input  { outline: none; border: none; font-family: inherit; }
+input  { outline: none; border: none; }
 `
 
 const APP_SCRIPT = `
@@ -33,19 +35,23 @@ var APP_VERSION = window.__MINI_APP_VERSION__;
 var tg = window.Telegram && window.Telegram.WebApp;
 
 // ── Colors ────────────────────────────────────────────────────────
+// Acid Ledger — neobrutalist lime + ink. Lime is the canvas, ink is structure.
 var C = {
-  bg:       '#F5F5F7',
+  bg:       '#D6FF3D',  // acid lime — app canvas
   white:    '#FFFFFF',
-  text:     '#1A1A1A',
-  hint:     '#888888',
-  accent:   '#5B4CF5',
-  green:    '#10B981',
-  red:      '#EF4444',
-  border:   'rgba(0,0,0,0.07)',
-  cream:    '#FFF8E1',
-  mint:     '#E8F5E9',
-  sky:      '#E3F2FD',
-  lavender: '#EDE9FF',
+  text:     '#101410',  // near-black ink
+  hint:     '#5C6B3F',  // muted olive — readable on lime AND white
+  accent:   '#101410',  // primary action = black (with lime/white text)
+  lime:     '#D6FF3D',
+  ink:      '#101410',
+  green:    '#2E7D32',
+  red:      '#E5392A',
+  border:   'rgba(16,20,16,0.14)',
+  // tinted cards → one pale lime so legacy screens stay cohesive
+  cream:    '#EEFFC2',
+  mint:     '#EEFFC2',
+  sky:      '#EEFFC2',
+  lavender: '#EEFFC2',
 };
 
 // ── tRPC client — superjson wire format ───────────────────────────
@@ -113,10 +119,9 @@ function Card(props) {
   return h('div', {
     style: Object.assign({
       background: props.bg || C.white,
-      borderRadius: 20,
+      borderRadius: 22,
       padding: 16,
       marginBottom: 12,
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
     }, props.style || {}),
   }, props.children);
 }
@@ -861,62 +866,75 @@ function HomeTab(props) {
       .finally(function() { setLoading(false); });
   }, [venue.id]);
 
-  return h('div', { style: { padding: '20px 16px' } },
-    // Greeting
-    h('div', { style: { marginBottom: 20 } },
-      h('div', { style: { fontSize: 24, fontWeight: 800 } }, '👋 ' + merchant.name),
-      h('div', { style: { fontSize: 14, color: C.hint, marginTop: 2 } }, venue.name)
+  if (loading) return h('div', { style: { padding: '48px 16px', textAlign: 'center', color: C.hint, fontWeight: 600 } }, '…');
+
+  var d = data || { today: { transactions: 0, pointsIssued: 0 }, week: [], weekAvg: 0, activeRewards: [] };
+  var week = d.week || [];
+  var maxPts = week.reduce(function(m, b) { return Math.max(m, b.points); }, 0) || 1;
+  var pct = d.weekAvg > 0 ? Math.round((d.today.pointsIssued - d.weekAvg) / d.weekAvg * 100) : null;
+  var rate = venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) : null;
+  var fmt = function(n) { return (n || 0).toLocaleString('ru-RU'); };
+
+  return h('div', { style: { padding: '8px 16px 20px' } },
+    // Hero title
+    h('div', { style: { fontSize: 32, fontWeight: 700, letterSpacing: '-1px', color: C.ink } }, 'Сегодня'),
+
+    // Activity stepper — last 7 days (filled = had a sale)
+    h('div', { style: { display: 'flex', gap: 5, margin: '14px 0 16px' } },
+      week.map(function(b, i) {
+        return h('div', { key: i, style: { flex: 1, height: 6, borderRadius: 3, background: b.transactions > 0 ? C.ink : 'rgba(16,20,16,0.18)' } });
+      })
     ),
 
-    // Stats
-    loading
-      ? h('div', { style: { textAlign: 'center', color: C.hint, padding: 24 } }, '...')
-      : data && h('div', null,
-          h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 } },
-            h(Card, { bg: C.sky, style: { marginBottom: 0 } },
-              h('div', { style: { fontSize: 12, color: '#1565C0', marginBottom: 4 } }, 'Транзакций сегодня'),
-              h('div', { style: { fontSize: 36, fontWeight: 900, color: '#1565C0' } }, data.today.transactions)
-            ),
-            h(Card, { bg: C.mint, style: { marginBottom: 0 } },
-              h('div', { style: { fontSize: 12, color: '#1B5E20', marginBottom: 4 } }, 'Баллов выдано'),
-              h('div', { style: { fontSize: 36, fontWeight: 900, color: '#2E7D32' } }, data.today.pointsIssued)
-            )
-          ),
-          data.activeRewards && data.activeRewards.length > 0 &&
-            h(Card, { bg: C.lavender },
-              h('div', { style: { fontSize: 12, color: '#4527A0', marginBottom: 4 } }, 'Активные акции'),
-              h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 8 } },
-                h('div', { style: { fontSize: 28, fontWeight: 800, color: C.accent } }, data.activeRewards.length),
-                h('div', { style: { fontSize: 13, color: '#4527A0' } }, data.activeRewards.map(function(r) { return r.title; }).join(' · '))
-              )
-            )
-        ),
+    // Hero card — points issued today
+    h('div', { style: { background: C.ink, borderRadius: 24, padding: '20px', marginBottom: 12 } },
+      h('div', { style: { fontSize: 13, color: '#9AA888', fontWeight: 600 } }, 'Баллов выдано сегодня'),
+      h('div', { style: { fontSize: 46, fontWeight: 700, color: C.lime, lineHeight: 1.05, letterSpacing: '-1.5px', marginTop: 2 } }, fmt(d.today.pointsIssued)),
+      pct !== null && h('div', { style: { fontSize: 13, color: pct >= 0 ? '#CFE0B0' : '#E2A39C', fontWeight: 600, marginTop: 4 } },
+        (pct >= 0 ? '▲ +' : '▼ ') + pct + '% к среднему за неделю')
+    ),
 
-    // Quick scan CTA
-    h('div', { style: { marginTop: 4 } },
-      h('button', {
-        onClick: onScanStart,
-        style: {
-          width: '100%', padding: '20px',
-          background: 'linear-gradient(135deg, #5B4CF5, #8B5CF6)',
-          color: '#fff', borderRadius: 20, border: 'none', cursor: 'pointer',
-          boxShadow: '0 4px 14px rgba(91,76,245,0.35)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-        },
-      },
-        h('span', { style: { fontSize: 24 } }, '📷'),
-        h('span', { style: { fontSize: 18, fontWeight: 700 } }, 'Сканировать клиента')
+    // Two tiles
+    h('div', { style: { display: 'flex', gap: 10, marginBottom: 12 } },
+      h('div', { style: { flex: 1, background: C.ink, borderRadius: 20, padding: 16 } },
+        h('div', { style: { fontSize: 12, color: '#9AA888', fontWeight: 600 } }, 'Транзакций'),
+        h('div', { style: { fontSize: 28, fontWeight: 700, color: '#fff', marginTop: 2 } }, d.today.transactions || 0)
+      ),
+      h('div', { style: { flex: 1, background: 'transparent', border: '2px solid ' + C.ink, borderRadius: 20, padding: 16 } },
+        h('div', { style: { fontSize: 12, color: C.ink, fontWeight: 600 } }, 'Ставка'),
+        rate
+          ? h('div', { style: { fontSize: 24, fontWeight: 700, color: C.ink, marginTop: 2 } }, rate, h('span', { style: { fontSize: 12, fontWeight: 500 } }, ' /1000'))
+          : h('div', { style: { fontSize: 14, fontWeight: 600, color: C.hint, marginTop: 6 } }, 'не задана')
       )
     ),
 
-    // Rate info
-    h('div', { style: { marginTop: 14, padding: '12px 16px', background: C.cream, borderRadius: 14 } },
-      h('div', { style: { fontSize: 12, color: C.hint } }, 'Ставка начисления'),
-      h('div', { style: { fontSize: 15, fontWeight: 700, marginTop: 2 } },
-        venue.pointsPerCurrency
-          ? Math.round(venue.pointsPerCurrency * 1000) + ' pts за 1000 ' + (venue.currency || 'RSD')
-          : 'Не установлена'
+    // Week bar chart
+    h('div', { style: { background: C.ink, borderRadius: 22, padding: 16, marginBottom: 12 } },
+      h('div', { style: { fontSize: 12, color: '#9AA888', fontWeight: 600, marginBottom: 10 } }, 'Баллы за неделю'),
+      h('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 } },
+        week.length === 0
+          ? h('div', { style: { fontSize: 12, color: '#9AA888' } }, 'Пока нет данных')
+          : week.map(function(b, i) {
+              var hPct = Math.max(6, Math.round(b.points / maxPts * 100));
+              var isToday = i === week.length - 1;
+              return h('div', { key: i, style: { flex: 1, height: hPct + '%', minHeight: 4, background: isToday ? C.lime : '#5B6B3A', borderRadius: 4 } });
+            })
       )
+    ),
+
+    // Active offers
+    d.activeRewards && d.activeRewards.length > 0 && h('div', { style: { background: C.lime, border: '2px solid ' + C.ink, borderRadius: 20, padding: '14px 16px', marginBottom: 12 } },
+      h('div', { style: { fontSize: 12, color: '#42500F', fontWeight: 700 } }, 'Активных акций: ' + d.activeRewards.length),
+      h('div', { style: { fontSize: 14, fontWeight: 600, color: C.ink, marginTop: 2 } }, d.activeRewards.map(function(r) { return r.title; }).join(' · '))
+    ),
+
+    // Scan CTA — black pill in the thumb zone
+    h('button', {
+      onClick: onScanStart,
+      style: { width: '100%', padding: '18px', background: C.ink, color: C.lime, borderRadius: 99, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    },
+      h('span', null, 'Сканировать клиента'),
+      h('span', { style: { fontSize: 20 } }, '→')
     )
   );
 }
@@ -2264,13 +2282,12 @@ function MainApp(props) {
     h('div', {
       style: {
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 64, background: 'rgba(255,255,255,0.97)',
-        backdropFilter: 'blur(12px)',
-        borderTop: '1px solid ' + C.border,
+        height: 64, background: C.ink,
         display: 'flex', alignItems: 'stretch',
       },
     },
       DOCK.map(function(t) {
+        var active = tab === t.id;
         return h('button', {
           key: t.id,
           onClick: function() { setTab(t.id); },
@@ -2278,11 +2295,11 @@ function MainApp(props) {
             flex: 1, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer',
-            color: tab === t.id ? C.accent : C.hint,
+            color: active ? C.lime : '#7C8A5F',
           },
         },
           h('div', { style: { fontSize: 22 } }, t.icon),
-          h('div', { style: { fontSize: 10, fontWeight: tab === t.id ? 700 : 400 } }, t.label)
+          h('div', { style: { fontSize: 10, fontWeight: active ? 700 : 500 } }, t.label)
         );
       })
     )
@@ -2403,6 +2420,9 @@ export async function GET() {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>ayoo Partner</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>${BASE_STYLES}</style>
 </head>
 <body>
