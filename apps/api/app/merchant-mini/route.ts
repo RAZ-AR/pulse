@@ -11,12 +11,11 @@ const MINI_APP_VERSION = "cabinet-v2"
 const BASE_STYLES = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #D6FF3D;
-  color: #101410;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #ECECEE;
+  color: #1A1A1A;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
-  letter-spacing: -0.2px;
 }
 button, input { font-family: inherit; }
 button { cursor: pointer; border: none; outline: none; background: none; }
@@ -35,23 +34,24 @@ var APP_VERSION = window.__MINI_APP_VERSION__;
 var tg = window.Telegram && window.Telegram.WebApp;
 
 // ── Colors ────────────────────────────────────────────────────────
-// Acid Ledger — neobrutalist lime + ink. Lime is the canvas, ink is structure.
+// Light grey canvas, bold cards, orange accent — widget-grid neobrutalism.
 var C = {
-  bg:       '#D6FF3D',  // acid lime — app canvas
+  bg:       '#ECECEE',  // light grey canvas
   white:    '#FFFFFF',
-  text:     '#101410',  // near-black ink
-  hint:     '#5C6B3F',  // muted olive — readable on lime AND white
-  accent:   '#101410',  // primary action = black (with lime/white text)
-  lime:     '#D6FF3D',
-  ink:      '#101410',
+  text:     '#1A1A1A',  // ink
+  hint:     '#8A8A8E',  // muted grey
+  accent:   '#FF6A1F',  // orange — active dock + key accents
+  orange:   '#FF6A1F',
+  ink:      '#1A1A1A',
   green:    '#2E7D32',
   red:      '#E5392A',
-  border:   'rgba(16,20,16,0.14)',
-  // tinted cards → one pale lime so legacy screens stay cohesive
-  cream:    '#EEFFC2',
-  mint:     '#EEFFC2',
-  sky:      '#EEFFC2',
-  lavender: '#EEFFC2',
+  blue:     '#2E7DF6',
+  border:   'rgba(0,0,0,0.08)',
+  // tinted cards → soft neutrals
+  cream:    '#FFFFFF',
+  mint:     '#FFFFFF',
+  sky:      '#FFFFFF',
+  lavender: '#F0F0F2',
 };
 
 // ── tRPC client — superjson wire format ───────────────────────────
@@ -875,63 +875,69 @@ function HomeTab(props) {
   var rate = venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) : null;
   var fmt = function(n) { return (n || 0).toLocaleString('ru-RU'); };
 
-  return h('div', { style: { padding: '8px 16px 20px' } },
-    // Hero title
-    h('div', { style: { fontSize: 32, fontWeight: 700, letterSpacing: '-1px', color: C.ink } }, 'Сегодня'),
+  return h('div', { style: { padding: '8px 16px 24px' } },
+    h('div', { style: { fontSize: 30, fontWeight: 900, color: C.ink } }, 'Сегодня'),
 
     // Activity stepper — last 7 days (filled = had a sale)
-    h('div', { style: { display: 'flex', gap: 5, margin: '14px 0 16px' } },
+    h('div', { style: { display: 'flex', gap: 5, margin: '12px 0 16px' } },
       week.map(function(b, i) {
-        return h('div', { key: i, style: { flex: 1, height: 6, borderRadius: 3, background: b.transactions > 0 ? C.ink : 'rgba(16,20,16,0.18)' } });
+        return h('div', { key: i, style: { flex: 1, height: 6, borderRadius: 3, background: b.transactions > 0 ? C.ink : 'rgba(0,0,0,0.12)' } });
       })
     ),
 
-    // Hero card — points issued today
-    h('div', { style: { background: C.ink, borderRadius: 24, padding: '20px', marginBottom: 12 } },
-      h('div', { style: { fontSize: 13, color: '#9AA888', fontWeight: 600 } }, 'Баллов выдано сегодня'),
-      h('div', { style: { fontSize: 46, fontWeight: 700, color: C.lime, lineHeight: 1.05, letterSpacing: '-1.5px', marginTop: 2 } }, fmt(d.today.pointsIssued)),
-      pct !== null && h('div', { style: { fontSize: 13, color: pct >= 0 ? '#CFE0B0' : '#E2A39C', fontWeight: 600, marginTop: 4 } },
+    // Hero card — points issued today (dark)
+    h('div', { style: { background: C.ink, borderRadius: 24, padding: 20, marginBottom: 12 } },
+      h('div', { style: { fontSize: 13, color: '#9A9A9E', fontWeight: 500 } }, 'Баллов выдано сегодня'),
+      h('div', { style: { fontSize: 46, fontWeight: 900, color: '#fff', lineHeight: 1.05, marginTop: 2 } }, fmt(d.today.pointsIssued)),
+      pct !== null && h('div', { style: { fontSize: 13, color: pct >= 0 ? '#7DDB8E' : '#FF8A7D', fontWeight: 700, marginTop: 4 } },
         (pct >= 0 ? '▲ +' : '▼ ') + pct + '% к среднему за неделю')
     ),
 
-    // Two tiles
+    // Two tiles — orange + white
     h('div', { style: { display: 'flex', gap: 10, marginBottom: 12 } },
-      h('div', { style: { flex: 1, background: C.ink, borderRadius: 20, padding: 16 } },
-        h('div', { style: { fontSize: 12, color: '#9AA888', fontWeight: 600 } }, 'Транзакций'),
-        h('div', { style: { fontSize: 28, fontWeight: 700, color: '#fff', marginTop: 2 } }, d.today.transactions || 0)
+      h('div', { style: { flex: 1, background: C.orange, borderRadius: 20, padding: 16 } },
+        h('div', { style: { fontSize: 12, color: '#5A2400', fontWeight: 700 } }, 'Транзакций'),
+        h('div', { style: { fontSize: 30, fontWeight: 900, color: '#1A1A1A', marginTop: 2 } }, d.today.transactions || 0)
       ),
-      h('div', { style: { flex: 1, background: 'transparent', border: '2px solid ' + C.ink, borderRadius: 20, padding: 16 } },
-        h('div', { style: { fontSize: 12, color: C.ink, fontWeight: 600 } }, 'Ставка'),
+      h('div', { style: { flex: 1, background: C.white, borderRadius: 20, padding: 16 } },
+        h('div', { style: { fontSize: 12, color: C.hint, fontWeight: 600 } }, 'Ставка, pts/1000'),
         rate
-          ? h('div', { style: { fontSize: 24, fontWeight: 700, color: C.ink, marginTop: 2 } }, rate, h('span', { style: { fontSize: 12, fontWeight: 500 } }, ' /1000'))
-          : h('div', { style: { fontSize: 14, fontWeight: 600, color: C.hint, marginTop: 6 } }, 'не задана')
+          ? h('div', { style: { fontSize: 28, fontWeight: 900, color: C.ink, marginTop: 2 } }, rate)
+          : h('div', { style: { fontSize: 14, fontWeight: 600, color: C.hint, marginTop: 8 } }, 'не задана')
       )
     ),
 
-    // Week bar chart
-    h('div', { style: { background: C.ink, borderRadius: 22, padding: 16, marginBottom: 12 } },
-      h('div', { style: { fontSize: 12, color: '#9AA888', fontWeight: 600, marginBottom: 10 } }, 'Баллы за неделю'),
+    // Week bar chart (white card, grey bars, today orange)
+    h('div', { style: { background: C.white, borderRadius: 22, padding: 16, marginBottom: 12 } },
+      h('div', { style: { fontSize: 12, color: C.hint, fontWeight: 600, marginBottom: 10 } }, 'Баллы за неделю'),
       h('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 6, height: 60 } },
         week.length === 0
-          ? h('div', { style: { fontSize: 12, color: '#9AA888' } }, 'Пока нет данных')
+          ? h('div', { style: { fontSize: 12, color: C.hint } }, 'Пока нет данных')
           : week.map(function(b, i) {
               var hPct = Math.max(6, Math.round(b.points / maxPts * 100));
               var isToday = i === week.length - 1;
-              return h('div', { key: i, style: { flex: 1, height: hPct + '%', minHeight: 4, background: isToday ? C.lime : '#5B6B3A', borderRadius: 4 } });
+              return h('div', { key: i, style: { flex: 1, height: hPct + '%', minHeight: 4, background: isToday ? C.orange : '#D4D4D8', borderRadius: 4 } });
             })
       )
     ),
 
-    // Active offers
-    d.activeRewards && d.activeRewards.length > 0 && h('div', { style: { background: C.lime, border: '2px solid ' + C.ink, borderRadius: 20, padding: '14px 16px', marginBottom: 12 } },
-      h('div', { style: { fontSize: 12, color: '#42500F', fontWeight: 700 } }, 'Активных акций: ' + d.activeRewards.length),
-      h('div', { style: { fontSize: 14, fontWeight: 600, color: C.ink, marginTop: 2 } }, d.activeRewards.map(function(r) { return r.title; }).join(' · '))
+    // Offers preview — each in the colour the merchant chose
+    d.activeRewards && d.activeRewards.length > 0 && h('div', { style: { marginBottom: 12 } },
+      h('div', { style: { fontSize: 13, fontWeight: 700, color: C.ink, margin: '4px 2px 8px' } }, 'Акции'),
+      h('div', { style: { display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 } },
+        d.activeRewards.map(function(r) {
+          return h('div', { key: r.id, style: { flex: '0 0 150px', background: r.cardColor || C.orange, borderRadius: 18, padding: 14, color: '#fff' } },
+            h('div', { style: { fontSize: 14, fontWeight: 700, lineHeight: 1.2 } }, r.title || 'Акция'),
+            h('div', { style: { fontSize: 12, opacity: 0.88, marginTop: 6 } }, offerTypeLabel(r))
+          );
+        })
+      )
     ),
 
-    // Scan CTA — black pill in the thumb zone
+    // Scan CTA — dark pill in the thumb zone
     h('button', {
       onClick: onScanStart,
-      style: { width: '100%', padding: '18px', background: C.ink, color: C.lime, borderRadius: 99, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
+      style: { width: '100%', padding: '18px', background: C.ink, color: '#fff', borderRadius: 99, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 },
     },
       h('span', null, 'Сканировать клиента'),
       h('span', { style: { fontSize: 20 } }, '→')
@@ -983,7 +989,7 @@ function RewardsTab(props) {
 
   // Form state
   var emptyForm = { offerType: 'PURCHASE_PERCENT', title: '', description: '',
-    bonusPercent: 5, productName: '', pointsCost: '', cardColor: '#5B4CF5', endsAt: '' };
+    bonusPercent: 5, productName: '', pointsCost: '', cardColor: C.accent, endsAt: '' };
   var formState = useState(emptyForm); var form = formState[0]; var setForm = formState[1];
   function setField(k, v) { setForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
 
@@ -1012,7 +1018,7 @@ function RewardsTab(props) {
       bonusPercent: r.bonusPercent || 5,
       productName:  r.productName || '',
       pointsCost:   String(r.pointsCost || ''),
-      cardColor:    r.cardColor || '#5B4CF5',
+      cardColor:    r.cardColor || C.accent,
       endsAt:       r.endsAt ? r.endsAt.substring(0, 10) : '',
     });
     setSelected(r); setError(''); setConfirmDel(false); setMode('edit');
@@ -1919,7 +1925,7 @@ function VenuePicker(props) {
           background: C.accent, color: '#fff', border: 'none',
           fontSize: 28, cursor: 'pointer', marginTop: 4,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 10px rgba(91,76,245,0.3)',
+          boxShadow: '0 4px 12px rgba(255,106,31,0.35)',
         },
       }, '+')
     ),
@@ -2276,14 +2282,15 @@ function MainApp(props) {
     )
   );
 
-  return h('div', { style: { background: C.bg, minHeight: '100vh', paddingBottom: 72 } },
+  return h('div', { style: { background: C.bg, minHeight: '100vh', paddingBottom: 100 } },
     topBar,
     h('div', { style: { paddingTop: 8 } }, content),
     h('div', {
       style: {
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 64, background: C.ink,
-        display: 'flex', alignItems: 'stretch',
+        position: 'fixed', bottom: 16, left: 16, right: 16,
+        background: C.white, borderRadius: 26,
+        boxShadow: '0 8px 28px rgba(0,0,0,0.16)',
+        padding: 6, display: 'flex', alignItems: 'stretch',
       },
     },
       DOCK.map(function(t) {
@@ -2294,11 +2301,12 @@ function MainApp(props) {
           style: {
             flex: 1, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center', gap: 2,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: active ? C.lime : '#7C8A5F',
+            padding: '10px 0', borderRadius: 20, cursor: 'pointer',
+            background: active ? C.orange : 'transparent',
+            color: active ? '#fff' : C.hint,
           },
         },
-          h('div', { style: { fontSize: 22 } }, t.icon),
+          h('div', { style: { fontSize: 20 } }, t.icon),
           h('div', { style: { fontSize: 10, fontWeight: active ? 700 : 500 } }, t.label)
         );
       })
@@ -2422,7 +2430,7 @@ export async function GET() {
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>${BASE_STYLES}</style>
 </head>
 <body>

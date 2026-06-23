@@ -549,7 +549,7 @@ export const merchantRouter = router({
         }),
         ctx.db.reward.findMany({
           where: { venueId: input.venueId, isActive: true },
-          select: { id: true, title: true, pointsCost: true, redeemedCount: true },
+          select: { id: true, title: true, pointsCost: true, redeemedCount: true, cardColor: true, offerType: true, bonusPercent: true, productName: true },
           orderBy: { pointsCost: "asc" },
         }),
         ctx.db.transaction.findMany({
