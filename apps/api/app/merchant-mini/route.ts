@@ -1520,33 +1520,33 @@ function ScanTab(props) {
       h('button', { onClick: reset, style: { fontSize: 22, cursor: 'pointer' } }, '←'),
       h('div', { style: { fontSize: 20, fontWeight: 800 } }, 'Клиент найден')
     ),
-    h(Card, { bg: C.sky },
+    h('div', { style: { background: C.ink, borderRadius: 22, padding: 18, marginBottom: 12 } },
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 14 } },
-        h('div', { style: { fontSize: 48 } }, '👤'),
+        h('div', { style: { width: 52, height: 52, borderRadius: '50%', background: '#2A2A2E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 } }, '👤'),
         h('div', null,
-          h('div', { style: { fontSize: 20, fontWeight: 800 } }, customer.name),
-          h('div', { style: { fontSize: 18, fontWeight: 700, color: C.accent, marginTop: 2 } },
-            customer.totalPoints.toLocaleString() + ' pts')
+          h('div', { style: { fontSize: 18, fontWeight: 700, color: '#fff' } }, customer.name),
+          h('div', { style: { fontSize: 26, fontWeight: 900, color: C.orange, marginTop: 2 } },
+            customer.totalPoints.toLocaleString('ru-RU'), h('span', { style: { fontSize: 13, fontWeight: 600, color: '#9A9A9E' } }, ' pts'))
         )
       )
     ),
     h(ErrBox, { msg: error }),
-    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 } },
+    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
       h('button', {
         onClick: function() { setError(''); setMode('earn'); },
-        style: { padding: '20px 12px', background: C.mint, borderRadius: 18, border: 'none', cursor: 'pointer', textAlign: 'center' },
+        style: { padding: '22px 12px', background: C.orange, borderRadius: 20, border: 'none', cursor: 'pointer', textAlign: 'center' },
       },
-        h('div', { style: { fontSize: 36, marginBottom: 8 } }, '➕'),
-        h('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Начислить'),
-        h('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'Покупка')
+        h('div', { style: { fontSize: 34, marginBottom: 6 } }, '➕'),
+        h('div', { style: { fontWeight: 700, fontSize: 16, color: '#1A1A1A' } }, 'Начислить'),
+        h('div', { style: { fontSize: 12, color: '#7A3300', marginTop: 2 } }, 'Покупка')
       ),
       h('button', {
         onClick: function() { if (customer.totalPoints > 0) { setError(''); setMode('redeem'); } else setError('У клиента нет баллов'); },
-        style: { padding: '20px 12px', background: C.lavender, borderRadius: 18, border: 'none', cursor: 'pointer', textAlign: 'center' },
+        style: { padding: '22px 12px', background: C.white, borderRadius: 20, border: 'none', cursor: 'pointer', textAlign: 'center' },
       },
-        h('div', { style: { fontSize: 36, marginBottom: 8 } }, '💸'),
-        h('div', { style: { fontWeight: 700, fontSize: 15 } }, 'Списать'),
-        h('div', { style: { fontSize: 12, color: C.hint, marginTop: 4 } }, 'Оплата баллами')
+        h('div', { style: { fontSize: 34, marginBottom: 6 } }, '💸'),
+        h('div', { style: { fontWeight: 700, fontSize: 16, color: C.ink } }, 'Списать'),
+        h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, 'Оплата баллами')
       )
     )
   );
@@ -1571,10 +1571,10 @@ function ScanTab(props) {
       },
     }),
     amount && parseFloat(amount) > 0 && venue.pointsPerCurrency
-      ? h(Card, { bg: C.mint, style: { marginBottom: 16 } },
-          h('div', { style: { fontSize: 14, color: C.hint } }, 'Будет начислено'),
-          h('div', { style: { fontSize: 32, fontWeight: 900, color: '#2E7D32' } },
-            '+' + Math.floor(parseFloat(amount) * venue.pointsPerCurrency) + ' pts')
+      ? h('div', { style: { background: C.ink, borderRadius: 20, padding: 18, marginBottom: 16 } },
+          h('div', { style: { fontSize: 13, color: '#9A9A9E' } }, 'Будет начислено'),
+          h('div', { style: { fontSize: 36, fontWeight: 900, color: C.orange, marginTop: 2 } },
+            '+' + Math.floor(parseFloat(amount) * venue.pointsPerCurrency), h('span', { style: { fontSize: 14, color: '#9A9A9E' } }, ' pts'))
         )
       : null,
     h(ErrBox, { msg: error }),
@@ -1604,7 +1604,7 @@ function ScanTab(props) {
       ? h('div', { style: { color: C.red, fontSize: 13, marginBottom: 8 } }, '⚠️ Превышает баланс (' + customer.totalPoints + ' pts)')
       : null,
     h(ErrBox, { msg: error }),
-    h(Btn, { label: 'Подтвердить списание', color: '#7C3AED', onClick: redeemPoints,
+    h(Btn, { label: 'Подтвердить списание', color: C.ink, onClick: redeemPoints,
       disabled: !points || parseInt(points) <= 0 || parseInt(points) > customer.totalPoints })
   );
 
@@ -1612,9 +1612,9 @@ function ScanTab(props) {
   if (mode === 'result' && result) return h('div', {
     style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', padding: '0 24px', textAlign: 'center' },
   },
-    h('div', { style: { fontSize: 72, marginBottom: 16 } }, result.type === 'earn' ? '✅' : '💜'),
+    h('div', { style: { fontSize: 72, marginBottom: 16 } }, result.type === 'earn' ? '✅' : '🧾'),
     h('div', { style: { fontSize: 24, fontWeight: 800, marginBottom: 8 } }, result.type === 'earn' ? 'Баллы начислены!' : 'Баллы списаны!'),
-    h('div', { style: { fontSize: 44, fontWeight: 900, color: result.type === 'earn' ? C.green : '#7C3AED', marginBottom: 8 } },
+    h('div', { style: { fontSize: 48, fontWeight: 900, color: result.type === 'earn' ? C.green : C.orange, marginBottom: 8 } },
       (result.type === 'earn' ? '+' : '-') + result.points + ' pts'),
     h('div', { style: { fontSize: 15, color: C.hint, marginBottom: 24 } }, result.name),
     result.newBalance != null && h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Новый баланс: ' + result.newBalance.toLocaleString() + ' pts'),
@@ -1796,15 +1796,15 @@ function ProfileTab(props) {
   return h('div', { style: { padding: '0 16px' } },
     h('div', { style: { fontSize: 20, fontWeight: 800, marginBottom: 16 } }, 'Профиль'),
 
-    // Merchant card
-    h(Card, { bg: C.lavender },
+    // Merchant card — dark hero
+    h('div', { style: { background: C.ink, borderRadius: 22, padding: 18, marginBottom: 12 } },
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
         merchant.logoUrl
-          ? h('img', { src: merchant.logoUrl, style: { width: 52, height: 52, objectFit: 'cover', borderRadius: 12 } })
-          : h('div', { style: { fontSize: 40 } }, '🏪'),
+          ? h('img', { src: merchant.logoUrl, style: { width: 52, height: 52, objectFit: 'cover', borderRadius: 14 } })
+          : h('div', { style: { width: 52, height: 52, borderRadius: 14, background: '#2A2A2E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 } }, '🏪'),
         h('div', null,
-          h('div', { style: { fontSize: 18, fontWeight: 800 } }, merchant.name),
-          h('div', { style: { display: 'inline-block', marginTop: 4, padding: '2px 10px', background: C.green, color: '#fff', borderRadius: 99, fontSize: 11, fontWeight: 700 } }, '✅ Активный партнёр')
+          h('div', { style: { fontSize: 18, fontWeight: 800, color: '#fff' } }, merchant.name),
+          h('div', { style: { display: 'inline-block', marginTop: 6, padding: '3px 11px', background: C.orange, color: '#1A1A1A', borderRadius: 99, fontSize: 11, fontWeight: 700 } }, '● Активный партнёр')
         )
       )
     ),
