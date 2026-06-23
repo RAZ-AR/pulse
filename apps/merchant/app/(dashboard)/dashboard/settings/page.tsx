@@ -3,11 +3,7 @@
 import { useState, useEffect } from "react"
 import { trpc } from "../../../../src/lib/trpc"
 import { useVenue } from "../../../../src/context/venue-context"
-import { AddressAutocomplete, type PickedPlace } from "../../../../src/components/AddressAutocomplete"
-import { MapPicker } from "../../../../src/components/MapPicker"
-import { reverseGeocode } from "../../../../src/lib/places"
-
-const BELGRADE = { lat: 44.8125, lng: 20.4612 }
+import { VenueLocationPicker, type VenueLocation } from "../../../../src/components/VenueLocationPicker"
 
 export default function SettingsPage() {
   const { venue } = useVenue()
@@ -21,8 +17,7 @@ export default function SettingsPage() {
 
   // Venue info
   const [venueName, setVenueName] = useState("")
-  const [venueAddress, setVenueAddress] = useState("")
-  const [picked, setPicked] = useState<PickedPlace | null>(null)
+  const [loc, setLoc] = useState<VenueLocation | null>(null)
   const [venueMsg, setVenueMsg] = useState("")
 
   useEffect(() => {
@@ -59,26 +54,13 @@ export default function SettingsPage() {
     })
   }
 
-  // Pin drag/click sets the coordinates immediately, then reverse-geocodes to
-  // fill the address field — "pick the spot right on the map".
-  async function handlePinMove(lat: number, lng: number) {
-    setPicked((prev) => ({ address: prev?.address ?? venueAddress.trim(), city: prev?.city ?? "Belgrade", lat, lng }))
-    const r = await reverseGeocode(lat, lng)
-    if (r?.address) {
-      setVenueAddress(r.address)
-      setPicked((prev) => ({ address: r.address, city: r.city || prev?.city || "Belgrade", lat, lng }))
-    }
-  }
-
   function handleVenueSave() {
     if (!venue) return
     updateVenue.mutate({
       venueId: venue.id,
       ...(venueName.trim() && venueName !== venue.name && { name: venueName.trim() }),
-      ...(venueAddress.trim() && { address: venueAddress.trim() }),
-      // Coordinates ride along whenever a point was set (picked or dragged),
-      // so the venue moves to the right spot on the client map.
-      ...(picked ? { city: picked.city, lat: picked.lat, lng: picked.lng } : {}),
+      // Address + coordinates come from the map picker (search / click / locate).
+      ...(loc ? { address: loc.address.trim(), city: loc.city, lat: loc.lat, lng: loc.lng } : {}),
     })
   }
 
@@ -175,27 +157,11 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-[#374151] mb-1">Address</label>
-            <AddressAutocomplete
-              value={venueAddress}
-              onChange={(t) => { setVenueAddress(t); setPicked(null) }}
-              onPick={(p) => { setVenueAddress(p.address); setPicked(p) }}
-              placeholder="Начните вводить адрес…"
-            />
-            {picked ? (
-              <p className="mt-1 text-xs text-[#059669]">📍 {picked.city || "—"} · {picked.lat.toFixed(5)}, {picked.lng.toFixed(5)}</p>
-            ) : venueAddress.trim() ? (
-              <p className="mt-1 text-xs text-[#9CA3AF]">Выберите вариант из списка или поставьте точку на карте</p>
+            <label className="block text-xs font-medium text-[#374151] mb-1">Адрес и место на карте</label>
+            <VenueLocationPicker onChange={setLoc} />
+            {loc ? (
+              <p className="mt-1 text-xs text-[#059669]">📍 {loc.address || "—"} · {loc.city || "—"} · {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}</p>
             ) : null}
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-[#374151] mb-1">Точка на карте <span className="text-[#9CA3AF]">(перетащите пин для точного места)</span></label>
-            <MapPicker
-              lat={picked?.lat ?? BELGRADE.lat}
-              lng={picked?.lng ?? BELGRADE.lng}
-              onMove={handlePinMove}
-            />
           </div>
         </div>
         <div className="flex items-center gap-3 mt-4">
