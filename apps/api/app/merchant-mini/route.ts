@@ -206,7 +206,12 @@ function AddressInput(props) {
     var displayParts = String(item.display_name || '').split(',').map(function(p) { return p.trim(); }).filter(Boolean);
     if (!addr && displayParts.length > 0) addr = displayParts.slice(0, 2).join(', ');
     var cityName = a.city || a.town || a.municipality || a.suburb || a.village || city;
-    return addr ? { addr: addr, city: cityName, full: item.display_name || '' } : null;
+    var lat = parseFloat(item.lat); var lng = parseFloat(item.lon);
+    return addr ? {
+      addr: addr, city: cityName, full: item.display_name || '', source: 'osm',
+      lat: Number.isFinite(lat) ? lat : null,
+      lng: Number.isFinite(lng) ? lng : null,
+    } : null;
   }
 
   async function googleSuggestions(q, searchCity) {
@@ -223,8 +228,10 @@ function AddressInput(props) {
         city: p.secondaryText || searchCity,
         full: p.description,
         placeId: p.placeId,
+        lat: typeof p.lat === 'number' ? p.lat : null,
+        lng: typeof p.lng === 'number' ? p.lng : null,
         typedNumber: typedNumber,
-        source: 'google',
+        source: p.placeId ? 'google' : 'osm',
       };
     });
   }
@@ -347,11 +354,104 @@ function AddressInput(props) {
           h('div', { style: { fontWeight: 600 } }, s.addr),
           s.city && h('div', { style: { fontSize: 12, color: C.hint, marginTop: 2 } }, s.city),
           s.source === 'google' && h('div', { style: { fontSize: 11, color: C.accent, marginTop: 3 } }, 'Google Places'),
+          s.source === 'osm' && h('div', { style: { fontSize: 11, color: C.accent, marginTop: 3 } }, 'OpenStreetMap'),
           s.source === 'manual' && h('div', { style: { fontSize: 11, color: C.accent, marginTop: 3 } }, 'Использовать этот адрес')
         );
       })
     )
   );
+}
+
+// ── Interactive venue map ────────────────────────────────────────
+var CITY_CENTERS = {
+  'Белград': [20.4612, 44.8125], 'Beograd': [20.4612, 44.8125],
+  'Нови-Сад': [19.8335, 45.2671], 'Novi Sad': [19.8335, 45.2671],
+  'Ниш': [21.8958, 43.3209], 'Nis': [21.8958, 43.3209],
+  'Суботица': [19.6676, 46.1005], 'Subotica': [19.6676, 46.1005],
+  'Крагуевац': [20.9114, 44.0128], 'Kragujevac': [20.9114, 44.0128],
+};
+
+var OSM_MAP_STYLE = {
+  version: 8,
+  sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap' } },
+  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+};
+
+function VenueMap(props) {
+  var hostRef = useRef(null);
+  var mapRef = useRef(null);
+  var markerRef = useRef(null);
+  var requestRef = useRef(0);
+  var onPickRef = useRef(props.onPick);
+  onPickRef.current = props.onPick;
+
+  async function pickPoint(lat, lng) {
+    var requestId = ++requestRef.current;
+    if (markerRef.current && mapRef.current) markerRef.current.setLngLat([lng, lat]).addTo(mapRef.current);
+    onPickRef.current({ lat: lat, lng: lng });
+    try {
+      var res = await fetch(API + '/api/places/reverse?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng));
+      var data = await res.json();
+      if (requestId !== requestRef.current) return;
+      onPickRef.current({ lat: lat, lng: lng, address: data.address || '', city: data.city || '' });
+    } catch(e) {}
+  }
+
+  useEffect(function() {
+    if (!hostRef.current || !window.maplibregl) return;
+    var hasPoint = typeof props.lat === 'number' && typeof props.lng === 'number';
+    var center = hasPoint ? [props.lng, props.lat] : (CITY_CENTERS[props.city] || CITY_CENTERS['Белград']);
+    var map = new window.maplibregl.Map({ container: hostRef.current, style: OSM_MAP_STYLE, center: center, zoom: hasPoint ? 16 : 12 });
+    var marker = new window.maplibregl.Marker({ color: C.accent, draggable: true });
+    if (hasPoint) marker.setLngLat(center).addTo(map);
+    map.addControl(new window.maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    var geo = new window.maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: false, showUserLocation: true });
+    map.addControl(geo, 'top-right');
+    map.on('click', function(e) { pickPoint(e.lngLat.lat, e.lngLat.lng); });
+    marker.on('dragend', function() { var point = marker.getLngLat(); pickPoint(point.lat, point.lng); });
+    geo.on('geolocate', function(pos) {
+      var lat = pos.coords.latitude; var lng = pos.coords.longitude;
+      map.easeTo({ center: [lng, lat], zoom: 16 });
+      pickPoint(lat, lng);
+    });
+    mapRef.current = map; markerRef.current = marker;
+    setTimeout(function() { map.resize(); }, 0);
+    return function() { map.remove(); mapRef.current = null; markerRef.current = null; };
+  }, []);
+
+  useEffect(function() {
+    if (!mapRef.current || !markerRef.current) return;
+    if (typeof props.lat !== 'number' || typeof props.lng !== 'number') {
+      markerRef.current.remove();
+      return;
+    }
+    markerRef.current.setLngLat([props.lng, props.lat]).addTo(mapRef.current);
+    mapRef.current.easeTo({ center: [props.lng, props.lat], zoom: 16 });
+  }, [props.lat, props.lng]);
+
+  return h('div', { style: { marginTop: 12 } },
+    h('div', { ref: hostRef, style: { height: 300, width: '100%', borderRadius: 18, overflow: 'hidden', border: '1.5px solid ' + C.border } }),
+    h('div', { style: { fontSize: 12, color: C.hint, marginTop: 8, lineHeight: 1.4 } },
+      typeof props.lat === 'number'
+        ? 'Точка выбрана. Можно перетащить оранжевый пин для уточнения.'
+        : 'Не нашли адрес? Нажмите на карту или кнопку геолокации и поставьте пин вручную.'
+    )
+  );
+}
+
+function withMapPoint(form, point) {
+  var socials = Object.assign({}, form.socials, {
+    googleMapsUrl: 'https://www.google.com/maps?q=' + point.lat + ',' + point.lng,
+  });
+  return Object.assign({}, form, {
+    lat: point.lat,
+    lng: point.lng,
+    address: point.address || form.address,
+    city: point.city || form.city,
+    addressSelected: Boolean(point.address || form.address.trim()),
+    sourcePlaceId: '',
+    socials: socials,
+  });
 }
 
 // ── Splash ────────────────────────────────────────────────────────
@@ -461,13 +561,15 @@ var CATEGORIES = [
   { label: '☕ Кафе', value: 'CAFE' },
   { label: '🍽 Ресторан', value: 'RESTAURANT' },
   { label: '🍺 Бар', value: 'RESTAURANT' },
+  { label: '🎵 Клуб', value: 'RESTAURANT' },
+  { label: '🏋️ Фитнес', value: 'FITNESS' },
   { label: '🛍 Магазин', value: 'RETAIL' },
   { label: '💈 Сервис', value: 'SERVICE' },
   { label: '📦 Другое', value: 'OTHER' },
 ];
 var CITIES = ['Белград', 'Нови-Сад', 'Ниш', 'Суботица', 'Крагуевац'];
 var RATES = [
-  { label: '⭐ Стандарт', sub: '8 pts / 1000 RSD', value: 0.008 },
+  { label: '⭐ Стандарт', sub: '10 pts / 1000 RSD', value: 0.01 },
   { label: '💎 Премиум', sub: '12 pts / 1000 RSD', value: 0.012 },
 ];
 
@@ -475,7 +577,7 @@ function RegisterScreen(props) {
   var onSuccess = props.onSuccess;
   var stepState = useState(0); var step = stepState[0]; var setStep = stepState[1];
   var formState = useState({
-    name: '', category: '', city: '', address: '', taxId: '', rate: 0.008,
+    name: '', category: '', city: '', address: '', taxId: '', rate: 0.01,
     socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
     logoUrl: '', logoPreview: '', sourcePlaceId: '', lat: null, lng: null, addressSelected: false,
   });
@@ -558,12 +660,17 @@ function RegisterScreen(props) {
 
   // Step 3: address with autocomplete
   function step3() {
-    var canNext = form.address.trim().length > 3;
-    function acceptTypedAddress() {
-      if (!canNext) return;
+    var hasPoint = typeof form.lat === 'number' && typeof form.lng === 'number';
+    var canNext = form.address.trim().length > 3 && hasPoint;
+    function selectTypedAddress() {
+      if (form.address.trim().length <= 3) return;
       setForm(function(f) {
         return Object.assign({}, f, { address: f.address.trim(), addressSelected: true });
       });
+    }
+    function goNext() {
+      if (!canNext) return;
+      selectTypedAddress();
       setStep(4);
     }
     return h('div', { style: { padding: '0 20px' } },
@@ -574,7 +681,7 @@ function RegisterScreen(props) {
         value: form.address,
         onChange: function(v) {
           setForm(function(f) {
-            return Object.assign({}, f, { address: v, addressSelected: false });
+            return Object.assign({}, f, { address: v, addressSelected: false, lat: null, lng: null, sourcePlaceId: '' });
           });
         },
         city: form.city,
@@ -594,8 +701,12 @@ function RegisterScreen(props) {
           });
         },
       }),
+      h(VenueMap, {
+        city: form.city, lat: form.lat, lng: form.lng,
+        onPick: function(point) { setForm(function(f) { return withMapPoint(f, point); }); },
+      }),
       form.address.trim().length > 3 && !form.addressSelected && h('button', {
-        onClick: acceptTypedAddress,
+        onClick: selectTypedAddress,
         style: {
           width: '100%', marginTop: 10, padding: '12px 14px',
           background: C.lavender, color: C.accent,
@@ -604,7 +715,7 @@ function RegisterScreen(props) {
         },
       }, 'Использовать введённый адрес'),
       h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !canNext, onClick: acceptTypedAddress })
+      h(Btn, { label: hasPoint ? 'Далее →' : 'Сначала поставьте пин', disabled: !canNext, onClick: goNext })
     );
   }
 
@@ -1903,7 +2014,7 @@ function ProfileTab(props) {
 }
 
 // ── Venue picker ──────────────────────────────────────────────────
-var CAT_ICONS = { CAFE: '☕', RESTAURANT: '🍽', RETAIL: '🛍', SERVICE: '💈', OTHER: '📦' };
+var CAT_ICONS = { CAFE: '☕', RESTAURANT: '🍽', RETAIL: '🛍', SERVICE: '💈', FITNESS: '🏋️', OTHER: '📦' };
 
 function VenuePicker(props) {
   var merchant = props.merchant, onSelect = props.onSelect, onAddVenue = props.onAddVenue;
@@ -1967,7 +2078,7 @@ function AddVenueScreen(props) {
   var stepState = useState(0); var step = stepState[0]; var setStep = stepState[1];
   var formState = useState({
     name: '', category: '', city: '', address: '',
-    rate: 0.008, socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
+    rate: 0.01, socials: { instagram: '', tiktok: '', telegram: '', website: '', googleMapsUrl: '', phone: '' },
     logoUrl: '', logoPreview: '', sourcePlaceId: '', lat: null, lng: null, addressSelected: false,
   });
   var form = formState[0]; var setForm = formState[1];
@@ -2039,10 +2150,15 @@ function AddVenueScreen(props) {
 
   // av3: address
   function av3() {
-    var canNext = form.address.trim().length > 3;
-    function acceptTyped() {
-      if (!canNext) return;
+    var hasPoint = typeof form.lat === 'number' && typeof form.lng === 'number';
+    var canNext = form.address.trim().length > 3 && hasPoint;
+    function selectTyped() {
+      if (form.address.trim().length <= 3) return;
       setForm(function(f) { return Object.assign({}, f, { address: f.address.trim(), addressSelected: true }); });
+    }
+    function goNext() {
+      if (!canNext) return;
+      selectTyped();
       setStep(4);
     }
     return h('div', { style: { padding: '0 20px' } },
@@ -2052,7 +2168,7 @@ function AddVenueScreen(props) {
       h(AddressInput, {
         value: form.address,
         city: form.city,
-        onChange: function(v) { setForm(function(f) { return Object.assign({}, f, { address: v, addressSelected: false }); }); },
+        onChange: function(v) { setForm(function(f) { return Object.assign({}, f, { address: v, addressSelected: false, lat: null, lng: null, sourcePlaceId: '' }); }); },
         onSelect: function(s) {
           setForm(function(f) {
             var soc = Object.assign({}, f.socials);
@@ -2061,12 +2177,16 @@ function AddVenueScreen(props) {
           });
         },
       }),
+      h(VenueMap, {
+        city: form.city, lat: form.lat, lng: form.lng,
+        onPick: function(point) { setForm(function(f) { return withMapPoint(f, point); }); },
+      }),
       form.address.trim().length > 3 && !form.addressSelected && h('button', {
-        onClick: acceptTyped,
+        onClick: selectTyped,
         style: { width: '100%', marginTop: 10, padding: '12px 14px', background: C.lavender, color: C.accent, borderRadius: 14, fontSize: 14, fontWeight: 700, textAlign: 'left' },
       }, 'Использовать введённый адрес'),
       h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !canNext, onClick: acceptTyped })
+      h(Btn, { label: hasPoint ? 'Далее →' : 'Сначала поставьте пин', disabled: !canNext, onClick: goNext })
     );
   }
 
@@ -2431,6 +2551,7 @@ export async function GET() {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
   <style>${BASE_STYLES}</style>
 </head>
 <body>
@@ -2438,6 +2559,7 @@ export async function GET() {
   <script>window.__API_BASE__ = "${API_BASE}"; window.__MINI_APP_VERSION__ = "${MINI_APP_VERSION}";</script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
   <script>${APP_SCRIPT}</script>
 </body>
 </html>`
