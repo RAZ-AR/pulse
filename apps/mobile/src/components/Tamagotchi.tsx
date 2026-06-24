@@ -17,7 +17,7 @@
 import { useEffect, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
-import Svg, { Defs, Pattern, Rect } from "react-native-svg"
+import Svg, { Circle, Defs, Pattern, Rect } from "react-native-svg"
 import { fonts } from "../lib/theme"
 import { AyooPet } from "./AyooPet"
 
@@ -88,7 +88,8 @@ export function TamagotchiWindow({
   streak,
   petName,
   coins,
-  stats,
+  lifetimePoints,
+  ringProgress,
   weeklyEarned,
   weeklySpent,
   earnedLabel,
@@ -102,7 +103,8 @@ export function TamagotchiWindow({
   streak: number
   petName?: string | null | undefined
   coins: number
-  stats: Stat[]
+  lifetimePoints: number
+  ringProgress: number // 0..1 progress toward the next pet
   weeklyEarned: number
   weeklySpent: number
   earnedLabel: string
@@ -137,20 +139,6 @@ export function TamagotchiWindow({
       end={{ x: 1, y: 1 }}
       style={[s.case, { borderColor: lcd.caseBorder, borderBottomColor: lcd.caseEdge, shadowColor: lcd.caseShadow }]}
     >
-      {/* ── Status bars ── */}
-      <View style={[s.statsBox, { borderColor: lcd.caseEdge, backgroundColor: lcd.statsBg }]}>
-        {stats.map((stat) => (
-          <View key={stat.label} style={s.statCol}>
-            <Text style={[s.statLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]} numberOfLines={1} adjustsFontSizeToFit>
-              {stat.label}
-            </Text>
-            <View style={[s.statTrack, { backgroundColor: lcd.track, borderColor: lcd.caseEdge }]}>
-              <View style={[s.statFill, { backgroundColor: lcd.ink, width: `${Math.round(Math.max(0, Math.min(1, stat.value)) * 100)}%` }]} />
-            </View>
-          </View>
-        ))}
-      </View>
-
       {/* ── LCD screen — tap to open the pet collection ── */}
       <Pressable style={[s.screen, { backgroundColor: lcd.screen, borderColor: lcd.screenEdge }]} onPress={onOpen}>
         <Svg style={StyleSheet.absoluteFill as object} width="100%" height="100%">
@@ -176,18 +164,43 @@ export function TamagotchiWindow({
           <Text style={[s.weekLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>{spentLabel}</Text>
         </View>
 
-        {/* the pet roams the screen — tapping it makes it jump (no navigation) */}
-        <View style={s.petStage}>
-          <AyooPet petKey={petKey} streak={streak} pixelSize={6} walkRange={46} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
-        </View>
+        {/* progress ring → next pet, pet sits inside; lifetime points below */}
+        <View style={s.centerStack}>
+          <View style={s.ringWrap}>
+            <Svg width={132} height={132}>
+              <Circle cx={66} cy={66} r={61} stroke={lcd.track} strokeWidth={8} fill="none" />
+              <Circle
+                cx={66}
+                cy={66}
+                r={61}
+                stroke={lcd.ink}
+                strokeWidth={8}
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray={383.3}
+                strokeDashoffset={383.3 * (1 - Math.max(0, Math.min(1, ringProgress)))}
+                transform="rotate(-90 66 66)"
+              />
+            </Svg>
+            <View style={s.ringPet}>
+              <AyooPet petKey={petKey} streak={streak} pixelSize={5} walkRange={0} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
+            </View>
+          </View>
 
-        {/* pet name caption — sometimes the pet "speaks" a word (red, stays coloured) */}
-        <Text
-          style={[s.caption, { fontFamily: fonts.pixel, color: lcd.ink }, flash ? s.captionFlash : null]}
-          numberOfLines={1}
-        >
-          {flash ?? name}
-        </Text>
+          {/* all-time earned points (gross — spends not subtracted) */}
+          <Text style={[s.lifetimeNum, { fontFamily: fonts.pixel, color: lcd.ink }]} numberOfLines={1}>
+            {lifetimePoints.toLocaleString()}
+          </Text>
+          <Text style={[s.lifetimeLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>ALL-TIME</Text>
+
+          {/* pet name — sometimes the pet "speaks" a word (red, stays coloured) */}
+          <Text
+            style={[s.nameCaption, { fontFamily: fonts.pixel, color: lcd.ink }, flash ? s.captionFlash : null]}
+            numberOfLines={1}
+          >
+            {flash ?? name}
+          </Text>
+        </View>
 
         {/* device status, bottom-right — STREAK / WELCOME / QUESTS */}
         {info && info.length > 0 ? (
@@ -218,30 +231,9 @@ const s = StyleSheet.create({
     elevation: 6,
   },
 
-  // ── stat bars ──
-  statsBox: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  statCol: { flex: 1, alignItems: "center", gap: 5 },
-  statLabel: { fontSize: 5, letterSpacing: 0, textAlign: "center" },
-  statTrack: {
-    width: "100%",
-    height: 6,
-    borderRadius: 3,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  statFill: { height: "100%" },
-
   // ── LCD screen ──
   screen: {
-    height: 220,
+    height: 244,
     borderRadius: 16,
     borderWidth: 2,
     overflow: "hidden",
@@ -256,23 +248,24 @@ const s = StyleSheet.create({
     alignItems: "center",
     gap: 9,
   },
-  coinNum: { fontSize: 39, lineHeight: 42 },
+  coinNum: { fontSize: 26, lineHeight: 28 },
   weekWrap: { position: "absolute", top: 10, left: 12 },
   weekNum: { fontSize: 17 },
   weekNumSpent: { marginTop: 9 },
   weekLabel: { fontSize: 6, lineHeight: 9, marginTop: 3 },
   coin: {
-    width: 30,
-    height: 36,
-    borderRadius: 6,
-    borderWidth: 3,
+    width: 22,
+    height: 26,
+    borderRadius: 5,
+    borderWidth: 2,
   },
-  petStage: { alignItems: "center", justifyContent: "center" },
-  caption: {
-    position: "absolute",
-    bottom: 14,
-    fontSize: 12,
-  },
+  // ── centre: progress ring + pet + all-time points ──
+  centerStack: { alignItems: "center", justifyContent: "center" },
+  ringWrap: { width: 132, height: 132, alignItems: "center", justifyContent: "center" },
+  ringPet: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  lifetimeNum: { fontSize: 22, lineHeight: 24, marginTop: 8 },
+  lifetimeLabel: { fontSize: 6, letterSpacing: 1, marginTop: 4 },
+  nameCaption: { fontSize: 11, marginTop: 8 },
   captionFlash: { color: "#E23B22" },
 
   // device status, bottom-right corner

@@ -134,15 +134,6 @@ export default function HomeScreen() {
   const activeChallengeRewards = activeChallenges.reduce((sum, uc) => sum + uc.challenge.pointsReward, 0)
   const todayAvailable = (me.data?.todayPotentialPoints ?? 0) + activeChallengeRewards
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
-  // Tamagotchi stat bars — retro labels, real ayoo signals (all 0..1).
-  const petStats = [
-    { label: "HUNGER",  value: streak > 0 ? Math.min(streak / 7, 1) : 0.15 },
-    { label: "HYGIENE", value: Math.min(welcomeDays / 90, 1) },
-    { label: "SMARTS",  value: Math.min(activeChallenges.length / 5, 1) },
-    { label: "ACTIVE",  value: Math.min(weeklyEarned / 50, 1) },
-    { label: "ENERGY",  value: progress },
-    { label: "HAPPY",   value: Math.min(total / Math.max(tier.next, 1), 1) },
-  ]
 
   return (
     <ScrollView
@@ -204,7 +195,8 @@ export default function HomeScreen() {
               streak={streak}
               petName={me.data?.petName}
               coins={total}
-              stats={petStats}
+              lifetimePoints={lifetimePoints}
+              ringProgress={progress}
               weeklyEarned={weeklyEarned}
               weeklySpent={weeklySpent}
               words={petWords}
