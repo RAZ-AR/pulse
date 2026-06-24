@@ -69,7 +69,7 @@ export default function EarnScreen() {
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
           <View style={[s.brandLogo, isRainbow && s.brandLogoRainbow]}>
-            <AyooLogo width={68} height={31} />
+            <AyooLogo width={68} />
           </View>
           <View style={s.blackPill}>
             <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("activePlan")}</Text>

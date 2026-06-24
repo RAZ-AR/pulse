@@ -342,7 +342,7 @@ function BrandPlate({ right }: { right?: React.ReactNode }) {
   return (
     <View style={s.plate}>
       <View style={s.brand}>
-        <AyooLogo width={87} height={39} />
+        <AyooLogo width={87} />
       </View>
       <View style={s.plateRight}>
         {right}
