@@ -17,8 +17,8 @@ function noKb(): object {
 // ── Summary text ──────────────────────────────────────────────
 
 function buildSummary(st: WizardState): string {
-  const rateLabel = st.preferredRate === 0.008
-    ? "Стандарт (8 pts / 1000 RSD)"
+  const rateLabel = st.preferredRate === 0.01
+    ? "Стандарт (10 pts / 1000 RSD)"
     : st.preferredRate === 0.012
     ? "Премиум (12 pts / 1000 RSD)"
     : `Своя — ${Math.round(st.preferredRate * 1000)} pts / 1000 RSD`
@@ -189,7 +189,7 @@ export const registerScene = new Scenes.WizardScene<Context>(
       {
         parse_mode: "Markdown",
         ...kb([
-          ["⭐ Стандарт — 8 pts / 1000 RSD"],
+          ["⭐ Стандарт — 10 pts / 1000 RSD"],
           ["💎 Премиум — 12 pts / 1000 RSD"],
           ["✏️ Своя ставка"],
         ]),
@@ -213,14 +213,14 @@ export const registerScene = new Scenes.WizardScene<Context>(
         return
       }
       const pts = parseInt(text, 10)
-      if (isNaN(pts) || pts < 1 || pts > 100) {
-        await ctx.reply("Введите число от 1 до 100.")
+      if (isNaN(pts) || pts < 10 || pts > 100) {
+        await ctx.reply("Введите число от 10 до 100.")
         return
       }
       s(ctx).preferredRate = pts / 1000
       s(ctx).awaitingCustomRate = false
     } else if (text.startsWith("⭐")) {
-      s(ctx).preferredRate = 0.008
+      s(ctx).preferredRate = 0.01
     } else if (text.startsWith("💎")) {
       s(ctx).preferredRate = 0.012
     } else {
@@ -264,6 +264,7 @@ export const registerScene = new Scenes.WizardScene<Context>(
           name:           st.name,
           address:        `${st.city}, ${st.address}`,
           taxId:          st.taxId || null,
+          taxIdNormalized: st.taxId ? st.taxId.replace(/\D/g, "") : null,
           email:          st.email,
           phone:          st.phone || null,
           telegramChatId: chatId,

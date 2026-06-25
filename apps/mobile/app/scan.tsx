@@ -21,7 +21,15 @@ type Phase =
   | { kind: "camera" }
   | { kind: "submitting" }
   | { kind: "error"; message: string; alreadyUsed?: boolean }
-  | { kind: "done"; pointsEarned: number; offerTitle?: string }
+  | {
+      kind: "done"
+      pointsEarned: number
+      offerTitle?: string
+      vendorName?: string
+      totalRsd?: number
+      date?: string
+      isPartnerReceipt?: boolean
+    }
 
 export default function ScanScreen() {
   const theme = useTheme()
@@ -34,6 +42,7 @@ export default function ScanScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: "camera" })
 
   const redeemOfferMutation = trpc.offer.redeem.useMutation()
+  const scanReceiptMutation = trpc.transaction.scanQrReceipt.useMutation()
 
   function openTelegramScanner() {
     const tg = getTgWebApp()
@@ -43,7 +52,7 @@ export default function ScanScreen() {
     }
     setPhase({ kind: "camera" })
     setTimeout(() => {
-      tg.showScanQrPopup({ text: "Point at the ayoo QR code" }, (data: string) => {
+      tg.showScanQrPopup({ text: "Point at the QR code on the fiscal receipt" }, (data: string) => {
         tg.closeScanQrPopup?.()
         void handleQrScanned(data)
         return true
@@ -61,6 +70,20 @@ export default function ScanScreen() {
         const res = await redeemOfferMutation.mutateAsync({ token: offerMatch[1]! })
         utils.user.me.invalidate()
         setPhase({ kind: "done", pointsEarned: res.pointsEarned, offerTitle: res.offerTitle })
+        return
+      }
+
+      if (data.includes("suf.purs.gov.rs")) {
+        const res = await scanReceiptMutation.mutateAsync({ qrUrl: data })
+        utils.user.me.invalidate()
+        setPhase({
+          kind: "done",
+          pointsEarned: res.pointsEarned,
+          vendorName: res.vendorName,
+          totalRsd: res.totalRsd,
+          date: res.date,
+          isPartnerReceipt: res.isPartnerReceipt,
+        })
         return
       }
 
@@ -109,6 +132,10 @@ export default function ScanScreen() {
           <DonePhase
             pointsEarned={phase.pointsEarned}
             offerTitle={phase.offerTitle}
+            vendorName={phase.vendorName}
+            totalRsd={phase.totalRsd}
+            date={phase.date}
+            isPartnerReceipt={phase.isPartnerReceipt}
             onClose={() => router.back()}
             theme={theme}
           />
@@ -131,10 +158,10 @@ function TelegramPhase({
     <View style={[s.center, { padding: 32, gap: 16 }]}>
       <Text style={{ fontSize: 72 }}>📷</Text>
       <Text style={[s.title, { color: theme.text }]}>
-        {t("scanQrCode", "Scan QR code")}
+        {t("scanQrCode", "Scan receipt QR")}
       </Text>
       <Text style={[s.subtitle, { color: theme.textSecondary }]}>
-        {t("pointAtPartnerQr", "Point the camera at the partner's QR code to earn points.")}
+        {t("pointAtPartnerQr", "Scan a Serbian fiscal receipt or an ayoo offer QR to earn points.")}
       </Text>
       <Pressable onPress={onScanner} style={[s.btn, s.btnPrimary, { paddingHorizontal: 32 }]}>
         <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
@@ -241,10 +268,14 @@ function ErrorPhase({
 // ── DonePhase ─────────────────────────────────────────────────
 
 function DonePhase({
-  pointsEarned, offerTitle, onClose, theme,
+  pointsEarned, offerTitle, vendorName, totalRsd, date, isPartnerReceipt, onClose, theme,
 }: {
   pointsEarned: number
   offerTitle?: string
+  vendorName?: string
+  totalRsd?: number
+  date?: string
+  isPartnerReceipt?: boolean
   onClose: () => void
   theme: ReturnType<typeof useTheme>
 }) {
@@ -257,9 +288,19 @@ function DonePhase({
       <Text style={[s.doneTitle, { color: theme.text, marginTop: 16 }]}>
         {t("pointsAwarded", "Points awarded!")}
       </Text>
-      {offerTitle ? (
-        <View style={[s.card, { backgroundColor: CREAM, borderColor: theme.border, marginTop: 20 }]}>
-          <Text style={[s.cardVendor, { color: theme.text }]}>{offerTitle}</Text>
+      {offerTitle || vendorName ? (
+        <View style={[s.card, { backgroundColor: CREAM, borderColor: theme.border, marginTop: 20 }]}> 
+          <Text style={[s.cardVendor, { color: theme.text }]}>{offerTitle ?? vendorName}</Text>
+          {totalRsd !== undefined ? (
+            <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
+              {totalRsd.toLocaleString("sr-RS")} RSD{date ? ` · ${date}` : ""}
+            </Text>
+          ) : null}
+          {isPartnerReceipt !== undefined ? (
+            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 3 }}>
+              {isPartnerReceipt ? t("partnerReceiptRate", "Partner rate applied") : t("baseReceiptRate", "ayoo 1% reward")}
+            </Text>
+          ) : null}
           <View style={[s.divider, { borderColor: theme.border }]} />
           <Text style={[s.cardPoints, { color: GREEN }]}>+{pointsEarned} pts</Text>
         </View>

@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { Prisma } from "@pulse/db"
+import { MIN_PARTNER_POINTS_PER_CURRENCY } from "@pulse/shared"
 import { router, merchantProcedure, scanProcedure } from "../trpc"
 
 const WorkingHoursSchema = z.object({
@@ -273,7 +274,7 @@ export const merchantRouter = router({
     .input(
       z.object({
         name: z.string().min(1).max(100),
-        category: z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "OTHER"]),
+        category: z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "BEAUTY", "FITNESS", "YOGA", "OTHER"]),
         description: z.string().max(500).optional(),
         address: z.string().min(1),
         city: z.string().min(1),
@@ -281,7 +282,7 @@ export const merchantRouter = router({
         lat: z.number().min(-90).max(90),
         lng: z.number().min(-180).max(180),
         workingHours: WorkingHoursSchema.optional(),
-        pointsPerCurrency: z.number().positive().optional(),
+        pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).optional(),
         currency: z.string().length(3).default("RSD"),
         enableRewards: z.boolean().default(true),
         enableDiscount: z.boolean().default(false),
@@ -346,7 +347,7 @@ export const merchantRouter = router({
     .input(
       z.object({
         venueId: z.string(),
-        pointsPerCurrency: z.number().positive(),
+        pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY),
         currency: z.string().length(3),
         boostMultiplier: z.number().min(1).max(10).optional(),
         boostUntil: z.date().optional(),
@@ -671,7 +672,7 @@ export const merchantRouter = router({
       name: z.string().min(1).max(100).optional(),
       city: z.string().min(1).optional(),
       address: z.string().min(1).optional(),
-      pointsPerCurrency: z.number().positive().optional(),
+      pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).optional(),
       phone: z.string().nullable().optional(),
       instagram: z.string().nullable().optional(),
       tiktok: z.string().nullable().optional(),
@@ -733,10 +734,10 @@ export const merchantRouter = router({
   addVenueMini: merchantProcedure
     .input(z.object({
       name: z.string().min(1).max(100),
-      category: z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "OTHER"]),
+      category: z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "BEAUTY", "FITNESS", "YOGA", "OTHER"]),
       city: z.string().min(1),
       address: z.string().min(1),
-      pointsPerCurrency: z.number().positive(),
+      pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY),
       currency: z.string().default("RSD"),
       lat: z.number().default(0),
       lng: z.number().default(0),

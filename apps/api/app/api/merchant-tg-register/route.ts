@@ -26,17 +26,22 @@ function validateTelegramInitData(initData: string, botToken: string): Record<st
   return Object.fromEntries(params)
 }
 
-function toVenueCategory(c: string): "CAFE" | "RESTAURANT" | "RETAIL" | "SERVICE" | "OTHER" {
-  const map: Record<string, "CAFE" | "RESTAURANT" | "RETAIL" | "SERVICE" | "OTHER"> = {
-    CAFE: "CAFE", RESTAURANT: "RESTAURANT", RETAIL: "RETAIL", SERVICE: "SERVICE", OTHER: "OTHER",
+function toVenueCategory(c: string): "CAFE" | "RESTAURANT" | "RETAIL" | "SERVICE" | "FITNESS" | "OTHER" {
+  const map: Record<string, "CAFE" | "RESTAURANT" | "RETAIL" | "SERVICE" | "FITNESS" | "OTHER"> = {
+    CAFE: "CAFE", RESTAURANT: "RESTAURANT", RETAIL: "RETAIL", SERVICE: "SERVICE", FITNESS: "FITNESS", OTHER: "OTHER",
   }
   return map[c] ?? "OTHER"
+}
+
+function normalizeSerbianPib(value: unknown): string {
+  return typeof value === "string" ? value.replace(/\D/g, "") : ""
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { initData, name, category, city, address, taxId, rate } = body
+    const { initData, name, category, city, address, rate } = body
+    const taxId = normalizeSerbianPib(body.taxId)
 
     if (!initData || typeof initData !== "string") {
       return NextResponse.json({ error: "initData required" }, { status: 400 })
@@ -68,9 +73,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const pointsPerCurrency = parseFloat(rate)
-    if (isNaN(pointsPerCurrency) || pointsPerCurrency <= 0) {
+    const parsedRate = parseFloat(rate)
+    if (isNaN(parsedRate) || parsedRate <= 0) {
       return NextResponse.json({ error: "Invalid rate" }, { status: 400 })
+    }
+    const pointsPerCurrency = Math.max(0.01, parsedRate)
+    if (taxId && taxId.length !== 9) {
+      return NextResponse.json({ error: "PIB must contain 9 digits" }, { status: 400 })
     }
 
     const lat = typeof body.lat === "number" ? body.lat : 0
@@ -107,7 +116,8 @@ export async function POST(req: Request) {
         data: {
           name: name.trim(),
           address: `${city}, ${address.trim()}`,
-          taxId: taxId?.trim() || null,
+          taxId: taxId || null,
+          taxIdNormalized: taxId || null,
           email: null,          // email not collected at registration
           telegramChatId: telegramId,
           status: "PENDING",

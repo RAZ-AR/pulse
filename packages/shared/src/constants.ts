@@ -2,6 +2,7 @@
 export const SCAN_RATE_RATIO = 10 // partner rate is 10x better than scan rate
 export const MIN_REDEEM = 100 // minimum points to redeem
 export const SCAN_POINTS_PER_CURRENCY = 0.01 // 1% — 1 point per 100 RSD (baseline scan rate for non-partners)
+export const MIN_PARTNER_POINTS_PER_CURRENCY = 0.01
 
 /** Partner points calculation — apply active boost if any */
 export function calculatePartnerPoints(
@@ -34,7 +35,10 @@ export const CHECKIN_RADIUS_METERS = 100
 export const CHECKIN_ACCURACY_THRESHOLD = 50
 
 // ── Receipt scan limits (anti-fraud, spec §8.1) ───────────────
-export const RECEIPT_MAX_AGE_DAYS = 7
+export const RECEIPT_MAX_AGE_DAYS = 2
+export const RECEIPT_MAX_AGE_HOURS = 48
+export const RECEIPT_MAX_AMOUNT_RSD = 10_000
+export const NON_PARTNER_RECEIPTS_PER_DAY = 1
 export const RECEIPT_DAILY_LIMIT = 10
 export const RECEIPT_HOURLY_LIMIT = 3
 export const RECEIPT_MANUAL_REVIEW_THRESHOLD = 10_000 // RSD
