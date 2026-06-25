@@ -5,6 +5,21 @@ import { trpc } from "../../../../src/lib/trpc"
 import { useVenue } from "../../../../src/context/venue-context"
 import { VenueLocationPicker, type VenueLocation } from "../../../../src/components/VenueLocationPicker"
 
+// tRPC возвращает ошибки валидации Zod как JSON-строку. Достаём понятный текст.
+function friendlyError(message: string): string {
+  try {
+    const issues = JSON.parse(message)
+    if (Array.isArray(issues) && issues[0]) {
+      const i = issues[0]
+      if (i.code === "too_small" && i.path?.includes("pointsPerCurrency")) {
+        return `Минимальный курс — ${i.minimum} балла за 1 RSD.`
+      }
+      return i.message ?? message
+    }
+  } catch { /* не JSON — показываем как есть */ }
+  return message
+}
+
 export default function SettingsPage() {
   const { venue } = useVenue()
   const { refetch } = trpc.merchant.dashboard.useQuery()
@@ -28,18 +43,19 @@ export default function SettingsPage() {
 
   const updateRate = trpc.merchant.updateRate.useMutation({
     onSuccess: () => { setRateMsg("Saved"); refetch(); setTimeout(() => setRateMsg(""), 2000) },
-    onError: (e) => setRateMsg(e.message),
+    onError: (e) => setRateMsg(friendlyError(e.message)),
   })
 
   const updateVenue = trpc.merchant.updateVenue.useMutation({
     onSuccess: () => { setVenueMsg("Saved"); refetch(); setTimeout(() => setVenueMsg(""), 2000) },
-    onError: (e) => setVenueMsg(e.message),
+    onError: (e) => setVenueMsg(friendlyError(e.message)),
   })
 
   function handleRateSave() {
     if (!venue) return
     const pts = parseFloat(rate)
-    if (isNaN(pts) || pts <= 0) { setRateMsg("Enter a valid rate"); return }
+    if (isNaN(pts) || pts <= 0) { setRateMsg("Введите корректный курс"); return }
+    if (pts < 0.01) { setRateMsg("Минимальный курс — 0.01 балла за 1 RSD."); return }
 
     const multiplier = boostMultiplier ? parseFloat(boostMultiplier) : undefined
     const days = boostDays ? parseInt(boostDays) : undefined
