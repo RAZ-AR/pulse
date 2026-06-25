@@ -11,8 +11,8 @@ function friendlyError(message: string): string {
     const issues = JSON.parse(message)
     if (Array.isArray(issues) && issues[0]) {
       const i = issues[0]
-      if (i.code === "too_small" && i.path?.includes("pointsPerCurrency")) {
-        return `Минимальный курс — ${i.minimum} балла за 1 RSD.`
+      if (i.path?.includes("pointsPerCurrency")) {
+        return "Процент начисления — от 1% до 20%."
       }
       return i.message ?? message
     }
@@ -37,7 +37,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!venue) return
-    setRate(venue.pointsPerCurrency?.toString() ?? "")
+    // Храним долю (0.01 = 1%), в UI показываем проценты
+    setRate(venue.pointsPerCurrency != null ? +(venue.pointsPerCurrency * 100).toFixed(2) + "" : "")
     setVenueName(venue.name)
   }, [venue])
 
@@ -53,9 +54,10 @@ export default function SettingsPage() {
 
   function handleRateSave() {
     if (!venue) return
-    const pts = parseFloat(rate)
-    if (isNaN(pts) || pts <= 0) { setRateMsg("Введите корректный курс"); return }
-    if (pts < 0.01) { setRateMsg("Минимальный курс — 0.01 балла за 1 RSD."); return }
+    const percent = parseFloat(rate)
+    if (isNaN(percent) || percent <= 0) { setRateMsg("Введите процент начисления"); return }
+    if (percent < 1 || percent > 20) { setRateMsg("Процент начисления — от 1% до 20%."); return }
+    const pts = +(percent / 100).toFixed(4) // доля для хранения
 
     const multiplier = boostMultiplier ? parseFloat(boostMultiplier) : undefined
     const days = boostDays ? parseInt(boostDays) : undefined
@@ -91,9 +93,9 @@ export default function SettingsPage() {
 
       {/* Points rate */}
       <section className="bg-white rounded-xl border border-[#E5E7EB] p-6 mb-6">
-        <h2 className="text-base font-semibold text-[#0F1115] mb-1">Points rate</h2>
+        <h2 className="text-base font-semibold text-[#0F1115] mb-1">Начисление баллов</h2>
         <p className="text-xs text-[#6B7280] mb-4">
-          How many points per 1 RSD spent. Higher rate = better rank on the leaderboard.
+          Процент от суммы покупки, который клиент получает баллами. От 1% до 20%.
         </p>
 
         {boostActive && (
@@ -104,18 +106,19 @@ export default function SettingsPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-[#374151] mb-1">pts per RSD</label>
+            <label className="block text-xs font-medium text-[#374151] mb-1">Начисление, %</label>
             <input
               type="number"
               value={rate}
               onChange={(e) => setRate(e.target.value)}
-              placeholder="0.008"
-              step="0.001"
-              min="0"
+              placeholder="напр. 5"
+              step="0.5"
+              min="1"
+              max="20"
               className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0F1115]"
             />
             <p className="text-xs text-[#9CA3AF] mt-1">
-              {rate ? `1000 RSD → ${Math.floor(1000 * parseFloat(rate) || 0)} pts` : ""}
+              {rate ? `1000 RSD → ${Math.floor(10 * parseFloat(rate) || 0)} pts` : ""}
             </p>
           </div>
           <div>

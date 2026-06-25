@@ -2,7 +2,8 @@
 export const SCAN_RATE_RATIO = 10 // partner rate is 10x better than scan rate
 export const MIN_REDEEM = 100 // minimum points to redeem
 export const SCAN_POINTS_PER_CURRENCY = 0.01 // 1% — 1 point per 100 RSD (baseline scan rate for non-partners)
-export const MIN_PARTNER_POINTS_PER_CURRENCY = 0.01
+export const MIN_PARTNER_POINTS_PER_CURRENCY = 0.01 // 1%
+export const MAX_PARTNER_POINTS_PER_CURRENCY = 0.20 // 20%
 
 // Кредит баллами для мерчанта (овердрафт с согласием и сроком).
 export const NEW_MERCHANT_CREDIT_LIMIT = 500   // новый мерчант

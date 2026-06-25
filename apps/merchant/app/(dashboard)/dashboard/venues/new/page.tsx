@@ -42,8 +42,10 @@ export default function NewVenuePage() {
     setErr("")
     if (!name.trim()) { setErr("Введите название"); return }
     if (!loc || !loc.address.trim()) { setErr("Укажите место на карте"); return }
-    const pts = rate ? parseFloat(rate) : undefined
-    if (rate && (isNaN(pts!) || pts! <= 0)) { setErr("Некорректный курс баллов"); return }
+    // В UI — проценты (1–20%), храним долю
+    const percent = rate ? parseFloat(rate) : undefined
+    if (rate && (isNaN(percent!) || percent! < 1 || percent! > 20)) { setErr("Начисление — от 1% до 20%"); return }
+    const pts = percent !== undefined ? +(percent / 100).toFixed(4) : undefined
     create.mutate({
       name: name.trim(),
       category,
@@ -94,12 +96,12 @@ export default function NewVenuePage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#374151] mb-1">Курс баллов <span className="text-[#9CA3AF]">(необязательно)</span></label>
+          <label className="block text-xs font-medium text-[#374151] mb-1">Начисление, % <span className="text-[#9CA3AF]">(необязательно)</span></label>
           <input
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             inputMode="decimal"
-            placeholder="напр. 0.01 (баллов за 1 RSD)"
+            placeholder="напр. 5 (% от суммы, 1–20)"
             className="w-full px-3 py-2 border border-[#D1D5DB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0F1115]"
           />
         </div>

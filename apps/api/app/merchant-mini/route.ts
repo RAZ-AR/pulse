@@ -569,8 +569,9 @@ var CATEGORIES = [
 ];
 var CITIES = ['Белград', 'Нови-Сад', 'Ниш', 'Суботица', 'Крагуевац'];
 var RATES = [
-  { label: '⭐ Стандарт', sub: '10 pts / 1000 RSD', value: 0.01 },
-  { label: '💎 Премиум', sub: '12 pts / 1000 RSD', value: 0.012 },
+  { label: '⭐ Стандарт', sub: '1% от суммы', value: 0.01 },
+  { label: '💎 Премиум', sub: '5% от суммы', value: 0.05 },
+  { label: '🔥 Максимум', sub: '10% от суммы', value: 0.10 },
 ];
 
 function RegisterScreen(props) {
@@ -775,23 +776,23 @@ function RegisterScreen(props) {
   // Step 6: rate
   function step6rate() {
     if (showCustomRate) return h('div', { style: { padding: '0 20px' } },
-      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Своя ставка'),
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Баллов за 1000 RSD (от 1 до 100)'),
-      h(TxtInput, { value: customRate, onChange: setCustomRate, placeholder: '10', inputMode: 'numeric' }),
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Свой процент'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Процент от суммы (от 1% до 20%)'),
+      h(TxtInput, { value: customRate, onChange: setCustomRate, placeholder: '5', inputMode: 'decimal' }),
       h('div', { style: { height: 16 } }),
       h(Btn, {
         label: 'Далее →',
-        disabled: !customRate || isNaN(parseInt(customRate)) || parseInt(customRate) < 1 || parseInt(customRate) > 100,
+        disabled: !customRate || isNaN(parseFloat(customRate)) || parseFloat(customRate) < 1 || parseFloat(customRate) > 20,
         onClick: function() {
-          var pts = parseInt(customRate);
-          if (pts >= 1 && pts <= 100) { set('rate', pts / 1000); setStep(7); }
+          var p = parseFloat(customRate);
+          if (p >= 1 && p <= 20) { set('rate', +(p / 100).toFixed(4)); setStep(7); }
         },
       })
     );
     return h('div', { style: { padding: '0 20px' } },
-      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Ставка баллов'),
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Начисление баллов'),
       h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 7 из 8'),
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Сколько баллов клиент получает за 1000 RSD'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Какой % от суммы покупки клиент получает баллами'),
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
         RATES.map(function(r) {
           return h('button', {
@@ -808,8 +809,8 @@ function RegisterScreen(props) {
             onClick: function() { setShowCustomRate(true); },
             style: Object.assign({}, btnStyle, { padding: 16 }),
           },
-            h('div', { style: { fontSize: 16, fontWeight: 700, color: C.accent } }, '✏️ Своя ставка'),
-            h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, 'Введите число баллов за 1000 RSD')
+            h('div', { style: { fontSize: 16, fontWeight: 700, color: C.accent } }, '✏️ Свой процент'),
+            h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, 'Введите % от суммы (1–20%)')
           ),
         ])
       )
@@ -876,7 +877,7 @@ function RegisterScreen(props) {
       ['📍 Город', form.city],
       ['🗺 Адрес', form.address],
       ['🪪 ПИБ', form.taxId || 'не указан'],
-      ['⭐ Ставка', Math.round(form.rate * 1000) + ' pts / 1000 RSD'],
+      ['⭐ Ставка', +(form.rate * 100).toFixed(1) + '% от суммы'],
     ];
     return h('div', { style: { padding: '0 20px' } },
       h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 16 } }, 'Проверьте данные'),
@@ -969,6 +970,7 @@ function HomeTab(props) {
   var token = props.token, merchant = props.merchant, venue = props.venue, onScanStart = props.onScanStart;
   var dataState = useState(null); var data = dataState[0]; var setData = dataState[1];
   var loadingState = useState(true); var loading = loadingState[0]; var setLoading = loadingState[1];
+  var creditState = useState(null); var creditInfo = creditState[0]; var setCreditInfo = creditState[1];
 
   useEffect(function() {
     trpcQuery(token, 'merchant.miniDashboard', { venueId: venue.id })
@@ -977,17 +979,36 @@ function HomeTab(props) {
       .finally(function() { setLoading(false); });
   }, [venue.id]);
 
+  useEffect(function() {
+    trpcQuery(token, 'merchant.creditInfo', {}).then(setCreditInfo).catch(function() {});
+  }, []);
+
   if (loading) return h('div', { style: { padding: '48px 16px', textAlign: 'center', color: C.hint, fontWeight: 600 } }, '…');
 
   var d = data || { today: { transactions: 0, pointsIssued: 0 }, week: [], weekAvg: 0, activeRewards: [] };
   var week = d.week || [];
   var maxPts = week.reduce(function(m, b) { return Math.max(m, b.points); }, 0) || 1;
   var pct = d.weekAvg > 0 ? Math.round((d.today.pointsIssued - d.weekAvg) / d.weekAvg * 100) : null;
-  var rate = venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) : null;
+  var rate = venue.pointsPerCurrency ? +(venue.pointsPerCurrency * 100).toFixed(1) : null;
   var fmt = function(n) { return (n || 0).toLocaleString('ru-RU'); };
 
   return h('div', { style: { padding: '8px 16px 24px' } },
     h('div', { style: { fontSize: 30, fontWeight: 900, color: C.ink } }, 'Сегодня'),
+
+    // Баланс мерчанта + статус кредита
+    creditInfo && h('div', { style: { background: C.white, borderRadius: 22, padding: 18, margin: '12px 0' } },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' } },
+        h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600 } }, 'Баланс мерчанта'),
+        h('div', { style: { fontSize: 12, color: C.hint } }, 'для начисления клиентам')
+      ),
+      h('div', { style: { fontSize: 36, fontWeight: 900, color: creditInfo.pointsBalance < 0 ? C.red : C.ink, marginTop: 2 } }, fmt(creditInfo.pointsBalance) + ' pts'),
+      creditInfo.overdue
+        ? h('div', { style: { fontSize: 13, color: C.red, fontWeight: 700, marginTop: 8 } }, '⚠️ Кредит просрочен — пополните баланс')
+        : creditInfo.activeCredit > 0
+          ? h('div', { style: { fontSize: 13, color: C.orange, fontWeight: 600, marginTop: 8 } },
+              'Кредит ' + fmt(creditInfo.creditLimit) + ' до ' + (creditInfo.creditDueAt ? new Date(creditInfo.creditDueAt).toLocaleDateString('ru-RU') : '—'))
+          : null
+    ),
 
     // Activity stepper — last 7 days (filled = had a sale)
     h('div', { style: { display: 'flex', gap: 5, margin: '12px 0 16px' } },
@@ -1011,10 +1032,10 @@ function HomeTab(props) {
         h('div', { style: { fontSize: 30, fontWeight: 900, color: '#1A1A1A', marginTop: 2 } }, d.today.transactions || 0)
       ),
       h('div', { style: { flex: 1, background: C.white, borderRadius: 20, padding: 16 } },
-        h('div', { style: { fontSize: 12, color: C.hint, fontWeight: 600 } }, 'Ставка, pts/1000'),
+        h('div', { style: { fontSize: 12, color: C.hint, fontWeight: 600 } }, 'Начисление'),
         rate
-          ? h('div', { style: { fontSize: 28, fontWeight: 900, color: C.ink, marginTop: 2 } }, rate)
-          : h('div', { style: { fontSize: 14, fontWeight: 600, color: C.hint, marginTop: 8 } }, 'не задана')
+          ? h('div', { style: { fontSize: 28, fontWeight: 900, color: C.ink, marginTop: 2 } }, rate + '%')
+          : h('div', { style: { fontSize: 14, fontWeight: 600, color: C.hint, marginTop: 8 } }, 'не задано')
       )
     ),
 
@@ -1850,7 +1871,7 @@ function ProfileTab(props) {
           name:         data.name         || '',
           city:         data.city         || '',
           address:      data.address      || '',
-          rate:         data.pointsPerCurrency ? String(Math.round(data.pointsPerCurrency * 1000)) : '8',
+          rate:         data.pointsPerCurrency ? String(+(data.pointsPerCurrency * 100).toFixed(1)) : '5',
           phone:        data.phone        || '',
           instagram:    data.instagram    || '',
           tiktok:       data.tiktok       || '',
@@ -1868,9 +1889,9 @@ function ProfileTab(props) {
 
   async function saveEdit() {
     if (!editForm) return;
-    var pts = parseInt(editForm.rate);
-    if (!editForm.name.trim() || isNaN(pts) || pts < 1) {
-      setError('Заполните обязательные поля'); return;
+    var percent = parseFloat(editForm.rate);
+    if (!editForm.name.trim() || isNaN(percent) || percent < 1 || percent > 20) {
+      setError('Начисление — от 1% до 20%'); return;
     }
     setSaving(true); setError('');
     try {
@@ -1879,7 +1900,7 @@ function ProfileTab(props) {
         name:          editForm.name.trim(),
         city:          editForm.city.trim(),
         address:       editForm.address.trim(),
-        pointsPerCurrency: pts / 1000,
+        pointsPerCurrency: +(percent / 100).toFixed(4),
         phone:         editForm.phone.trim()         || null,
         instagram:     editForm.instagram.trim()     || null,
         tiktok:        editForm.tiktok.trim()        || null,
@@ -1928,10 +1949,10 @@ function ProfileTab(props) {
       ),
 
       // Rate
-      h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Ставка баллов'),
+      h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, margin: '16px 0 8px', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Начисление баллов'),
       h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 } },
-        h(TxtInput, { value: editForm.rate, onChange: function(v) { setField('rate', v.replace(/\D/g, '')); }, placeholder: '8', inputMode: 'numeric', style: { maxWidth: 100 } }),
-        h('div', { style: { fontSize: 14, color: C.hint } }, 'баллов за 1000 RSD')
+        h(TxtInput, { value: editForm.rate, onChange: function(v) { setField('rate', v.replace(/[^\d.]/g, '')); }, placeholder: '5', inputMode: 'decimal', style: { maxWidth: 100 } }),
+        h('div', { style: { fontSize: 14, color: C.hint } }, '% от суммы (1–20%)')
       ),
 
       // Contacts
@@ -1982,7 +2003,7 @@ function ProfileTab(props) {
         ['🏪', venue.name],
         ['🏙', venue.city || '—'],
         ['📍', venue.address || '—'],
-        ['⭐', venue.pointsPerCurrency ? Math.round(venue.pointsPerCurrency * 1000) + ' pts / 1000 ' + (venue.currency || 'RSD') : 'Не установлена'],
+        ['⭐', venue.pointsPerCurrency ? +(venue.pointsPerCurrency * 100).toFixed(1) + '% от суммы' : 'Не установлена'],
       ].map(function(row) {
         return h('div', {
           key: row[0],
@@ -2111,7 +2132,7 @@ function VenuePicker(props) {
             h('div', { style: { fontWeight: 700, fontSize: 16, marginBottom: 2 } }, v.name),
             h('div', { style: { fontSize: 13, color: C.hint } }, (v.city || '') + (v.address ? ' · ' + v.address : '')),
             v.pointsPerCurrency && h('div', { style: { fontSize: 12, color: C.accent, fontWeight: 600, marginTop: 3 } },
-              Math.round(v.pointsPerCurrency * 1000) + ' pts / 1000 ' + (v.currency || 'RSD'))
+              +(v.pointsPerCurrency * 100).toFixed(1) + '% от суммы')
           ),
           h('div', { style: { fontSize: 20, color: C.hint, flexShrink: 0 } }, '›')
         );
@@ -2271,17 +2292,17 @@ function AddVenueScreen(props) {
   // av5: rate
   function av5() {
     if (showCustomRate) return h('div', { style: { padding: '0 20px' } },
-      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Своя ставка'),
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Баллов за 1000 RSD (от 1 до 100)'),
-      h(TxtInput, { value: customRate, onChange: setCustomRate, placeholder: '10', inputMode: 'numeric' }),
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Свой процент'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Процент от суммы (от 1% до 20%)'),
+      h(TxtInput, { value: customRate, onChange: setCustomRate, placeholder: '5', inputMode: 'decimal' }),
       h('div', { style: { height: 16 } }),
-      h(Btn, { label: 'Далее →', disabled: !customRate || isNaN(parseInt(customRate)) || parseInt(customRate) < 1 || parseInt(customRate) > 100,
-        onClick: function() { var pts = parseInt(customRate); if (pts >= 1 && pts <= 100) { set('rate', pts / 1000); setStep(6); } } })
+      h(Btn, { label: 'Далее →', disabled: !customRate || isNaN(parseFloat(customRate)) || parseFloat(customRate) < 1 || parseFloat(customRate) > 20,
+        onClick: function() { var p = parseFloat(customRate); if (p >= 1 && p <= 20) { set('rate', +(p / 100).toFixed(4)); setStep(6); } } })
     );
     return h('div', { style: { padding: '0 20px' } },
-      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Ставка баллов'),
+      h('div', { style: { fontSize: 22, fontWeight: 800, marginBottom: 6 } }, 'Начисление баллов'),
       h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 4 } }, 'Шаг 6 из 7'),
-      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Сколько баллов клиент получает за 1000 RSD'),
+      h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 16 } }, 'Какой % от суммы покупки клиент получает баллами'),
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
         RATES.map(function(r) {
           return h('button', { key: r.label, onClick: function() { set('rate', r.value); setStep(6); }, style: Object.assign({}, btnStyle, { padding: 16 }) },
@@ -2290,8 +2311,8 @@ function AddVenueScreen(props) {
           );
         }).concat([
           h('button', { key: 'custom', onClick: function() { setShowCustomRate(true); }, style: Object.assign({}, btnStyle, { padding: 16 }) },
-            h('div', { style: { fontSize: 16, fontWeight: 700, color: C.accent } }, '✏️ Своя ставка'),
-            h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, 'Введите число баллов за 1000 RSD')
+            h('div', { style: { fontSize: 16, fontWeight: 700, color: C.accent } }, '✏️ Свой процент'),
+            h('div', { style: { fontSize: 13, color: C.hint, marginTop: 2 } }, 'Введите % от суммы (1–20%)')
           ),
         ])
       )
@@ -2336,7 +2357,7 @@ function AddVenueScreen(props) {
           ['🏪 Название',  form.name],
           ['📍 Город',     form.city],
           ['🗺 Адрес',     form.address],
-          ['⭐ Ставка',    Math.round(form.rate * 1000) + ' pts / 1000 RSD'],
+          ['⭐ Ставка',    +(form.rate * 100).toFixed(1) + '% от суммы'],
         ].map(function(row) {
           return h('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' } },
             h('div', { style: { fontSize: 13, color: C.hint, flexShrink: 0 } }, row[0]),

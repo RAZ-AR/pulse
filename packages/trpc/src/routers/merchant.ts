@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { Prisma } from "@pulse/db"
-import { MIN_PARTNER_POINTS_PER_CURRENCY } from "@pulse/shared"
+import { MIN_PARTNER_POINTS_PER_CURRENCY, MAX_PARTNER_POINTS_PER_CURRENCY } from "@pulse/shared"
 import { router, merchantProcedure, scanProcedure } from "../trpc"
 import { creditOfferFor, clearCreditIfRepaid } from "../services/credit"
 import { effectiveCreditLimit } from "@pulse/shared"
@@ -284,7 +284,7 @@ export const merchantRouter = router({
         lat: z.number().min(-90).max(90),
         lng: z.number().min(-180).max(180),
         workingHours: WorkingHoursSchema.optional(),
-        pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).optional(),
+        pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).max(MAX_PARTNER_POINTS_PER_CURRENCY).optional(),
         currency: z.string().length(3).default("RSD"),
         enableRewards: z.boolean().default(true),
         enableDiscount: z.boolean().default(false),
@@ -298,10 +298,14 @@ export const merchantRouter = router({
       if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Сессия устарела. Выйдите и войдите заново через Telegram." })
 
       const { description, pointsPerCurrency, workingHours, ...rest } = input
+      // Заведение мерчанта — сразу партнёрское (как в addVenueMini), чтобы
+      // совпадало в вебе и мини-аппе и было операбельным.
       return ctx.db.venue.create({
         data: {
           ...rest,
           ownerId: ctx.merchantId,
+          isPartner: true,
+          partnerSince: new Date(),
           description: description ?? null,
           ...(pointsPerCurrency !== undefined ? { pointsPerCurrency } : {}),
           ...(workingHours !== undefined ? { workingHours } : {}),
@@ -354,7 +358,7 @@ export const merchantRouter = router({
     .input(
       z.object({
         venueId: z.string(),
-        pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY),
+        pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).max(MAX_PARTNER_POINTS_PER_CURRENCY),
         currency: z.string().length(3),
         boostMultiplier: z.number().min(1).max(10).optional(),
         boostUntil: z.date().optional(),
@@ -679,7 +683,7 @@ export const merchantRouter = router({
       name: z.string().min(1).max(100).optional(),
       city: z.string().min(1).optional(),
       address: z.string().min(1).optional(),
-      pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).optional(),
+      pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).max(MAX_PARTNER_POINTS_PER_CURRENCY).optional(),
       phone: z.string().nullable().optional(),
       instagram: z.string().nullable().optional(),
       tiktok: z.string().nullable().optional(),
@@ -744,7 +748,7 @@ export const merchantRouter = router({
       category: z.enum(["CAFE", "RESTAURANT", "RETAIL", "SERVICE", "BEAUTY", "FITNESS", "YOGA", "OTHER"]),
       city: z.string().min(1),
       address: z.string().min(1),
-      pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY),
+      pointsPerCurrency: z.number().min(MIN_PARTNER_POINTS_PER_CURRENCY).max(MAX_PARTNER_POINTS_PER_CURRENCY),
       currency: z.string().default("RSD"),
       lat: z.number().default(0),
       lng: z.number().default(0),
