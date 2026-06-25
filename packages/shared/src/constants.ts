@@ -4,6 +4,10 @@ export const MIN_REDEEM = 100 // minimum points to redeem
 export const SCAN_POINTS_PER_CURRENCY = 0.01 // 1% — 1 point per 100 RSD (baseline scan rate for non-partners)
 export const MIN_PARTNER_POINTS_PER_CURRENCY = 0.01
 
+// Баланс мерчанта может уйти в минус на этот лимит (простой кредит, фаза 1).
+// Полноценный кредит (тиры/срок/согласие) — отдельная фаза.
+export const MERCHANT_CREDIT_LIMIT = 500
+
 /** Partner points calculation — apply active boost if any */
 export function calculatePartnerPoints(
   amount: number,
