@@ -281,24 +281,39 @@ export default function HomeScreen() {
         <>
           <SectionHeader title={t("partnerBonuses", "Partner Bonuses")} action={t("seeAll", "See all")} onPress={() => router.push("/map")} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.offerRail}>
-            {(partnerOffers.data?.offers ?? []).map((offer) => (
+            {(partnerOffers.data?.offers ?? []).map((offer) => {
+              const tinted = !!offer.cardColor
+              const titleColor = tinted ? "#FFFFFF" : "#2C3E50"
+              const subColor   = tinted ? "rgba(255,255,255,0.85)" : "#75736A"
+              return (
               <Pressable
                 key={offer.id}
                 onPress={() => router.push({ pathname: "/venue/[id]", params: { id: offer.venue.id } })}
-                style={s.partnerOfferCard}
+                style={[s.partnerOfferCard, tinted && { backgroundColor: offer.cardColor ?? undefined, borderTopColor: "rgba(255,255,255,0.35)", borderBottomColor: "rgba(0,0,0,0.18)" }]}
               >
-                <View style={s.partnerOfferPtsBox}>
-                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.robotoBlack, fontWeight: "900", color: "#75736A" }]}>+{offer.pointsReward}</Text>
-                  <Text style={[s.partnerOfferPtsLabel, { fontFamily: fonts.robotoMedium, fontWeight: "500", color: "#75736A" }]}>pts</Text>
+                <View style={[s.partnerOfferPtsBox, tinted && { backgroundColor: "rgba(255,255,255,0.22)", borderColor: "rgba(255,255,255,0.35)" }]}>
+                  <Text style={[s.partnerOfferPts, { fontFamily: fonts.robotoBlack, fontWeight: "900", color: tinted ? "#FFFFFF" : "#75736A" }]}>+{offer.pointsReward}</Text>
+                  <Text style={[s.partnerOfferPtsLabel, { fontFamily: fonts.robotoMedium, fontWeight: "500", color: tinted ? "#FFFFFF" : "#75736A" }]}>pts</Text>
                 </View>
-                <Text style={[s.partnerOfferTitle, { color: "#2C3E50", fontFamily: fonts.robotoBold, fontWeight: "700" }]} numberOfLines={2}>
+                <Text style={[s.partnerOfferTitle, { color: titleColor, fontFamily: fonts.robotoBold, fontWeight: "700" }]} numberOfLines={2}>
                   {offer.title}
                 </Text>
-                <Text style={[s.partnerOfferVenue, { color: "#75736A", fontFamily: fonts.roboto, fontWeight: "400" }]} numberOfLines={1}>
+                {offer.description ? (
+                  <Text style={[s.partnerOfferVenue, { color: subColor, fontFamily: fonts.roboto, fontWeight: "400" }]} numberOfLines={1}>
+                    {offer.description}
+                  </Text>
+                ) : null}
+                <Text style={[s.partnerOfferVenue, { color: subColor, fontFamily: fonts.roboto, fontWeight: "400" }]} numberOfLines={1}>
                   {offer.venue.name}
                 </Text>
+                {offer.pointsExpireDays ? (
+                  <Text style={[s.partnerOfferPtsLabel, { color: subColor, fontFamily: fonts.roboto, fontWeight: "400" }]} numberOfLines={1}>
+                    ⏳ сгорают через {offer.pointsExpireDays} дн.
+                  </Text>
+                ) : null}
               </Pressable>
-            ))}
+              )
+            })}
           </ScrollView>
         </>
       ) : null}

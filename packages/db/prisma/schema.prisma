@@ -175,6 +175,7 @@ model User {
   pointsGifts       PointsGift[]      @relation("Sender")
   pointsReceived    PointsGift[]      @relation("Receiver")
   offerRedemptions  OfferRedemption[]
+  pointsExpiries    PointsExpiry[]
   giftLinksSent     GiftLink[]        @relation("GiftLinksSent")
   giftLinksReceived GiftLink[]        @relation("GiftLinksReceived")
 
@@ -606,9 +607,11 @@ model Offer {
   title       String
   description String?
   imageUrl    String?
+  cardColor   String?   // hex-цвет карточки в мини-аппе, напр. "#fd4600"
 
-  pointsReward Int      // баллы юзеру
-  costPoints   Int      // списывается с баланса партнёра
+  pointsReward     Int  // баллы юзеру
+  costPoints       Int  // списывается с баланса партнёра
+  pointsExpireDays Int? // через сколько дней сгорают начисленные баллы (null = не сгорают)
 
   startsAt    DateTime  @default(now())
   endsAt      DateTime?
@@ -638,6 +641,22 @@ model OfferRedemption {
   createdAt    DateTime @default(now())
 
   @@unique([offerId, userId])   // 1 раз на юзера на акцию
+  @@index([userId])
+}
+
+// Партия начисленных баллов со сроком сгорания.
+// Создаётся при погашении промо с pointsExpireDays. Cron списывает истёкшие.
+model PointsExpiry {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  amount    Int       // сколько баллов начислено в этой партии
+  expiresAt DateTime  // когда сгорают
+  burnedAt  DateTime? // когда списаны cron-ом (null = ещё активны)
+  source    String    @default("OFFER") // откуда баллы (OFFER, ...)
+  createdAt DateTime  @default(now())
+
+  @@index([burnedAt, expiresAt])
   @@index([userId])
 }
 

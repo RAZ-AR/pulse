@@ -21,7 +21,12 @@ function statusBadge(offer: { active: boolean; endsAt: Date|null; usageLimit: nu
   return <Badge color="green">Активен</Badge>
 }
 
-const emptyForm = () => ({ title: "", points: "100", startsAt: "", endsAt: "", usageLimit: "" })
+const CARD_COLORS = ["#fd4600", "#015634", "#2563eb", "#7c3aed", "#db2777", "#0f1115"]
+
+const emptyForm = () => ({
+  title: "", description: "", points: "100", usageLimit: "",
+  cardColor: CARD_COLORS[0], expireDays: "", startsAt: "", endsAt: "",
+})
 
 export default function PromosPage() {
   const { venues, loading: venueLoading } = useVenue()
@@ -60,11 +65,14 @@ export default function PromosPage() {
       for (const venueId of targets) {
         const res = await createMutation.mutateAsync({
           venueId,
-          title:        form.title.trim(),
-          pointsReward: points,
-          startsAt:     form.startsAt ? new Date(form.startsAt).toISOString() : undefined,
-          endsAt:       form.endsAt   ? new Date(form.endsAt).toISOString()   : undefined,
-          usageLimit:   form.usageLimit ? parseInt(form.usageLimit) : undefined,
+          title:            form.title.trim(),
+          description:      form.description.trim() || undefined,
+          cardColor:        form.cardColor || undefined,
+          pointsReward:     points,
+          pointsExpireDays: form.expireDays ? parseInt(form.expireDays) : undefined,
+          startsAt:         form.startsAt ? new Date(form.startsAt).toISOString() : undefined,
+          endsAt:           form.endsAt   ? new Date(form.endsAt).toISOString()   : undefined,
+          usageLimit:       form.usageLimit ? parseInt(form.usageLimit) : undefined,
         })
         const venueName = venueList.find(v => v.id === venueId)?.name ?? venueId
         tokens.push({ venue: venueName, token: res.qrToken })
@@ -155,7 +163,9 @@ export default function PromosPage() {
               <span className="text-sm font-medium text-[#0F1115]">{venueList[0]?.name}</span>
             </div>
           ) : (
-            <div className="mb-4 p-3 bg-[#fef3c7] rounded-lg text-sm text-[#92400e]">Нет заведений</div>
+            <div className="mb-4 p-3 bg-[#fef3c7] rounded-lg text-sm text-[#92400e]">
+              Сначала добавьте заведение — слева «+ Добавить заведение». Без заведения акцию создать нельзя.
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
@@ -166,6 +176,25 @@ export default function PromosPage() {
                 className={inp} />
             </div>
 
+            <div className="col-span-2">
+              <Label>Описание / что нужно сделать <span className="text-[#9CA3AF] font-normal">(необязательно)</span></Label>
+              <input type="text" placeholder="Напр. «Покажи QR на кассе при первом заказе»"
+                value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                className={inp} />
+            </div>
+
+            <div className="col-span-2">
+              <Label>Цвет карточки</Label>
+              <div className="flex items-center gap-2.5">
+                {CARD_COLORS.map(c => (
+                  <button key={c} type="button" onClick={() => setForm(f => ({ ...f, cardColor: c }))}
+                    aria-label={c}
+                    className={`w-8 h-8 rounded-full transition-transform ${form.cardColor === c ? "ring-2 ring-offset-2 ring-[#0F1115] scale-110" : "hover:scale-105"}`}
+                    style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            </div>
+
             <div>
               <Label>Бонусных баллов</Label>
               <input required type="number" min={1} value={form.points}
@@ -173,6 +202,12 @@ export default function PromosPage() {
             </div>
 
             <div>
+              <Label>Баллы сгорают через (дней, пусто = не сгорают)</Label>
+              <input type="number" min={1} placeholder="напр. 90" value={form.expireDays}
+                onChange={e => setForm(f => ({ ...f, expireDays: e.target.value }))} className={inp} />
+            </div>
+
+            <div className="col-span-2">
               <Label>Макс. использований (пусто = ∞)</Label>
               <input type="number" min={1} placeholder="∞" value={form.usageLimit}
                 onChange={e => setForm(f => ({ ...f, usageLimit: e.target.value }))} className={inp} />
@@ -196,13 +231,15 @@ export default function PromosPage() {
             </div>
 
             <div className="col-span-2">
-              <button type="submit" disabled={creating}
-                className="w-full py-3 bg-[#fd4600] text-white font-bold rounded-xl hover:bg-[#c83700] transition-colors disabled:opacity-50">
+              <button type="submit" disabled={creating || venueList.length === 0}
+                className="w-full py-3 bg-[#fd4600] text-white font-bold rounded-xl hover:bg-[#c83700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 {creating
                   ? "Создаём…"
-                  : selectedVenues.length > 1
-                    ? `Создать для ${selectedVenues.length} заведений и получить QR`
-                    : "Создать и получить QR"}
+                  : venueList.length === 0
+                    ? "Сначала добавьте заведение"
+                    : selectedVenues.length > 1
+                      ? `Создать для ${selectedVenues.length} заведений и получить QR`
+                      : "Создать и получить QR"}
               </button>
             </div>
           </div>

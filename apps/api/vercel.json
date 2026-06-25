@@ -17,6 +17,10 @@
       "schedule": "30 2 * * *"
     },
     {
+      "path": "/api/cron/expire-points-lots",
+      "schedule": "45 2 * * *"
+    },
+    {
       "path": "/api/cron/generate-challenges",
       "schedule": "0 6 * * 1"
     },

@@ -77,6 +77,7 @@ export const offerRouter = router({
         select: {
           id: true, active: true, endsAt: true, usageLimit: true, usageCount: true,
           pointsReward: true, costPoints: true, merchantId: true, venueId: true, title: true,
+          pointsExpireDays: true,
         },
       })
       if (!offer) throw new TRPCError({ code: "NOT_FOUND", message: "Offer not found" })
@@ -126,6 +127,14 @@ export const offerRouter = router({
           },
         })
 
+        // Если у акции есть срок сгорания — записать партию баллов
+        if (offer.pointsExpireDays) {
+          const expiresAt = new Date(now.getTime() + offer.pointsExpireDays * 24 * 3600 * 1000)
+          await tx.pointsExpiry.create({
+            data: { userId: ctx.userId, amount: offer.pointsReward, expiresAt },
+          })
+        }
+
         await trackVisit(tx, ctx.userId)
         const newBadges = await checkAndAwardBadges(tx, ctx.userId)
 
@@ -145,13 +154,15 @@ export const offerRouter = router({
   /** Партнёр создаёт акцию */
   create: merchantProcedure
     .input(z.object({
-      venueId:      z.string(),
-      title:        z.string().min(3).max(120),
-      description:  z.string().max(300).optional(),
-      pointsReward: z.number().int().positive(),
-      startsAt:     z.string().datetime().optional(),
-      endsAt:       z.string().datetime().optional(),
-      usageLimit:   z.number().int().positive().optional(),
+      venueId:          z.string(),
+      title:            z.string().min(3).max(120),
+      description:      z.string().max(300).optional(),
+      cardColor:        z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+      pointsReward:     z.number().int().positive(),
+      pointsExpireDays: z.number().int().positive().max(3650).optional(),
+      startsAt:         z.string().datetime().optional(),
+      endsAt:           z.string().datetime().optional(),
+      usageLimit:       z.number().int().positive().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Проверить что venue принадлежит этому партнёру
@@ -180,15 +191,17 @@ export const offerRouter = router({
 
       const offer = await ctx.db.offer.create({
         data: {
-          venueId:      input.venueId,
-          merchantId:   ctx.merchantId,
-          title:        input.title,
-          description:  input.description ?? null,
-          pointsReward: input.pointsReward,
+          venueId:          input.venueId,
+          merchantId:       ctx.merchantId,
+          title:            input.title,
+          description:      input.description ?? null,
+          cardColor:        input.cardColor ?? null,
+          pointsReward:     input.pointsReward,
+          pointsExpireDays: input.pointsExpireDays ?? null,
           costPoints,
-          startsAt:     input.startsAt ? new Date(input.startsAt) : new Date(),
-          endsAt:       input.endsAt ? new Date(input.endsAt) : null,
-          usageLimit:   input.usageLimit ?? null,
+          startsAt:         input.startsAt ? new Date(input.startsAt) : new Date(),
+          endsAt:           input.endsAt ? new Date(input.endsAt) : null,
+          usageLimit:       input.usageLimit ?? null,
         },
       })
 

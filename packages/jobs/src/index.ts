@@ -3,4 +3,5 @@
 
 export * from "./handlers/expire-welcome-points"
 export * from "./handlers/expire-earned-points"
+export * from "./handlers/expire-points-lots"
 export * from "./handlers/generate-challenges"
