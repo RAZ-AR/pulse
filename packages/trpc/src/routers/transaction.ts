@@ -29,8 +29,8 @@ import {
   computeStreakUpdate,
   stepMultiplier,
   REFERRAL_REWARD_POINTS,
-  MERCHANT_CREDIT_LIMIT,
 } from "@pulse/shared"
+import { assertMerchantCanAward } from "../services/credit"
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -814,17 +814,8 @@ export const transactionRouter = router({
 
       // Мерчант финансирует конвертацию покупки (pointsEarned). Платформенные
       // бонусы (стрик, реферал) с баланса мерчанта не списываются.
-      const merchantWallet = await ctx.db.merchant.findUnique({
-        where: { id: ctx.merchantId },
-        select: { pointsBalance: true },
-      })
-      if (!merchantWallet) throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" })
-      if (merchantWallet.pointsBalance - pointsEarned < -MERCHANT_CREDIT_LIMIT) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Недостаточно баллов на балансе мерчанта (${merchantWallet.pointsBalance}). Пополните баланс.`,
-        })
-      }
+      // Проверяем баланс/кредит (может бросить CREDIT_REQUIRED для согласия).
+      await assertMerchantCanAward(ctx.db, ctx.merchantId, pointsEarned)
 
       // 4. DB transaction: award points + update streak
       const result = await ctx.db.$transaction(async (tx) => {

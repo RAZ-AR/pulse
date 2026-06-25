@@ -1530,9 +1530,11 @@ function ScanTab(props) {
   var loadingState = useState(false); var loading = loadingState[0]; var setLoading = loadingState[1];
   var errorState = useState(''); var error = errorState[0]; var setError = errorState[1];
   var resultState = useState(null); var result = resultState[0]; var setResult = resultState[1];
+  var creditState = useState(null); var credit = creditState[0]; var setCredit = creditState[1];
+  var agreeState = useState(false); var agree = agreeState[0]; var setAgree = agreeState[1];
 
   function reset() {
-    setMode('home'); setCode(''); setCustomer(null);
+    setMode('home'); setCode(''); setCustomer(null); setCredit(null); setAgree(false);
     setAmount(''); setPoints(''); setError(''); setResult(null);
   }
 
@@ -1578,8 +1580,22 @@ function ScanTab(props) {
       });
       setResult({ type: 'earn', points: res.pointsEarned, name: customer.name });
       setMode('result');
-    } catch(e) { setError(e.message); }
+    } catch(e) {
+      var cr = String(e.message || '').match(/^CREDIT_REQUIRED:(\\d+):(\\d+)/);
+      if (cr) { setCredit({ limit: parseInt(cr[1]), termDays: parseInt(cr[2]) }); setAgree(false); setMode('credit'); }
+      else setError(e.message);
+    }
     finally { setLoading(false); }
+  }
+
+  async function acceptCreditAndAward() {
+    setLoading(true); setError('');
+    try {
+      await trpcMutate(token, 'merchant.acceptCredit', {});
+      setCredit(null); setMode('customer');
+    } catch(e) { setError(e.message); setLoading(false); return; }
+    setLoading(false);
+    awardPoints();
   }
 
   async function redeemPoints() {
@@ -1732,6 +1748,26 @@ function ScanTab(props) {
   );
 
   // Result
+  if (mode === 'credit' && credit) return h('div', { style: { padding: '0 16px' } },
+    h('div', { style: { fontSize: 20, fontWeight: 800, marginBottom: 8 } }, 'Недостаточно баллов'),
+    h(ErrBox, { msg: error }),
+    h('div', { style: { background: C.white, borderRadius: 16, padding: 18, marginBottom: 16 } },
+      h('div', { style: { fontSize: 14, color: C.hint, lineHeight: 1.5, marginBottom: 12 } },
+        'На балансе не хватает баллов. Можно начислить в кредит — он спишется при следующем пополнении.'),
+      h('div', { style: { fontSize: 15, marginBottom: 4 } }, 'Лимит кредита: ', h('b', null, credit.limit + ' баллов')),
+      h('div', { style: { fontSize: 15, marginBottom: 14 } }, 'Срок: ', h('b', null, credit.termDays + ' дн.')),
+      h('label', { style: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 14 } },
+        h('input', { type: 'checkbox', checked: agree, onChange: function(e) { setAgree(e.target.checked); }, style: { width: 18, height: 18 } }),
+        'Согласен использовать кредит и погасить в срок')
+    ),
+    h('button', {
+      onClick: agree ? acceptCreditAndAward : null,
+      disabled: !agree || loading,
+      style: { width: '100%', padding: '14px', background: agree ? C.accent : C.hint, color: '#fff', border: 'none', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: agree ? 'pointer' : 'default', marginBottom: 10 },
+    }, loading ? 'Подождите…' : 'OK, начислить в кредит'),
+    h('button', { onClick: function() { setCredit(null); setMode('customer'); }, style: { width: '100%', padding: '12px', background: 'transparent', color: C.hint, border: 'none', fontSize: 14, cursor: 'pointer' } }, 'Отмена')
+  );
+
   if (mode === 'result' && result) return h('div', {
     style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', padding: '0 24px', textAlign: 'center' },
   },

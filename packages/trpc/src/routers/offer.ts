@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server"
 import { router, publicProcedure, protectedProcedure, merchantProcedure } from "../trpc"
 import { checkAndAwardBadges } from "../services/badges"
 import { trackVisit } from "../services/challenge-progress"
-import { MERCHANT_CREDIT_LIMIT } from "@pulse/shared"
+import { assertMerchantCanAward } from "../services/credit"
 
 export const offerRouter = router({
 
@@ -94,15 +94,8 @@ export const offerRouter = router({
       })
       if (alreadyUsed) throw new TRPCError({ code: "CONFLICT", message: "You've already used this offer" })
 
-      // Промо финансирует мерчант: проверяем баланс (с кредитным полом)
-      const merchantWallet = await ctx.db.merchant.findUnique({
-        where: { id: offer.merchantId },
-        select: { pointsBalance: true },
-      })
-      if (!merchantWallet) throw new TRPCError({ code: "NOT_FOUND" })
-      if (merchantWallet.pointsBalance - offer.pointsReward < -MERCHANT_CREDIT_LIMIT) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "У партнёра недостаточно баллов на балансе для этой акции" })
-      }
+      // Промо финансирует мерчант: проверяем баланс/кредит
+      await assertMerchantCanAward(ctx.db, offer.merchantId, offer.pointsReward)
 
       const result = await ctx.db.$transaction(async (tx) => {
         // Создать redemption

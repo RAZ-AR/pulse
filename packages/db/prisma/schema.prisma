@@ -240,6 +240,11 @@ model Merchant {
   // Points balance (funded by redemptions, used to create offers)
   pointsBalance  Int          @default(1000)
 
+  // Кредит баллами (овердрафт): согласованный лимит и срок погашения
+  creditLimit    Int          @default(0)  // на сколько можно уйти в минус
+  creditDueAt    DateTime?                  // до какого момента кредит действует
+  creditAcceptedAt DateTime?                // когда мерчант согласился
+
   // Branding
   logoUrl String?
 

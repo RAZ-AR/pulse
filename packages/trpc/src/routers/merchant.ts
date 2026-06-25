@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server"
 import { Prisma } from "@pulse/db"
 import { MIN_PARTNER_POINTS_PER_CURRENCY } from "@pulse/shared"
 import { router, merchantProcedure, scanProcedure } from "../trpc"
+import { creditOfferFor, clearCreditIfRepaid } from "../services/credit"
+import { effectiveCreditLimit } from "@pulse/shared"
 
 const WorkingHoursSchema = z.object({
   mon: z.string().optional(),
@@ -931,8 +933,41 @@ export const merchantRouter = router({
           where: { id: ctx.merchantId },
           data: { pointsBalance: { increment: link.amount } },
         })
+        // Пополнение баланса — закрываем кредит, если вышли в плюс
+        await clearCreditIfRepaid(tx, ctx.merchantId)
       })
 
       return { received: link.amount }
     }),
+
+  // Текущее состояние баланса и кредита мерчанта (для мини-аппа).
+  creditInfo: merchantProcedure.query(async ({ ctx }) => {
+    const m = await ctx.db.merchant.findUnique({
+      where: { id: ctx.merchantId },
+      select: { pointsBalance: true, creditLimit: true, creditDueAt: true },
+    })
+    if (!m) throw new TRPCError({ code: "NOT_FOUND" })
+    const now = new Date()
+    const offer = await creditOfferFor(ctx.db, ctx.merchantId)
+    return {
+      pointsBalance: m.pointsBalance,
+      creditLimit:   m.creditLimit,
+      creditDueAt:   m.creditDueAt,
+      activeCredit:  effectiveCreditLimit(m.creditLimit, m.creditDueAt, now),
+      overdue:       !!(m.creditDueAt && m.creditDueAt.getTime() <= now.getTime() && m.pointsBalance < 0),
+      offerLimit:    offer.limit,
+      offerTermDays: offer.termDays,
+    }
+  }),
+
+  // Мерчант соглашается на кредит: фиксируем лимит и срок по текущему обороту.
+  acceptCredit: merchantProcedure.mutation(async ({ ctx }) => {
+    const offer = await creditOfferFor(ctx.db, ctx.merchantId)
+    const dueAt = new Date(Date.now() + offer.termDays * 86_400_000)
+    await ctx.db.merchant.update({
+      where: { id: ctx.merchantId },
+      data: { creditLimit: offer.limit, creditDueAt: dueAt, creditAcceptedAt: new Date() },
+    })
+    return { creditLimit: offer.limit, creditDueAt: dueAt }
+  }),
 })
