@@ -487,23 +487,16 @@ describe("Трата баллов — генерация QR-кода на спи
 })
 
 describe("Трата баллов — ограничения и защита", () => {
-  it("из welcome за одну транзакцию можно потратить не более 100 очков", () => {
-    const wallet = freshWallet() // earnedPoints: 0
-    // Клиент хочет потратить 150 — нужно 150 welcome, но кап 100
+  it("welcome полноценные — можно потратить больше 100 за транзакцию", () => {
+    const wallet = freshWallet() // earnedPoints: 0, welcome 500
     const result = calcSpend(wallet, 150)
-    expect(result).toEqual({ ok: false, error: "INSUFFICIENT_POINTS" })
+    expect(result).toEqual({ ok: true, fromEarned: 0, fromWelcome: 150 })
   })
 
-  it("welcome-баллы на кулдауне 24 ч — нельзя использовать до истечения", () => {
+  it("welcome без кулдауна — доступны сразу после использования", () => {
     const wallet = { ...freshWallet(), earnedPoints: 0, lastWelcomeUsedAt: hoursAgo(2) }
     const result = calcSpend(wallet, 50)
-    expect(result).toEqual({ ok: false, error: "WELCOME_DAILY_LIMIT" })
-  })
-
-  it("после 24 ч кулдауна welcome снова доступны", () => {
-    const wallet = { ...freshWallet(), earnedPoints: 0, lastWelcomeUsedAt: hoursAgo(25) }
-    const result = calcSpend(wallet, 100)
-    expect(result).toEqual({ ok: true, fromEarned: 0, fromWelcome: 100 })
+    expect(result).toEqual({ ok: true, fromEarned: 0, fromWelcome: 50 })
   })
 
   it("просроченные welcome-баллы (> 90 дней) не принимаются к оплате", () => {

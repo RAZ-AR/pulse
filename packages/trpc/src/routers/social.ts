@@ -1,10 +1,46 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, protectedProcedure } from "../trpc"
-import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT, GIFT_LINK_EXPIRY_DAYS } from "@pulse/shared"
+import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT, GIFT_LINK_EXPIRY_DAYS, calcSpend } from "@pulse/shared"
 import { sendPushToUser } from "../services/push"
+import type { Prisma } from "@pulse/db"
 
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "ayoo_loyalty_bot"
+
+// Снять баллы с единого баланса (сначала earned, затем welcome) внутри транзакции.
+// Возвращает кол-во снятого welcome (0, если только earned).
+async function spendFromWallet(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  wallet: { earnedPoints: number; welcomePoints: number; welcomeExpiresAt: Date | null; lastWelcomeUsedAt: Date | null },
+  amount: number,
+) {
+  const spend = calcSpend(wallet, amount)
+  if (!spend.ok) throw new TRPCError({ code: "BAD_REQUEST", message: "Недостаточно баллов" })
+  const res = await tx.user.updateMany({
+    where: {
+      id: userId,
+      earnedPoints: { gte: spend.fromEarned },
+      welcomePoints: { gte: spend.fromWelcome },
+      ...(spend.fromWelcome > 0 ? { welcomeExpiresAt: { gt: new Date() } } : {}),
+    },
+    data: {
+      earnedPoints: { decrement: spend.fromEarned },
+      welcomePoints: { decrement: spend.fromWelcome },
+      spentPoints: { increment: amount },
+    },
+  })
+  if (res.count !== 1) throw new TRPCError({ code: "BAD_REQUEST", message: "Недостаточно баллов" })
+  return spend.fromWelcome
+}
+
+// Доступный к трате баланс: earned + непросроченные welcome.
+function availableBalance(w: { earnedPoints: number; welcomePoints: number; welcomeExpiresAt: Date | null }) {
+  const welcomeOk = w.welcomeExpiresAt && w.welcomeExpiresAt.getTime() > Date.now()
+  return w.earnedPoints + (welcomeOk ? w.welcomePoints : 0)
+}
+
+const WALLET_SELECT = { earnedPoints: true, welcomePoints: true, welcomeExpiresAt: true, lastWelcomeUsedAt: true } as const
 
 export const socialRouter = router({
   giftStatus: protectedProcedure.query(async ({ ctx }) => {
@@ -14,7 +50,7 @@ export const socialRouter = router({
     const [sender, giftedToday] = await Promise.all([
       ctx.db.user.findUnique({
         where: { id: ctx.userId },
-        select: { earnedPoints: true },
+        select: { earnedPoints: true, welcomePoints: true, welcomeExpiresAt: true },
       }),
       ctx.db.transaction.aggregate({
         where: {
@@ -30,7 +66,8 @@ export const socialRouter = router({
 
     const sentToday = giftedToday._sum.pointsEarned ?? 0
     return {
-      earnedPoints: sender.earnedPoints,
+      // Единый баланс: earned + непросроченные welcome
+      earnedPoints: availableBalance(sender),
       sentToday,
       remainingDailyLimit: Math.max(0, GIFT_DAILY_LIMIT - sentToday),
       minAmount: GIFT_MIN_AMOUNT,
@@ -39,9 +76,8 @@ export const socialRouter = router({
   }),
 
   /**
-   * Transfer earnedPoints from sender to receiver.
+   * Transfer points from sender to receiver (earned + welcome — единый баланс).
    * Limits: min 50 pts/gift, 500 pts/day total outgoing.
-   * Only earnedPoints can be gifted (not welcome balance).
    */
   gift: protectedProcedure
     .input(
@@ -63,14 +99,14 @@ export const socialRouter = router({
       })
       if (!receiver) throw new TRPCError({ code: "NOT_FOUND", message: "Receiver not found" })
 
-      // 2. Check sender's earnedPoints balance
+      // 2. Check sender's balance (earned + welcome)
       const sender = await ctx.db.user.findUnique({
         where: { id: ctx.userId },
-        select: { earnedPoints: true },
+        select: WALLET_SELECT,
       })
       if (!sender) throw new TRPCError({ code: "NOT_FOUND" })
-      if (sender.earnedPoints < input.amount) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Not enough earned points to gift" })
+      if (availableBalance(sender) < input.amount) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Недостаточно баллов для подарка" })
       }
 
       // 3. Daily outgoing limit: sum of GIFT_SENT transactions today
@@ -94,13 +130,7 @@ export const socialRouter = router({
 
       // 4. DB transaction: transfer points + record the gift + both transaction lines
       await ctx.db.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: ctx.userId },
-          data: {
-            earnedPoints: { decrement: input.amount },
-            spentPoints: { increment: input.amount },
-          },
-        })
+        await spendFromWallet(tx, ctx.userId, sender, input.amount)
 
         await tx.user.update({
           where: { id: input.receiverId },
@@ -165,7 +195,7 @@ export const socialRouter = router({
       const [sender, giftedToday] = await Promise.all([
         ctx.db.user.findUnique({
           where: { id: ctx.userId },
-          select: { earnedPoints: true },
+          select: WALLET_SELECT,
         }),
         ctx.db.transaction.aggregate({
           where: { userId: ctx.userId, type: "GIFT_SENT", createdAt: { gte: todayStart } },
@@ -174,8 +204,8 @@ export const socialRouter = router({
       ])
 
       if (!sender) throw new TRPCError({ code: "NOT_FOUND" })
-      if (sender.earnedPoints < input.amount) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Not enough earned points to gift" })
+      if (availableBalance(sender) < input.amount) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Недостаточно баллов для подарка" })
       }
 
       const totalGiftedToday = giftedToday._sum.pointsEarned ?? 0
@@ -190,13 +220,7 @@ export const socialRouter = router({
       expiresAt.setDate(expiresAt.getDate() + GIFT_LINK_EXPIRY_DAYS)
 
       const link = await ctx.db.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: ctx.userId },
-          data: {
-            earnedPoints: { decrement: input.amount },
-            spentPoints: { increment: input.amount },
-          },
-        })
+        await spendFromWallet(tx, ctx.userId, sender, input.amount)
         await tx.transaction.create({
           data: {
             userId: ctx.userId,

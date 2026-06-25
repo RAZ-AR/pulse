@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { TRPCError } from "@trpc/server"
 import { router, publicProcedure, protectedProcedure, merchantProcedure, scanProcedure } from "../trpc"
-import { calcSpend, MIN_REDEEM, WELCOME_COOLDOWN_HOURS } from "@pulse/shared"
+import { calcSpend, MIN_REDEEM } from "@pulse/shared"
 
 const REDEMPTION_TTL_HOURS = 24
 
@@ -106,27 +106,18 @@ export const rewardRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Reward is out of stock" })
         }
 
-        const welcomeCooldownCutoff = new Date(Date.now() - WELCOME_COOLDOWN_HOURS * 3_600_000)
         const walletUpdate = await tx.user.updateMany({
           where: {
             id: ctx.userId,
             earnedPoints: { gte: spend.fromEarned },
             welcomePoints: { gte: spend.fromWelcome },
-            ...(spend.fromWelcome > 0
-              ? {
-                  welcomeExpiresAt: { gt: new Date() },
-                  OR: [
-                    { lastWelcomeUsedAt: null },
-                    { lastWelcomeUsedAt: { lte: welcomeCooldownCutoff } },
-                  ],
-                }
-              : {}),
+            // welcome полноценные, но сгоревшие не тратим
+            ...(spend.fromWelcome > 0 ? { welcomeExpiresAt: { gt: new Date() } } : {}),
           },
           data: {
             earnedPoints: { decrement: spend.fromEarned },
             welcomePoints: { decrement: spend.fromWelcome },
             spentPoints: { increment: reward.pointsCost },
-            ...(spend.fromWelcome > 0 && { lastWelcomeUsedAt: new Date() }),
           },
         })
         if (walletUpdate.count !== 1) {

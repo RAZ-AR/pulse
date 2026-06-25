@@ -1,8 +1,3 @@
-import {
-  WELCOME_MAX_PER_TRANSACTION,
-  WELCOME_COOLDOWN_HOURS,
-} from "./constants"
-
 type WalletSnapshot = {
   earnedPoints: number
   welcomePoints: number
@@ -20,24 +15,15 @@ export function calcSpend(wallet: WalletSnapshot, amount: number): SpendResult {
   const welcomeExpired =
     !wallet.welcomeExpiresAt || wallet.welcomeExpiresAt.getTime() <= now
 
-  const welcomeOnCooldown =
-    wallet.lastWelcomeUsedAt !== null &&
-    now - wallet.lastWelcomeUsedAt.getTime() < WELCOME_COOLDOWN_HOURS * 3_600_000
-
-  // Drain earnedPoints first
+  // Единый баланс: тратим earned, затем welcome (без лимита на транзакцию и
+  // кулдауна — welcome полноценные). Сгоревшие welcome не используются.
   const fromEarned = Math.min(amount, wallet.earnedPoints)
   let remaining = amount - fromEarned
 
   let fromWelcome = 0
-  if (remaining > 0) {
-    if (welcomeExpired || wallet.welcomePoints <= 0) {
-      // No welcome available — check if total covers the rest
-    } else if (welcomeOnCooldown) {
-      return { ok: false, error: "WELCOME_DAILY_LIMIT" }
-    } else {
-      fromWelcome = Math.min(remaining, wallet.welcomePoints, WELCOME_MAX_PER_TRANSACTION)
-      remaining -= fromWelcome
-    }
+  if (remaining > 0 && !welcomeExpired && wallet.welcomePoints > 0) {
+    fromWelcome = Math.min(remaining, wallet.welcomePoints)
+    remaining -= fromWelcome
   }
 
   if (remaining > 0) {

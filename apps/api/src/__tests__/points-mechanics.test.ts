@@ -20,7 +20,7 @@
  *  СПИСАНИЕ (SPEND)
  *  ─────────────────
  *  1. Сначала из earnedPoints, потом из welcomePoints
- *  2. welcomePoints: макс 100/транзакцию, cooldown 24ч, срок 90 дней
+ *  2. welcomePoints: полноценные (без лимита/кулдауна), срок 90 дней
  *  3. Минимальная сумма для редима: MIN_REDEEM = 100
  *  4. QR-код для redemption: TTL = 24ч
  */
@@ -386,59 +386,54 @@ describe("calcSpend — логика списания баллов", () => {
     })
   })
 
-  // ── welcome cap ──────────────────────────────────────────────────────────────
+  // ── welcome без лимита на транзакцию ───────────────────────────────────────────
 
-  describe("лимит welcome = 100/транзакцию", () => {
-    it("ровно 100 из welcome — проходит", () => {
+  describe("welcome полноценные — нет лимита на транзакцию", () => {
+    it("100 из welcome — проходит", () => {
       expect(calcSpend(wallet({ earnedPoints: 0 }), 100)).toEqual(
         { ok: true, fromEarned: 0, fromWelcome: 100 }
       )
     })
 
-    it("101 → не хватает (earned=0, welcome мощностью только 100)", () => {
-      const result = calcSpend(wallet({ earnedPoints: 0 }), 101)
-      expect(result).toEqual({ ok: false, error: "INSUFFICIENT_POINTS" })
-    })
-
-    it("earned=50 + welcome=100 = 150 — максимальная транзакция без earned", () => {
-      expect(calcSpend(wallet({ earnedPoints: 50 }), 150)).toEqual(
-        { ok: true, fromEarned: 50, fromWelcome: 100 }
+    it("101 из welcome — проходит (лимит снят)", () => {
+      expect(calcSpend(wallet({ earnedPoints: 0 }), 101)).toEqual(
+        { ok: true, fromEarned: 0, fromWelcome: 101 }
       )
     })
 
-    it("earned=50 + нужно 200 → не хватает", () => {
-      const result = calcSpend(wallet({ earnedPoints: 50 }), 200)
-      expect(result).toEqual({ ok: false, error: "INSUFFICIENT_POINTS" })
+    it("всё welcome за раз (500)", () => {
+      expect(calcSpend(wallet({ earnedPoints: 0 }), 500)).toEqual(
+        { ok: true, fromEarned: 0, fromWelcome: 500 }
+      )
+    })
+
+    it("earned=50 + нужно 200 → 50 earned + 150 welcome", () => {
+      expect(calcSpend(wallet({ earnedPoints: 50 }), 200)).toEqual(
+        { ok: true, fromEarned: 50, fromWelcome: 150 }
+      )
+    })
+
+    it("больше общего баланса → не хватает", () => {
+      // earned 50 + welcome 500 = 550
+      expect(calcSpend(wallet({ earnedPoints: 50 }), 600)).toEqual(
+        { ok: false, error: "INSUFFICIENT_POINTS" }
+      )
     })
   })
 
-  // ── cooldown ──────────────────────────────────────────────────────────────────
+  // ── cooldown снят ──────────────────────────────────────────────────────────────
 
-  describe("cooldown welcome = 24ч", () => {
-    it("сразу после использования — блокируется", () => {
-      const result = calcSpend(wallet({ earnedPoints: 0, lastWelcomeUsedAt: new Date() }), 50)
-      expect(result).toEqual({ ok: false, error: "WELCOME_DAILY_LIMIT" })
-    })
-
-    it("за 5 минут до истечения cooldown — всё ещё блокируется", () => {
-      const almostDone = new Date(now - (WELCOME_COOLDOWN_HOURS * 3_600_000 - 5 * 60_000))
-      const result = calcSpend(wallet({ earnedPoints: 0, lastWelcomeUsedAt: almostDone }), 50)
-      expect(result).toEqual({ ok: false, error: "WELCOME_DAILY_LIMIT" })
-    })
-
-    it("ровно через 25ч — cooldown снят", () => {
-      const yesterday = new Date(now - 25 * 3_600_000)
-      const result = calcSpend(wallet({ earnedPoints: 0, lastWelcomeUsedAt: yesterday }), 100)
-      expect(result).toEqual({ ok: true, fromEarned: 0, fromWelcome: 100 })
-    })
-
-    it("если есть earned, cooldown не блокирует (earned не затронут cooldown)", () => {
-      const result = calcSpend(
-        wallet({ earnedPoints: 200, lastWelcomeUsedAt: new Date() }),
-        150,
+  describe("welcome без cooldown", () => {
+    it("сразу после использования — всё равно доступен", () => {
+      expect(calcSpend(wallet({ earnedPoints: 0, lastWelcomeUsedAt: new Date() }), 50)).toEqual(
+        { ok: true, fromEarned: 0, fromWelcome: 50 }
       )
-      // 150 покрывается earned, welcome не нужен
-      expect(result).toEqual({ ok: true, fromEarned: 150, fromWelcome: 0 })
+    })
+
+    it("повторная трата welcome подряд — работает", () => {
+      expect(calcSpend(wallet({ earnedPoints: 0, lastWelcomeUsedAt: new Date(now - 60_000) }), 300)).toEqual(
+        { ok: true, fromEarned: 0, fromWelcome: 300 }
+      )
     })
   })
 
@@ -657,10 +652,10 @@ describe("Сквозной сценарий: Марко, неделя актив
     expect(result).toEqual({ ok: true, fromEarned: 80, fromWelcome: 70 })
   })
 
-  it("Попытка потратить 200 pts (earned=0, welcome=500): ошибка — max 100 из welcome", () => {
+  it("Потратить 200 pts (earned=0, welcome=500): всё из welcome (лимит снят)", () => {
     const w = wallet({ earnedPoints: 0 })
     const result = calcSpend(w, 200)
-    expect(result).toEqual({ ok: false, error: "INSUFFICIENT_POINTS" })
+    expect(result).toEqual({ ok: true, fromEarned: 0, fromWelcome: 200 })
   })
 
   it("Welcome-баллы через 91 день — истекли, не работают", () => {
