@@ -290,6 +290,11 @@ export const merchantRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Сессия может быть устаревшей (мерчант пересоздан после сброса базы) —
+      // тогда ownerId не существует и venue.create падает с FK. Дадим понятную ошибку.
+      const merchant = await ctx.db.merchant.findUnique({ where: { id: ctx.merchantId }, select: { id: true } })
+      if (!merchant) throw new TRPCError({ code: "UNAUTHORIZED", message: "Сессия устарела. Выйдите и войдите заново через Telegram." })
+
       const { description, pointsPerCurrency, workingHours, ...rest } = input
       return ctx.db.venue.create({
         data: {
