@@ -6,7 +6,7 @@ import { DeviceChrome, LcdScreen, ModuleGrid, ScreenToggle } from "../../src/com
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
-import { currentPet } from "@pulse/shared"
+import { currentPet, nextPet, collectionProgress } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
@@ -128,6 +128,8 @@ export default function HomeScreen() {
   const tier = userTier(lifetimePoints)
   const progress = tierProgress(lifetimePoints, tier.start, tier.next)
   const petKey = currentPet(lifetimePoints, true)?.key ?? "HATCHLING"
+  const nextPetKey = nextPet(lifetimePoints)?.key ?? null
+  const petRingProgress = collectionProgress(lifetimePoints)
   const streak = me.data?.currentStreak ?? 0
   const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
   const weeklySpent = me.data?.weeklySpentPoints ?? 10
@@ -195,8 +197,9 @@ export default function HomeScreen() {
               streak={streak}
               petName={me.data?.petName}
               coins={total}
+              nextPetKey={nextPetKey}
               lifetimePoints={lifetimePoints}
-              ringProgress={progress}
+              ringProgress={petRingProgress}
               weeklyEarned={weeklyEarned}
               weeklySpent={weeklySpent}
               words={petWords}

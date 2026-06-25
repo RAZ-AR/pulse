@@ -14,12 +14,48 @@
  * stay coloured in both.
  */
 
-import { useEffect, useState } from "react"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { useEffect, useRef, useState } from "react"
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Circle, Defs, Pattern, Rect } from "react-native-svg"
 import { fonts } from "../lib/theme"
-import { AyooPet } from "./AyooPet"
+import { AyooPet, PixelSprite } from "./AyooPet"
+
+// Tiny pixel emotes the main pet "sends" now and then.
+const EMOTES: string[][] = [
+  [".K.K.", "KKKKK", "KKKKK", ".KKK.", "..K.."], // heart
+  ["..K..", ".KKK.", "KKKKK", ".KKK.", "..K.."], // diamond
+  ["K...K", ".K.K.", "..K..", ".K.K.", "K...K"], // sparkle
+  [".KKK.", "K.K.K", "KKKKK", "K...K", ".KKK."], // smiley
+  ["..K..", "..K..", "KKKKK", "..K..", "..K.."], // plus
+]
+
+function PixelEmote({ ink }: { ink: string }) {
+  const [emote, setEmote] = useState<string[] | null>(null)
+  const y = useRef(new Animated.Value(0)).current
+  const op = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    let outer: ReturnType<typeof setTimeout>
+    const tick = () => {
+      setEmote(EMOTES[Math.floor(Math.random() * EMOTES.length)] ?? null)
+      y.setValue(6)
+      op.setValue(1)
+      Animated.parallel([
+        Animated.timing(y, { toValue: -22, duration: 1500, useNativeDriver: true }),
+        Animated.timing(op, { toValue: 0, duration: 1500, useNativeDriver: true }),
+      ]).start()
+      outer = setTimeout(tick, 4500 + Math.random() * 4500)
+    }
+    outer = setTimeout(tick, 2500)
+    return () => clearTimeout(outer)
+  }, [y, op])
+  if (!emote) return null
+  return (
+    <Animated.View style={[s.emote, { opacity: op, transform: [{ translateY: y }] }]} pointerEvents="none">
+      <PixelSprite rows={emote} px={3} ink={ink} />
+    </Animated.View>
+  )
+}
 
 // Standard pet names (Latin — render in the Press Start 2P pixel font).
 export const PET_NAMES: Record<string, string> = {
@@ -85,6 +121,7 @@ export type Stat = { label: string; value: number }
 
 export function TamagotchiWindow({
   petKey,
+  nextPetKey,
   streak,
   petName,
   coins,
@@ -100,6 +137,7 @@ export function TamagotchiWindow({
   dark = true,
 }: {
   petKey: string
+  nextPetKey?: string | null | undefined
   streak: number
   petName?: string | null | undefined
   coins: number
@@ -164,42 +202,48 @@ export function TamagotchiWindow({
           <Text style={[s.weekLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>{spentLabel}</Text>
         </View>
 
-        {/* progress ring → next pet, pet sits inside; lifetime points below */}
-        <View style={s.centerStack}>
-          <View style={s.ringWrap}>
-            <Svg width={132} height={132}>
-              <Circle cx={66} cy={66} r={61} stroke={lcd.track} strokeWidth={8} fill="none" />
-              <Circle
-                cx={66}
-                cy={66}
-                r={61}
-                stroke={lcd.ink}
-                strokeWidth={8}
-                fill="none"
-                strokeLinecap="round"
-                strokeDasharray={383.3}
-                strokeDashoffset={383.3 * (1 - Math.max(0, Math.min(1, ringProgress)))}
-                transform="rotate(-90 66 66)"
-              />
-            </Svg>
-            <View style={s.ringPet}>
-              <AyooPet petKey={petKey} streak={streak} pixelSize={5} walkRange={0} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
-            </View>
+        {/* main pet — big, roams the centre, now and then pops a pixel emote */}
+        <View style={s.mainPetWrap} pointerEvents="none">
+          <View style={s.petBox}>
+            <PixelEmote ink={lcd.ink} />
+            <AyooPet petKey={petKey} streak={streak} pixelSize={8} walkRange={28} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
           </View>
-
-          {/* all-time earned points (gross — spends not subtracted) */}
-          <Text style={[s.lifetimeNum, { fontFamily: fonts.pixel, color: lcd.ink }]} numberOfLines={1}>
-            {lifetimePoints.toLocaleString()}
-          </Text>
-          <Text style={[s.lifetimeLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>ALL-TIME</Text>
-
-          {/* pet name — sometimes the pet "speaks" a word (red, stays coloured) */}
           <Text
             style={[s.nameCaption, { fontFamily: fonts.pixel, color: lcd.ink }, flash ? s.captionFlash : null]}
             numberOfLines={1}
           >
             {flash ?? name}
           </Text>
+        </View>
+
+        {/* bottom-left: next pet to unlock inside a progress ring + all-time points */}
+        <View style={s.nextWrap}>
+          <View style={s.smallRing}>
+            <Svg width={54} height={54}>
+              <Circle cx={27} cy={27} r={24} stroke={lcd.track} strokeWidth={4} fill="none" />
+              <Circle
+                cx={27}
+                cy={27}
+                r={24}
+                stroke={lcd.ink}
+                strokeWidth={4}
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray={150.8}
+                strokeDashoffset={150.8 * (1 - Math.max(0, Math.min(1, ringProgress)))}
+                transform="rotate(-90 27 27)"
+              />
+            </Svg>
+            <View style={s.smallRingPet}>
+              <AyooPet petKey={nextPetKey ?? petKey} streak={0} pixelSize={2} walkRange={0} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
+            </View>
+          </View>
+          <View>
+            <Text style={[s.lifetimeNum, { fontFamily: fonts.pixel, color: lcd.ink }]} numberOfLines={1}>
+              {lifetimePoints.toLocaleString()}
+            </Text>
+            <Text style={[s.lifetimeLabel, { fontFamily: fonts.pixel, color: lcd.inkDim }]}>ALL-TIME</Text>
+          </View>
         </View>
 
         {/* device status, bottom-right — STREAK / WELCOME / QUESTS */}
@@ -260,13 +304,19 @@ const s = StyleSheet.create({
     borderWidth: 2,
   },
   // ── centre: progress ring + pet + all-time points ──
-  centerStack: { alignItems: "center", justifyContent: "center" },
-  ringWrap: { width: 132, height: 132, alignItems: "center", justifyContent: "center" },
-  ringPet: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
-  lifetimeNum: { fontSize: 22, lineHeight: 24, marginTop: 8 },
-  lifetimeLabel: { fontSize: 6, letterSpacing: 1, marginTop: 4 },
-  nameCaption: { fontSize: 11, marginTop: 8 },
+  // ── centre: big main pet + floating pixel emote ──
+  mainPetWrap: { position: "absolute", left: 0, right: 0, top: 30, bottom: 70, alignItems: "center", justifyContent: "center" },
+  petBox: { alignItems: "center", justifyContent: "center" },
+  emote: { position: "absolute", top: -18, left: 0, right: 0, alignItems: "center" },
+  nameCaption: { fontSize: 11, marginTop: 12 },
   captionFlash: { color: "#E23B22" },
+
+  // ── bottom-left: next-pet ring + all-time points ──
+  nextWrap: { position: "absolute", left: 12, bottom: 12, flexDirection: "row", alignItems: "center", gap: 8 },
+  smallRing: { width: 54, height: 54, alignItems: "center", justifyContent: "center" },
+  smallRingPet: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  lifetimeNum: { fontSize: 17, lineHeight: 19 },
+  lifetimeLabel: { fontSize: 6, letterSpacing: 1, marginTop: 2 },
 
   // device status, bottom-right corner
   infoWrap: { position: "absolute", bottom: 10, right: 12, alignItems: "flex-end", gap: 5 },
