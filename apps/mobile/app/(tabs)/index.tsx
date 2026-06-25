@@ -6,7 +6,7 @@ import { DeviceChrome, LcdScreen, ModuleGrid, ScreenToggle } from "../../src/com
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
-import { currentPet, nextPet, collectionProgress } from "@pulse/shared"
+import { currentPet, nextPet } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../src/lib/theme"
@@ -128,8 +128,11 @@ export default function HomeScreen() {
   const tier = userTier(lifetimePoints)
   const progress = tierProgress(lifetimePoints, tier.start, tier.next)
   const petKey = currentPet(lifetimePoints, true)?.key ?? "HATCHLING"
-  const nextPetKey = nextPet(lifetimePoints)?.key ?? null
-  const petRingProgress = collectionProgress(lifetimePoints)
+  // Ring fills toward the next pet's ABSOLUTE threshold, counting all-time
+  // points from zero (e.g. 500 of 1500 = 33%). Full + current pet at max.
+  const nextLevel = nextPet(lifetimePoints)
+  const nextPetKey = nextLevel?.key ?? null
+  const petRingProgress = nextLevel ? Math.min(1, lifetimePoints / nextLevel.threshold) : 1
   const streak = me.data?.currentStreak ?? 0
   const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
   const weeklySpent = me.data?.weeklySpentPoints ?? 10
