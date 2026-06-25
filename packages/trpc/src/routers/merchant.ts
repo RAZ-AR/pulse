@@ -901,4 +901,38 @@ export const merchantRouter = router({
         customerName: user.name ?? "Customer",
       }
     }),
+
+  // Партнёр принимает QR-подарок клиента — баллы зачисляются на баланс мерчанта.
+  // Одноразово: повторный или чужой скан не пройдёт. Списание у отправителя уже
+  // произошло при создании ссылки (social.createGiftLink).
+  claimGift: merchantProcedure
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const link = await ctx.db.giftLink.findUnique({
+        where: { token: input.token },
+        select: { id: true, amount: true, status: true, expiresAt: true },
+      })
+      if (!link) throw new TRPCError({ code: "NOT_FOUND", message: "Подарок не найден" })
+      if (link.status !== "PENDING") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: link.status === "CLAIMED" ? "Подарок уже активирован" : "Подарок недействителен" })
+      }
+      if (link.expiresAt < new Date()) {
+        await ctx.db.giftLink.update({ where: { id: link.id }, data: { status: "EXPIRED" } })
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Срок подарка истёк" })
+      }
+
+      await ctx.db.$transaction(async (tx) => {
+        const claimed = await tx.giftLink.updateMany({
+          where: { id: link.id, status: "PENDING" },
+          data: { status: "CLAIMED", claimedAt: new Date() },
+        })
+        if (claimed.count !== 1) throw new TRPCError({ code: "CONFLICT", message: "Подарок уже активирован" })
+        await tx.merchant.update({
+          where: { id: ctx.merchantId },
+          data: { pointsBalance: { increment: link.amount } },
+        })
+      })
+
+      return { received: link.amount }
+    }),
 })

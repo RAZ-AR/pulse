@@ -1540,11 +1540,23 @@ function ScanTab(props) {
     if (!tg || !tg.showScanQrPopup) { setError('Сканер недоступен — введите код вручную'); return; }
     tg.showScanQrPopup({ text: 'QR-код клиента ayoo' }, function(raw) {
       tg.closeScanQrPopup && tg.closeScanQrPopup();
+      var gift = raw.match(/gift_([A-Za-z0-9]+)/);
+      if (gift) { claimGift(gift[1]); return true; }
       var m = raw.match(/ayoo:\\/\\/user\\/([A-Z0-9]+)/i) || raw.match(/^([A-Z0-9]{4,12})$/i);
       if (m) resolveCode(m[1]);
       else setError('Не удалось распознать QR-код');
       return true;
     });
+  }
+
+  async function claimGift(tkn) {
+    setLoading(true); setError('');
+    try {
+      var res = await trpcMutate(token, 'merchant.claimGift', { token: tkn });
+      setResult({ type: 'gift', points: res.received });
+      setMode('result');
+    } catch(e) { setError('Подарок: ' + e.message); }
+    finally { setLoading(false); }
   }
 
   async function resolveCode(ref) {
@@ -1723,11 +1735,11 @@ function ScanTab(props) {
   if (mode === 'result' && result) return h('div', {
     style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', padding: '0 24px', textAlign: 'center' },
   },
-    h('div', { style: { fontSize: 72, marginBottom: 16 } }, result.type === 'earn' ? '✅' : '🧾'),
-    h('div', { style: { fontSize: 24, fontWeight: 800, marginBottom: 8 } }, result.type === 'earn' ? 'Баллы начислены!' : 'Баллы списаны!'),
-    h('div', { style: { fontSize: 48, fontWeight: 900, color: result.type === 'earn' ? C.green : C.orange, marginBottom: 8 } },
-      (result.type === 'earn' ? '+' : '-') + result.points + ' pts'),
-    h('div', { style: { fontSize: 15, color: C.hint, marginBottom: 24 } }, result.name),
+    h('div', { style: { fontSize: 72, marginBottom: 16 } }, result.type === 'earn' ? '✅' : result.type === 'gift' ? '🎁' : '🧾'),
+    h('div', { style: { fontSize: 24, fontWeight: 800, marginBottom: 8 } }, result.type === 'earn' ? 'Баллы начислены!' : result.type === 'gift' ? 'Подарок принят!' : 'Баллы списаны!'),
+    h('div', { style: { fontSize: 48, fontWeight: 900, color: result.type === 'redeem' ? C.orange : C.green, marginBottom: 8 } },
+      (result.type === 'redeem' ? '-' : '+') + result.points + ' pts'),
+    result.name && h('div', { style: { fontSize: 15, color: C.hint, marginBottom: 24 } }, result.name),
     result.newBalance != null && h('div', { style: { fontSize: 14, color: C.hint, marginBottom: 20 } }, 'Новый баланс: ' + result.newBalance.toLocaleString() + ' pts'),
     h(Btn, { label: 'Следующий клиент', onClick: reset })
   );
