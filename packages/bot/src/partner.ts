@@ -6,6 +6,10 @@ import { newOfferScene } from "./scenes/new-offer"
 import { acceptPaymentScene } from "./scenes/accept-payment"
 import type { Context } from "./types"
 
+// Merchant/staff mini-app URL. Overridable via STAFF_APP_URL; uses `||` (not `??`)
+// so an empty env value falls back instead of producing a broken empty web_app URL.
+const MERCHANT_MINI_URL = process.env.STAFF_APP_URL || "https://api.ayoo.space/merchant-mini"
+
 function createBotLoginToken(merchantId: string): string {
   const botToken = process.env.PARTNER_TELEGRAM_BOT_TOKEN ?? ""
   const payload  = Buffer.from(JSON.stringify({
@@ -94,7 +98,7 @@ partnerBot.start(async (ctx) => {
     return
   }
 
-  const miniAppUrl = process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini"
+  const miniAppUrl = MERCHANT_MINI_URL
 
   await ctx.reply(
     `👋 С возвращением, *${merchant.name}*!\n\n` +
@@ -136,7 +140,7 @@ async function handleStaffInvite(ctx: Context, token: string): Promise<void> {
           parse_mode: "Markdown",
           reply_markup: {
             inline_keyboard: [[
-              { text: "📷 Открыть Scanner", web_app: { url: process.env.STAFF_APP_URL ?? process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini" } },
+              { text: "📷 Открыть Scanner", web_app: { url: MERCHANT_MINI_URL } },
             ]],
           },
         }
@@ -185,7 +189,7 @@ async function handleStaffInvite(ctx: Context, token: string): Promise<void> {
     })
   })
 
-  const staffAppUrl = process.env.STAFF_APP_URL ?? process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini"
+  const staffAppUrl = MERCHANT_MINI_URL
 
   await ctx.reply(
     `🎉 *Добро пожаловать, ${firstName ?? "сотрудник"}!*\n\n` +
@@ -562,7 +566,7 @@ partnerBot.action(/^approve_(.+)$/, async (ctx): Promise<void> => {
     data: { status: "ACTIVE", pointsBalance: { increment: WELCOME_BALANCE_NEW } },
   })
 
-  const miniAppUrl = process.env.MINI_APP_URL ?? "https://api.ayoo.space/merchant-mini"
+  const miniAppUrl = MERCHANT_MINI_URL
   if (merchant.telegramChatId) {
     await ctx.telegram.sendMessage(
       merchant.telegramChatId,
