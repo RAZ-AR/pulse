@@ -1092,9 +1092,20 @@ var OFFER_COLORS = [
 var PERCENT_OPTIONS = [5, 8, 10, 15];
 
 function offerTypeLabel(r) {
-  if (r.offerType === 'PURCHASE_PERCENT') return r.bonusPercent + '% от суммы';
+  if (r.offerType === 'ACTION_BONUS') {
+    var act = r.actionType === 'NTH_VISIT' ? ('каждый ' + (r.actionN || 'N') + '-й визит') : 'первый заказ';
+    return '+' + r.pointsCost + ' pts · ' + act;
+  }
   if (r.offerType === 'PRODUCT_BONUS')    return (r.productName || 'Продукт') + ' — ' + r.pointsCost + ' pts';
+  if (r.offerType === 'PURCHASE_PERCENT') return r.bonusPercent + '% от суммы';
   return r.pointsCost + ' pts';
+}
+
+function offerKindBadge(t) {
+  if (t === 'ACTION_BONUS') return '🎯 За действие';
+  if (t === 'PRODUCT_BONUS') return '☕ За продукт';
+  if (t === 'PURCHASE_PERCENT') return '📊 Бонус от суммы';
+  return 'Акция';
 }
 
 function offerStatusColor(r) {
@@ -1120,8 +1131,9 @@ function RewardsTab(props) {
   var confirmDelState = useState(false); var confirmDel = confirmDelState[0]; var setConfirmDel = confirmDelState[1];
 
   // Form state
-  var emptyForm = { offerType: 'PURCHASE_PERCENT', title: '', description: '',
-    bonusPercent: 5, productName: '', pointsCost: '', cardColor: C.accent, endsAt: '' };
+  var emptyForm = { offerType: 'ACTION_BONUS', title: '', description: '',
+    bonusPercent: 5, productName: '', pointsCost: '', actionType: 'FIRST_ORDER', actionN: '5',
+    cardColor: C.accent, endsAt: '' };
   var formState = useState(emptyForm); var form = formState[0]; var setForm = formState[1];
   function setField(k, v) { setForm(function(f) { var n = Object.assign({}, f); n[k] = v; return n; }); }
 
@@ -1150,6 +1162,8 @@ function RewardsTab(props) {
       bonusPercent: r.bonusPercent || 5,
       productName:  r.productName || '',
       pointsCost:   String(r.pointsCost || ''),
+      actionType:   r.actionType || 'FIRST_ORDER',
+      actionN:      String(r.actionN || '5'),
       cardColor:    r.cardColor || C.accent,
       endsAt:       r.endsAt ? r.endsAt.substring(0, 10) : '',
     });
@@ -1160,18 +1174,20 @@ function RewardsTab(props) {
 
   async function saveOffer() {
     if (!form.title.trim()) return;
-    if (form.offerType === 'PURCHASE_PERCENT' && !form.bonusPercent) return;
+    if (form.offerType === 'ACTION_BONUS' && (!form.pointsCost || (form.actionType === 'NTH_VISIT' && !parseInt(form.actionN)))) return;
     if (form.offerType === 'PRODUCT_BONUS' && (!form.productName.trim() || !form.pointsCost)) return;
     setSaving(true); setError('');
     try {
+      var awardsPoints = form.offerType === 'PRODUCT_BONUS' || form.offerType === 'ACTION_BONUS';
       var payload = {
         venueId:      venue.id,
         offerType:    form.offerType,
         title:        form.title.trim(),
         description:  form.description.trim() || undefined,
-        bonusPercent: form.offerType === 'PURCHASE_PERCENT' ? Number(form.bonusPercent) : undefined,
         productName:  form.offerType === 'PRODUCT_BONUS'   ? form.productName.trim() : undefined,
-        pointsCost:   form.offerType === 'PRODUCT_BONUS'   ? parseInt(form.pointsCost) : 0,
+        actionType:   form.offerType === 'ACTION_BONUS'    ? form.actionType : undefined,
+        actionN:      form.offerType === 'ACTION_BONUS' && form.actionType === 'NTH_VISIT' ? parseInt(form.actionN) : undefined,
+        pointsCost:   awardsPoints ? parseInt(form.pointsCost) : 0,
         cardColor:    form.cardColor,
         endsAt:       form.endsAt ? new Date(form.endsAt).toISOString() : undefined,
       };
@@ -1189,9 +1205,10 @@ function RewardsTab(props) {
         rewardId:     selected.id,
         title:        form.title.trim(),
         description:  form.description.trim() || undefined,
-        bonusPercent: form.offerType === 'PURCHASE_PERCENT' ? Number(form.bonusPercent) : undefined,
         productName:  form.offerType === 'PRODUCT_BONUS'   ? form.productName.trim() : undefined,
-        pointsCost:   form.offerType === 'PRODUCT_BONUS'   ? parseInt(form.pointsCost) : 0,
+        actionType:   form.offerType === 'ACTION_BONUS'    ? form.actionType : undefined,
+        actionN:      form.offerType === 'ACTION_BONUS' && form.actionType === 'NTH_VISIT' ? parseInt(form.actionN) : undefined,
+        pointsCost:   (form.offerType === 'PRODUCT_BONUS' || form.offerType === 'ACTION_BONUS') ? parseInt(form.pointsCost) : 0,
         cardColor:    form.cardColor,
         endsAt:       form.endsAt ? new Date(form.endsAt).toISOString() : null,
       });
@@ -1224,7 +1241,7 @@ function RewardsTab(props) {
     var isEdit = mode === 'edit';
     var canEditContent = !isEdit || !selected || selected.redeemedCount === 0;
     var formValid = form.title.trim() && (
-      (form.offerType === 'PURCHASE_PERCENT' && form.bonusPercent > 0) ||
+      (form.offerType === 'ACTION_BONUS' && form.pointsCost && (form.actionType !== 'NTH_VISIT' || parseInt(form.actionN) > 0)) ||
       (form.offerType === 'PRODUCT_BONUS' && form.productName.trim() && form.pointsCost)
     );
 
@@ -1245,18 +1262,18 @@ function RewardsTab(props) {
         h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Тип акции'),
         h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
           h('button', {
-            onClick: function() { setField('offerType', 'PURCHASE_PERCENT'); },
+            onClick: function() { setField('offerType', 'ACTION_BONUS'); },
             style: {
               padding: '14px 10px', borderRadius: 14, cursor: 'pointer', textAlign: 'center',
-              background: form.offerType === 'PURCHASE_PERCENT' ? C.accent : C.white,
-              color: form.offerType === 'PURCHASE_PERCENT' ? '#fff' : C.text,
-              border: '1.5px solid ' + (form.offerType === 'PURCHASE_PERCENT' ? C.accent : C.border),
+              background: form.offerType === 'ACTION_BONUS' ? C.accent : C.white,
+              color: form.offerType === 'ACTION_BONUS' ? '#fff' : C.text,
+              border: '1.5px solid ' + (form.offerType === 'ACTION_BONUS' ? C.accent : C.border),
               fontWeight: 600,
             },
           },
-            h('div', { style: { fontSize: 22, marginBottom: 4 } }, '📊'),
-            h('div', { style: { fontSize: 13 } }, 'Бонус от суммы'),
-            h('div', { style: { fontSize: 11, marginTop: 2, opacity: 0.7 } }, 'Процент от покупки')
+            h('div', { style: { fontSize: 22, marginBottom: 4 } }, '🎯'),
+            h('div', { style: { fontSize: 13 } }, 'За действие'),
+            h('div', { style: { fontSize: 11, marginTop: 2, opacity: 0.7 } }, 'Первый заказ, N-й визит')
           ),
           h('button', {
             onClick: function() { setField('offerType', 'PRODUCT_BONUS'); },
@@ -1275,26 +1292,37 @@ function RewardsTab(props) {
         )
       ),
 
-      // Процент (PURCHASE_PERCENT)
-      form.offerType === 'PURCHASE_PERCENT' && canEditContent && h('div', { style: { marginBottom: 16 } },
-        h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Процент клиенту'),
-        h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 } },
-          PERCENT_OPTIONS.map(function(p) {
+      // Действие (ACTION_BONUS)
+      form.offerType === 'ACTION_BONUS' && canEditContent && h('div', { style: { marginBottom: 16 } },
+        h('div', { style: { fontSize: 13, color: C.hint, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Действие'),
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 } },
+          [['FIRST_ORDER', 'Первый заказ'], ['NTH_VISIT', 'Каждый N-й визит']].map(function(a) {
             return h('button', {
-              key: p,
-              onClick: function() { setField('bonusPercent', p); },
+              key: a[0],
+              onClick: function() { setField('actionType', a[0]); },
               style: {
-                padding: '14px 0', borderRadius: 14, cursor: 'pointer', textAlign: 'center',
-                background: form.bonusPercent === p ? C.accent : C.white,
-                color: form.bonusPercent === p ? '#fff' : C.text,
-                border: '1.5px solid ' + (form.bonusPercent === p ? C.accent : C.border),
-                fontWeight: 700, fontSize: 18,
+                padding: '12px 8px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
+                background: form.actionType === a[0] ? C.accent : C.white,
+                color: form.actionType === a[0] ? '#fff' : C.text,
+                border: '1.5px solid ' + (form.actionType === a[0] ? C.accent : C.border),
+                fontWeight: 600, fontSize: 13,
               },
-            }, p + '%');
+            }, a[1]);
           })
         ),
+        form.actionType === 'NTH_VISIT' && h('div', { style: { marginBottom: 12 } },
+          h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Каждый N-й визит'),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            h(TxtInput, { value: form.actionN, onChange: function(v) { setField('actionN', v.replace(/[^\\d]/g, '')); }, placeholder: '5', inputMode: 'numeric', style: { maxWidth: 100 } }),
+            h('div', { style: { fontSize: 14, color: C.hint } }, '-й визит → бонус')
+          )
+        ),
+        h('div', { style: { fontSize: 13, color: C.hint, marginBottom: 6 } }, 'Бонусных баллов *'),
+        h(TxtInput, { value: form.pointsCost, onChange: function(v) { setField('pointsCost', v.replace(/[^\\d]/g, '')); }, placeholder: '100', inputMode: 'numeric' }),
         h('div', { style: { fontSize: 12, color: C.hint, marginTop: 8, padding: '8px 12px', background: C.lavender, borderRadius: 10 } },
-          'Клиент получит ' + form.bonusPercent + '% от суммы покупки дополнительно к базовым баллам')
+          form.actionType === 'NTH_VISIT'
+            ? ('Клиент получит +' + (form.pointsCost || '0') + ' баллов на каждый ' + (form.actionN || 'N') + '-й визит')
+            : ('Клиент получит +' + (form.pointsCost || '0') + ' баллов за первый заказ'))
       ),
 
       // Продукт + баллы (PRODUCT_BONUS)
@@ -1316,7 +1344,7 @@ function RewardsTab(props) {
         h(TxtInput, {
           value: form.title,
           onChange: function(v) { setField('title', v); },
-          placeholder: form.offerType === 'PURCHASE_PERCENT' ? 'Двойные баллы на выходных' : 'Бонус за эспрессо',
+          placeholder: form.offerType === 'ACTION_BONUS' ? 'Бонус за первый заказ' : 'Бонус за эспрессо',
         })
       ),
 
@@ -1371,7 +1399,7 @@ function RewardsTab(props) {
           },
         },
           h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 4 } },
-            form.offerType === 'PURCHASE_PERCENT' ? '📊 Бонус от суммы' : '☕ За продукт'),
+            offerKindBadge(form.offerType)),
           h('div', { style: { fontWeight: 700, fontSize: 16 } }, form.title || 'Название акции'),
           form.description && h('div', { style: { fontSize: 12, opacity: 0.8, marginTop: 2 } }, form.description),
           h('div', { style: { fontSize: 13, fontWeight: 600, marginTop: 6, opacity: 0.9 } },
@@ -1420,7 +1448,7 @@ function RewardsTab(props) {
         style: { padding: '18px', borderRadius: 20, background: bgColor, color: '#fff', marginBottom: 16 },
       },
         h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 6 } },
-          r.offerType === 'PURCHASE_PERCENT' ? '📊 Бонус от суммы' : '☕ За продукт'),
+          offerKindBadge(r.offerType)),
         h('div', { style: { fontWeight: 800, fontSize: 20, marginBottom: 4 } }, r.title),
         r.description && h('div', { style: { fontSize: 13, opacity: 0.85, marginBottom: 8 } }, r.description),
         h('div', { style: { fontSize: 16, fontWeight: 700 } }, offerTypeLabel(r)),
@@ -1527,7 +1555,7 @@ function RewardsTab(props) {
                 }, offerStatusLabel(r)),
 
                 h('div', { style: { fontSize: 11, opacity: 0.75, marginBottom: 4 } },
-                  r.offerType === 'PURCHASE_PERCENT' ? '📊 Бонус от суммы' : '☕ За продукт'),
+                  offerKindBadge(r.offerType)),
                 h('div', { style: { fontWeight: 800, fontSize: 17, marginBottom: 2 } }, r.title),
                 h('div', { style: { fontSize: 14, fontWeight: 600, opacity: 0.9, marginTop: 4 } }, offerTypeLabel(r)),
                 h('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginTop: 8, fontSize: 12, opacity: 0.75 } },
@@ -1565,9 +1593,13 @@ function ScanTab(props) {
       tg.closeScanQrPopup && tg.closeScanQrPopup();
       var gift = raw.match(/gift_([A-Za-z0-9]+)/);
       if (gift) { claimGift(gift[1]); return true; }
+      if (/ayoo:\\/\\/offer\\//i.test(raw)) {
+        setError('Это QR акции — его сканирует клиент в своём приложении, чтобы получить баллы. Для начисления или оплаты попросите клиента показать его личный QR из раздела «Профиль».');
+        return true;
+      }
       var m = raw.match(/ayoo:\\/\\/user\\/([A-Z0-9]+)/i) || raw.match(/^([A-Z0-9]{4,12})$/i);
       if (m) resolveCode(m[1]);
-      else setError('Не удалось распознать QR-код');
+      else setError('Не удалось распознать QR-код. Нужен личный QR клиента из раздела «Профиль».');
       return true;
     });
   }

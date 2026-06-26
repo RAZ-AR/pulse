@@ -462,9 +462,11 @@ model Reward {
   redemptions Redemption[]
 
   // Offer-type promotions (earning, not spending)
-  offerType    String   @default("REDEEM")  // REDEEM | PURCHASE_PERCENT | PRODUCT_BONUS
-  bonusPercent Float?                        // for PURCHASE_PERCENT: 5 | 8 | 10 | 15
+  offerType    String   @default("REDEEM")  // REDEEM | ACTION_BONUS | PRODUCT_BONUS | PURCHASE_PERCENT(deprecated)
+  bonusPercent Float?                        // legacy PURCHASE_PERCENT
   productName  String?                       // for PRODUCT_BONUS: "Эспрессо"
+  actionType   String?                       // for ACTION_BONUS: FIRST_ORDER | NTH_VISIT
+  actionN      Int?                          // for NTH_VISIT: every N-th purchase
   cardColor    String?                       // hex: "#5B4CF5"
   endsAt       DateTime?
   isPaused     Boolean  @default(false)

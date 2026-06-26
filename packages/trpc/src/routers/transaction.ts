@@ -810,12 +810,35 @@ export const transactionRouter = router({
       const pointsEarned = Math.floor(basePoints * stepMult)
 
       const streak = computeStreakUpdate(user.currentStreak, user.longestStreak, user.lastCheckinAt)
-      const totalPoints = pointsEarned + streak.milestoneBonus
 
-      // Мерчант финансирует конвертацию покупки (pointsEarned). Платформенные
+      // Промо-акции «за действие»: первый заказ / каждый N-й визит у заведения.
+      // Бонус финансирует мерчант (как и базовое начисление).
+      const visitNumber = priorPurchaseCount + 1
+      const actionRewards = await ctx.db.reward.findMany({
+        where: {
+          venueId: input.venueId,
+          offerType: "ACTION_BONUS",
+          isActive: true,
+          isPaused: false,
+          OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }],
+        },
+        select: { title: true, pointsCost: true, actionType: true, actionN: true },
+      })
+      let actionBonus = 0
+      for (const r of actionRewards) {
+        if (r.pointsCost <= 0) continue
+        const match =
+          (r.actionType === "FIRST_ORDER" && isFirstPurchase) ||
+          (r.actionType === "NTH_VISIT" && !!r.actionN && r.actionN > 0 && visitNumber % r.actionN === 0)
+        if (match) actionBonus += r.pointsCost
+      }
+
+      const totalPoints = pointsEarned + streak.milestoneBonus + actionBonus
+
+      // Мерчант финансирует конвертацию покупки + промо-бонус. Платформенные
       // бонусы (стрик, реферал) с баланса мерчанта не списываются.
       // Проверяем баланс/кредит (может бросить CREDIT_REQUIRED для согласия).
-      await assertMerchantCanAward(ctx.db, ctx.merchantId, pointsEarned)
+      await assertMerchantCanAward(ctx.db, ctx.merchantId, pointsEarned + actionBonus)
 
       // 4. DB transaction: award points + update streak
       const result = await ctx.db.$transaction(async (tx) => {
@@ -845,11 +868,25 @@ export const transactionRouter = router({
           select: { earnedPoints: true, welcomePoints: true, currentStreak: true },
         })
 
-        // Списываем сконвертированные баллы с баланса мерчанта
+        // Списываем сконвертированные баллы + промо-бонус с баланса мерчанта
         await tx.merchant.update({
           where: { id: ctx.merchantId },
-          data: { pointsBalance: { decrement: pointsEarned } },
+          data: { pointsBalance: { decrement: pointsEarned + actionBonus } },
         })
+
+        // Отдельная запись для промо-бонуса «за действие»
+        if (actionBonus > 0) {
+          await tx.transaction.create({
+            data: {
+              userId: input.userId,
+              venueId: input.venueId,
+              type: "BONUS",
+              pointsEarned: actionBonus,
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+            },
+          })
+        }
 
         if (streak.milestoneBonus > 0) {
           await tx.transaction.create({

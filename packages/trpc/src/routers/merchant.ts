@@ -384,12 +384,15 @@ export const merchantRouter = router({
     .input(
       z.object({
         venueId:      z.string(),
-        offerType:    z.enum(["PURCHASE_PERCENT", "PRODUCT_BONUS", "REDEEM"]).default("REDEEM"),
+        offerType:    z.enum(["ACTION_BONUS", "PRODUCT_BONUS", "PURCHASE_PERCENT", "REDEEM"]).default("REDEEM"),
         title:        z.string().min(1).max(100),
         description:  z.string().max(500).optional(),
-        // PURCHASE_PERCENT
+        // PURCHASE_PERCENT (legacy)
         bonusPercent: z.number().positive().optional(),
-        // PRODUCT_BONUS / REDEEM
+        // ACTION_BONUS
+        actionType:   z.enum(["FIRST_ORDER", "NTH_VISIT"]).optional(),
+        actionN:      z.number().int().positive().optional(),
+        // PRODUCT_BONUS / REDEEM / ACTION_BONUS — pointsCost = начисляемые баллы
         pointsCost:   z.number().int().min(0).default(0),
         productName:  z.string().max(100).optional(),
         // Common
@@ -414,6 +417,8 @@ export const merchantRouter = router({
           offerType:    input.offerType,
           bonusPercent: input.bonusPercent ?? null,
           productName:  input.productName ?? null,
+          actionType:   input.actionType ?? null,
+          actionN:      input.actionN ?? null,
           cardColor:    input.cardColor ?? null,
           endsAt:       input.endsAt ? new Date(input.endsAt) : null,
           redemptionType: input.redemptionType,
@@ -433,6 +438,8 @@ export const merchantRouter = router({
         pointsCost:   z.number().int().min(0).optional(),
         bonusPercent: z.number().positive().optional(),
         productName:  z.string().max(100).optional(),
+        actionType:   z.enum(["FIRST_ORDER", "NTH_VISIT"]).optional(),
+        actionN:      z.number().int().positive().optional(),
         cardColor:    z.string().nullable().optional(),
         endsAt:       z.string().datetime().nullable().optional(),
         isActive:     z.boolean().optional(),
@@ -461,6 +468,8 @@ export const merchantRouter = router({
           ...(fields.pointsCost   !== undefined ? { pointsCost: fields.pointsCost }     : {}),
           ...(fields.bonusPercent !== undefined ? { bonusPercent: fields.bonusPercent } : {}),
           ...(fields.productName  !== undefined ? { productName: fields.productName ?? null } : {}),
+          ...(fields.actionType   !== undefined ? { actionType: fields.actionType }     : {}),
+          ...(fields.actionN      !== undefined ? { actionN: fields.actionN }           : {}),
           ...(fields.cardColor    !== undefined ? { cardColor: fields.cardColor ?? null } : {}),
           ...(fields.endsAt       !== undefined ? { endsAt: fields.endsAt ? new Date(fields.endsAt) : null } : {}),
           ...(fields.isActive     !== undefined ? { isActive: fields.isActive }         : {}),
@@ -615,6 +624,7 @@ export const merchantRouter = router({
           id: true, title: true, description: true, pointsCost: true,
           isActive: true, isPaused: true, redeemedCount: true,
           offerType: true, bonusPercent: true, productName: true,
+          actionType: true, actionN: true,
           cardColor: true, endsAt: true, createdAt: true,
         },
         orderBy: [{ createdAt: "desc" }],
