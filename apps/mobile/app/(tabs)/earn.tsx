@@ -2,9 +2,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, neonColors, useTheme } from "../../src/lib/theme"
+import { colors, fonts, neonColors, space, typeScale, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
-import { AyooLogo } from "../../src/components/AyooLogo"
+import { AyooFace } from "../../src/components/AyooFace"
 import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
 
 const TX_ICONS: Record<string, string> = {
@@ -69,7 +69,7 @@ export default function EarnScreen() {
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
           <View style={[s.brandLogo, isRainbow && s.brandLogoRainbow]}>
-            <AyooLogo width={68} />
+            <AyooFace width={68} />
           </View>
           <View style={s.blackPill}>
             <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("activePlan")}</Text>
@@ -261,33 +261,33 @@ function EarnMethod({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 110 },
-  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
+  content: { padding: space.screen, paddingBottom: space.bottomGutter },
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   kicker: { fontSize: 11, letterSpacing: 1.8 },
-  title: { fontSize: 34, lineHeight: 38, letterSpacing: 0 },
+  title: { fontSize: typeScale.display.size, lineHeight: typeScale.display.line, letterSpacing: 0 },
   balanceBubble: { width: 86, height: 86, borderRadius: 43, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.34, shadowRadius: 12, elevation: 3 },
   balanceValue: { color: colors.ink, fontSize: 25, lineHeight: 27 },
   balanceLabel: { color: "#7A808E", fontSize: 11 },
-  hero: { borderRadius: 32, padding: 18, minHeight: 214, marginBottom: 12, overflow: "hidden" },
+  hero: { borderRadius: 32, padding: 18, minHeight: 150, marginBottom: 12, overflow: "hidden" },
   heroOrb: { position: "absolute", right: -52, top: -42, width: 170, height: 170, borderRadius: 85, borderWidth: 1, borderColor: "rgba(167,232,238,0.32)" },
-  heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 34 },
+  heroHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   brandLogo: { width: 76, height: 44, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.72)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.86)" },
   brandLogoRainbow: { backgroundColor: "rgba(255,255,255,0.82)" },
   blackPill: { backgroundColor: "rgba(255,255,255,0.58)", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 9 },
   blackPillText: { color: "#75736A", fontSize: 12 },
-  heroTitle: { color: "#015634", fontSize: 31, lineHeight: 34, width: 250 },
+  heroTitle: { color: "#015634", fontSize: typeScale.title.size, lineHeight: typeScale.title.line, width: 250 },
   heroSub: { color: "#75736A", fontSize: 13, marginTop: 10 },
   methods: { gap: 10, marginBottom: 24 },
   methodCard: { borderRadius: 32, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, shadowColor: "#C9C4B4", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 0.28, shadowRadius: 12, elevation: 3 },
   methodCardContent: { flexDirection: "row", alignItems: "center", gap: 12 },
   methodIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   methodIconText: { fontSize: 18, fontWeight: "900" },
-  methodTitle: { fontSize: 19, lineHeight: 22 },
+  methodTitle: { fontSize: typeScale.card.size, lineHeight: typeScale.card.line },
   methodSub: { fontSize: 12, marginTop: 3 },
   methodNote: { fontSize: 10, maxWidth: 82, textAlign: "right" },
   methodArrow: { fontSize: 22, marginTop: 4 },
   sectionRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 },
-  sectionTitle: { fontSize: 25 },
+  sectionTitle: { fontSize: typeScale.title.size, lineHeight: typeScale.title.line },
   seeAll: { fontSize: 12 },
   activityCard: { padding: 0 },
   txRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },

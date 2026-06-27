@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState } from "react"
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import QRCode from "react-native-qrcode-svg"
+import { useState } from "react"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { TamagotchiWindow } from "../../src/components/Tamagotchi"
-import { DeviceChrome, LcdScreen, ModuleGrid, ScreenToggle } from "../../src/components/console"
+import { DeviceChrome, ModuleGrid, ScreenToggle } from "../../src/components/console"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
 import { currentPet, nextPet } from "@pulse/shared"
 import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
-import { colors, fonts, useTheme } from "../../src/lib/theme"
+import { colors, fonts, space, typeScale, useTheme } from "../../src/lib/theme"
 import { LavaLampSurface } from "../../src/components/neu"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
@@ -86,22 +85,10 @@ export default function HomeScreen() {
   const petWords = PET_MOODS[(i18n.language ?? "en").slice(0, 2)] ?? PET_MOODS.en
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
-  const [deviceMode, setDeviceMode] = useState<"home" | "earn" | "spend">("home")
   // Screen theme — dark glass (default) or the original light LCD.
   const [screenDark, setScreenDark] = useState(true)
   // Body tint — the COLOR key shuffles it.
   const [bodyColor, setBodyColor] = useState<readonly [string, string]>(BODY_COLORS[0]!)
-  // LCD switch animation — content fades/scales in while a scanline sweeps down.
-  const lcdAnim = useRef(new Animated.Value(1)).current
-  const scanAnim = useRef(new Animated.Value(1)).current
-  useEffect(() => {
-    lcdAnim.setValue(0)
-    scanAnim.setValue(0)
-    Animated.parallel([
-      Animated.timing(lcdAnim, { toValue: 1, duration: 240, useNativeDriver: false }),
-      Animated.timing(scanAnim, { toValue: 1, duration: 360, useNativeDriver: false }),
-    ]).start()
-  }, [deviceMode, lcdAnim, scanAnim])
   const me = trpc.user.me.useQuery()
   const utils = trpc.useUtils()
   const updateProfile = trpc.user.updateProfile.useMutation({
@@ -136,8 +123,6 @@ export default function HomeScreen() {
   const streak = me.data?.currentStreak ?? 0
   const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
   const weeklySpent = me.data?.weeklySpentPoints ?? 10
-  const activeChallengeRewards = activeChallenges.reduce((sum, uc) => sum + uc.challenge.pointsReward, 0)
-  const todayAvailable = (me.data?.todayPotentialPoints ?? 0) + activeChallengeRewards
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
 
   return (
@@ -188,53 +173,27 @@ export default function HomeScreen() {
       </View>
 
       <DeviceChrome colors={bodyColor} right={<ScreenToggle dark={screenDark} onToggle={() => setScreenDark((v) => !v)} />}>
-        <Animated.View
-          style={[
-            deviceMode !== "home" && s.lcdAnimWrap,
-            { opacity: lcdAnim, transform: [{ scale: lcdAnim.interpolate({ inputRange: [0, 1], outputRange: [0.975, 1] }) }] },
+        <TamagotchiWindow
+          petKey={petKey}
+          streak={streak}
+          petName={me.data?.petName}
+          coins={total}
+          nextPetKey={nextPetKey}
+          lifetimePoints={lifetimePoints}
+          ringProgress={petRingProgress}
+          weeklyEarned={weeklyEarned}
+          weeklySpent={weeklySpent}
+          words={petWords}
+          earnedLabel={t("earnedThisWeek")}
+          spentLabel={t("spentThisWeek")}
+          dark={screenDark}
+          info={[
+            { label: "STREAK",  value: `${streak}d` },
+            { label: "WELCOME", value: `${welcomeDays}d` },
+            { label: "QUESTS",  value: `${activeChallenges.length}` },
           ]}
-        >
-          {deviceMode === "home" ? (
-            <TamagotchiWindow
-              petKey={petKey}
-              streak={streak}
-              petName={me.data?.petName}
-              coins={total}
-              nextPetKey={nextPetKey}
-              lifetimePoints={lifetimePoints}
-              ringProgress={petRingProgress}
-              weeklyEarned={weeklyEarned}
-              weeklySpent={weeklySpent}
-              words={petWords}
-              earnedLabel={t("earnedThisWeek")}
-              spentLabel={t("spentThisWeek")}
-              dark={screenDark}
-              info={[
-                { label: "STREAK",  value: `${streak}d` },
-                { label: "WELCOME", value: `${welcomeDays}d` },
-                { label: "QUESTS",  value: `${activeChallenges.length}` },
-              ]}
-              onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
-            />
-          ) : deviceMode === "earn" ? (
-            <EarnPanel total={total} weekly={weeklyEarned} today={todayAvailable} dark={screenDark} />
-          ) : (
-            <SpendPanel rewards={rewardItems} available={total} dark={screenDark} />
-          )}
-          {/* scanline sweep on mode switch (earn/spend only) */}
-          {deviceMode !== "home" ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                s.scanline,
-                {
-                  opacity: scanAnim.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 0.7, 0.7, 0] }),
-                  transform: [{ translateY: scanAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 240] }) }],
-                },
-              ]}
-            />
-          ) : null}
-        </Animated.View>
+          onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
+        />
 
         {/* Reference control grid — fixed hardware modules, like a lock-screen device */}
         <ModuleGrid
@@ -251,12 +210,6 @@ export default function HomeScreen() {
         <View style={s.deviceFooter}>
           <Text style={[s.deviceFooterText, { fontFamily: fonts.pixel }]}>--- ayoo! --- beta 1 ---</Text>
         </View>
-
-        {deviceMode !== "home" ? (
-          <Pressable onPress={() => setDeviceMode("home")} style={({ pressed }) => [s.backBar, !screenDark && s.backBarLight, pressed && s.backBarPressed]}>
-            <Text style={[s.backBarText, !screenDark && s.backBarTextLight, { fontFamily: fonts.pixel }]}>◀ BACK</Text>
-          </Pressable>
-        ) : null}
       </DeviceChrome>
 
       <View style={s.afterDevice} />
@@ -372,108 +325,6 @@ export default function HomeScreen() {
         })}
       </View>
     </ScrollView>
-  )
-}
-
-// Monochrome screen colours per theme (accents green/red stay coloured).
-function screenInk(dark: boolean) {
-  return { ink: dark ? "#CFE3C4" : "#3A3F47", dim: dark ? "#8A887F" : "#9AA0AB" }
-}
-
-// ── EARN mode panel — live earn stats on the device LCD ──
-function EarnPanel({ total, weekly, today, dark }: { total: number; weekly: number; today: number; dark: boolean }) {
-  const { ink, dim } = screenInk(dark)
-  return (
-    <LcdScreen accent="#4FA988" dark={dark}>
-      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#4FA988" }]}>EARN</Text>
-      <Text style={[s.modeBig, { fontFamily: fonts.pixel, color: ink }]}>{total.toLocaleString()}</Text>
-      <View style={s.modeStatsRow}>
-        <View style={s.modeStat}>
-          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel, color: ink }]}>+{weekly.toLocaleString()}</Text>
-          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel, color: dim }]}>WEEK</Text>
-        </View>
-        <View style={s.modeStat}>
-          <Text style={[s.modeStatVal, { fontFamily: fonts.pixel, color: ink }]}>+{today.toLocaleString()}</Text>
-          <Text style={[s.modeStatLab, { fontFamily: fonts.pixel, color: dim }]}>TODAY</Text>
-        </View>
-      </View>
-      <Text style={[s.modeHint, { fontFamily: fonts.pixel, color: dim }]}>SCAN ↓ A RECEIPT TO EARN</Text>
-    </LcdScreen>
-  )
-}
-
-// ── SPEND mode panel — pick a reward → redeem QR right on the LCD ──
-function SpendPanel({ rewards, available, dark }: { rewards: RewardItem[]; available: number; dark: boolean }) {
-  const utils = trpc.useUtils()
-  const { ink, dim } = screenInk(dark)
-  const rowBg = dark ? "#1A1B16" : "#efeeea"
-  const rowBorder = dark ? "rgba(255,255,255,0.10)" : "rgba(110,102,86,0.14)"
-  const rowEdge = dark ? "rgba(0,0,0,0.45)" : "rgba(110,102,86,0.16)"
-  const [redemption, setRedemption] = useState<{ code: string; title: string; expiresAt: Date } | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-  const redeem = trpc.reward.redeem.useMutation({
-    onSuccess: (data, vars) => {
-      const r = rewards.find((x) => x.id === vars.rewardId)
-      setRedemption({ code: data.redemptionCode, title: r?.title ?? "", expiresAt: new Date(data.expiresAt) })
-      utils.user.me.invalidate()
-      utils.reward.list.invalidate()
-    },
-    onError: (e) => setErr(e.message),
-  })
-
-  if (redemption) {
-    return (
-      <LcdScreen accent="#E23B22" dark={dark}>
-        <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#E23B22" }]}>SHOW TO CASHIER</Text>
-        <View style={s.qrBox}>
-          <QRCode value={redemption.code} size={132} backgroundColor="#FFFFFF" color="#1F2937" />
-        </View>
-        <Text style={[s.qrCode, { fontFamily: fonts.pixel, color: dim }]} numberOfLines={1}>{redemption.code}</Text>
-        <Countdown to={redemption.expiresAt} dim={dim} />
-      </LcdScreen>
-    )
-  }
-
-  return (
-    <LcdScreen accent="#E23B22" dark={dark}>
-      <Text style={[s.modeTitle, { fontFamily: fonts.pixel, color: "#E23B22" }]}>SPEND · {available.toLocaleString()}</Text>
-      {err ? <Text style={[s.modeErr, { fontFamily: fonts.pixel }]} numberOfLines={2}>{err}</Text> : null}
-      <ScrollView style={s.rewardScroll} contentContainerStyle={s.rewardScrollInner} showsVerticalScrollIndicator={false}>
-        {rewards.length === 0 ? (
-          <Text style={[s.modeHint, { fontFamily: fonts.pixel, color: dim }]}>NO REWARDS YET</Text>
-        ) : rewards.map((r) => {
-          const afford = available >= r.pointsCost && !redeem.isPending
-          return (
-            <Pressable
-              key={r.id}
-              disabled={!afford}
-              onPress={() => { setErr(null); redeem.mutate({ rewardId: r.id }) }}
-              style={({ pressed }) => [s.rewardRow, { backgroundColor: rowBg, borderColor: rowBorder, borderBottomColor: rowEdge }, !afford && s.rewardRowOff, pressed && s.rewardRowPressed]}
-            >
-              <Text style={[s.rewardRowName, { fontFamily: fonts.bodyBold, color: ink }]} numberOfLines={1}>{r.title}</Text>
-              <Text style={[s.rewardRowCost, { fontFamily: fonts.pixel, color: "#E23B22" }]}>{r.pointsCost}</Text>
-            </Pressable>
-          )
-        })}
-      </ScrollView>
-    </LcdScreen>
-  )
-}
-
-// ── Short H:MM countdown until a redemption code expires ──
-function Countdown({ to, dim }: { to: Date; dim: string }) {
-  const [now, setNow] = useState(Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
-  const ms = Math.max(0, to.getTime() - now)
-  const h = Math.floor(ms / 3_600_000)
-  const m = Math.floor((ms % 3_600_000) / 60_000)
-  return (
-    <Text style={[s.modeHint, { fontFamily: fonts.pixel, color: dim }]}>
-      ⏳ {h}H {String(m).padStart(2, "0")}M LEFT
-    </Text>
   )
 }
 
@@ -658,71 +509,12 @@ function VenueSkeleton() {
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 110 },
-  afterDevice: { height: 24 },
+  content: { padding: space.screen, paddingBottom: space.bottomGutter },
+  afterDevice: { height: 16 },
   // enlarged device bottom — beta signature in pixel font
   deviceFooter: { alignItems: "center", paddingTop: 10, paddingBottom: 16, marginTop: 2 },
   deviceFooterText: { fontSize: 9, letterSpacing: 1.5, color: "#8A887F" },
 
-  // ── Device mode panels (EARN / SPEND) ──
-  lcdAnimWrap: { overflow: "hidden", borderRadius: 18 },
-  scanline: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 3,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    shadowColor: "#FFFFFF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-  },
-  modeTitle: { fontSize: 11, letterSpacing: 1 },
-  modeBig: { fontSize: 30, color: "#CFE3C4", marginTop: 6 },
-  modeHint: { fontSize: 8, lineHeight: 14, color: "#8A887F", textAlign: "center", marginTop: 8 },
-  modeStatsRow: { flexDirection: "row", gap: 28, marginTop: 6 },
-  modeStat: { alignItems: "center", gap: 3 },
-  modeStatVal: { fontSize: 11, color: "#CFE3C4" },
-  modeStatLab: { fontSize: 6, color: "#8A887F", letterSpacing: 0.5 },
-  modeErr: { fontSize: 7, lineHeight: 11, color: "#E8917F", textAlign: "center", marginTop: 4 },
-  qrBox: { backgroundColor: "#FFFFFF", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#C4C4BE" },
-  qrCode: { fontSize: 7, color: "#8A887F", letterSpacing: 0.5, marginTop: 2 },
-  rewardScroll: { width: "100%", maxHeight: 150, marginTop: 6 },
-  rewardScrollInner: { gap: 6, paddingBottom: 2 },
-  rewardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#1A1B16",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-    borderBottomWidth: 3,
-    borderBottomColor: "rgba(0,0,0,0.45)",
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    gap: 10,
-  },
-  rewardRowOff: { opacity: 0.4 },
-  rewardRowPressed: { borderBottomWidth: 1, transform: [{ translateY: 2 }] },
-  rewardRowName: { fontSize: 12, color: "#CFE3C4", flex: 1 },
-  rewardRowCost: { fontSize: 10, color: "#E8917F" },
-  backBar: {
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#1A1B16",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-    borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.45)",
-  },
-  backBarLight: { backgroundColor: "#efeeea", borderColor: "rgba(110,102,86,0.14)", borderBottomColor: "rgba(110,102,86,0.18)" },
-  backBarPressed: { borderBottomWidth: 2, transform: [{ translateY: 2 }] },
-  backBarText: { fontSize: 9, letterSpacing: 1, color: "#CFCEC6" },
-  backBarTextLight: { color: "#75736A" },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -732,7 +524,7 @@ const s = StyleSheet.create({
     paddingTop: 2,
   },
   helloBlock: { flex: 1 },
-  hello: { fontSize: 44, lineHeight: 50, letterSpacing: 0 },
+  hello: { fontSize: typeScale.display.size, lineHeight: typeScale.display.line, letterSpacing: 0 },
   citySwitch: { flexDirection: "row", gap: 7, marginTop: 6 },
   cityPill: { borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 },
   cityPillActive: { backgroundColor: "#FFFFFF", shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.32, shadowRadius: 6, elevation: 2 },
@@ -745,7 +537,7 @@ const s = StyleSheet.create({
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
   sectionMark: { fontSize: 9, color: "#fd4600" },
-  sectionTitle: { color: "#015634", fontSize: 39, lineHeight: 44, letterSpacing: 0 },
+  sectionTitle: { color: "#015634", fontSize: typeScale.title.size, lineHeight: typeScale.title.line, letterSpacing: 0 },
   sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   sectionButtonText: { color: "#75736A", fontSize: 11 },
 
@@ -776,13 +568,13 @@ const s = StyleSheet.create({
   partnerOfferTitle: { fontSize: 13, lineHeight: 17 },
   partnerOfferVenue: { fontSize: 11 },
   offerPressable: { width: 176 },
-  offerCard: { minHeight: 174, borderRadius: 24, padding: 14, overflow: "hidden", backgroundColor: "#efeeea", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 5, borderBottomColor: "rgba(110,102,86,0.18)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 4 },
+  offerCard: { minHeight: 150, borderRadius: 24, padding: 14, overflow: "hidden", backgroundColor: "#efeeea", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 5, borderBottomColor: "rgba(110,102,86,0.18)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 4 },
   offerCardFeatured: { borderBottomColor: "rgba(242,166,110,0.5)" },
   offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
   offerLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   offerLogoText: { fontSize: 16, fontWeight: "900" },
   offerPoints: { backgroundColor: "#DBDBD7", color: "#015634", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, letterSpacing: 0.5 },
-  offerTitle: { fontSize: 21, lineHeight: 23, letterSpacing: 0, minHeight: 48 },
+  offerTitle: { fontSize: typeScale.card.size, lineHeight: typeScale.card.line, letterSpacing: 0, minHeight: 40 },
   offerVenue: { fontSize: 12, marginTop: 8 },
   offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   offerLinkText: { fontSize: 8, letterSpacing: 0.5 },
@@ -802,7 +594,7 @@ const s = StyleSheet.create({
   venueLogoText: { color: "#75736A", fontSize: 22 },
   venueMain: { flex: 1 },
   venueTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  venueName: { color: "#015634", fontSize: 20, lineHeight: 24, flex: 1, marginRight: 8, letterSpacing: 0 },
+  venueName: { color: "#015634", fontSize: typeScale.card.size, lineHeight: typeScale.card.line, flex: 1, marginRight: 8, letterSpacing: 0 },
   venueArrow: { color: "#75736A", fontSize: 22 },
   venueMeta: { color: "#8C887E", fontSize: 8, marginTop: 4, letterSpacing: 0.4 },
   venueAddress: { color: "#C9C4B4", fontSize: 12, marginTop: 2 },

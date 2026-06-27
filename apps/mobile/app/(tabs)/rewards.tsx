@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
-import { fonts, useTheme } from "../../src/lib/theme"
+import { fonts, space, typeScale, useTheme } from "../../src/lib/theme"
 
 // ── Device (Teenage-Engineering) tokens ──
 const ORANGE = "#fd4600"
@@ -176,12 +176,12 @@ const lcdPlate = { backgroundColor: LCD, borderWidth: 2, borderColor: LCD_EDGE }
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 110 },
+  content: { padding: space.screen, paddingBottom: space.bottomGutter },
 
   hero: { ...clayCard, borderRadius: 26, padding: 16, marginBottom: 14 },
   heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
   kicker: { color: DIM, fontSize: 7, letterSpacing: 0.5, marginBottom: 6 },
-  title: { fontSize: 30, lineHeight: 34 },
+  title: { fontSize: typeScale.display.size, lineHeight: typeScale.display.line },
   pointsPill: { ...lcdPlate, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
   pointsPillText: { color: LCD_INK, fontSize: 9, letterSpacing: 0.5 },
   heroSub: { fontSize: 13, marginBottom: 16 },
@@ -205,11 +205,11 @@ const s = StyleSheet.create({
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   rewardPressable: { width: "48%" },
-  rewardCard: { ...clayCard, padding: 14, minHeight: 184, borderRadius: 20 },
+  rewardCard: { ...clayCard, padding: 14, minHeight: 150, borderRadius: 20 },
   rewardCardFeatured: { borderBottomColor: ORANGE },
   rewardLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 18, backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   rewardLogoText: { fontSize: 16, fontWeight: "900", color: "#8C887E" },
-  rewardTitle: { fontSize: 19, lineHeight: 22, marginBottom: 7 },
+  rewardTitle: { fontSize: typeScale.card.size, lineHeight: typeScale.card.line, marginBottom: 7 },
   rewardVenue: { fontSize: 12, marginBottom: 4 },
   stockHint: { fontSize: 6, color: ORANGE_EDGE, marginTop: 2 },
   rewardFoot: { marginTop: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },

@@ -121,6 +121,22 @@ export const radius = {
   pill: 99,
 }
 
+// ── Shared type scale ──────────────────────────────────────────
+// One compact scale for headings across all tabs (was a scatter of
+// 19–44px). { size, line } pairs so line-height shrinks with the size.
+export const typeScale = {
+  display: { size: 28, line: 31 }, // screen titles (Hi name / Rewards / Earn / Cabinet)
+  title:   { size: 22, line: 25 }, // section titles
+  card:    { size: 17, line: 20 }, // venue / offer / reward / method titles
+  stat:    { size: 30, line: 33 }, // big balance numbers
+}
+
+// ── Spacing tokens ─────────────────────────────────────────────
+export const space = {
+  screen: 16,       // ScrollView content padding (was 18)
+  bottomGutter: 90, // space under last item for the floating dock (was 110–116)
+}
+
 // ── Clay theme (soft-plastic styleguide) ───────────────────────
 // Warm paper bg, white extruded surfaces, soft downward shadows.
 const pastelTheme: Theme = {

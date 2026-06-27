@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react"
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { fonts } from "../lib/theme"
-import { AyooLogo } from "./AyooLogo"
+import { AyooFace } from "./AyooFace"
 
 // ── Console palette — near-black body, brushed-aluminum modules ──
 const BODY = ["#DBDBD6", "#BCBCB6"] as const     // light brushed-aluminum hardware body
@@ -342,7 +342,7 @@ function BrandPlate({ right }: { right?: React.ReactNode }) {
   return (
     <View style={s.plate}>
       <View style={s.brand}>
-        <AyooLogo width={87} />
+        <AyooFace width={87} />
       </View>
       <View style={s.plateRight}>
         {right}

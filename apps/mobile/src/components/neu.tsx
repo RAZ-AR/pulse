@@ -31,6 +31,17 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
   const shadow = gradient ? theme.shadowGlow : small ? theme.shadowRaisedSm : theme.shadowRaised
   const r = small ? radius.sm : radius.md
 
+  // Layout props (width/flex/etc.) must sit on the OUTER wrapper — that's the
+  // flex item in a grid. Left on the inner view, a percentage width resolves
+  // against an auto-width parent and collapses to min-content. Same fix as
+  // VolumeGradient. Inner gets flex:1 so it fills the (row-stretched) wrapper.
+  const flat = (StyleSheet.flatten(style) ?? {}) as ViewStyle
+  const { flex, flexGrow, flexShrink, flexBasis, width, height, minWidth, maxWidth, minHeight, maxHeight, alignSelf, ...innerStyle } = flat
+  const outerLayout = Object.fromEntries(
+    Object.entries({ flex, flexGrow, flexShrink, flexBasis, width, height, minWidth, maxWidth, minHeight, maxHeight, alignSelf })
+      .filter(([, v]) => v !== undefined),
+  ) as ViewStyle
+
   // ── Rainbow mode ─────────────────────────────────────────────
   if (isRainbow && gradient) {
     // VolumeGradient wraps gradient cards for 3D gloss effect
@@ -69,18 +80,18 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
       elevation: 5,
     }
     const inner = (
-      <View style={[{ borderRadius: r, backgroundColor: "#F2F2F6", overflow: "hidden" }, style]}>
+      <View style={[{ borderRadius: r, backgroundColor: "#F2F2F6", overflow: "hidden", flex: 1 }, innerStyle]}>
         {children}
       </View>
     )
     if (onPress && !disabled) {
       return (
-        <Pressable onPress={onPress} style={({ pressed }) => [rainbowWrapper, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}>
+        <Pressable onPress={onPress} style={({ pressed }) => [rainbowWrapper, outerLayout, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}>
           {inner}
         </Pressable>
       )
     }
-    return <View style={rainbowWrapper}>{inner}</View>
+    return <View style={[rainbowWrapper, outerLayout]}>{inner}</View>
   }
 
   // ── Pastel mode ───────────────────────────────────────────────
@@ -104,24 +115,24 @@ export function NeuCard({ children, style, onPress, gradient, small, disabled }:
       colors={gradient as unknown as [string, string, ...string[]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[{ borderRadius: r, overflow: "hidden" }, style]}
+      style={[{ borderRadius: r, overflow: "hidden", flex: 1 }, innerStyle]}
     >
       {children}
     </LinearGradient>
   ) : (
-    <View style={[{ borderRadius: r, backgroundColor: theme.surface, overflow: "hidden" }, style]}>
+    <View style={[{ borderRadius: r, backgroundColor: theme.surface, overflow: "hidden", flex: 1 }, innerStyle]}>
       {children}
     </View>
   )
 
   if (onPress && !disabled) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [wrapperStyle, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}>
+      <Pressable onPress={onPress} style={({ pressed }) => [wrapperStyle, outerLayout, pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] }]}>
         {Inner}
       </Pressable>
     )
   }
-  return <View style={wrapperStyle}>{Inner}</View>
+  return <View style={[wrapperStyle, outerLayout]}>{Inner}</View>
 }
 
 // ── Inset (pressed) — for inputs ──────────────────────────────

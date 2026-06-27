@@ -5,7 +5,7 @@ import { uploadAvatarFile } from "../../src/lib/storage"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
 import { LinearGradient } from "expo-linear-gradient"
-import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
+import { colors, fonts, gradients, neonColors, space, typeScale, useTheme, type Theme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 import { NeuCard, NeuInset, VolumeGradient } from "../../src/components/neu"
 import { trpc } from "../../src/lib/trpc"
@@ -293,13 +293,6 @@ export default function ProfileScreen() {
         </View>
       </NeuCard>
 
-      <View style={s.quickGrid}>
-        <QuickAction icon="⌖" label={t("checkIn", "Check in")} sub={t("earnNow", "Earn now")} tone="mint" onPress={() => router.push("/checkin")} isRainbow={isRainbow} />
-        <QuickAction icon="↯" label={t("scanReceipt", "Scan receipt")} sub={t("receipt", "Receipt")} tone="blue" onPress={() => router.push("/scan")} isRainbow={isRainbow} />
-        <QuickAction icon="□" label={t("giftPoints", "Gift")} sub={t("sendPoints", "Send pts")} tone="pink" onPress={() => router.push("/gift")} isRainbow={isRainbow} />
-        <QuickAction icon="◦" label={t("friends", "Friends")} sub={`${friendsCount} ${t("people", "people")}`} tone="white" onPress={() => router.push("/friends")} isRainbow={isRainbow} />
-      </View>
-
       <SectionTitle title={t("activity", "Activity")} action={t("leaderboard", "Leaderboard")} onPress={() => router.push("/leaderboard")} />
       <View style={s.statsRow}>
         <StatTile label={t("lifetime", "Lifetime")} value={u.totalEarnedLifetime.toLocaleString()} isRainbow={isRainbow} rainbowGrad={["#FF2D9B", "#8B3DFF"]} />
@@ -390,7 +383,7 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
         <Text
-          onPress={() => router.push("/referrals")}
+          onPress={() => router.push("/friends")}
           style={s.refsCount}
         >
           {t("referralsCount", "{{count}} referred", { count: referralsCount })} · {friendsCount} {t("friends", "friends")} →
@@ -603,48 +596,6 @@ function StatTile({ label, value, isRainbow, rainbowGrad }: { label: string; val
   )
 }
 
-const QUICK_RAINBOW: Record<string, readonly [string, string]> = {
-  mint:  ["#00F5FF", "#2B6EFF"],
-  blue:  ["#2B6EFF", "#8B3DFF"],
-  pink:  ["#FF2D9B", "#8B3DFF"],
-  white: ["#8B3DFF", "#2B6EFF"],
-}
-
-function QuickAction({
-  icon, label, sub, tone, onPress, isRainbow,
-}: { icon: string; label: string; sub: string; tone: "mint" | "blue" | "pink" | "white"; onPress: () => void; isRainbow?: boolean }) {
-  if (isRainbow) {
-    const grad = QUICK_RAINBOW[tone]!
-    return (
-      <VolumeGradient colors={grad} shadowColor={grad[0]} shadowOpacity={0.32} borderRadius={26} onPress={onPress} style={[s.quickCard, { minHeight: 92 }]}>
-        <View style={[s.quickIcon, { backgroundColor: "rgba(255,255,255,0.22)" }]}>
-          <Text style={[s.quickIconText, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{icon}</Text>
-        </View>
-        <Text style={[s.quickLabel, { color: "#FFFFFF", fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
-        <Text style={[s.quickSub, { color: "rgba(255,255,255,0.72)" }]} numberOfLines={1}>{sub}</Text>
-      </VolumeGradient>
-    )
-  }
-
-  const toneStyle =
-    tone === "mint" ? s.quickIconMint :
-    tone === "blue" ? s.quickIconBlue :
-    tone === "pink" ? s.quickIconPink :
-    s.quickIconWhite
-
-  return (
-    <Pressable onPress={onPress} style={s.quickPressable}>
-      <NeuCard style={s.quickCard} small>
-        <View style={[s.quickIcon, toneStyle]}>
-          <Text style={[s.quickIconText, { fontFamily: fonts.displayHeavy }]}>{icon}</Text>
-        </View>
-        <Text style={[s.quickLabel, { fontFamily: fonts.bodyBold }]} numberOfLines={1}>{label}</Text>
-        <Text style={s.quickSub} numberOfLines={1}>{sub}</Text>
-      </NeuCard>
-    </Pressable>
-  )
-}
-
 function AccountTile({ label, value }: { label: string; value: string }) {
   return (
     <NeuCard style={s.accountTile} small>
@@ -737,12 +688,12 @@ function Btn({
 
 const s = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { width: "100%", maxWidth: 620, alignSelf: "center", padding: 16, paddingBottom: 116 },
+  content: { width: "100%", maxWidth: 620, alignSelf: "center", padding: space.screen, paddingBottom: space.bottomGutter },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   screenHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
   kicker: { color: "#A5A299", fontSize: 11, letterSpacing: 1.8 },
-  screenTitle: { color: colors.ink, fontSize: 30, lineHeight: 33, letterSpacing: 0 },
+  screenTitle: { color: colors.ink, fontSize: typeScale.display.size, lineHeight: typeScale.display.line, letterSpacing: 0 },
   headButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
   headButtonText: { color: colors.ink, fontSize: 18 },
 
@@ -786,7 +737,7 @@ const s = StyleSheet.create({
 
   balancePanel: { borderRadius: 30, backgroundColor: "rgba(255,255,255,0.54)", padding: 14, flexDirection: "row", justifyContent: "space-between", gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
   balanceLabel: { color: "#75736A", fontSize: 10, letterSpacing: 1 },
-  balanceValue: { color: colors.ink, fontSize: 42, lineHeight: 45, marginTop: 2 },
+  balanceValue: { color: colors.ink, fontSize: typeScale.stat.size, lineHeight: typeScale.stat.line, marginTop: 2 },
   balanceSub: { color: "#75736A", fontSize: 12 },
   balanceSplit: { width: 96, gap: 7 },
   miniBalance: { backgroundColor: "rgba(255,255,255,0.50)", borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8 },
@@ -798,18 +749,6 @@ const s = StyleSheet.create({
   levelTrack: { height: 9, borderRadius: 8, backgroundColor: "rgba(163,177,198,0.16)", overflow: "hidden" },
   levelFill: { height: "100%", borderRadius: 8, backgroundColor: "rgba(133,245,242,0.92)" },
 
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginBottom: 18 },
-  quickPressable: { width: "48.5%" },
-  quickCard: { padding: 12, minHeight: 92, borderRadius: 26 },
-  quickIcon: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", marginBottom: 9 },
-  quickIconMint: { backgroundColor: "rgba(236,255,235,0.92)" },
-  quickIconBlue: { backgroundColor: "rgba(235,254,255,0.92)" },
-  quickIconPink: { backgroundColor: "rgba(255,244,254,0.92)" },
-  quickIconWhite: { backgroundColor: "rgba(255,255,255,0.80)" },
-  quickIconText: { color: "#75736A", fontSize: 20 },
-  quickLabel: { color: colors.ink, fontSize: 14 },
-  quickSub: { color: "#75736A", fontSize: 11, marginTop: 2 },
-
   statsRow: { flexDirection: "row", gap: 9, marginBottom: 12 },
   statTile: { flex: 1, padding: 12, minHeight: 72, borderRadius: 24 },
   statValue: { color: colors.ink, fontSize: 21, lineHeight: 23 },
@@ -818,7 +757,7 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
 
   sectionHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  h2: { color: colors.ink, fontSize: 23 },
+  h2: { color: colors.ink, fontSize: typeScale.title.size, lineHeight: typeScale.title.line },
   sectionAction: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.22, shadowRadius: 6, elevation: 1 },
   sectionActionText: { color: "#75736A", fontSize: 11 },
   infoCard: { marginBottom: 18, padding: 0, borderRadius: 28 },

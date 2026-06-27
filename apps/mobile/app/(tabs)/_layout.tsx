@@ -49,11 +49,12 @@ function IconEarn({ color }: { color: string }) {
     </Svg>
   )
 }
-function IconRewards({ color }: { color: string }) {
-  // Filled heart
+function IconProfile({ color }: { color: string }) {
+  // Filled avatar — head + shoulders, matches the puffy set
   return (
     <Svg width={23} height={23} viewBox="0 0 24 24">
-      <Path fill={color} d="M12 20.7C9.2 18.6 3.9 14.8 2.8 10.9 1.9 7.7 4 4.9 6.9 4.6c1.9-.2 3.9.9 5.1 2.7 1.2-1.8 3.2-2.9 5.1-2.7 2.9.3 5 3.1 4.1 6.3-1.1 3.9-6.4 7.7-9.2 9.8Z" />
+      <Circle cx={12} cy={8} r={4.2} fill={color} />
+      <Path fill={color} d="M4.6 19.4c0-3.9 3.3-6.5 7.4-6.5s7.4 2.6 7.4 6.5c0 .8-.5 1.3-1.3 1.3H5.9c-.8 0-1.3-.5-1.3-1.3Z" />
     </Svg>
   )
 }
@@ -89,8 +90,8 @@ function IconGift({ color }: { color: string }) {
 // ── Dock contents ─────────────────────────────────────────────
 const DOCK_TABS = [
   { name: "index",   label: "HOME",    Icon: IconHome },
-  { name: "rewards", label: "REWARDS", Icon: IconRewards },
   { name: "map",     label: "MAP",     Icon: IconMap },
+  { name: "profile", label: "PROFILE", Icon: IconProfile },
 ] as const
 
 // All tab routes (order = navigator order; earn/profile have no dock slot)
