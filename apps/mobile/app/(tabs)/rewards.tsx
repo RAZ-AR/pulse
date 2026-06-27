@@ -47,13 +47,8 @@ export default function RewardsScreen() {
       {/* ── Hero — cream device card with LCD balance cells ── */}
       <View style={s.hero}>
         <View style={s.heroHead}>
-          <View>
-            <Text style={[s.kicker, { fontFamily: fonts.pixel }]}>REWARDS</Text>
-            <Text style={[s.title, { fontFamily: fonts.displayHeavy, color: INK }]}>{t("title", "Rewards")}</Text>
-          </View>
-          <View style={s.pointsPill}>
-            <Text style={[s.pointsPillText, { fontFamily: fonts.pixel }]}>{total.toLocaleString()} {t("pts").toUpperCase()}</Text>
-          </View>
+          <Text style={[s.kicker, { fontFamily: fonts.pixel }]}>REWARDS</Text>
+          <Text style={[s.title, { fontFamily: fonts.displayHeavy, color: INK }]}>{t("title", "Rewards")}</Text>
         </View>
         <Text style={[s.heroSub, { fontFamily: fonts.bodyBold, color: DIM }]}>{t("subtitle", "Redeem points for real perks")}</Text>
         <View style={s.balanceRow}>
@@ -61,10 +56,12 @@ export default function RewardsScreen() {
             <Text style={[s.balanceValue, { fontFamily: fonts.pixel }]}>{total.toLocaleString()}</Text>
             <Text style={[s.balanceLabel, { fontFamily: fonts.pixel }]}>{t("common:available", "Available").toUpperCase()}</Text>
           </View>
-          <View style={s.balanceCell}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.pixel }]}>{welcomePoints}</Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.pixel }]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
-          </View>
+          {welcomePoints > 0 ? (
+            <View style={s.balanceCell}>
+              <Text style={[s.balanceValue, { fontFamily: fonts.pixel }]}>{welcomePoints}</Text>
+              <Text style={[s.balanceLabel, { fontFamily: fonts.pixel }]}>{t("common:welcome", "Welcome").toUpperCase()}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -179,11 +176,9 @@ const s = StyleSheet.create({
   content: { padding: space.screen, paddingBottom: space.bottomGutter },
 
   hero: { ...clayCard, borderRadius: 26, padding: 16, marginBottom: 14 },
-  heroHead: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
+  heroHead: { marginBottom: 12 },
   kicker: { color: DIM, fontSize: 7, letterSpacing: 0.5, marginBottom: 6 },
   title: { fontSize: typeScale.display.size, lineHeight: typeScale.display.line },
-  pointsPill: { ...lcdPlate, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
-  pointsPillText: { color: LCD_INK, fontSize: 9, letterSpacing: 0.5 },
   heroSub: { fontSize: 13, marginBottom: 16 },
   balanceRow: { flexDirection: "row", gap: 10 },
   balanceCell: { ...lcdPlate, flex: 1, borderRadius: 14, padding: 14, alignItems: "flex-start", gap: 8 },

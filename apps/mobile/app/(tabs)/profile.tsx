@@ -267,17 +267,13 @@ export default function ProfileScreen() {
         ) : null}
 
         <View style={s.balancePanel}>
-          <View>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>
-              {t("availableBalance", "Available balance").toUpperCase()}
-            </Text>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{totalPoints.toLocaleString()}</Text>
-            <Text style={s.balanceSub}>pts</Text>
-          </View>
-          <View style={s.balanceSplit}>
-            <MiniBalance label={t("earned", "Earned")} value={u.earnedPoints} />
-            <MiniBalance label={t("welcome", "Welcome")} value={u.welcomePoints} />
-          </View>
+          <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>
+            {t("availableBalance", "Available balance").toUpperCase()}
+          </Text>
+          <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{totalPoints.toLocaleString()}</Text>
+          <Text style={[s.balanceMeta, { fontFamily: fonts.bodyBold }]}>
+            pts · {t("earned", "Earned")} {u.earnedPoints.toLocaleString()} · {t("welcome", "Welcome")} {u.welcomePoints.toLocaleString()}
+          </Text>
         </View>
 
         <View style={s.levelBlock}>
@@ -570,15 +566,6 @@ function LoyaltyCard({ cardNumber, loyaltyId }: { cardNumber: string; loyaltyId:
   )
 }
 
-function MiniBalance({ label, value }: { label: string; value: number }) {
-  return (
-    <View style={s.miniBalance}>
-      <Text style={[s.miniBalanceValue, { fontFamily: fonts.displayHeavy }]}>{value.toLocaleString()}</Text>
-      <Text style={[s.miniBalanceLabel, { fontFamily: fonts.bodyBold }]}>{label.toUpperCase()}</Text>
-    </View>
-  )
-}
-
 function StatTile({ label, value, isRainbow, rainbowGrad }: { label: string; value: string; isRainbow?: boolean; rainbowGrad?: readonly [string, string] }) {
   if (isRainbow && rainbowGrad) {
     return (
@@ -735,14 +722,10 @@ const s = StyleSheet.create({
   loyaltyCardLabel: { color: "rgba(255,255,255,0.4)", fontSize: 9, letterSpacing: 1.5, marginBottom: 3 },
   loyaltyCardNumber: { color: "#85F5F2", fontSize: 20, letterSpacing: 2 },
 
-  balancePanel: { borderRadius: 30, backgroundColor: "rgba(255,255,255,0.54)", padding: 14, flexDirection: "row", justifyContent: "space-between", gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
+  balancePanel: { borderRadius: 30, backgroundColor: "rgba(255,255,255,0.54)", padding: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.72)" },
   balanceLabel: { color: "#75736A", fontSize: 10, letterSpacing: 1 },
   balanceValue: { color: colors.ink, fontSize: typeScale.stat.size, lineHeight: typeScale.stat.line, marginTop: 2 },
-  balanceSub: { color: "#75736A", fontSize: 12 },
-  balanceSplit: { width: 96, gap: 7 },
-  miniBalance: { backgroundColor: "rgba(255,255,255,0.50)", borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8 },
-  miniBalanceValue: { color: colors.ink, fontSize: 16, lineHeight: 18 },
-  miniBalanceLabel: { color: "#75736A", fontSize: 8, letterSpacing: 0.8, marginTop: 2 },
+  balanceMeta: { color: "#75736A", fontSize: 12, marginTop: 4 },
   levelBlock: { marginTop: 12 },
   levelHead: { flexDirection: "row", justifyContent: "space-between", marginBottom: 7 },
   levelText: { color: "#75736A", fontSize: 11 },
