@@ -172,7 +172,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <DeviceChrome colors={bodyColor} right={<ScreenToggle dark={screenDark} onToggle={() => setScreenDark((v) => !v)} />}>
+      <DeviceChrome colors={bodyColor} color={{ swatches: BODY_COLORS, onPick: setBodyColor }} right={<ScreenToggle dark={screenDark} onToggle={() => setScreenDark((v) => !v)} />}>
         <TamagotchiWindow
           petKey={petKey}
           streak={streak}
@@ -197,14 +197,12 @@ export default function HomeScreen() {
 
         {/* Reference control grid — fixed hardware modules, like a lock-screen device */}
         <ModuleGrid
-          map={{ glyph: "⌖", label: "MAP", onPress: () => router.push("/map") }}
-          check={{ glyph: "✓", label: "CHECK", onPress: () => router.push("/checkin") }}
-          color={{ swatches: BODY_COLORS, onPick: setBodyColor }}
-          reward={{ glyph: "▶", label: "REWARD", onPress: () => router.push("/rewards") }}
+          map={{ glyph: "⌖", label: "MAP", color: "#2B6EFF", onPress: () => router.push("/map") }}
+          check={{ glyph: "✓", label: "CHECK", color: "#13B36B", onPress: () => router.push("/checkin") }}
+          reward={{ glyph: "▶", label: "REWARD", color: "#F2A024", onPress: () => router.push("/rewards") }}
           scan={{ glyph: "+", label: "SCAN", onPress: () => router.push("/scan") }}
           earn={{ glyph: "→", label: "SEND", color: "#E23B22", onPress: () => router.push("/gift") }}
-          matrixTint={bodyColor[1]}
-          onStatus={() => router.push("/pet" as Parameters<typeof router.push>[0])}
+          body={bodyColor}
         />
 
         <View style={s.deviceFooter}>

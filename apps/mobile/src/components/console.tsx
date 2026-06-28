@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
+import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from "react-native-svg"
 import { fonts } from "../lib/theme"
 import { AyooFace } from "./AyooFace"
 
@@ -104,24 +105,6 @@ export function Keypad({ pads }: { pads: PadDef[] }) {
 // ════════════════════════════════════════════════════════════════
 
 /** Brushed-aluminum tile that frames a single control + its label. */
-function Tile({ children, label, onPress, style }: {
-  children: React.ReactNode
-  label?: string
-  onPress?: () => void
-  style?: object
-}) {
-  return (
-    <Pressable
-      onPress={onPress ? () => { tapFeedback(); onPress() } : undefined}
-      style={({ pressed }) => [s.tile, style as object, pressed && onPress ? s.tilePressed : null]}
-    >
-      <LinearGradient colors={ALU} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill as object} />
-      <View style={s.tileInner}>{children}</View>
-      {label ? <Text style={[s.tileLabel, { fontFamily: fonts.pixel }]} numberOfLines={1}>{label}</Text> : null}
-    </Pressable>
-  )
-}
-
 // ── Glyph-Matrix frames — 11×11 pixel art ("X" = lit dot) ──────
 const G_HI = [
   "...........",
@@ -191,7 +174,7 @@ const G_STAR_B = [
 
 /** Glyph-Matrix module (Nothing-Phone style) — a pixel display in the body
  *  tint that plays HI on start, an idle heartbeat, and a star on point gains. */
-function GrilleBoard({ label = "AYOO LIVE", tint = "#E5392A", onPress }: { label?: string; tint?: string; onPress?: () => void }) {
+function GrilleBoard({ tint = "#E5392A" }: { tint?: string }) {
   const [tick, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 460)
@@ -206,34 +189,26 @@ function GrilleBoard({ label = "AYOO LIVE", tint = "#E5392A", onPress }: { label
     if (cyc >= 22) frame = cyc % 2 ? G_STAR_A : G_STAR_B
     else frame = t % 2 ? G_HEART_A : G_HEART_B
   }
+  // Frameless live display embedded in the body — transparent so the corpus
+  // colour shows straight through (matches any body tint), no chrome, no label.
   return (
-    <Pressable
-      onPress={onPress ? () => { tapFeedback(); onPress() } : undefined}
-      style={({ pressed }) => [s.tile, s.grilleTile, pressed && onPress ? s.tilePressed : null]}
-    >
-      <LinearGradient colors={ALU} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill as object} />
-      <View style={s.matrixPlate}>
-        <View style={s.matrix}>
-          {frame.map((row, r) => (
-            <View key={r} style={s.matrixRow}>
-              {row.split("").map((ch, c) => (
-                <View key={c} style={[s.matrixDot, ch === "X" ? { backgroundColor: tint } : s.matrixDotOff]} />
-              ))}
-            </View>
-          ))}
-        </View>
+    <View style={s.grilleScreen}>
+      <View style={s.matrix}>
+        {frame.map((row, r) => (
+          <View key={r} style={s.matrixRow}>
+            {row.split("").map((ch, c) => (
+              <View key={c} style={[s.matrixDot, ch === "X" ? { backgroundColor: tint } : s.matrixDotOff]} />
+            ))}
+          </View>
+        ))}
       </View>
-      <View style={s.ledStrip}>
-        <View style={[s.ledDot, { backgroundColor: tint }]} />
-        <Text style={[s.ledLabel, { fontFamily: fonts.pixel }]} numberOfLines={1}>{label}</Text>
-      </View>
-    </Pressable>
+    </View>
   )
 }
 
-/** COLOR key — a bare colour swatch. Tap applies its colour to the body,
- *  then advances the swatch to the next colour. No icon, no label. */
-function ColorTile({ swatches, onPick }: {
+/** COLOR knob — a round colour swatch in the brand plate, sized to the head.
+ *  Tap applies its colour to the body, then advances to the next swatch. */
+function ColorKnob({ swatches, onPick }: {
   swatches: readonly (readonly [string, string])[]
   onPick: (c: readonly [string, string]) => void
 }) {
@@ -242,54 +217,84 @@ function ColorTile({ swatches, onPick }: {
   return (
     <Pressable
       onPress={() => { tapFeedback(); onPick(cur); setIdx((n) => (n + 1) % swatches.length) }}
-      style={({ pressed }) => [s.tile, s.smTile, pressed && s.tilePressed]}
+      style={({ pressed }) => [s.colorKnob, pressed && { opacity: 0.85, transform: [{ scale: 0.95 }] }]}
     >
-      <LinearGradient colors={cur} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill as object} />
+      <LinearGradient colors={cur} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={StyleSheet.absoluteFill as object} />
     </Pressable>
   )
 }
 
 export type GridAction = { glyph: string; label: string; color?: string; onPress: () => void }
 
-/** A flat glyph control — just the icon on a brushed-aluminum tile, no rings. */
-function GlyphTile({ action, big = false }: { action: GridAction; big?: boolean }) {
+// Slim rounded plus — narrow arms with fully semicircular ends. viewBox 100×110.
+const PLUS_PATH =
+  "M33 33 L33 17 Q33 0 50 0 Q67 0 67 17 L67 33 L83 33 Q100 33 100 50 Q100 67 83 67 L67 67 L67 83 Q67 100 50 100 Q33 100 33 83 L33 67 L17 67 Q0 67 0 50 Q0 33 17 33 Z"
+
+/** Playdate-style + button — one extruded 3D cross in the body colour: dark
+ *  side wall, body top face, top sheen. One tap target; its job is to SCAN. */
+function PlusButton({ color, onPress }: { color: readonly [string, string]; onPress: () => void }) {
   return (
-    <Tile style={big ? s.bigTile : s.smTile} label={action.label} onPress={action.onPress}>
-      <Text style={[big ? s.controlGlyphLg : s.controlGlyph, { color: action.color ?? GLYPH }]}>{action.glyph}</Text>
-    </Tile>
+    <Pressable onPress={() => { tapFeedback(); onPress() }} style={({ pressed }) => [s.plus, pressed && s.plusPressed]}>
+      <Svg width="100%" height="100%" viewBox="0 0 100 110">
+        <Defs>
+          <SvgGradient id="plusGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={color[0]} />
+            <Stop offset="1" stopColor={color[1]} />
+          </SvgGradient>
+          <SvgGradient id="plusSheen" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#ffffff" stopOpacity="0.6" />
+            <Stop offset="0.5" stopColor="#ffffff" stopOpacity="0" />
+          </SvgGradient>
+        </Defs>
+        {/* ambient ground shadow */}
+        <Path d={PLUS_PATH} fill="rgba(0,0,0,0.16)" transform="translate(0,9)" />
+        {/* extruded dark side wall (gives the 3D height) */}
+        <Path d={PLUS_PATH} fill="rgba(0,0,0,0.22)" transform="translate(0,4)" />
+        {/* top face */}
+        <Path d={PLUS_PATH} fill="url(#plusGrad)" />
+        {/* top sheen */}
+        <Path d={PLUS_PATH} fill="url(#plusSheen)" />
+      </Svg>
+    </Pressable>
   )
 }
 
-/** The control grid — flat glyph buttons, a COLOR swatch, and the Glyph-Matrix. */
-export function ModuleGrid({ map, check, color, reward, scan, earn, matrixTint, onStatus }: {
+/** A bottom-row control key — round coloured button with the icon on it and the
+ *  label underneath. Size matches the brand-plate colour knob (⌀40). */
+function KeyButton({ action }: { action: GridAction }) {
+  return (
+    <View style={s.keyItem}>
+      <Pressable
+        onPress={() => { tapFeedback(); action.onPress() }}
+        style={({ pressed }) => [s.keyDot, { backgroundColor: action.color ?? GLYPH }, pressed && s.keyDotPressed]}
+      >
+        <Text style={s.keyGlyph}>{action.glyph}</Text>
+      </Pressable>
+      <Text style={[s.keyLabel, { fontFamily: fonts.pixel }]} numberOfLines={1}>{action.label}</Text>
+    </View>
+  )
+}
+
+/** Control area — Glyph-Matrix + the SCAN plus on top, a row of 4 keys below. */
+export function ModuleGrid({ map, check, reward, scan, earn, body }: {
   map: GridAction
   check: GridAction
-  color: { swatches: readonly (readonly [string, string])[]; onPick: (c: readonly [string, string]) => void }
   reward: GridAction
   scan: GridAction
   earn: GridAction
-  matrixTint?: string
-  onStatus?: () => void
+  body: readonly [string, string]
 }) {
   return (
-    <View style={s.grid}>
-      {/* left column — Glyph-Matrix + big SCAN */}
-      <View style={s.col}>
-        <GrilleBoard {...(matrixTint ? { tint: matrixTint } : {})} {...(onStatus ? { onPress: onStatus } : {})} />
-        <GlyphTile action={scan} big />
+    <View style={s.controls}>
+      <View style={s.controlsTop}>
+        <View style={s.col}><GrilleBoard /></View>
+        <View style={s.col}><PlusButton color={body} onPress={scan.onPress} /></View>
       </View>
-
-      {/* right column — map/check, color/reward, big EARN */}
-      <View style={s.col}>
-        <View style={s.row}>
-          <GlyphTile action={map} />
-          <GlyphTile action={check} />
-        </View>
-        <View style={s.row}>
-          <ColorTile swatches={color.swatches} onPick={color.onPick} />
-          <GlyphTile action={reward} />
-        </View>
-        <GlyphTile action={earn} big />
+      <View style={s.keyRow}>
+        <KeyButton action={map} />
+        <KeyButton action={check} />
+        <KeyButton action={reward} />
+        <KeyButton action={earn} />
       </View>
     </View>
   )
@@ -338,7 +343,10 @@ export function Readout({ cells }: { cells: { label: string; value: string }[] }
 }
 
 /** Brand plate — model name + a row of speaker-grille dots (one red REC dot). */
-function BrandPlate({ right }: { right?: React.ReactNode }) {
+function BrandPlate({ right, color }: {
+  right?: React.ReactNode
+  color?: { swatches: readonly (readonly [string, string])[]; onPick: (c: readonly [string, string]) => void }
+}) {
   return (
     <View style={s.plate}>
       <View style={s.brand}>
@@ -352,6 +360,7 @@ function BrandPlate({ right }: { right?: React.ReactNode }) {
             <View key={i} style={[s.grilleDot, i === 4 && s.grilleDotRec]} />
           ))}
         </View>
+        {color ? <ColorKnob swatches={color.swatches} onPick={color.onPick} /> : null}
       </View>
     </View>
   )
@@ -388,10 +397,15 @@ export function ConsentToggle({
 }
 
 /** The device body that frames the whole console. `colors` overrides the body tint. */
-export function DeviceChrome({ right, colors, children }: { right?: React.ReactNode; colors?: readonly [string, string]; children: React.ReactNode }) {
+export function DeviceChrome({ right, colors, color, children }: {
+  right?: React.ReactNode
+  colors?: readonly [string, string]
+  color?: { swatches: readonly (readonly [string, string])[]; onPick: (c: readonly [string, string]) => void }
+  children: React.ReactNode
+}) {
   return (
     <LinearGradient colors={colors ?? BODY} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.chrome}>
-      <BrandPlate right={right} />
+      <BrandPlate right={right} {...(color ? { color } : {})} />
       {children}
     </LinearGradient>
   )
@@ -461,54 +475,35 @@ const s = StyleSheet.create({
   },
   knobEmblemSymbol: { fontSize: 30, lineHeight: 33, fontWeight: "900", color: "#FFFFFF" },
 
-  // ── Reference control grid ──
-  grid: { flexDirection: "row", gap: 10 },
-  col: { flex: 1, gap: 10 },
-  row: { flexDirection: "row", gap: 10 },
-  tile: {
-    borderRadius: 16,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    borderTopWidth: 1.5,
-    borderTopColor: ALU_HI,
-    borderBottomWidth: 4,
-    borderBottomColor: ALU_EDGE,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.42,
-    shadowRadius: 9,
-    elevation: 5,
-  },
-  tilePressed: { borderBottomWidth: 2, transform: [{ translateY: 2 }], shadowOpacity: 0.2 },
-  tileInner: { alignItems: "center", justifyContent: "center" },
-  tileLabel: { fontSize: 7, letterSpacing: 0.5, color: DIM, marginTop: 5 },
-  smTile: { flex: 1, height: 92 },
-  bigTile: { height: 124 },
-  grilleTile: { height: 196, justifyContent: "space-between", paddingVertical: 12 },
+  // ── Control area ──
+  controls: { gap: 10 },
+  controlsTop: { flexDirection: "row", gap: 10 },
+  col: { flex: 1 },
+  // Live glyph display — frameless, flush with the body (no key chrome, no label)
+  grilleScreen: { flex: 1, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" },
 
-  // flat control glyphs (no rings around the icon)
-  controlGlyph: { fontSize: 38, lineHeight: 42, fontWeight: "900" },
-  controlGlyphLg: { fontSize: 62, lineHeight: 66, fontWeight: "900" },
+  // ── Playdate-style + SCAN button (single molded cross, body colour) ──
+  plus: { flex: 1, aspectRatio: 1 },
+  plusPressed: { transform: [{ scale: 0.97 }] },
+
+  // ── Bottom row of 4 round coloured keys ──
+  keyRow: { flexDirection: "row", gap: 10 },
+  keyItem: { flex: 1, alignItems: "center", gap: 6 },
+  keyDot: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1.5, borderColor: "rgba(0,0,0,0.20)", borderTopColor: "rgba(255,255,255,0.55)",
+    shadowColor: "#000000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.32, shadowRadius: 6, elevation: 5,
+  },
+  keyDotPressed: { transform: [{ translateY: 2 }, { scale: 0.95 }], shadowOpacity: 0.18 },
+  keyGlyph: { color: "#FFFFFF", fontSize: 18, lineHeight: 21, fontWeight: "900" },
+  keyLabel: { fontSize: 7, letterSpacing: 0.5, color: DIM },
 
   // Glyph-Matrix (Nothing-Phone style pixel display) — sits on the aluminum face
-  matrixPlate: {
-    flex: 1, alignSelf: "stretch", marginTop: 2,
-    alignItems: "center", justifyContent: "center",
-  },
   matrix: { alignItems: "center", justifyContent: "center", gap: 3 },
   matrixRow: { flexDirection: "row", gap: 3 },
   matrixDot: { width: 6, height: 6, borderRadius: 3 },
   matrixDotOff: { backgroundColor: "rgba(0,0,0,0.08)" },
-  ledStrip: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    alignSelf: "stretch", marginHorizontal: 8,
-    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5,
-    backgroundColor: SCREEN, borderWidth: 1, borderColor: SCREEN_EDGE,
-  },
-  ledDot: { width: 8, height: 8, borderRadius: 4 },
-  ledLabel: { flex: 1, fontSize: 7, letterSpacing: 0.5, color: "#9A9A8E" },
 
   // ── LCD main screen (earn/spend modes) ──
   lcdScreen: {
@@ -532,6 +527,13 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(0,0,0,0.35)",
   },
   screenToggleGlyph: { fontSize: 13, lineHeight: 16, color: "#F2B441" },
+
+  // ── Round colour knob (brand plate) — sized to the head ──
+  colorKnob: {
+    width: 40, height: 40, borderRadius: 20, overflow: "hidden",
+    borderWidth: 1.5, borderColor: "rgba(0,0,0,0.18)", borderTopColor: "rgba(255,255,255,0.9)",
+    shadowColor: "#000000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 4,
+  },
 
   // ── LCD readout plate ──
   readout: {
