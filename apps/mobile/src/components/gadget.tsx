@@ -28,7 +28,7 @@ export function ModeHeader({
   const router = useRouter()
   return (
     <View style={s.header}>
-      <Pressable onPress={onFace ?? (() => router.back())} hitSlop={8} style={s.face}>
+      <Pressable onPress={onFace ?? (() => router.push("/" as Parameters<typeof router.push>[0]))} hitSlop={8} style={s.face}>
         <AyooFace width={54} />
       </Pressable>
       <View style={s.headTitle}>
