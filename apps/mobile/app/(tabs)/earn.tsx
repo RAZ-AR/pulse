@@ -4,8 +4,8 @@ import { useRouter } from "expo-router"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, neonColors, space, typeScale, useTheme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
-import { AyooFace } from "../../src/components/AyooFace"
 import { LavaLampSurface, NeuCard, VolumeGradient } from "../../src/components/neu"
+import { LcdPanel, LcdText, ModeHeader } from "../../src/components/gadget"
 
 const TX_ICONS: Record<string, string> = {
   PARTNER_PURCHASE: "P",
@@ -39,38 +39,14 @@ export default function EarnScreen() {
       scrollEventThrottle={16}
       removeClippedSubviews
     >
-      <View style={s.topRow}>
-        <View>
-          <Text style={[s.kicker, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>EARN</Text>
-          <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-            {t("earnPoints", "Earn Points")}
-          </Text>
-        </View>
-        {isRainbow ? (
-          <VolumeGradient
-            colors={["#8B3DFF", "#2B6EFF"]}
-            shadowColor="#8B3DFF"
-            shadowOpacity={0.40}
-            borderRadius={43}
-            style={s.balanceBubble}
-          >
-            <Text style={[s.balanceValue, { color: "#FFFFFF", fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
-            <Text style={[s.balanceLabel, { color: "rgba(255,255,255,0.75)", fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
-          </VolumeGradient>
-        ) : (
-          <View style={s.balanceBubble}>
-            <Text style={[s.balanceValue, { fontFamily: fonts.displayHeavy }]}>{total.toLocaleString()}</Text>
-            <Text style={[s.balanceLabel, { fontFamily: fonts.bodyBold }]}>{t("pointsUnit")}</Text>
-          </View>
-        )}
-      </View>
+      <ModeHeader kicker="EARN" title={t("earnPoints", "Earn Points")} onFace={() => router.push("/" as Parameters<typeof router.push>[0])} />
+      <LcdPanel>
+        <LcdText>▸ БАЛАНС · {total.toLocaleString()} {t("pointsUnit").toUpperCase()}</LcdText>
+      </LcdPanel>
 
       <LavaLampSurface intensity="glass" style={[s.hero, isRainbow ? {} : theme.shadowRaised]}>
         <View style={s.heroOrb} />
         <View style={s.heroHead}>
-          <View style={[s.brandLogo, isRainbow && s.brandLogoRainbow]}>
-            <AyooFace width={68} />
-          </View>
           <View style={s.blackPill}>
             <Text style={[s.blackPillText, { fontFamily: fonts.bodyBold }, isRainbow ? { color: "#44446A" } : {}]}>{t("activePlan")}</Text>
           </View>

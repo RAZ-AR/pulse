@@ -6,6 +6,7 @@ import { CameraView, useCameraPermissions } from "expo-camera"
 import { trpc } from "../src/lib/trpc"
 import { fonts, useTheme } from "../src/lib/theme"
 import { IS_TELEGRAM, getTgWebApp } from "../src/lib/telegram"
+import { ModeHeader } from "../src/components/gadget"
 
 // ── Device (Teenage-Engineering) tokens ──
 const ORANGE = "#fd4600"
@@ -100,13 +101,11 @@ export default function ScanScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("scanQrCode", "Scan QR"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={[s.root, { backgroundColor: theme.bg }]}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+          <ModeHeader kicker="SCAN" title={t("scanQrCode", "Scan QR")} />
+        </View>
         {phase.kind === "camera" ? (
           IS_TELEGRAM ? (
             <TelegramPhase onScanner={openTelegramScanner} theme={theme} t={t} />
@@ -238,7 +237,7 @@ function ErrorPhase({
   message, alreadyUsed, onRetry, theme,
 }: {
   message: string
-  alreadyUsed?: boolean
+  alreadyUsed?: boolean | undefined
   onRetry: () => void
   theme: ReturnType<typeof useTheme>
 }) {
@@ -271,11 +270,11 @@ function DonePhase({
   pointsEarned, offerTitle, vendorName, totalRsd, date, isPartnerReceipt, onClose, theme,
 }: {
   pointsEarned: number
-  offerTitle?: string
-  vendorName?: string
-  totalRsd?: number
-  date?: string
-  isPartnerReceipt?: boolean
+  offerTitle?: string | undefined
+  vendorName?: string | undefined
+  totalRsd?: number | undefined
+  date?: string | undefined
+  isPartnerReceipt?: boolean | undefined
   onClose: () => void
   theme: ReturnType<typeof useTheme>
 }) {

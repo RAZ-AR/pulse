@@ -6,6 +6,7 @@ import { trpc } from "../src/lib/trpc"
 import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
 import { NeuCard, GradPill, VolumeGradient } from "../src/components/neu"
+import { ModeHeader } from "../src/components/gadget"
 
 const CHALLENGE_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
 
@@ -38,13 +39,11 @@ export default function ChallengesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("nav.challenges", "Quests"),
-        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={[s.container, { backgroundColor: theme.bg }]}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+          <ModeHeader kicker="QUESTS" title={t("nav.challenges", "Quests")} />
+        </View>
         <View style={s.tabs}>
           <TabButton label={t("myChallenges", "Mine")} count={mineList.length} active={tab === "mine"} onPress={() => setTab("mine")} theme={theme} />
           <TabButton label={t("availableChallenges", "Available")} count={availableList.length} active={tab === "available"} onPress={() => setTab("available")} theme={theme} />

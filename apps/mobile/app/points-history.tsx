@@ -4,6 +4,7 @@ import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../src/lib/trpc"
 import { fonts, useTheme } from "../src/lib/theme"
+import { ModeHeader } from "../src/components/gadget"
 
 // ── Device (Teenage-Engineering) tokens ──
 const ORANGE_EDGE = "#c83700"
@@ -70,15 +71,7 @@ export default function PointsHistoryScreen() {
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <View style={s.topRow}>
-        <Pressable onPress={() => router.back()} style={s.backButton}>
-          <Text style={s.backText}>‹</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.kicker, { fontFamily: fonts.pixel }]}>POINTS</Text>
-          <Text style={[s.title, { fontFamily: fonts.displayHeavy }]}>{t("historyTitle")}</Text>
-        </View>
-      </View>
+      <ModeHeader kicker="POINTS" title={t("historyTitle")} />
 
       {/* Summary — cream device card with LCD metric cells */}
       <View style={s.summary}>

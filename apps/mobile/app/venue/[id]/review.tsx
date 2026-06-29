@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { trpc } from "../../../src/lib/trpc"
 import { colors, fonts, useTheme } from "../../../src/lib/theme"
+import { ModeHeader } from "../../../src/components/gadget"
 
 export default function VenueReviewScreen() {
   const theme = useTheme()
@@ -69,17 +70,13 @@ export default function VenueReviewScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: myReview.data ? t("editReview", "Edit review") : t("writeReview", "Write review"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={[s.container, { backgroundColor: theme.bg }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+          <ModeHeader kicker="REVIEW" title={myReview.data ? t("editReview", "Edit review") : t("writeReview", "Write review")} />
           {venue.data ? (
             <>
               <Text style={[s.venueName, { color: theme.text }]}>{venue.data.name}</Text>

@@ -6,6 +6,7 @@ import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 import { NeuCard, VolumeGradient } from "../../src/components/neu"
+import { ModeHeader } from "../../src/components/gadget"
 
 const TYPE_ICON: Record<string, string> = {
   SPEND_AMOUNT: "□",
@@ -75,13 +76,9 @@ export default function ChallengeDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: c.title,
-        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker="QUEST" title={c.title} />
         {/* Hero */}
         {isRainbow ? (
           <VolumeGradient colors={heroRainbow} shadowColor={heroRainbow[0]} shadowOpacity={0.4} borderRadius={32} style={[s.hero, { marginBottom: 16 }]}>

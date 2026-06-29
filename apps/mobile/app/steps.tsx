@@ -6,6 +6,7 @@ import { Pedometer } from "expo-sensors"
 import { trpc } from "../src/lib/trpc"
 import { colors, neonColors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { NeuCard, VolumeGradient } from "../src/components/neu"
+import { ModeHeader } from "../src/components/gadget"
 import { useColorMode } from "../src/store/colorMode"
 import { stepMultiplier } from "@pulse/shared"
 
@@ -83,14 +84,9 @@ export default function StepsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("steps", "Steps"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker="HEALTH" title={t("steps", "Steps")} />
         {/* Hero */}
         {isRainbow ? (
           <VolumeGradient colors={["#2B6EFF", "#8B3DFF", "#FF2D9B"]} shadowColor="#8B3DFF" style={s.hero}>

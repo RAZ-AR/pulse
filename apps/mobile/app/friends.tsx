@@ -5,6 +5,7 @@ import { trpc } from "../src/lib/trpc"
 import { colors, neonColors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
 import { NeuCard } from "../src/components/neu"
+import { ModeHeader } from "../src/components/gadget"
 
 const TYPE_ICON: Record<string, string> = {
   CHECKIN_PHOTO: "⌖",
@@ -45,14 +46,9 @@ export default function FriendsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("nav.friends", "Friends"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker="SOCIAL" title={t("nav.friends", "Friends")} />
         {/* Friends row */}
         <Text style={[s.sectionTitle, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>
           {t("yourFriends", "Your friends").toUpperCase()}

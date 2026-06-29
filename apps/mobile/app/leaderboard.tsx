@@ -7,6 +7,7 @@ import { trpc } from "../src/lib/trpc"
 import { colors, fonts, gradients, useTheme, type Theme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
 import { NeuCard, GradPill, VolumeGradient } from "../src/components/neu"
+import { ModeHeader } from "../src/components/gadget"
 
 const CATEGORIES = ["ALL", "CAFE", "RESTAURANT", "RETAIL", "SERVICE"] as const
 type Category = (typeof CATEGORIES)[number]
@@ -56,13 +57,11 @@ export default function LeaderboardScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("leaderboard", "Leaderboard"),
-        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={[s.container, { backgroundColor: theme.bg }]}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+          <ModeHeader kicker="RANKING" title={t("leaderboard", "Leaderboard")} />
+        </View>
         {/* Main tabs */}
         <View style={s.mainTabs}>
           <MainTabBtn label={t("venues", "Venues")} active={mainTab === "venues"} onPress={() => setMainTab("venues")} theme={theme} />

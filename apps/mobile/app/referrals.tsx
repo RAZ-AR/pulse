@@ -5,6 +5,7 @@ import { trpc } from "../src/lib/trpc"
 import { colors, neonColors, fonts, gradients, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
 import { NeuCard } from "../src/components/neu"
+import { ModeHeader } from "../src/components/gadget"
 import { REFERRAL_REWARD_POINTS, REFERRAL_SIGNUP_POINTS } from "@pulse/shared"
 
 function formatDate(d: Date | string) {
@@ -40,14 +41,9 @@ export default function ReferralsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("yourReferrals", "Your referrals"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker="NETWORK" title={t("yourReferrals", "Your referrals")} />
         {/* Hero */}
         <NeuCard gradient={gradients.black} style={s.hero}>
           <View style={s.heroBlob} />

@@ -7,6 +7,7 @@ import * as Location from "expo-location"
 import { trpc } from "../src/lib/trpc"
 import { uploadCheckinImage } from "../src/lib/storage"
 import { fonts, useTheme } from "../src/lib/theme"
+import { ModeHeader } from "../src/components/gadget"
 
 // ── Device (Teenage-Engineering) tokens ──
 const ORANGE = "#fd4600"
@@ -85,13 +86,11 @@ export default function CheckinScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("title", "Check in"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={[s.container, { backgroundColor: theme.bg }]}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+          <ModeHeader kicker="CHECK-IN" title={t("title", "Check in")} />
+        </View>
         {phase.kind === "locating" ? (
           <Centered>
             <ActivityIndicator size="large" color={ORANGE} />

@@ -8,6 +8,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { colors, fonts, gradients, neonColors, space, typeScale, useTheme, type Theme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 import { NeuCard, NeuInset, VolumeGradient } from "../../src/components/neu"
+import { ModeHeader } from "../../src/components/gadget"
 import { trpc } from "../../src/lib/trpc"
 import { useAuth } from "../../src/store/auth"
 import { setLocale } from "../../src/lib/i18n"
@@ -222,17 +223,16 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <View style={s.screenHead}>
-        <View>
-          <Text style={[s.kicker, { fontFamily: fonts.bodyBold }]}>ayoo ID</Text>
-          <Text style={[s.screenTitle, { fontFamily: fonts.displayHeavy }]}>
-            {t("personalCabinet", "Personal cabinet")}
-          </Text>
-        </View>
-        <Pressable onPress={startEditing} style={[s.headButton, theme.shadowRaisedSm]}>
-          <Text style={[s.headButtonText, { fontFamily: fonts.bodyBold }]}>✎</Text>
-        </Pressable>
-      </View>
+      <ModeHeader
+        kicker="AYOO ID"
+        title={t("personalCabinet", "Personal cabinet")}
+        onFace={() => router.push("/" as Parameters<typeof router.push>[0])}
+        right={
+          <Pressable onPress={startEditing} style={[s.headButton, theme.shadowRaisedSm]}>
+            <Text style={[s.headButtonText, { fontFamily: fonts.bodyBold }]}>✎</Text>
+          </Pressable>
+        }
+      />
 
       <NeuCard gradient={gradients.black} style={s.hero}>
         <View style={s.heroBlob} />

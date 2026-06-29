@@ -5,6 +5,7 @@ import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, gradients, neonColors, useTheme, type Theme } from "../../src/lib/theme"
 import { useColorMode } from "../../src/store/colorMode"
 import { NeuCard, GradPill, VolumeGradient } from "../../src/components/neu"
+import { ModeHeader } from "../../src/components/gadget"
 import { DEMO_VENUES } from "../../src/lib/venues"
 
 const REWARD_GRADS = [gradients.black, gradients.graphite, gradients.black, gradients.graphite] as const
@@ -149,19 +150,12 @@ export default function VenueDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: v.name,
-        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker={v.category.toUpperCase()} title={v.name} />
         {/* Title */}
         <View style={s.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[s.name, { color: theme.text, fontFamily: fonts.displayHeavy }]} numberOfLines={2}>
-              {v.name}
-            </Text>
             <Text style={[s.subtle, { color: theme.textSecondary }]}>
               {v.category.toLowerCase()} · {v.city}
             </Text>

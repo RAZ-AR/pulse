@@ -17,6 +17,7 @@ import { Stack, useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { trpc } from "../src/lib/trpc"
 import { fonts, useTheme } from "../src/lib/theme"
+import { ModeHeader } from "../src/components/gadget"
 import { GIFT_MIN_AMOUNT, GIFT_DAILY_LIMIT } from "@pulse/shared"
 
 const PRESETS = [100, 250, 500]
@@ -111,18 +112,13 @@ export default function GiftScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("title", "Gift points"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={[s.container, { backgroundColor: theme.bg }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+          <ModeHeader kicker="GIFT" title={t("title", "Gift points")} />
           {/* ── Balance hero — cream device card with a recessed LCD ── */}
           <View style={s.hero}>
             <View style={s.heroLcd}>

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useRouter } from "expo-router"
+import { ModeHeader } from "../../src/components/gadget"
 import { trpc } from "../../src/lib/trpc"
 import { fonts, space, typeScale, useTheme } from "../../src/lib/theme"
 
@@ -44,12 +45,9 @@ export default function RewardsScreen() {
       scrollEventThrottle={16}
       removeClippedSubviews
     >
-      {/* ── Hero — cream device card with LCD balance cells ── */}
+      <ModeHeader kicker="REWARDS" title={t("title", "Rewards")} onFace={() => router.push("/" as Parameters<typeof router.push>[0])} />
+      {/* ── Balance panel — cream device card with LCD balance cells ── */}
       <View style={s.hero}>
-        <View style={s.heroHead}>
-          <Text style={[s.kicker, { fontFamily: fonts.pixel }]}>REWARDS</Text>
-          <Text style={[s.title, { fontFamily: fonts.displayHeavy, color: INK }]}>{t("title", "Rewards")}</Text>
-        </View>
         <Text style={[s.heroSub, { fontFamily: fonts.bodyBold, color: DIM }]}>{t("subtitle", "Redeem points for real perks")}</Text>
         <View style={s.balanceRow}>
           <View style={s.balanceCell}>

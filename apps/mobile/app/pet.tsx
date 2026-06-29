@@ -6,6 +6,8 @@ import { trpc } from "../src/lib/trpc"
 import { useTheme, fonts } from "../src/lib/theme"
 import { PetIcon } from "../src/components/AyooPet"
 import { petDefaultName } from "../src/components/Tamagotchi"
+import { LcdScreen } from "../src/components/console"
+import { ModeHeader } from "../src/components/gadget"
 
 function fmt(n: number) {
   return n.toLocaleString()
@@ -30,18 +32,14 @@ export default function PetScreen() {
 
   return (
     <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
-      <Pressable onPress={() => router.back()} style={s.back}>
-        <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>← Назад</Text>
-      </Pressable>
-
-      <Text style={[s.title, { color: theme.text, fontFamily: fonts.displayHeavy }]}>Питомцы</Text>
+      <ModeHeader kicker="PET" title="Питомцы" />
       <Text style={[s.sub, { color: theme.textSecondary }]}>Зарабатывай баллы — открывай новых питомцев</Text>
 
-      {/* Current pet + rename */}
+      {/* Current pet on the device screen + rename */}
       <View style={[s.card, theme.shadowRaisedSm]}>
-        <View style={s.heroPet}>
+        <LcdScreen dark={false}>
           <PetIcon petKey={petKey} px={7} />
-        </View>
+        </LcdScreen>
         <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>ИМЯ ПИТОМЦА</Text>
         <View style={[s.inputWrap, { borderColor: theme.border }]}>
           <TextInput

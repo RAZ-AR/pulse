@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router"
 import QRCode from "react-native-qrcode-svg"
 import { trpc } from "../../src/lib/trpc"
 import { fonts, useTheme } from "../../src/lib/theme"
+import { LcdScreen } from "../../src/components/console"
+import { ModeHeader } from "../../src/components/gadget"
 
 // ── Device (Teenage-Engineering) tokens ──
 const ORANGE = "#fd4600"
@@ -55,24 +57,22 @@ export default function RewardDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("title", "Reward"),
-        headerStyle: { backgroundColor: theme.bg }, headerShadowVisible: false,
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker="REWARD" title={t("title", "Reward")} />
         {redemption ? (
           <View style={{ alignItems: "center" }}>
             <Text style={[s.successTitle, { color: GREEN, fontFamily: fonts.displayHeavy }]}>{t("redeemSuccess", "Reward redeemed!")}</Text>
-            <Text style={[s.successDesc, { color: DIM }]}>{t("redeemSuccessDescription", "Show this code to the cashier")}</Text>
-            <View style={s.qrBox}>
-              <QRCode value={redemption.code} size={200} backgroundColor="#FFFFFF" color="#1F2937" />
-            </View>
-            <Text style={[s.code, { color: LCD_INK, fontFamily: fonts.pixel }]}>{redemption.code}</Text>
-            <Text style={[s.expiry, { color: DIM, fontFamily: fonts.pixel }]}>
-              {t("codeExpiresIn", "Code expires in {{hours}}h", { hours: expiryHours })}
-            </Text>
+            <LcdScreen accent="#E23B22">
+              <Text style={[s.lcdTitle, { fontFamily: fonts.pixel }]}>{t("redeemSuccessDescription", "Show this code to the cashier").toUpperCase()}</Text>
+              <View style={s.qrBox}>
+                <QRCode value={redemption.code} size={172} backgroundColor="#FFFFFF" color="#1F2937" />
+              </View>
+              <Text style={[s.lcdCode, { fontFamily: fonts.pixel }]}>{redemption.code}</Text>
+              <Text style={[s.lcdExpiry, { fontFamily: fonts.pixel }]}>
+                {t("codeExpiresIn", "Code expires in {{hours}}h", { hours: expiryHours })}
+              </Text>
+            </LcdScreen>
             <Pressable onPress={() => router.back()} style={({ pressed }) => [s.btn, s.btnPrimary, pressed && s.keyPressed]}>
               <Text style={[s.cta, { fontFamily: fonts.displayHeavy, color: "#FFFFFF" }]}>{t("common:done", "Done")}</Text>
             </Pressable>
@@ -160,9 +160,9 @@ const s = StyleSheet.create({
   cta: { fontSize: 16 },
   ctaDisabled: { fontSize: 14 },
 
-  successTitle: { fontSize: 22 },
-  successDesc: { fontSize: 13, marginTop: 4, marginBottom: 24, textAlign: "center" },
-  qrBox: { padding: 16, marginBottom: 16, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 2, borderColor: LCD_EDGE },
-  code: { fontSize: 12, letterSpacing: 1, marginBottom: 8 },
-  expiry: { fontSize: 8, marginBottom: 12, letterSpacing: 0.5 },
+  successTitle: { fontSize: 22, marginBottom: 16 },
+  qrBox: { padding: 14, borderRadius: 12, backgroundColor: "#FFFFFF", borderWidth: 2, borderColor: LCD_EDGE },
+  lcdTitle: { color: "#E8917F", fontSize: 9, letterSpacing: 1 },
+  lcdCode: { color: "#CFE3C4", fontSize: 11, letterSpacing: 1 },
+  lcdExpiry: { color: "#8A887F", fontSize: 8, letterSpacing: 0.5 },
 })

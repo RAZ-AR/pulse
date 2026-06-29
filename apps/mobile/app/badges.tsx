@@ -5,6 +5,7 @@ import { trpc } from "../src/lib/trpc"
 import { colors, neonColors, useTheme } from "../src/lib/theme"
 import { useColorMode } from "../src/store/colorMode"
 import { LavaLampSurface } from "../src/components/neu"
+import { ModeHeader } from "../src/components/gadget"
 
 const RARITY_COLORS: Record<string, string> = {
   COMMON: "#9CA3AF",
@@ -29,13 +30,9 @@ export default function BadgesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerShown: true,
-        title: t("badges", "Badges"),
-        headerStyle: { backgroundColor: theme.bg },
-        headerTintColor: theme.text,
-      }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={[s.scroll, { backgroundColor: theme.bg }]} contentContainerStyle={s.content}>
+        <ModeHeader kicker="BADGES" title={t("badges", "Badges")} />
         {/* Progress hero */}
         <LavaLampSurface style={s.hero}>
           <Text style={s.heroLabel}>{t("badgesUnlocked", "BADGES UNLOCKED")}</Text>
