@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #DEDEE1; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  .scr, .rail { -ms-overflow-style: none; scrollbar-width: none; }
+  .mono { font-family:"Space Mono",monospace; }
+  .tab { border:none;cursor:pointer;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 2px;flex:1; }
+  .tab .lbl { font-family:"Space Mono",monospace;font-size:8.5px;letter-spacing:.5px; }
+  .h2 { margin:0;font-size:34px;font-weight:800;letter-spacing:-1.4px;color:#141417;text-transform:uppercase;line-height:0.92; }
+  @keyframes dmReveal { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  .rev { animation: dmReveal .5s cubic-bezier(.2,.7,.2,1) both; }
+  .rev2 { animation: dmReveal .5s cubic-bezier(.2,.7,.2,1) .07s both; }
+  .rev3 { animation: dmReveal .5s cubic-bezier(.2,.7,.2,1) .14s both; }
+  @keyframes lcdIn { from { opacity:0; } to { opacity:1; } }
+  .lcd { animation: lcdIn .6s ease both; }
+  @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ticker span { display:inline-block; padding-left:100%; animation: tick 18s linear infinite; }
+  .ticker2 span { display:inline-block; animation: tick 18s linear infinite; }
+</style>
+</helmet>
+
+<section style="padding:76px 90px 130px;display:flex;flex-direction:column;gap:52px;min-width:760px;">
+
+  <div style="max-width:600px;display:flex;flex-direction:column;gap:14px;">
+    <div class="mono" style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#77777E;">ayoo · dot-matrix — арт-директорская версия</div>
+    <h1 style="margin:0;font-size:44px;line-height:0.98;font-weight:800;letter-spacing:-2px;color:#141417;">ayoo!</h1>
+    <p style="margin:0;font-size:15px;line-height:1.5;color:#4B4B52;">Приборный дисплей: LCD-питомец во весь экран, механическое табло баланса, точечные показания, поля с кодами и тикер. Таб-бар: <b>Дом · Поиск · QR · Питомец · Я</b>. Тапни карточку заведения — увидишь деталь.</p>
+  </div>
+
+  <div style="width:392px;height:812px;background:#0c0c0d;border-radius:56px;padding:13px;box-shadow:0 40px 90px rgba(0,0,0,.28);flex:none;">
+    <div style="width:100%;height:100%;border-radius:44px;overflow:hidden;position:relative;background:#E8E8EA;display:flex;flex-direction:column;">
+      <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#0c0c0d;border-radius:20px;z-index:50;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;position:relative;z-index:20;">
+        <span style="font-size:15px;font-weight:700;color:#141417;letter-spacing:-.4px;">9:41</span>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="display:flex;align-items:flex-end;gap:2px;height:11px;"><div style="width:3px;height:5px;background:#141417;border-radius:1px;"></div><div style="width:3px;height:7px;background:#141417;border-radius:1px;"></div><div style="width:3px;height:9px;background:#141417;border-radius:1px;"></div><div style="width:3px;height:11px;background:#141417;border-radius:1px;"></div></div><div style="width:23px;height:12px;border:1.5px solid #141417;border-radius:3px;padding:1.5px;"><div style="width:72%;height:100%;background:#141417;border-radius:1px;"></div></div></div>
+      </div>
+
+      <!-- APP HEADER -->
+      <div style="display:flex;flex-direction:column;gap:11px;padding:8px 20px 12px;position:relative;z-index:20;">
+        <!-- greeting -->
+        <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+          <img src="./ref/ayoo-logo.svg" alt="ayoo" style="width:38px;height:38px;border-radius:11px;flex:none;display:block;box-shadow:0 2px 7px rgba(0,0,0,0.14);" />
+          <div style="font-size:20px;font-weight:800;letter-spacing:-.7px;color:#141417;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ greetLine }}</div>
+          <span class="mono" style="font-size:7.5px;font-weight:700;letter-spacing:.5px;color:#EDEDED;background:#141417;padding:3px 6px;border-radius:6px;margin-left:auto;flex:none;">УР.1</span>
+        </div>
+        <!-- city + language on one row -->
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="mono" style="font-size:7px;letter-spacing:1.5px;color:#B4B4BA;">ГОРОД</span>
+            <div style="display:flex;gap:2px;background:#DEDEE0;border-radius:8px;padding:2px;">
+              <sc-for list="{{ cityBtns }}" as="c" hint-placeholder-count="2"><button onClick="{{ c.pick }}" class="mono" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <span class="mono" style="font-size:7px;letter-spacing:1.5px;color:#B4B4BA;">ЯЗЫК</span>
+            <div style="display:flex;gap:2px;background:#DEDEE0;border-radius:8px;padding:2px;">
+              <sc-for list="{{ langBtns }}" as="l" hint-placeholder-count="3"><button onClick="{{ l.pick }}" class="mono" style="{{ l.style }}">{{ l.label }}</button></sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TICKER (top) -->
+      <div class="ticker" style="overflow:hidden;white-space:nowrap;background:rgba(20,20,23,0.05);padding:5px 0;border-top:1px solid rgba(20,20,23,0.06);border-bottom:1px solid rgba(20,20,23,0.06);position:relative;z-index:20;">
+        <span class="mono" style="font-size:9px;letter-spacing:2px;color:#8E8E96;">{{ tickerText }}</span>
+      </div>
+
+      <div class="scr" style="flex:1;overflow:auto;position:relative;">
+
+        <!-- ============ HOME ============ -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:4px 20px 128px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;">
+              <span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">ayoo! · DEMO</span>
+              <span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">SCR 01/06</span>
+            </div>
+
+            <!-- FULL-BLEED LCD PET -->
+            <div class="rev lcd" style="position:relative;background:#D9DAD3;border-radius:24px;padding:16px 10px 10px;overflow:hidden;box-shadow:inset 0 2px 10px rgba(0,0,0,0.14), inset 0 0 0 1.5px rgba(255,255,255,0.5);">
+              <div style="display:flex;justify-content:space-between;padding:0 8px 8px;">
+                <span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8A8C84;">LCD · LIVE</span>
+                <span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8A8C84;">{{ petClock }}</span>
+              </div>
+              <div>{{ petHero }}</div>
+              <div class="mono" style="font-size:11px;color:#8A8C84;margin-top:8px;letter-spacing:2px;text-align:center;">{{ petCaption }}</div>
+            </div>
+
+            <!-- MECHANICAL BALANCE TABLE -->
+            <div class="rev2" style="margin-top:14px;display:flex;justify-content:space-between;align-items:flex-end;">
+              <div>
+                <div class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">БАЛАНС · PTS</div>
+                <div style="font-size:56px;font-weight:800;letter-spacing:-3px;color:#141417;line-height:0.85;margin-top:4px;font-variant-numeric:tabular-nums;">{{ balance }}</div>
+              </div>
+              <div style="text-align:right;padding-bottom:4px;"><div class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">СЛЕД</div><div class="mono" style="font-size:15px;font-weight:700;color:#F0531C;">03 000</div></div>
+            </div>
+
+            <!-- DOT STATE READOUT -->
+            <div class="rev2" style="margin-top:16px;background:#141417;border-radius:20px;padding:16px 16px 14px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#7C7C84;">СОСТОЯНИЕ</span><span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#7C7C84;">{04}</span></div>
+              {{ statDots }}
+            </div>
+
+            <!-- OFFERS -->
+            <div class="rev3" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:24px;">
+              <h3 style="margin:0;font-size:20px;font-weight:800;letter-spacing:-.6px;color:#141417;text-transform:uppercase;">Для вас</h3>
+              <span class="mono" style="font-size:9px;color:#A6A6AC;letter-spacing:1px;">СВАЙП →</span>
+            </div>
+            <div class="rail" style="margin:12px -20px 0;padding:0 20px;display:flex;gap:12px;overflow-x:auto;">
+              <sc-for list="{{ offers }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.open }}" style="cursor:pointer;flex:none;width:212px;background:{{ o.bg }};border-radius:22px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;min-height:152px;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="width:40px;height:40px;border-radius:11px;background:{{ o.badgeBg }};display:flex;align-items:center;justify-content:center;">{{ o.badge }}</div>
+                    <div class="mono" style="font-size:13px;font-weight:700;color:{{ o.pfg }};">+{{ o.pts }}</div>
+                  </div>
+                  <div>
+                    <div style="font-size:19px;font-weight:800;letter-spacing:-.5px;color:{{ o.fg }};line-height:1.02;">{{ o.title }}</div>
+                    <div class="mono" style="font-size:10px;letter-spacing:1px;color:{{ o.sub }};margin-top:6px;">{{ o.venue }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- VENUES -->
+            <div class="rev3" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:24px;">
+              <h3 style="margin:0;font-size:20px;font-weight:800;letter-spacing:-.6px;color:#141417;text-transform:uppercase;">Заведения</h3>
+              <span onClick="{{ goSearch }}" class="mono" style="cursor:pointer;font-size:9px;color:#A6A6AC;letter-spacing:1px;">ВСЕ →</span>
+            </div>
+            <div class="rail" style="margin:12px -20px 8px;padding:0 20px;display:flex;gap:7px;overflow-x:auto;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" class="mono" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ shownVenues }}" as="v" hint-placeholder-count="4">
+                <div onClick="{{ v.open }}" style="cursor:pointer;border-top:1.5px solid rgba(20,20,23,0.12);padding:14px 0;display:flex;align-items:center;gap:13px;">
+                  <div style="width:44px;height:44px;border-radius:13px;background:{{ v.badgeBg }};display:flex;align-items:center;justify-content:center;flex:none;">{{ v.badge }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:18px;font-weight:800;letter-spacing:-.5px;color:#141417;">{{ v.n }}</span><span class="mono" style="{{ v.tagStyle }}">{{ v.tag }}</span></div>
+                    <div class="mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;margin-top:3px;">{{ v.cat }} · {{ v.dist }} · {{ v.off }}</div>
+                  </div>
+                  <div style="text-align:right;"><div class="mono" style="font-size:12px;font-weight:700;color:{{ v.rateColor }};">{{ v.rateShort }}</div><div style="width:7px;height:7px;border-radius:50%;background:{{ v.dot }};margin:6px 0 0 auto;"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ SEARCH ============ -->
+        <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:4px 20px 128px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;"><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">ayoo! · ПОИСК</span><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">SCR 02/06</span></div>
+            <h2 class="h2 rev">Поиск</h2>
+            <div class="rev" style="margin-top:16px;display:flex;align-items:center;gap:10px;background:#DEDEE0;border-radius:16px;padding:13px 16px;">{{ iconSearch }}<span style="font-size:16px;color:#9A9AA0;font-weight:600;">Кафе, ресторан, место…</span></div>
+            <div class="rail rev2" style="margin:14px -20px 8px;padding:0 20px;display:flex;gap:7px;overflow-x:auto;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" class="mono" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+            </div>
+            <div class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;margin:12px 0 2px;">{{ resultCount }}</div>
+            <div class="rev2" style="display:flex;flex-direction:column;">
+              <sc-for list="{{ shownVenues }}" as="v" hint-placeholder-count="5">
+                <div onClick="{{ v.open }}" style="cursor:pointer;border-top:1.5px solid rgba(20,20,23,0.12);padding:14px 0;display:flex;align-items:center;gap:13px;">
+                  <div style="width:44px;height:44px;border-radius:13px;background:{{ v.badgeBg }};display:flex;align-items:center;justify-content:center;flex:none;">{{ v.badge }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:18px;font-weight:800;letter-spacing:-.5px;color:#141417;">{{ v.n }}</span><span class="mono" style="{{ v.tagStyle }}">{{ v.tag }}</span></div>
+                    <div class="mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;margin-top:3px;">{{ v.cat }} · {{ v.dist }} · {{ v.off }}</div>
+                  </div>
+                  <div style="text-align:right;"><div class="mono" style="font-size:12px;font-weight:700;color:{{ v.rateColor }};">{{ v.rateShort }}</div><div style="width:7px;height:7px;border-radius:50%;background:{{ v.dot }};margin:6px 0 0 auto;"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ VENUE DETAIL ============ -->
+        <sc-if value="{{ isVenue }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:4px 20px 128px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;"><button onClick="{{ back }}" class="mono" style="border:none;cursor:pointer;background:#DEDEE0;color:#141417;font-size:10px;font-weight:700;letter-spacing:1px;padding:8px 13px;border-radius:99px;">← НАЗАД</button><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">SCR 02·1</span></div>
+            <div class="rev lcd" style="background:#141417;border-radius:26px;padding:26px 20px;display:flex;flex-direction:column;align-items:center;">
+              <div style="background:{{ vd.badgeBg }};border-radius:18px;padding:16px;">{{ vd.badgeBig }}</div>
+              <div style="font-size:27px;font-weight:800;letter-spacing:-.8px;color:#EDEDED;margin-top:16px;">{{ vd.n }}</div>
+              <div class="mono" style="font-size:10px;letter-spacing:1.5px;color:#8E8E96;margin-top:4px;">{{ vd.cat }} · {{ vd.city }} · {{ vd.tag }}</div>
+            </div>
+            <div class="rev2" style="display:flex;gap:10px;margin-top:12px;">
+              <div style="flex:1;background:#DEDEE0;border-radius:18px;padding:14px 16px;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">КУРС</div><div style="font-size:22px;font-weight:800;letter-spacing:-.6px;color:#141417;margin-top:4px;">{{ vd.rateShort }}</div><div class="mono" style="font-size:9px;color:#8E8E96;">PTS/RSD</div></div>
+              <div style="flex:1;background:#DEDEE0;border-radius:18px;padding:14px 16px;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">РЕЙТИНГ</div><div style="font-size:22px;font-weight:800;letter-spacing:-.6px;color:#141417;margin-top:4px;">{{ vd.rating }}</div><div class="mono" style="font-size:9px;color:#8E8E96;">{{ vd.dist }}</div></div>
+              <div style="flex:1;background:#F0531C;border-radius:18px;padding:14px 16px;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:rgba(255,255,255,0.85);">СКИДКА</div><div style="font-size:22px;font-weight:800;letter-spacing:-.6px;color:#fff;margin-top:4px;">{{ vd.discount }}</div><div class="mono" style="font-size:9px;color:rgba(255,255,255,0.85);">БАЛЛАМИ</div></div>
+            </div>
+            <p class="rev2" style="font-size:14px;line-height:1.5;color:#4B4B52;margin:18px 0 0;">{{ vd.about }}</p>
+            <div class="mono rev3" style="font-size:10px;letter-spacing:1.5px;color:#8E8E96;margin-top:22px;">НАГРАДЫ</div>
+            <div class="rev3" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ vd.rewards }}" as="r" hint-placeholder-count="3">
+                <div style="background:#DEDEE0;border-radius:16px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:16px;font-weight:700;letter-spacing:-.4px;color:#141417;">{{ r.t }}</span><span class="mono" style="font-size:13px;font-weight:700;color:#F0531C;">{{ r.p }}</span></div>
+              </sc-for>
+            </div>
+            <div class="rev3" style="display:flex;gap:10px;margin-top:18px;">
+              <button onClick="{{ goQr }}" style="flex:2;border:none;cursor:pointer;background:#141417;color:#EDEDED;font-family:'Helvetica Neue',Arial;font-size:15px;font-weight:800;letter-spacing:-.3px;padding:16px;border-radius:16px;">Показать QR</button>
+              <button onClick="{{ goQr }}" class="mono" style="flex:1;border:none;cursor:pointer;background:#DEDEE0;color:#141417;font-size:11px;font-weight:700;letter-spacing:1px;padding:16px;border-radius:16px;">СКАН</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ QR ============ -->
+        <sc-if value="{{ isQr }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:4px 20px 128px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;"><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">ayoo! · КОШЕЛЁК</span><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">SCR 03/06</span></div>
+            <h2 class="h2 rev">Кошелёк</h2>
+            <div class="rev" style="margin-top:16px;display:flex;gap:5px;background:#DEDEE0;border-radius:14px;padding:5px;">
+              <button onClick="{{ qrTabCode }}" class="mono" style="{{ qrCodeBtn }}">МОЙ QR</button>
+              <button onClick="{{ qrTabSend }}" class="mono" style="{{ qrSendBtn }}">ОТПРАВИТЬ</button>
+            </div>
+            <sc-if value="{{ qrShowCode }}" hint-placeholder-val="{{ true }}">
+              <div class="rev2 lcd" style="margin-top:16px;background:#141417;border-radius:26px;padding:26px;display:flex;flex-direction:column;align-items:center;">
+                <div style="background:#E8E8EA;border-radius:20px;padding:18px;">{{ qrCode }}</div>
+                <div style="font-size:20px;font-weight:800;letter-spacing:-.5px;color:#EDEDED;margin-top:18px;">DEMO · AYOO</div>
+                <div class="mono" style="font-size:10px;letter-spacing:1.5px;color:#7C7C84;margin-top:4px;">ПОКАЖИ НА КАССЕ</div>
+              </div>
+              <div class="rev2" style="margin-top:12px;background:#DEDEE0;border-radius:20px;padding:18px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">ДОСТУПНО</div><div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:#141417;">{{ balance }}</div></div>
+                <div style="text-align:right;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">WELCOME · 82 ДН</div><div style="font-size:20px;font-weight:800;letter-spacing:-.5px;color:#F0531C;">+320</div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ qrShowSend }}" hint-placeholder-val="{{ false }}">
+              <div class="rev2" style="margin-top:16px;background:#DEDEE0;border-radius:26px;padding:22px;">
+                <div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">СУММА К ОТПРАВКЕ</div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;"><span style="font-size:56px;font-weight:800;letter-spacing:-2.5px;color:#141417;line-height:0.85;">{{ sendAmt }}</span><span class="mono" style="font-size:14px;font-weight:700;color:#8E8E96;">PTS</span></div>
+                <div style="display:flex;gap:8px;margin-top:16px;"><sc-for list="{{ sendChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" class="mono" style="{{ c.style }}">{{ c.label }}</button></sc-for></div>
+              </div>
+              <div class="mono rev3" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;margin-top:20px;">КОМУ</div>
+              <div class="rev3" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ friends }}" as="fr" hint-placeholder-count="3">
+                  <div onClick="{{ fr.pick }}" style="cursor:pointer;background:{{ fr.bg }};border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:12px;background:#141417;display:flex;align-items:center;justify-content:center;color:#EDEDED;font-size:16px;font-weight:800;">{{ fr.i }}</div>
+                    <div style="flex:1;"><div style="font-size:16px;font-weight:800;letter-spacing:-.4px;color:#141417;">{{ fr.n }}</div><div class="mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;">{{ fr.h }}</div></div>
+                    <span style="font-size:18px;color:{{ fr.check }};font-weight:800;">✓</span>
+                  </div>
+                </sc-for>
+              </div>
+              <button class="rev3" style="margin-top:18px;width:100%;border:none;cursor:pointer;background:#F0531C;color:#fff;font-family:'Helvetica Neue',Arial;font-size:16px;font-weight:800;letter-spacing:-.3px;padding:17px;border-radius:16px;">Отправить {{ sendAmt }} баллов →</button>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ PET (full cover) ============ -->
+        <sc-if value="{{ isPet }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:4px 20px 128px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;"><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">ayoo! · ПИТОМЕЦ</span><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">SCR 04/06 · {02/05}</span></div>
+            <div class="rev lcd" style="position:relative;background:#D9DAD3;border-radius:24px;padding:16px 10px 12px;overflow:hidden;box-shadow:inset 0 2px 10px rgba(0,0,0,0.14), inset 0 0 0 1.5px rgba(255,255,255,0.5);">
+              <div style="display:flex;justify-content:space-between;padding:0 8px 8px;"><span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8A8C84;">LCD · LIVE</span><span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8A8C84;">{{ petClock }}</span></div>
+              <div>{{ petHero }}</div>
+              <div class="mono" style="font-size:11px;color:#8A8C84;margin-top:8px;letter-spacing:2px;text-align:center;">{{ petCaption }}</div>
+            </div>
+            <div class="rev2" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ pets }}" as="p" hint-placeholder-count="5">
+                <div onClick="{{ p.select }}" style="cursor:{{ p.cursor }};background:{{ p.rowBg }};border-radius:16px;padding:11px 14px;display:flex;align-items:center;gap:14px;">
+                  <div style="width:52px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;">{{ p.thumb }}</div>
+                  <div style="flex:1;"><div style="font-size:19px;font-weight:800;letter-spacing:-.5px;color:{{ p.inkColor }};">{{ p.n }}</div><div class="mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;margin-top:2px;">{{ p.lvl }} · {{ p.pts }} PTS</div></div>
+                  <span class="mono" style="font-size:12px;font-weight:700;color:{{ p.inkColor }};">{{ p.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ PROFILE ============ -->
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:4px 20px 128px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;"><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">ayoo! · КАБИНЕТ</span><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">SCR 05/06</span></div>
+            <h2 class="h2 rev">Кабинет</h2>
+            <div class="rev" style="margin-top:16px;display:flex;align-items:center;gap:14px;">
+              <div style="width:64px;height:64px;border-radius:19px;background:#141417;display:flex;align-items:center;justify-content:center;">{{ iconUserBig }}</div>
+              <div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#141417;">Demo</div><div class="mono" style="font-size:11px;letter-spacing:1px;color:#8E8E96;margin-top:2px;">УР.1 · РОСТОК · {{ cityUpper }}</div></div>
+            </div>
+            <div class="rev2" style="display:flex;gap:10px;margin-top:18px;">
+              <div style="flex:1;background:#141417;border-radius:18px;padding:15px;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#7C7C84;">БАЛЛОВ</div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#EDEDED;margin-top:3px;">1 842</div></div>
+              <div style="flex:1;background:#DEDEE0;border-radius:18px;padding:15px;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">СТРИК</div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#F0531C;margin-top:3px;">12</div></div>
+              <div style="flex:1;background:#DEDEE0;border-radius:18px;padding:15px;"><div class="mono" style="font-size:9px;letter-spacing:1px;color:#8E8E96;">ДРУЗЕЙ</div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#141417;margin-top:3px;">8</div></div>
+            </div>
+            <div class="mono rev2" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;margin-top:22px;">СТРИК · 14 ДНЕЙ</div>
+            <div class="rev2" style="margin-top:10px;background:#141417;border-radius:18px;padding:16px;">{{ streakSpark }}</div>
+            <div class="mono rev3" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;margin-top:22px;">БЕЙДЖИ</div>
+            <div class="rev3" style="margin-top:12px;display:flex;gap:12px;">
+              <sc-for list="{{ badges }}" as="b" hint-placeholder-count="5">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:{{ b.bg }};display:flex;align-items:center;justify-content:center;">{{ b.icon }}</div><span class="mono" style="font-size:8px;letter-spacing:.5px;color:#8E8E96;">{{ b.label }}</span></div>
+              </sc-for>
+            </div>
+            <div class="mono rev3" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;margin-top:22px;">ИСТОРИЯ</div>
+            <div class="rev3" style="margin-top:10px;display:flex;flex-direction:column;">
+              <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+                <div style="border-top:1.5px solid rgba(20,20,23,0.12);padding:13px 0;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:15px;font-weight:700;letter-spacing:-.3px;color:#141417;">{{ h.t }}</div><div class="mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;margin-top:2px;">{{ h.d }}</div></div><span class="mono" style="font-size:14px;font-weight:700;color:{{ h.c }};">{{ h.v }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- TAB BAR -->
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(232,232,234,0.92);backdrop-filter:blur(14px);border-top:1px solid rgba(20,20,23,0.08);padding:8px 10px 26px;display:flex;z-index:40;">
+        <button class="tab" onClick="{{ goHome }}"><span>{{ tabHomeIcon }}</span><span class="lbl" style="{{ tabHomeLbl }}">Дом</span></button>
+        <button class="tab" onClick="{{ goSearch }}"><span>{{ tabSearchIcon }}</span><span class="lbl" style="{{ tabSearchLbl }}">Поиск</span></button>
+        <button class="tab" onClick="{{ goQr }}"><span>{{ tabQrIcon }}</span><span class="lbl" style="{{ tabQrLbl }}">QR</span></button>
+        <button class="tab" onClick="{{ goPet }}"><span>{{ tabPetIcon }}</span><span class="lbl" style="{{ tabPetLbl }}">Питомец</span></button>
+        <button class="tab" onClick="{{ goProfile }}"><span>{{ tabProfileIcon }}</span><span class="lbl" style="{{ tabProfileLbl }}">Я</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'home', prev: 'home', frame: 0, sel: 0, filter: 'all', venueId: 0, qrTab: 'code', sendAmt: 100, friendSel: 0, count: 0, city: 'bg', lang: 'ru' };
+
+  componentDidMount() {
+    this._t = setInterval(() => this.setState(s => ({ frame: s.frame + 1 })), 480);
+    // mechanical count-up of the balance
+    const target = 1842, dur = 900, t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      this.setState({ count: Math.round(target * e) });
+      if (p < 1) this._raf = requestAnimationFrame(step);
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+  componentWillUnmount() { clearInterval(this._t); cancelAnimationFrame(this._raf); }
+
+  pixel(bmp, { cell = 4, color = '#EDEDED' } = {}) {
+    const bw = Math.max(...bmp.map(s => s.length)), bh = bmp.length;
+    const rects = [];
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      if ((bmp[y][x] || ' ') !== '#') continue;
+      rects.push(React.createElement('rect', { key: x + '-' + y, x: x * cell, y: y * cell, width: cell, height: cell, fill: color }));
+    }
+    return React.createElement('svg', { width: bw * cell, height: bh * cell, viewBox: `0 0 ${bw * cell} ${bh * cell}`, shapeRendering: 'crispEdges' }, rects);
+  }
+
+  ICONS() {
+    return {
+      diamond: ["  #  ", " ### ", "#####", " ### ", "  #  "],
+      heart:   [" # # ", "#####", "#####", " ### ", "  #  "],
+      star:    ["  #  ", " ### ", "#####", " ### ", "## ##"],
+      trophy:  ["#####", "#####", " ### ", "  #  ", " ### "],
+      castle:  ["# # #", "#####", "## ##", "#####", "#####"],
+      building:["#####", "# # #", "#####", "# # #", "#####", "# # #"],
+      ghost:   [" ### ", "#####", "# # #", "#####", "# # #"],
+      clover:  [" # # ", "#####", "#####", " ### ", "  #  "],
+      user:    ["  ###  ", "  ###  ", "       ", " ##### ", "#######", "#######"],
+      search:  [" ####  ", "#    # ", "#    # ", " #### #", "     ##"],
+      home:    ["  #  ", " ### ", "#####", "## ##", "## ##"],
+      qr:      ["### ##", "# # #", "### ##", "   #  ", "## ###", "# #  #"],
+      pet:     [" ### ", "#####", "# # #", "#####", " # # "],
+    };
+  }
+
+  creatures() {
+    return [
+      { n: 'Hatchling', lvl: 'УР.1', pts: '500', unlocked: true, bmp: this.hatch(0, false), moods: ['«HI»', '«LOVE»', '«PLAY»', '«YUM»'] },
+      { n: 'Kid', lvl: 'УР.2', pts: '1 500', unlocked: true, moods: ['«HOP»', '«HI»', '«RUN»'], bmp: ["     ###     ","    #####    ","    #...#    ","    #####    ","   #######   ","  ## ### ##  ","  #  ###  #  ","     ###     ","    ## ##    ","    #   #    "] },
+      { n: 'Fox', lvl: 'УР.3', pts: '3 000', unlocked: false, moods: ['«RRR»', '«HI»'], bmp: ["  #        # ","  ##      ## ","  ###########"," ############"," ############"," ############","  ##  ##  ## ","  #    #   # "] },
+      { n: 'Dragon', lvl: 'УР.4', pts: '5 000', unlocked: false, moods: ['«ROAR»', '«HI»'], bmp: ["          ###","         ####","    #########","   ##########","  ###########","  #########  ","  ###  ####  ","  ##    ##   ","  #     #    "] },
+      { n: 'Phoenix', lvl: 'УР.5', pts: '8 000', unlocked: false, moods: ['«FLY»', '«HI»'], bmp: ["    #####    ","   #######   ","  #########  ","  #########  ","   #######   ","  # # # # #  "," #  # # #  # "," #   # #   # ","     # #     "] },
+    ];
+  }
+
+  hatch(eye, blink) {
+    const rows = ["     #####     ","   #########   ","  ###########  ","  ###########  ","  ###########  ","  ###########  ","  ###########  ","   #########   ","   ##     ##   "];
+    const punch = (r, c) => { if (c < 1 || c > 13) return; rows[r] = rows[r].substring(0, c) + '.' + rows[r].substring(c + 1); };
+    punch(3, 5 + eye); punch(3, 9 + eye);
+    if (!blink) { punch(5, 6); punch(5, 8); }
+    return rows;
+  }
+
+  field(bmp, dy, { cols = 25, rows = 15, r = 4.2, on = '#26261F', off = 'rgba(30,30,24,0.16)' } = {}) {
+    const gap = (352 - r * 2) / (cols - 1);
+    const bw = Math.max(...bmp.map(s => s.length)), bh = bmp.length;
+    const offX = Math.round((cols - bw) / 2), offY = Math.round((rows - bh) / 2) + dy;
+    const dots = [];
+    for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+      const bx = gx - offX, by = gy - offY;
+      let ch = ' ';
+      if (by >= 0 && by < bh && bx >= 0 && bx < bw) ch = bmp[by][bx] || ' ';
+      let fill = off, rr = r * 0.72;
+      if (ch === '#') { fill = on; rr = r; }
+      dots.push(React.createElement('circle', { key: gx + '-' + gy, cx: gx * gap + r, cy: gy * gap + r, r: rr, fill }));
+    }
+    const w = (cols - 1) * gap + r * 2, h = (rows - 1) * gap + r * 2;
+    return React.createElement('svg', { width: '100%', viewBox: `0 0 ${w} ${h}`, style: { display: 'block', height: 'auto' } }, dots);
+  }
+
+  thumb(bmp) {
+    const gap = 3.6, r = 1.55;
+    const bw = Math.max(...bmp.map(s => s.length)), bh = bmp.length;
+    const dots = [];
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) { if ((bmp[y][x] || ' ') !== '#') continue; dots.push(React.createElement('circle', { key: x + '-' + y, cx: x * gap + r, cy: y * gap + r, r, fill: '#1A1A1E' })); }
+    const w = (bw - 1) * gap + r * 2, h = (bh - 1) * gap + r * 2;
+    return React.createElement('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}` }, dots);
+  }
+
+  qrCode() {
+    const N = 23, cell = 7;
+    const g = Array.from({ length: N }, () => Array(N).fill(0));
+    const finder = (r, c) => { for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) { const edge = i === 0 || i === 6 || j === 0 || j === 6; const core = i >= 2 && i <= 4 && j >= 2 && j <= 4; g[r + i][c + j] = (edge || core) ? 1 : 0; } };
+    finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+    const inF = (r, c) => (r < 8 && c < 8) || (r < 8 && c > N - 9) || (r > N - 9 && c < 8);
+    let s = 99;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { if (inF(r, c)) continue; s = (s * 1103515245 + 12345) & 0x7fffffff; g[r][c] = (s >> 17) & 1; }
+    const rects = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (g[r][c]) rects.push(React.createElement('rect', { key: r + '-' + c, x: c * cell, y: r * cell, width: cell, height: cell, rx: 1.5, fill: '#141417' }));
+    return React.createElement('svg', { width: N * cell, height: N * cell, viewBox: `0 0 ${N * cell} ${N * cell}` }, rects);
+  }
+
+  // dot-matrix state readout
+  statDots() {
+    const bars = [{ L: 'СЫТ', v: 0.82, c: '#E5342A' }, { L: 'ЧИСТ', v: 0.6, c: '#2E9BE6' }, { L: 'ЭНЕР', v: 0.9, c: '#8B5CF6' }, { L: 'РАД', v: 0.7, c: '#37A24A' }];
+    const N = 18;
+    return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 9 } },
+      bars.map(b => {
+        const on = Math.round(b.v * N);
+        const dots = [];
+        for (let i = 0; i < N; i++) dots.push(React.createElement('div', { key: i, style: { width: 6, height: 6, borderRadius: '50%', background: i < on ? b.c : 'rgba(255,255,255,0.14)' } }));
+        return React.createElement('div', { key: b.L, style: { display: 'flex', alignItems: 'center', gap: 9 } },
+          React.createElement('div', { style: { fontFamily: '"Space Mono",monospace', fontSize: 9, letterSpacing: 1, color: '#8E8E96', width: 32 } }, b.L),
+          React.createElement('div', { style: { flex: 1, display: 'flex', justifyContent: 'space-between' } }, dots),
+          React.createElement('div', { style: { fontFamily: '"Space Mono",monospace', fontSize: 10, fontWeight: 700, color: '#EDEDED', width: 24, textAlign: 'right' } }, Math.round(b.v * 100))
+        );
+      })
+    );
+  }
+
+  // dotted weekly streak sparkline
+  streakSpark() {
+    const vals = [2, 3, 1, 4, 3, 5, 4, 6, 5, 7, 6, 5, 7, 8];
+    const H = 8;
+    return React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: H * 9 } },
+      vals.map((v, i) => {
+        const col = [];
+        for (let y = H - 1; y >= 0; y--) col.push(React.createElement('div', { key: y, style: { width: 6, height: 6, borderRadius: '50%', background: (H - y) <= v ? (i >= vals.length - 3 ? '#F0531C' : '#EDEDED') : 'rgba(255,255,255,0.12)' } }));
+        return React.createElement('div', { key: i, style: { display: 'flex', flexDirection: 'column', gap: 3 } }, col);
+      })
+    );
+  }
+
+  venuesData() {
+    return [
+      { n: 'Café Willow', cat: 'КАФЕ', code: 'cafe', dist: '0.2КМ', rateShort: '0.010', off: 'Латте за 200', partner: true, hot: false, icon: 'diamond', city: 'BELGRADE', rating: '4.8', discount: '30%', about: 'Уютная кофейня в Дорчоле. Двойной курс баллов по будням до 12:00. Стартовая награда — эспрессо за 100 баллов.', rewards: [{ t: 'Эспрессо', p: '100' }, { t: 'Латте', p: '200' }, { t: 'Круассан', p: '150' }] },
+      { n: 'JAN', cat: 'РЕСТОРАН', code: 'rest', dist: '0.5КМ', rateShort: '0.012', off: '−30% баллами', partner: true, hot: false, icon: 'star', city: 'BELGRADE', rating: '4.6', discount: '50%', about: 'Современный ресторан. Оплата баллами до 50% чека. Средний чек 1 800 RSD.', rewards: [{ t: 'Десерт', p: '250' }, { t: 'Бокал вина', p: '400' }, { t: '−50% на счёт', p: '900' }] },
+      { n: 'Dorćol Platz', cat: 'КАФЕ', code: 'cafe', dist: '0.8КМ', rateShort: '0.008', off: '2× сегодня', partner: true, hot: true, icon: 'castle', city: 'BELGRADE', rating: '4.7', discount: '20%', about: 'Двор с уличной едой и маркетом. Сегодня двойной курс баллов на всё.', rewards: [{ t: 'Лимонад', p: '120' }, { t: 'Бургер', p: '380' }] },
+      { n: 'Koffein', cat: 'КАФЕ', code: 'cafe', dist: '1.1КМ', rateShort: '0.009', off: 'Круассан 80', partner: true, hot: false, icon: 'clover', city: 'BELGRADE', rating: '4.5', discount: '25%', about: 'Сеть спешелти-кофеен. Круассан за 80 баллов новым гостям.', rewards: [{ t: 'Флэт уайт', p: '160' }, { t: 'Круассан', p: '80' }] },
+      { n: 'Aviator Store', cat: 'РИТЕЙЛ', code: 'retail', dist: '1.4КМ', rateShort: 'СКАН', off: 'Скан чека', partner: false, hot: false, icon: 'building', city: 'BELGRADE', rating: '—', discount: '—', about: 'Магазин ещё не партнёр — баллы можно накопить сканом чека по базовому курсу.', rewards: [] },
+      { n: 'Supernatural', cat: 'РЕСТОРАН', code: 'rest', dist: '1.9КМ', rateShort: '0.011', off: 'Веган-сет', partner: true, hot: false, icon: 'heart', city: 'BELGRADE', rating: '4.9', discount: '40%', about: 'Растительная кухня. Оплата баллами до 40% чека, веган-сет со скидкой.', rewards: [{ t: 'Смузи', p: '180' }, { t: 'Веган-сет', p: '650' }] },
+    ];
+  }
+
+  frameSpec(i) {
+    const seq = [{ eye: 0, dy: 0 }, { eye: 0, dy: -1 }, { eye: -1, dy: 0 }, { eye: -1, dy: 0 }, { eye: 0, dy: 0, blink: true }, { eye: 0, dy: -1 }, { eye: 1, dy: 0 }, { eye: 1, dy: -1 }];
+    return seq[i % seq.length];
+  }
+
+  chipStyle(active) {
+    const base = 'border:none;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.5px;padding:9px 14px;border-radius:11px;white-space:nowrap;flex:none;';
+    return base + (active ? 'background:#141417;color:#EDEDED;' : 'background:#DEDEE0;color:#6B6B72;');
+  }
+
+  segStyle(active) {
+    const base = 'border:none;cursor:pointer;font-family:"Space Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.5px;padding:5px 8px;border-radius:6px;white-space:nowrap;';
+    return base + (active ? 'background:#141417;color:#EDEDED;' : 'background:transparent;color:#8E8E96;');
+  }
+
+  hdrSeg(active) {
+    const base = 'border:none;cursor:pointer;font-family:"Space Mono",monospace;font-size:8.5px;font-weight:700;letter-spacing:.5px;padding:4px 7px;border-radius:6px;white-space:nowrap;line-height:1;';
+    return base + (active ? 'background:#141417;color:#EDEDED;' : 'background:transparent;color:#8E8E96;');
+  }
+
+  go(screen) { this.setState(s => ({ prev: s.screen, screen })); }
+  fmt(n) { return n.toLocaleString('ru-RU').replace(/,/g, ' '); }
+
+  renderVals() {
+    const { screen, frame, sel, filter, venueId, qrTab, sendAmt, friendSel, count, city, lang } = this.state;
+
+    // header: city + language
+    const cities = { bg: { ru: 'Белград', sb: 'Београд', en: 'Belgrade', up: 'BELGRADE' }, ns: { ru: 'Нови-Сад', sb: 'Нови Сад', en: 'Novi Sad', up: 'NOVI SAD' } };
+    const greetWord = { ru: 'ПРИВЕТ', sb: 'ЗДРАВО', en: 'HELLO' }[lang];
+    const greetHi = { ru: 'Привет', sb: 'Здраво', en: 'Hi' }[lang];
+    const cityUpper = cities[city].up;
+    const cityBtns = ['bg', 'ns'].map(k => ({ label: cities[k][lang].toUpperCase(), style: this.hdrSeg(city === k), pick: () => this.setState({ city: k }) }));
+    const langBtns = [['ru', 'RU'], ['sb', 'SB'], ['en', 'EN']].map(([k, lbl]) => ({ label: lbl, style: this.hdrSeg(lang === k), pick: () => this.setState({ lang: k }) }));
+    const I = this.ICONS();
+    const cr = this.creatures();
+    const active = cr[sel];
+    const fs = this.frameSpec(frame);
+    const heroBmp = sel === 0 ? this.hatch(fs.eye, !!fs.blink) : active.bmp;
+    const mood = active.moods[Math.floor(frame / 3) % active.moods.length];
+    const caption = `${active.n.toUpperCase()} · ${active.lvl} · ${mood}`;
+    const clockH = String(9).padStart(2, '0'), clockM = String((41 + frame) % 60).padStart(2, '0');
+
+    const px = (name, cell, color) => this.pixel(I[name], { cell, color });
+
+    const allV = this.venuesData();
+    const filters = [{ key: 'all', label: 'РЯДОМ' }, { key: 'cafe', label: 'КАФЕ' }, { key: 'rest', label: 'РЕСТОРАНЫ' }, { key: 'retail', label: 'РИТЕЙЛ' }, { key: 'partner', label: 'ПАРТНЁРЫ' }]
+      .map(f => ({ label: f.label, style: this.chipStyle(filter === f.key), pick: () => this.setState({ filter: f.key }) }));
+    const matches = (v) => filter === 'all' ? true : filter === 'partner' ? v.partner : v.code === filter;
+    const shownVenues = allV.map((v, i) => ({ ...v,
+      badgeBg: v.partner ? '#141417' : '#CFCFD4',
+      badge: px(v.icon, 3.4, v.partner ? '#EDEDED' : '#8E8E96'),
+      tag: v.partner ? 'ПАРТНЁР' : 'СКАН',
+      tagStyle: 'font-size:8px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:5px;' + (v.partner ? 'background:#141417;color:#EDEDED;' : 'background:#CFCFD4;color:#6B6B72;'),
+      rateColor: v.hot ? '#F0531C' : '#141417',
+      dot: v.hot ? '#F0531C' : 'rgba(20,20,23,0.28)',
+      open: () => this.setState(s => ({ prev: s.screen, screen: 'venue', venueId: i })),
+    })).filter((v, i) => matches(allV[i]));
+
+    const offerDefs = [
+      { title: 'Двойной курс', venue: 'DORĆOL PLATZ · СЕГОДНЯ', pts: 60, icon: 'castle', bg: '#141417', fg: '#EDEDED', pfg: '#F0531C', sub: '#7C7C84', badgeBg: 'rgba(255,255,255,0.10)', bc: '#EDEDED', vi: 2 },
+      { title: 'Круассан за 80', venue: 'KOFFEIN', pts: 40, icon: 'clover', bg: '#DEDEE0', fg: '#141417', pfg: '#141417', sub: '#8E8E96', badgeBg: '#141417', bc: '#EDEDED', vi: 3 },
+      { title: 'Веган-сет −40%', venue: 'SUPERNATURAL', pts: 120, icon: 'heart', bg: '#DEDEE0', fg: '#141417', pfg: '#141417', sub: '#8E8E96', badgeBg: '#141417', bc: '#EDEDED', vi: 5 },
+    ];
+    const offers = offerDefs.map(o => ({ ...o, badge: px(o.icon, 3.2, o.bc), open: () => this.setState(s => ({ prev: s.screen, screen: 'venue', venueId: o.vi })) }));
+
+    const v = allV[venueId] || allV[0];
+    const vd = { ...v, badgeBg: v.partner ? '#F0531C' : '#3A3A40', badgeBig: px(v.icon, 8, '#fff'), rewards: v.rewards };
+
+    const pets = cr.map((p, i) => ({ n: p.n, lvl: p.lvl, pts: p.pts, thumb: this.thumb(p.bmp),
+      tag: p.unlocked ? (i === sel ? 'ВЫБРАН' : 'ОТКРЫТ') : '🔒', inkColor: p.unlocked ? '#141417' : '#B4B4BA',
+      rowBg: i === sel ? '#D2D2D6' : 'transparent', cursor: p.unlocked ? 'pointer' : 'default',
+      select: p.unlocked ? () => this.setState({ sel: i }) : () => {} }));
+
+    const sendChips = [50, 100, 250, 500].map(a => ({ label: a + '', style: this.chipStyle(sendAmt === a), pick: () => this.setState({ sendAmt: a }) }));
+    const friendDefs = [{ n: 'Milan K.', h: '@milan', i: 'M' }, { n: 'Ана П.', h: '@anap', i: 'А' }, { n: 'Ivan R.', h: '@ivanr', i: 'I' }];
+    const friends = friendDefs.map((f, i) => ({ ...f, bg: i === friendSel ? '#D2D2D6' : '#DEDEE0', check: i === friendSel ? '#F0531C' : 'transparent', pick: () => this.setState({ friendSel: i }) }));
+
+    const badgeDefs = [{ icon: 'trophy', label: 'МАРАФОН', bg: '#141417' }, { icon: 'star', label: 'ГУРМАН', bg: '#F0531C' }, { icon: 'castle', label: 'МЕСТНЫЙ', bg: '#141417' }, { icon: 'diamond', label: 'ПЕРВЫЙ', bg: '#141417' }, { icon: 'ghost', label: '?', bg: '#CFCFD4' }];
+    const badges = badgeDefs.map(b => ({ label: b.label, bg: b.bg, icon: px(b.icon, 3.4, b.bg === '#CFCFD4' ? '#9A9AA0' : '#fff') }));
+    const history = [
+      { t: 'Café Willow', d: 'СКАН ЧЕКА · СЕГОДНЯ', v: '+18', c: '#37A24A' },
+      { t: 'JAN', d: 'ОПЛАТА БАЛЛАМИ · ВЧЕРА', v: '−400', c: '#E5342A' },
+      { t: 'Подарок · Milan', d: 'ОТПРАВЛЕНО · 2 ДН', v: '−100', c: '#E5342A' },
+      { t: 'Стрик 7 дней', d: 'БОНУС · 3 ДН', v: '+50', c: '#37A24A' },
+    ];
+
+    const tabIcon = (name, on) => px(name, 2.6, on ? '#141417' : '#9A9AA0');
+    const tabLbl = (on) => on ? 'color:#141417;' : 'color:#9A9AA0;';
+
+    return {
+      isHome: screen === 'home', isSearch: screen === 'search', isVenue: screen === 'venue', isQr: screen === 'qr', isPet: screen === 'pet', isProfile: screen === 'profile',
+      petHero: this.field(heroBmp, fs.dy), petCaption: caption, petClock: `${clockH}:${clockM}`,
+      statDots: this.statDots(), streakSpark: this.streakSpark(),
+      balance: this.fmt(count),
+      iconUserBig: px('user', 5, '#EDEDED'), iconSearch: px('search', 3.2, '#9A9AA0'),
+      greetLabel: greetWord, userName: 'Demo', greetLine: greetHi + ', Demo', cityUpper, cityBtns, langBtns,
+      tickerText: `— ayoo! — ${cityUpper} — 128 МЕСТ — СТРИК 12 — WELCOME +320 — v1.0 — BUDI LOJALAN — LIVE — `,
+      offers, filters, shownVenues, resultCount: shownVenues.length + ' МЕСТ · ' + cityUpper,
+      vd, pets, sendChips, friends, badges, history, qrCode: this.qrCode(), sendAmt,
+      qrShowCode: qrTab === 'code', qrShowSend: qrTab === 'send',
+      qrCodeBtn: this.chipStyle(qrTab === 'code') + 'flex:1;text-align:center;', qrSendBtn: this.chipStyle(qrTab === 'send') + 'flex:1;text-align:center;',
+      qrTabCode: () => this.setState({ qrTab: 'code' }), qrTabSend: () => this.setState({ qrTab: 'send' }),
+      goHome: () => this.go('home'), goSearch: () => this.go('search'), goQr: () => this.go('qr'), goPet: () => this.go('pet'), goProfile: () => this.go('profile'),
+      back: () => this.setState(s => ({ screen: s.prev })),
+      tabHomeIcon: tabIcon('home', screen === 'home'), tabSearchIcon: tabIcon('search', screen === 'search' || screen === 'venue'), tabQrIcon: tabIcon('qr', screen === 'qr'), tabPetIcon: tabIcon('pet', screen === 'pet'), tabProfileIcon: tabIcon('user', screen === 'profile'),
+      tabHomeLbl: tabLbl(screen === 'home'), tabSearchLbl: tabLbl(screen === 'search' || screen === 'venue'), tabQrLbl: tabLbl(screen === 'qr'), tabPetLbl: tabLbl(screen === 'pet'), tabProfileLbl: tabLbl(screen === 'profile'),
+    };
+  }
+}
+</script>
+</body>
+</html>

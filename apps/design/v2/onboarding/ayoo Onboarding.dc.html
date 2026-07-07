@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #DEDEE1; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  .scr { -ms-overflow-style: none; scrollbar-width: none; }
+  .mono { font-family:"Space Mono",monospace; }
+  input.ob { font-family:"Helvetica Neue",Arial; }
+  input.ob::placeholder { color:#B4B4BA; }
+  @keyframes dmReveal { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  .rev { animation: dmReveal .45s cubic-bezier(.2,.7,.2,1) both; }
+  .rev2 { animation: dmReveal .45s cubic-bezier(.2,.7,.2,1) .08s both; }
+  .rev3 { animation: dmReveal .45s cubic-bezier(.2,.7,.2,1) .16s both; }
+  @keyframes lcdIn { from { opacity:0; } to { opacity:1; } }
+  .lcd { animation: lcdIn .55s ease both; }
+  @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ticker span { display:inline-block; padding-left:100%; animation: tick 18s linear infinite; }
+</style>
+</helmet>
+
+<section style="padding:76px 90px 130px;display:flex;flex-direction:column;gap:52px;min-width:760px;">
+
+  <div style="max-width:600px;display:flex;flex-direction:column;gap:14px;">
+    <div class="mono" style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#77777E;">ayoo · dot-matrix — онбординг</div>
+    <h1 style="margin:0;font-size:44px;line-height:0.98;font-weight:800;letter-spacing:-2px;color:#141417;">ПЕРВЫЙ ЗАПУСК</h1>
+    <p style="margin:0;font-size:15px;line-height:1.5;color:#4B4B52;">Приборный онбординг: язык · город · имя · вылупление питомца · приветственный бонус. Шесть шагов на LCD-панели. Тапни по яйцу — питомец вылупится.</p>
+  </div>
+
+  <div style="width:392px;height:812px;background:#0c0c0d;border-radius:56px;padding:13px;box-shadow:0 40px 90px rgba(0,0,0,.28);flex:none;">
+    <div style="width:100%;height:100%;border-radius:44px;overflow:hidden;position:relative;background:#E8E8EA;display:flex;flex-direction:column;">
+      <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#0c0c0d;border-radius:20px;z-index:50;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;position:relative;z-index:20;">
+        <span style="font-size:15px;font-weight:700;color:#141417;letter-spacing:-.4px;">9:41</span>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="display:flex;align-items:flex-end;gap:2px;height:11px;"><div style="width:3px;height:5px;background:#141417;border-radius:1px;"></div><div style="width:3px;height:7px;background:#141417;border-radius:1px;"></div><div style="width:3px;height:9px;background:#141417;border-radius:1px;"></div><div style="width:3px;height:11px;background:#141417;border-radius:1px;"></div></div><div style="width:23px;height:12px;border:1.5px solid #141417;border-radius:3px;padding:1.5px;"><div style="width:72%;height:100%;background:#141417;border-radius:1px;"></div></div></div>
+      </div>
+
+      <!-- TOP BAR: back + step -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 20px 10px;position:relative;z-index:20;height:44px;">
+        <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ back }}" class="mono" style="border:none;cursor:pointer;background:#DEDEE0;color:#141417;font-size:10px;font-weight:700;letter-spacing:1px;padding:8px 13px;border-radius:99px;">← {{ t.back }}</button>
+        </sc-if>
+        <sc-if value="{{ noBack }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:9px;"><img src="./ref/ayoo-logo.svg" alt="ayoo" style="width:26px;height:26px;border-radius:8px;display:block;" /><span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">ayoo! · SETUP</span></div>
+        </sc-if>
+        <span class="mono" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">{{ stepTag }}</span>
+      </div>
+
+      <div class="scr" style="flex:1;overflow:auto;position:relative;padding:6px 24px 24px;">
+
+        <!-- PERSISTENT PET SCREEN -->
+        <div onClick="{{ tapEgg }}" class="lcd" style="cursor:{{ eggCursor }};width:100%;position:relative;background:#D9DAD3;border-radius:24px;padding:20px 12px 14px;overflow:hidden;box-shadow:inset 0 2px 10px rgba(0,0,0,0.14), inset 0 0 0 1.5px rgba(255,255,255,0.5);">
+          <div style="display:flex;justify-content:space-between;padding:0 8px 8px;"><span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8A8C84;">LCD · {{ lcdTag }}</span><span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8A8C84;">{{ clock }}</span></div>
+          <div>{{ eggHero }}</div>
+          <div class="mono" style="font-size:11px;color:#8A8C84;margin-top:6px;letter-spacing:2px;text-align:center;">{{ eggCaption }}</div>
+        </div>
+        <div style="height:22px;flex:none;"></div>
+
+        <!-- ========== 0 · WELCOME ========== -->
+        <sc-if value="{{ isWelcome }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:2px;">
+            <img src="./ref/ayoo-logo.svg" alt="ayoo" class="rev" style="width:56px;height:56px;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,0.16);" />
+            <h2 class="rev2" style="margin:16px 0 0;font-size:40px;font-weight:800;letter-spacing:-1.8px;color:#141417;line-height:0.95;">ayoo!</h2>
+            <div class="rev2 mono" style="font-size:9px;letter-spacing:3px;color:#A6A6AC;margin-top:8px;">СИСТЕМА ЛОЯЛЬНОСТИ · v1.0</div>
+            <p class="rev3" style="font-size:15px;line-height:1.5;color:#4B4B52;margin:20px 4px 0;">{{ t.welcomeTag }}</p>
+          </div>
+        </sc-if>
+
+        <!-- ========== 1 · LANGUAGE ========== -->
+        <sc-if value="{{ isLang }}" hint-placeholder-val="{{ false }}">
+          <div style="padding-top:8px;">
+            <div class="mono rev" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">01 · ЯЗЫК ИНТЕРФЕЙСА</div>
+            <h2 class="rev" style="margin:8px 0 0;font-size:32px;font-weight:800;letter-spacing:-1.2px;color:#141417;line-height:0.96;">{{ t.langTitle }}</h2>
+            <div class="rev2" style="margin-top:24px;display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ langCards }}" as="l" hint-placeholder-count="3">
+                <button onClick="{{ l.pick }}" style="{{ l.style }}">
+                  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;"><span style="font-size:19px;font-weight:800;letter-spacing:-.5px;">{{ l.name }}</span><span class="mono" style="font-size:10px;letter-spacing:1.5px;opacity:.6;">{{ l.native }}</span></div>
+                  <span class="mono" style="font-size:14px;font-weight:700;letter-spacing:1px;">{{ l.code }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== 2 · CITY ========== -->
+        <sc-if value="{{ isCity }}" hint-placeholder-val="{{ false }}">
+          <div style="padding-top:8px;">
+            <div class="mono rev" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">02 · ГОРОД</div>
+            <h2 class="rev" style="margin:8px 0 0;font-size:32px;font-weight:800;letter-spacing:-1.2px;color:#141417;line-height:0.96;">{{ t.cityTitle }}</h2>
+            <p class="rev mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;margin:10px 0 0;">{{ t.citySub }}</p>
+            <div class="rev2" style="margin-top:22px;display:flex;flex-direction:column;gap:12px;">
+              <sc-for list="{{ cityCards }}" as="c" hint-placeholder-count="2">
+                <button onClick="{{ c.pick }}" style="{{ c.style }}">
+                  <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="width:46px;height:46px;border-radius:14px;background:{{ c.markBg }};display:flex;align-items:center;justify-content:center;flex:none;"><div style="width:11px;height:11px;border-radius:50%;background:{{ c.markDot }};box-shadow:0 0 0 5px {{ c.markRing }};"></div></div>
+                    <div style="text-align:left;"><div style="font-size:20px;font-weight:800;letter-spacing:-.5px;">{{ c.name }}</div><div class="mono" style="font-size:9px;letter-spacing:1.5px;opacity:.6;margin-top:3px;">{{ c.meta }}</div></div>
+                  </div>
+                  <span style="font-size:19px;font-weight:800;">{{ c.check }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== 3 · NAME ========== -->
+        <sc-if value="{{ isName }}" hint-placeholder-val="{{ false }}">
+          <div style="padding-top:8px;">
+            <div class="mono rev" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">03 · ПРОФИЛЬ</div>
+            <h2 class="rev" style="margin:8px 0 0;font-size:32px;font-weight:800;letter-spacing:-1.2px;color:#141417;line-height:0.96;">{{ t.nameTitle }}</h2>
+            <p class="rev mono" style="font-size:10px;letter-spacing:1px;color:#8E8E96;margin:10px 0 0;">{{ t.nameSub }}</p>
+            <div class="rev2" style="margin-top:26px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #141417;padding:0 2px 12px;">
+              <input class="ob" value="{{ name }}" onInput="{{ onName }}" placeholder="{{ t.namePh }}" maxlength="18" style="flex:1;border:none;outline:none;background:transparent;font-size:30px;font-weight:800;letter-spacing:-.8px;color:#141417;min-width:0;" />
+              <span class="mono" style="font-size:11px;color:#B4B4BA;">{{ nameCount }}</span>
+            </div>
+            <div class="rev3" style="margin-top:24px;display:flex;flex-wrap:wrap;gap:8px;">
+              <span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#A6A6AC;width:100%;">{{ t.nameQuick }}</span>
+              <sc-for list="{{ nameSuggestions }}" as="s" hint-placeholder-count="4"><button onClick="{{ s.pick }}" class="mono" style="border:none;cursor:pointer;background:#DEDEE0;color:#141417;font-size:12px;font-weight:700;padding:9px 14px;border-radius:11px;">{{ s.label }}</button></sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== 4 · HATCH ========== -->
+        <sc-if value="{{ isHatch }}" hint-placeholder-val="{{ false }}">
+          <div style="padding-top:8px;">
+            <div class="mono rev" style="font-size:9px;letter-spacing:2px;color:#A6A6AC;">04 · ПИТОМЕЦ</div>
+            <h2 class="rev" style="margin:8px 0 0;font-size:32px;font-weight:800;letter-spacing:-1.2px;color:#141417;line-height:0.96;">{{ t.hatchTitle }}</h2>
+            <!-- crack progress dots -->
+            <div class="rev2" style="margin-top:20px;display:flex;align-items:center;gap:10px;">
+              <span class="mono" style="font-size:9px;letter-spacing:1.5px;color:#8E8E96;flex:none;">{{ t.hatchProg }}</span>
+              <div style="flex:1;display:flex;gap:5px;">{{ crackDots }}</div>
+            </div>
+            <p class="rev3" style="font-size:14px;line-height:1.5;color:#4B4B52;margin:18px 0 0;">{{ hatchHint }}</p>
+          </div>
+        </sc-if>
+
+        <!-- ========== 5 · DONE ========== -->
+        <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+          <div style="padding-top:2px;text-align:center;display:flex;flex-direction:column;align-items:center;">
+            <h2 class="rev" style="margin:0;font-size:30px;font-weight:800;letter-spacing:-1px;color:#141417;line-height:0.98;">{{ doneGreet }}</h2>
+            <p class="rev2" style="font-size:14px;line-height:1.5;color:#4B4B52;margin:10px 8px 0;">{{ t.doneSub }}</p>
+            <div class="rev3" style="width:100%;margin-top:22px;display:flex;gap:10px;">
+              <div style="flex:1;background:#DEDEE0;border-radius:16px;padding:14px;text-align:left;"><div class="mono" style="font-size:8px;letter-spacing:1.5px;color:#8E8E96;">ГОРОД</div><div style="font-size:15px;font-weight:800;letter-spacing:-.4px;color:#141417;margin-top:4px;">{{ doneCity }}</div></div>
+              <div style="flex:1;background:#DEDEE0;border-radius:16px;padding:14px;text-align:left;"><div class="mono" style="font-size:8px;letter-spacing:1.5px;color:#8E8E96;">ЯЗЫК</div><div style="font-size:15px;font-weight:800;letter-spacing:-.4px;color:#141417;margin-top:4px;">{{ doneLang }}</div></div>
+            </div>
+            <div class="rev3" style="width:100%;margin-top:10px;background:#F0531C;border-radius:16px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;">
+              <div style="text-align:left;"><div class="mono" style="font-size:8px;letter-spacing:1.5px;color:rgba(255,255,255,0.85);">{{ t.welcomeBonus }}</div><div style="font-size:15px;font-weight:800;letter-spacing:-.3px;color:#fff;margin-top:3px;">{{ t.welcomeBonusSub }}</div></div>
+              <div style="font-size:34px;font-weight:800;letter-spacing:-1.5px;color:#fff;line-height:1;">+320</div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- FOOTER: progress + primary -->
+      <div style="position:relative;z-index:20;background:rgba(232,232,234,0.94);backdrop-filter:blur(14px);border-top:1px solid rgba(20,20,23,0.08);padding:14px 24px 30px;">
+        <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;">{{ progressDots }}</div>
+        <button onClick="{{ primary }}" style="{{ primaryStyle }}">{{ primaryLabel }}</button>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { step: 0, lang: 'ru', city: null, name: '', frame: 0, tick: 0, cracks: 0 };
+
+  componentDidMount() {
+    if (window.__obTimer) clearInterval(window.__obTimer);
+    window.__obTimer = this._t = setInterval(() => this.setState(s => ({
+      tick: s.tick + 1,
+      frame: (s.tick + 1) % 4 === 0 ? s.frame + 1 : s.frame,
+    })), 140);
+  }
+  componentWillUnmount() { clearInterval(this._t); if (window.__obTimer === this._t) window.__obTimer = null; }
+
+  STR() {
+    return {
+      ru: { back:'НАЗАД', next:'ДАЛЕЕ', start:'НАЧАТЬ', enter:'ВОЙТИ В AYOO', meet:'ЗНАКОМСТВО',
+        welcomeTag:'Earn everywhere. Spend where you love.',
+        langTitle:'Выберите язык', cityTitle:'Ваш город', citySub:'ГДЕ ИСКАТЬ ЗАВЕДЕНИЯ', cityMeta:'RSD · ПАРТНЁРЫ РЯДОМ',
+        nameTitle:'Как вас зовут?', nameSub:'ТАК ПИТОМЕЦ БУДЕТ ВАС ВСТРЕЧАТЬ', namePh:'Ваше имя', nameQuick:'БЫСТРЫЙ ВЫБОР',
+        hatchTitle:'Вылупите питомца', hatchProg:'СКОРЛУПА', hatchTapHint:'Тапайте по яйцу, пока оно не треснет — внутри ваш первый питомец.', hatchDoneHint:'Готово! Питомец вылупился и уже машет вам.',
+        doneSub:'Всё готово. Питомец на связи, баллы начислены — можно исследовать город.', welcomeBonus:'WELCOME · 82 ДНЯ', welcomeBonusSub:'Стартовый бонус зачислен' },
+      sb: { back:'НАЗАД', next:'ДАЉЕ', start:'ПОЧНИ', enter:'УЂИ У AYOO', meet:'УПОЗНАВАЊЕ',
+        welcomeTag:'Earn everywhere. Spend where you love.',
+        langTitle:'Изаберите језик', cityTitle:'Ваш град', citySub:'ГДЕ ТРАЖИТИ МЕСТА', cityMeta:'RSD · ПАРТНЕРИ У БЛИЗИНИ',
+        nameTitle:'Како се зовете?', nameSub:'ТАКО ЋЕ ВАС ЉУБИМАЦ ДОЧЕКАТИ', namePh:'Ваше име', nameQuick:'БРЗИ ИЗБОР',
+        hatchTitle:'Излежите љубимца', hatchProg:'ЉУСКА', hatchTapHint:'Тапкаjте по jаjету док не пукне — унутра је ваш први љубимац.', hatchDoneHint:'Готово! Љубимац се излегао и већ вам маше.',
+        doneSub:'Све је спремно. Љубимац је ту, поени су уписани — истражите град.', welcomeBonus:'WELCOME · 82 ДАНА', welcomeBonusSub:'Стартни бонус уписан' },
+      en: { back:'BACK', next:'NEXT', start:'START', enter:'ENTER AYOO', meet:'MEET PET',
+        welcomeTag:'Earn everywhere. Spend where you love.',
+        langTitle:'Choose language', cityTitle:'Your city', citySub:'WHERE TO FIND VENUES', cityMeta:'RSD · PARTNERS NEARBY',
+        nameTitle:"What's your name?", nameSub:'HOW YOUR PET WILL GREET YOU', namePh:'Your name', nameQuick:'QUICK PICK',
+        hatchTitle:'Hatch your pet', hatchProg:'SHELL', hatchTapHint:'Tap the egg until it cracks — your first pet is inside.', hatchDoneHint:'Done! Your pet has hatched and is already waving.',
+        doneSub:'All set. Your pet is online, points are credited — go explore the city.', welcomeBonus:'WELCOME · 82 DAYS', welcomeBonusSub:'Starter bonus credited' },
+    }[this.state.lang];
+  }
+
+  cities() {
+    return {
+      bg: { ru:'Белград', sb:'Београд', en:'Belgrade', up:'BELGRADE', venues:'128' },
+      ns: { ru:'Нови-Сад', sb:'Нови Сад', en:'Novi Sad', up:'NOVI SAD', venues:'54' },
+    };
+  }
+
+  // dotted LCD field (centered bitmap)
+  field(bmp, dx, dy, onColor) {
+    const cols = 25, rows = 14, r = 4.2, on = onColor || '#26261F', off = 'rgba(30,30,24,0.16)';
+    const gap = (352 - r * 2) / (cols - 1);
+    const bw = Math.max(...bmp.map(s => s.length)), bh = bmp.length;
+    const offX = Math.round((cols - bw) / 2) + (dx || 0), offY = Math.round((rows - bh) / 2) + (dy || 0);
+    const dots = [];
+    for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+      const bx = gx - offX, by = gy - offY;
+      let ch = ' ';
+      if (by >= 0 && by < bh && bx >= 0 && bx < bw) ch = bmp[by][bx] || ' ';
+      let fill = off, rr = r * 0.72;
+      if (ch === '#') { fill = on; rr = r; }
+      else if (ch === '*') { fill = '#F0531C'; rr = r; }
+      dots.push(React.createElement('circle', { key: gx + '-' + gy, cx: gx * gap + r, cy: gy * gap + r, r: rr, fill }));
+    }
+    const w = (cols - 1) * gap + r * 2, h = (rows - 1) * gap + r * 2;
+    return React.createElement('svg', { width: '100%', viewBox: `0 0 ${w} ${h}`, style: { display: 'block', height: 'auto' } }, dots);
+  }
+
+  // ---- per-step LCD art ----
+  HAND() { return ["  ##  ##  ##  ## ","  ##  ##  ##  ## ","  ##  ##  ##  ## ","###   ##  ##  ## ","####  ##  ##  ## ","################","################","################"," ############## ","  ############  ","   ##########   "]; }
+  HEART() { return [" ## ## ","#######","#######","#######"," ##### ","  ###  ","   #   "]; }
+  HEART_S() { return ["       "," #  #  "," ##### "," ##### ","  ###  ","   #   ","       "]; }
+  PIN() { return ["  ###  "," ##### ","## . ##","## . ##"," ##### ","  ###  ","   #   ","   #   "]; }
+  eggS(cracks) {
+    const rows = ["  ####  "," ###### ","########","########","########"," ###### ","  ####  "];
+    const punch = (r, c) => { if (rows[r] && c >= 0 && c < rows[r].length && rows[r][c] === '#') rows[r] = rows[r].substring(0, c) + '.' + rows[r].substring(c + 1); };
+    if (cracks >= 1) { punch(3, 3); punch(3, 4); }
+    if (cracks >= 2) { punch(2, 3); punch(4, 4); punch(3, 5); }
+    return rows;
+  }
+  shear(bmp, amt) {
+    const bh = bmp.length, bw = Math.max(...bmp.map(s => s.length));
+    return bmp.map((row, r) => {
+      const shift = Math.round((bh - 1 - r) / (bh - 1) * amt);
+      const p = row.padEnd(bw, ' ');
+      if (shift > 0) return ' '.repeat(shift) + p;
+      if (shift < 0) return p.slice(-shift) + ' '.repeat(-shift);
+      return p;
+    });
+  }
+  sparkHatch(eye, blink, frame) {
+    const h = this.hatch(eye, blink);
+    const rows = h.map(r => '  ' + r + '  ');
+    rows.unshift(' '.repeat(19)); rows.push(' '.repeat(19));
+    const set = (r, c, ch) => { if (rows[r] && c >= 0 && c < rows[r].length) rows[r] = rows[r].substring(0, c) + ch + rows[r].substring(c + 1); };
+    if (frame % 2 === 0) { set(0, 3, '*'); set(0, 15, '*'); set(10, 5, '*'); set(10, 13, '*'); }
+    else { set(1, 1, '*'); set(1, 17, '*'); set(5, 0, '*'); set(5, 18, '*'); }
+    return rows;
+  }
+  FONT() {
+    return {
+      'A': [" ### ","#   #","#   #","#####","#   #","#   #","#   #"],
+      'B': ["#### ","#   #","#   #","#### ","#   #","#   #","#### "],
+      'C': [" ####","#    ","#    ","#    ","#    ","#    "," ####"],
+      'D': ["#### ","#   #","#   #","#   #","#   #","#   #","#### "],
+      'E': ["#####","#    ","#    ","#### ","#    ","#    ","#####"],
+      'F': ["#####","#    ","#    ","#### ","#    ","#    ","#    "],
+      'G': [" ####","#    ","#    ","#  ##","#   #","#   #"," ####"],
+      'H': ["#   #","#   #","#   #","#####","#   #","#   #","#   #"],
+      'I': ["###"," # "," # "," # "," # "," # ","###"],
+      'J': ["  ###","   # ","   # ","   # ","#  # ","#  # "," ##  "],
+      'K': ["#   #","#  # ","# #  ","##   ","# #  ","#  # ","#   #"],
+      'L': ["#    ","#    ","#    ","#    ","#    ","#    ","#####"],
+      'M': ["#   #","## ##","# # #","# # #","#   #","#   #","#   #"],
+      'N': ["#   #","##  #","# # #","# # #","#  ##","#   #","#   #"],
+      'O': [" ### ","#   #","#   #","#   #","#   #","#   #"," ### "],
+      'P': ["#### ","#   #","#   #","#### ","#    ","#    ","#    "],
+      'Q': [" ### ","#   #","#   #","#   #","# # #","#  # "," ## #"],
+      'R': ["#### ","#   #","#   #","#### ","# #  ","#  # ","#   #"],
+      'S': [" ####","#    ","#    "," ### ","    #","    #","#### "],
+      'T': ["#####","  #  ","  #  ","  #  ","  #  ","  #  ","  #  "],
+      'U': ["#   #","#   #","#   #","#   #","#   #","#   #"," ### "],
+      'V': ["#   #","#   #","#   #","#   #","#   #"," # # ","  #  "],
+      'W': ["#   #","#   #","#   #","# # #","# # #","## ##","#   #"],
+      'X': ["#   #","#   #"," # # ","  #  "," # # ","#   #","#   #"],
+      'Y': ["#   #","#   #"," # # ","  #  ","  #  ","  #  ","  #  "],
+      'Z': ["#####","    #","   # ","  #  "," #   ","#    ","#####"],
+      'Б': ["#####","#    ","#    ","#### ","#   #","#   #","#### "],
+      'Г': ["#####","#    ","#    ","#    ","#    ","#    ","#    "],
+      'Д': [" ### "," # # "," # # "," # # "," # # ","#####","#   #"],
+      'Ж': ["# # #","# # #","# # #"," ### ","# # #","# # #","# # #"],
+      'З': [" ### ","#   #","    #","  ## ","    #","#   #"," ### "],
+      'И': ["#   #","#   #","#  ##","# # #","##  #","#   #","#   #"],
+      'Л': [" ####"," #  #"," #  #"," #  #"," #  #","#   #","#   #"],
+      'П': ["#####","#   #","#   #","#   #","#   #","#   #","#   #"],
+      'У': ["#   #","#   #"," ### ","   # ","   # ","  #  "," #   "],
+      'Ф': ["  #  "," ### ","# # #","# # #","# # #"," ### ","  #  "],
+      'Ц': ["#  # ","#  # ","#  # ","#  # ","#  # ","#####","    #"],
+      'Ч': ["#   #","#   #","#   #"," ####","    #","    #","    #"],
+      'Ш': ["# # #","# # #","# # #","# # #","# # #","# # #","#####"],
+      'Щ': ["# # #","# # #","# # #","# # #","# # #","#####","    #"],
+      'Ъ': ["##   "," #   "," #   "," ### "," #  #"," #  #"," ### "],
+      'Ы': ["#   #","#   #","#   #","### #","#  ##","#  ##","### #"],
+      'Ь': ["#    ","#    ","#    ","#### ","#   #","#   #","#### "],
+      'Э': [" ### ","#   #","    #","  ###","    #","#   #"," ### "],
+      'Ю': ["# ## ","# # #","# # #","# # #","# # #","# # #","# ## "],
+      'Я': [" ####","#   #","#   #"," ####","  # #"," #  #","#   #"],
+      '.': ["     ","     ","     ","     ","     ","     ","  #  "],
+      '?': [" ### ","#   #","   # ","  #  ","  #  ","     ","  #  "],
+    };
+  }
+
+  pixText(str, onColor, wavePhase) {
+    const F = this.FONT();
+    const AL = { 'А':'A','В':'B','Е':'E','Ё':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','Й':'И' };
+    const chars = (str == null ? '' : String(str)).toUpperCase().split('');
+    const H = 7, step = 10, r = 3, roff = 2.1;
+    const on = onColor || '#26261F', off = 'rgba(30,30,24,0.16)';
+    let cols = 0; const placed = [];
+    chars.forEach(raw => {
+      if (raw === ' ') { cols += 3; return; }
+      const ch = AL[raw] || raw;
+      const g = F[ch] || F['?'];
+      const gw = Math.max(...g.map(s => s.length));
+      placed.push({ g, x: cols }); cols += gw + 1;
+    });
+    const totalW = Math.max(1, cols - 1);
+    // fill the whole LCD like the egg screen: a full dot grid with the text centered.
+    const COLS = Math.max(totalW, 25);
+    const ROWS = Math.max(14, Math.round(0.56 * COLS));
+    const offX = Math.floor((COLS - totalW) / 2);
+    const offY = Math.floor((ROWS - H) / 2);
+    const dots = [];
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++)
+      dots.push(React.createElement('circle', { key: 'o' + x + '-' + y, cx: x * step + step / 2, cy: y * step + step / 2, r: roff, fill: off }));
+    placed.forEach((p, i) => {
+      const dy = (wavePhase == null) ? 0 : Math.round(Math.sin(wavePhase + i * 0.85) * 1.4);
+      for (let y = 0; y < p.g.length; y++) { const row = p.g[y]; for (let cx = 0; cx < row.length; cx++) if (row[cx] === '#')
+        dots.push(React.createElement('circle', { key: i + '-' + cx + '-' + y, cx: (offX + p.x + cx) * step + step / 2, cy: (offY + y + dy) * step + step / 2, r, fill: on })); }
+    });
+    const w = COLS * step, h = ROWS * step;
+    return React.createElement('svg', { width: '100%', viewBox: `0 0 ${w} ${h}`, style: { display: 'block', height: 'auto' } }, dots);
+  }
+
+  // pulsing heart: 4-frame beat cycle driven by the fast tick
+  HEART_XL() { return ["## ## ##","########","########","########"," ###### ","  ####  ","   ##   ","    #   "]; }
+  heartBeat(tick) {
+    const seq = [this.HEART(), this.HEART_XL(), this.HEART(), this.HEART_S()];
+    return seq[tick % seq.length];
+  }
+
+  lcdHero(step, a) {
+    const { frame, tick, eye, blink, name, cracks, hatched } = a;
+    if (step === 0) {
+      const hi = { ru: 'Привет', sb: 'Здраво', en: 'Hi' }[a.lang];
+      return React.createElement('div', { style: { minHeight: 176, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px' } }, this.pixText(hi, null, tick * 0.5));
+    }
+    if (step === 1) return this.field(this.heartBeat(tick), 0, 0, '#F0531C');
+    if (step === 2) {
+      // pin bobs up and down smoothly with the fast tick
+      const bob = Math.round(Math.sin(tick * 0.5) * 1.4);
+      return this.field(this.PIN(), 0, bob);
+    }
+    if (step === 3) return React.createElement('div', { style: { minHeight: 176, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px' } }, this.pixText((name && name.trim()) ? name.trim() : '...', null, tick * 0.5));
+    if (step === 4) {
+      if (hatched) return this.field(this.sparkHatch(eye, blink, tick), 0, 0);
+      // each crack makes the egg shudder harder on the fast tick
+      const amp = cracks + 1;
+      const dx = cracks > 0 ? Math.round(Math.sin(tick * 1.3) * amp) : 0;
+      const dy = cracks > 0 ? (tick % 2 ? 0 : -1) : (tick % 4 === 0 ? -1 : 0);
+      return this.field(this.eggS(cracks), dx, dy);
+    }
+    return this.field(this.sparkHatch(eye, blink, tick), 0, 0);
+  }
+  lcdCap(step, a) {
+    const { name, cracks, hatched, lang } = a;
+    if (step === 0) return 'ayoo! · v1.0';
+    if (step === 1) return '«LOVE»';
+    if (step === 2) return '«HERE»';
+    if (step === 3) return (name && name.trim()) ? '«HELLO»' : '«...»';
+    if (step === 4) return hatched ? '«HI» · HATCHLING' : (cracks === 0 ? 'EGG · 0000' : 'CRACK · ' + '×'.repeat(cracks));
+    return '«HI» · HATCHLING';
+  }
+
+  hatch(eye, blink) {
+    const rows = ["     #####     ","   #########   ","  ###########  ","  ###########  ","  ###########  ","  ###########  ","  ###########  ","   #########   ","   ##     ##   "];
+    const punch = (r, c) => { if (c < 1 || c > 13) return; rows[r] = rows[r].substring(0, c) + '.' + rows[r].substring(c + 1); };
+    punch(3, 5 + eye); punch(3, 9 + eye);
+    if (!blink) { punch(5, 6); punch(5, 8); }
+    return rows;
+  }
+
+  egg(cracks) {
+    const rows = ["    #####    ","  #########  "," ########### "," ########### ","#############","#############","#############","#############"," ########### ","  #########  "];
+    const punch = (r, c) => { if (rows[r] && c >= 0 && c < rows[r].length && rows[r][c] === '#') rows[r] = rows[r].substring(0, c) + '.' + rows[r].substring(c + 1); };
+    if (cracks >= 1) { punch(4, 6); punch(5, 6); punch(4, 7); }
+    if (cracks >= 2) { punch(3, 5); punch(4, 5); punch(5, 7); punch(6, 6); punch(6, 8); punch(5, 4); }
+    return rows;
+  }
+
+  crackDots() {
+    const arr = [];
+    for (let i = 0; i < 3; i++) arr.push(React.createElement('div', { key: i, style: { flex: 1, height: 6, borderRadius: 3, background: i < this.state.cracks ? '#F0531C' : 'rgba(20,20,23,0.14)', transition: 'background .2s' } }));
+    return React.createElement('div', { style: { flex: 1, display: 'flex', gap: 5 } }, arr);
+  }
+
+  progressDots() {
+    const arr = [];
+    for (let i = 0; i < 6; i++) {
+      const done = i < this.state.step, cur = i === this.state.step;
+      arr.push(React.createElement('div', { key: i, style: { width: cur ? 20 : 6, height: 6, borderRadius: 3, background: (done || cur) ? '#141417' : 'rgba(20,20,23,0.16)', transition: 'all .3s' } }));
+    }
+    return React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } }, arr);
+  }
+
+  langBtnStyle(active) {
+    return 'border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:18px;font-family:"Helvetica Neue",Arial;' + (active ? 'background:#141417;color:#EDEDED;' : 'background:#DEDEE0;color:#141417;');
+  }
+  cityBtnStyle(active) {
+    return 'border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:20px;font-family:"Helvetica Neue",Arial;' + (active ? 'background:#141417;color:#EDEDED;' : 'background:#DEDEE0;color:#141417;');
+  }
+  primaryStyle(enabled) {
+    const base = 'width:100%;border:none;font-family:"Helvetica Neue",Arial;font-size:16px;font-weight:800;letter-spacing:-.3px;padding:17px;border-radius:16px;transition:background .2s,color .2s;';
+    return base + (enabled ? 'cursor:pointer;background:#141417;color:#EDEDED;' : 'cursor:default;background:#DEDEE0;color:#A6A6AC;');
+  }
+
+  next() {
+    const { step, city, name, cracks } = this.state;
+    if (step === 2 && !city) return;
+    if (step === 3 && !name.trim()) return;
+    if (step === 4 && cracks < 3) return;
+    this.setState({ step: Math.min(5, step + 1) });
+  }
+  back() { this.setState(s => ({ step: Math.max(0, s.step - 1) })); }
+
+  renderVals() {
+    const { step, lang, city, name, frame, tick, cracks } = this.state;
+    const t = this.STR();
+    const C = this.cities();
+    const clock = `09:${String((41 + frame) % 60).padStart(2, '0')}`;
+    const blink = frame % 6 === 4;
+    const eye = [0, 0, -1, 1, 0][frame % 5];
+    const wob = frame % 2 === 0 ? 0 : -1;
+
+    // egg / pet hero
+    const hatched = cracks >= 3;
+    const anim = { frame, tick, eye, blink, name, cracks, hatched, lang };
+    const eggHero = this.lcdHero(step, anim);
+    const eggCaption = this.lcdCap(step, anim);
+
+    // language cards
+    const langDefs = [['ru', 'Русский', 'RU', 'RUSSIAN'], ['sb', 'Српски', 'SB', 'SERBIAN'], ['en', 'English', 'EN', 'ENGLISH']];
+    const langCards = langDefs.map(([k, nm, code, nat]) => ({ name: nm, native: nat, code, style: this.langBtnStyle(lang === k), pick: () => this.setState({ lang: k }) }));
+
+    // city cards
+    const cityCards = ['bg', 'ns'].map(k => {
+      const active = city === k;
+      return { name: C[k][lang], meta: C[k].venues + ' · ' + t.cityMeta, check: active ? '✓' : '',
+        markBg: active ? 'rgba(240,83,28,0.22)' : '#CFCFD4', markDot: active ? '#F0531C' : '#8E8E96', markRing: active ? 'rgba(240,83,28,0.18)' : 'rgba(0,0,0,0.06)',
+        style: this.cityBtnStyle(active), pick: () => this.setState({ city: k }) };
+    });
+
+    // name
+    const suggestDefs = ['Milan', 'Ана', 'Ivan', 'Jelena'];
+    const nameSuggestions = suggestDefs.map(s => ({ label: s, pick: () => this.setState({ name: s }) }));
+
+    // primary button logic
+    let primaryLabel = t.next, primaryEnabled = true, primaryAction = () => this.next();
+    if (step === 0) primaryLabel = t.start;
+    else if (step === 2) { primaryEnabled = !!city; }
+    else if (step === 3) { primaryEnabled = !!name.trim(); }
+    else if (step === 4) { primaryEnabled = hatched; primaryLabel = hatched ? t.meet : t.hatchProg + ' ' + cracks + '/3'; }
+    else if (step === 5) { primaryLabel = t.enter; primaryAction = () => this.setState({ step: 0, city: null, name: '', cracks: 0 }); }
+
+    const nm = name.trim() || t.namePh;
+    const doneGreetWord = { ru: 'Привет', sb: 'Здраво', en: 'Hi' }[lang];
+
+    return {
+      t, clock,
+      isWelcome: step === 0, isLang: step === 1, isCity: step === 2, isName: step === 3, isHatch: step === 4, isDone: step === 5,
+      canBack: step > 0 && step < 5, noBack: step === 0 || step === 5,
+      stepTag: 'ШАГ ' + String(step + 1).padStart(2, '0') + '/06',
+      eggHero, eggCaption,
+      hatchState: hatched ? 'LIVE' : 'EGG', hatchHint: hatched ? t.hatchDoneHint : t.hatchTapHint,
+      lcdTag: ['BOOT', 'HELLO', 'MAP', 'NAME', (hatched ? 'LIVE' : 'EGG'), 'READY'][step],
+      eggCursor: (step === 4 && !hatched) ? 'pointer' : 'default',
+      tapEgg: () => { if (this.state.step === 4 && this.state.cracks < 3) this.setState(s => ({ cracks: s.cracks + 1 })); },
+      crackDots: this.crackDots(),
+      langCards, cityCards, nameSuggestions,
+      name, onName: (e) => this.setState({ name: e.target.value }), nameCount: (name.length) + '/18',
+      doneGreet: doneGreetWord + ', ' + nm + '!', doneCity: city ? C[city][lang] : '—', doneLang: lang.toUpperCase(),
+      progressDots: this.progressDots(),
+      primary: primaryAction, primaryLabel, primaryStyle: this.primaryStyle(primaryEnabled),
+      back: () => this.back(),
+    };
+  }
+}
+</script>
+</body>
+</html>
