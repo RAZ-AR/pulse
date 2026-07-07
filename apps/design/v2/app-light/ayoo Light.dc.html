@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #E9E9EC; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  .scr, .rail { -ms-overflow-style: none; scrollbar-width: none; }
+  .card { background:#fff; border-radius:24px; box-shadow:0 8px 30px rgba(17,17,20,0.05), 0 1px 3px rgba(17,17,20,0.04); }
+  .tab { border:none;cursor:pointer;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;flex:1; }
+  .tab .lbl { font-size:10px;font-weight:600;letter-spacing:.1px; }
+  .h1 { margin:0;font-size:34px;font-weight:800;letter-spacing:-1.2px;color:#1D1D1F;line-height:1.0; }
+  @keyframes rise { from { opacity:0; transform:translateY(13px); } to { opacity:1; transform:none; } }
+  .rev  { animation: rise .55s cubic-bezier(.22,.72,.2,1) both; }
+  .rev2 { animation: rise .55s cubic-bezier(.22,.72,.2,1) .06s both; }
+  .rev3 { animation: rise .55s cubic-bezier(.22,.72,.2,1) .12s both; }
+  @keyframes pop { from { opacity:0; transform:scale(.92); } to { opacity:1; transform:none; } }
+  .pop { animation: pop .5s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes floaty { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
+  .floaty { animation: floaty 3.4s ease-in-out infinite; }
+</style>
+</helmet>
+
+<section style="padding:76px 90px 130px;display:flex;flex-direction:column;gap:52px;min-width:760px;">
+
+  <div style="max-width:600px;display:flex;flex-direction:column;gap:14px;">
+    <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#9A9AA0;font-weight:600;">ayoo · light — светлый минимализм</div>
+    <h1 style="margin:0;font-size:44px;line-height:1.0;font-weight:800;letter-spacing:-2px;color:#1D1D1F;">ayoo!</h1>
+    <p style="margin:0;font-size:15px;line-height:1.55;color:#6E6E76;">Чистая светлая тема: воздух, мягкие тени, крупная типографика, оранжевый — только акцентом. Таб-бар: <b>Дом · Поиск · QR · Питомец · Я</b>. Тапни карточку заведения — откроется деталь.</p>
+  </div>
+
+  <div style="width:392px;height:812px;background:#0c0c0d;border-radius:56px;padding:13px;box-shadow:0 40px 90px rgba(0,0,0,.28);flex:none;">
+    <div style="width:100%;height:100%;border-radius:44px;overflow:hidden;position:relative;background:#F2F2F5;display:flex;flex-direction:column;">
+      <div style="position:absolute;top:9px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#0c0c0d;border-radius:20px;z-index:50;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 26px 6px;position:relative;z-index:20;">
+        <span style="font-size:15px;font-weight:700;color:#1D1D1F;letter-spacing:-.4px;">9:41</span>
+        <div style="display:flex;align-items:center;gap:6px;"><div style="display:flex;align-items:flex-end;gap:2px;height:11px;"><div style="width:3px;height:5px;background:#1D1D1F;border-radius:1px;"></div><div style="width:3px;height:7px;background:#1D1D1F;border-radius:1px;"></div><div style="width:3px;height:9px;background:#1D1D1F;border-radius:1px;"></div><div style="width:3px;height:11px;background:#1D1D1F;border-radius:1px;"></div></div><div style="width:23px;height:12px;border:1.5px solid #1D1D1F;border-radius:3px;padding:1.5px;"><div style="width:72%;height:100%;background:#1D1D1F;border-radius:1px;"></div></div></div>
+      </div>
+
+      <div class="scr" style="flex:1;overflow:auto;position:relative;">
+
+        <!-- ============ HOME ============ -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:6px 20px 130px;">
+            <!-- greeting -->
+            <div class="rev" style="display:flex;align-items:center;gap:12px;">
+              <div style="width:46px;height:46px;border-radius:15px;background:linear-gradient(150deg,#FFE9DE,#FFD3C0);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;box-shadow:0 4px 12px rgba(240,83,28,0.14);">{{ petFace }}</div>
+              <div style="min-width:0;flex:1;">
+                <div style="font-size:22px;font-weight:800;letter-spacing:-.7px;color:#1D1D1F;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ greetLine }}</div>
+                <div style="font-size:12px;color:#9A9AA0;font-weight:600;margin-top:1px;">{{ subGreet }}</div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:#F0531C;background:#FFEDE5;padding:6px 11px;border-radius:99px;flex:none;">Ур. 1</span>
+            </div>
+
+            <!-- city + language -->
+            <div class="rev" style="display:flex;align-items:center;gap:8px;margin-top:14px;">
+              <div style="display:flex;gap:3px;background:#E7E7EB;border-radius:12px;padding:3px;">
+                <sc-for list="{{ cityBtns }}" as="c" hint-placeholder-count="2"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for>
+              </div>
+              <div style="display:flex;gap:3px;background:#E7E7EB;border-radius:12px;padding:3px;margin-left:auto;">
+                <sc-for list="{{ langBtns }}" as="l" hint-placeholder-count="3"><button onClick="{{ l.pick }}" style="{{ l.style }}">{{ l.label }}</button></sc-for>
+              </div>
+            </div>
+
+            <!-- BALANCE HERO -->
+            <div class="card rev2" style="margin-top:16px;padding:22px 22px 20px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <span style="font-size:13px;font-weight:600;color:#9A9AA0;">Ваш баланс</span>
+                <span style="font-size:12px;font-weight:600;color:#F0531C;background:#FFEDE5;padding:5px 10px;border-radius:99px;">▲ +18 сегодня</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px;">
+                <span style="font-size:58px;font-weight:800;letter-spacing:-3px;color:#1D1D1F;line-height:0.85;font-variant-numeric:tabular-nums;">{{ balance }}</span>
+                <span style="font-size:16px;font-weight:700;color:#B0B0B8;">pts</span>
+              </div>
+              <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:12px;font-weight:600;color:#86868B;">До уровня 2</span>
+                <span style="font-size:12px;font-weight:700;color:#1D1D1F;">1 842 / 3 000</span>
+              </div>
+              <div style="height:9px;border-radius:99px;background:#EFEFF2;overflow:hidden;"><div style="width:61%;height:100%;border-radius:99px;background:linear-gradient(90deg,#FF8A4B,#F0531C);"></div></div>
+            </div>
+
+            <!-- PET CARD -->
+            <div class="card rev2" style="margin-top:14px;padding:18px;display:flex;gap:16px;align-items:center;">
+              <div style="width:82px;height:82px;border-radius:24px;background:linear-gradient(155deg,#FFF1EA,#FFE0D2);display:flex;align-items:center;justify-content:center;flex:none;">
+                <div class="floaty" style="font-size:42px;line-height:1;">{{ petFace }}</div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;font-weight:800;letter-spacing:-.4px;color:#1D1D1F;">Росток</span><span style="font-size:11px;font-weight:700;color:#86868B;">{{ petMood }}</span></div>
+                <div style="margin-top:10px;display:flex;flex-direction:column;gap:7px;">
+                  <sc-for list="{{ petStats }}" as="s" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:9px;">
+                      <span style="width:38px;font-size:11px;font-weight:600;color:#9A9AA0;">{{ s.label }}</span>
+                      <div style="flex:1;height:7px;border-radius:99px;background:#EFEFF2;overflow:hidden;"><div style="width:{{ s.pct }};height:100%;border-radius:99px;background:{{ s.color }};"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <!-- OFFERS -->
+            <div class="rev3" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:26px;">
+              <h3 style="margin:0;font-size:21px;font-weight:800;letter-spacing:-.6px;color:#1D1D1F;">Для вас</h3>
+              <span style="font-size:13px;color:#B0B0B8;font-weight:600;">Свайп →</span>
+            </div>
+            <div class="rail" style="margin:14px -20px 0;padding:0 20px;display:flex;gap:12px;overflow-x:auto;">
+              <sc-for list="{{ offers }}" as="o" hint-placeholder-count="3">
+                <div onClick="{{ o.open }}" class="card" style="cursor:pointer;flex:none;width:216px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;min-height:158px;background:{{ o.bg }};">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div style="width:44px;height:44px;border-radius:14px;background:{{ o.badgeBg }};display:flex;align-items:center;justify-content:center;font-size:22px;">{{ o.emoji }}</div>
+                    <span style="font-size:13px;font-weight:800;color:{{ o.pfg }};">+{{ o.pts }}</span>
+                  </div>
+                  <div>
+                    <div style="font-size:19px;font-weight:800;letter-spacing:-.5px;color:{{ o.fg }};line-height:1.05;">{{ o.title }}</div>
+                    <div style="font-size:12px;font-weight:600;color:{{ o.sub }};margin-top:6px;">{{ o.venue }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- VENUES -->
+            <div class="rev3" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:26px;">
+              <h3 style="margin:0;font-size:21px;font-weight:800;letter-spacing:-.6px;color:#1D1D1F;">Заведения</h3>
+              <span onClick="{{ goSearch }}" style="cursor:pointer;font-size:13px;color:#F0531C;font-weight:700;">Все →</span>
+            </div>
+            <div class="rail" style="margin:14px -20px 6px;padding:0 20px;display:flex;gap:8px;overflow-x:auto;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+            </div>
+            <div class="card rev3" style="margin-top:8px;padding:6px 16px;">
+              <sc-for list="{{ shownVenues }}" as="v" hint-placeholder-count="4">
+                <div onClick="{{ v.open }}" style="cursor:pointer;border-top:1px solid {{ v.border }};padding:14px 0;display:flex;align-items:center;gap:13px;">
+                  <div style="width:46px;height:46px;border-radius:14px;background:{{ v.tint }};display:flex;align-items:center;justify-content:center;font-size:23px;flex:none;">{{ v.emoji }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:17px;font-weight:800;letter-spacing:-.4px;color:#1D1D1F;">{{ v.n }}</span><span style="{{ v.tagStyle }}">{{ v.tag }}</span></div>
+                    <div style="font-size:12px;font-weight:500;color:#9A9AA0;margin-top:3px;">{{ v.cat }} · {{ v.dist }} · {{ v.off }}</div>
+                  </div>
+                  <div style="text-align:right;"><div style="font-size:13px;font-weight:800;color:{{ v.rateColor }};">{{ v.rateShort }}</div><div style="width:7px;height:7px;border-radius:50%;background:{{ v.dot }};margin:7px 0 0 auto;"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ SEARCH ============ -->
+        <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 130px;">
+            <h2 class="h1 rev" style="margin-top:6px;">Поиск</h2>
+            <div class="rev card" style="margin-top:16px;display:flex;align-items:center;gap:10px;padding:14px 16px;box-shadow:none;background:#E9E9EE;">{{ iconSearch }}<span style="font-size:16px;color:#9A9AA0;font-weight:500;">Кафе, ресторан, место…</span></div>
+            <div class="rail rev2" style="margin:16px -20px 6px;padding:0 20px;display:flex;gap:8px;overflow-x:auto;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button></sc-for>
+            </div>
+            <div style="font-size:12px;font-weight:600;letter-spacing:.3px;color:#B0B0B8;margin:14px 2px 4px;">{{ resultCount }}</div>
+            <div class="card rev2" style="padding:6px 16px;">
+              <sc-for list="{{ shownVenues }}" as="v" hint-placeholder-count="5">
+                <div onClick="{{ v.open }}" style="cursor:pointer;border-top:1px solid {{ v.border }};padding:14px 0;display:flex;align-items:center;gap:13px;">
+                  <div style="width:46px;height:46px;border-radius:14px;background:{{ v.tint }};display:flex;align-items:center;justify-content:center;font-size:23px;flex:none;">{{ v.emoji }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:17px;font-weight:800;letter-spacing:-.4px;color:#1D1D1F;">{{ v.n }}</span><span style="{{ v.tagStyle }}">{{ v.tag }}</span></div>
+                    <div style="font-size:12px;font-weight:500;color:#9A9AA0;margin-top:3px;">{{ v.cat }} · {{ v.dist }} · {{ v.off }}</div>
+                  </div>
+                  <div style="text-align:right;"><div style="font-size:13px;font-weight:800;color:{{ v.rateColor }};">{{ v.rateShort }}</div><div style="width:7px;height:7px;border-radius:50%;background:{{ v.dot }};margin:7px 0 0 auto;"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ VENUE DETAIL ============ -->
+        <sc-if value="{{ isVenue }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 130px;">
+            <button onClick="{{ back }}" style="border:none;cursor:pointer;background:#E7E7EB;color:#1D1D1F;font-size:13px;font-weight:700;padding:9px 15px;border-radius:99px;margin-bottom:14px;">← Назад</button>
+            <div class="rev card pop" style="padding:26px 22px;display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <div style="width:84px;height:84px;border-radius:26px;background:{{ vd.tint }};display:flex;align-items:center;justify-content:center;font-size:44px;">{{ vd.emoji }}</div>
+              <div style="font-size:26px;font-weight:800;letter-spacing:-.8px;color:#1D1D1F;margin-top:16px;">{{ vd.n }}</div>
+              <div style="font-size:13px;font-weight:600;color:#9A9AA0;margin-top:5px;">{{ vd.cat }} · {{ vd.city }} · {{ vd.tag }}</div>
+            </div>
+            <div class="rev2" style="display:flex;gap:10px;margin-top:12px;">
+              <div class="card" style="flex:1;padding:15px 14px;"><div style="font-size:11px;font-weight:600;color:#9A9AA0;">Курс</div><div style="font-size:22px;font-weight:800;letter-spacing:-.6px;color:#1D1D1F;margin-top:4px;">{{ vd.rateShort }}</div><div style="font-size:10px;color:#B0B0B8;">pts/rsd</div></div>
+              <div class="card" style="flex:1;padding:15px 14px;"><div style="font-size:11px;font-weight:600;color:#9A9AA0;">Рейтинг</div><div style="font-size:22px;font-weight:800;letter-spacing:-.6px;color:#1D1D1F;margin-top:4px;">{{ vd.rating }}</div><div style="font-size:10px;color:#B0B0B8;">{{ vd.dist }}</div></div>
+              <div style="flex:1;background:#F0531C;border-radius:24px;padding:15px 14px;box-shadow:0 8px 20px rgba(240,83,28,0.24);"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.9);">Скидка</div><div style="font-size:22px;font-weight:800;letter-spacing:-.6px;color:#fff;margin-top:4px;">{{ vd.discount }}</div><div style="font-size:10px;color:rgba(255,255,255,0.9);">баллами</div></div>
+            </div>
+            <p class="rev2" style="font-size:15px;line-height:1.55;color:#6E6E76;margin:20px 2px 0;">{{ vd.about }}</p>
+            <div class="rev3" style="font-size:13px;font-weight:700;color:#1D1D1F;margin-top:24px;">Награды</div>
+            <div class="rev3 card" style="margin-top:10px;padding:6px 16px;">
+              <sc-for list="{{ vd.rewards }}" as="r" hint-placeholder-count="3">
+                <div style="border-top:1px solid #F0F0F3;padding:14px 0;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:16px;font-weight:700;letter-spacing:-.3px;color:#1D1D1F;">{{ r.t }}</span><span style="font-size:14px;font-weight:800;color:#F0531C;">{{ r.p }}</span></div>
+              </sc-for>
+            </div>
+            <div class="rev3" style="display:flex;gap:10px;margin-top:20px;">
+              <button onClick="{{ goQr }}" style="flex:2;border:none;cursor:pointer;background:#1D1D1F;color:#fff;font-size:16px;font-weight:700;letter-spacing:-.3px;padding:17px;border-radius:18px;">Показать QR</button>
+              <button onClick="{{ goQr }}" style="flex:1;border:none;cursor:pointer;background:#E7E7EB;color:#1D1D1F;font-size:14px;font-weight:700;padding:17px;border-radius:18px;">Скан</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ QR / WALLET ============ -->
+        <sc-if value="{{ isQr }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 130px;">
+            <h2 class="h1 rev" style="margin-top:6px;">Кошелёк</h2>
+            <div class="rev" style="margin-top:16px;display:flex;gap:4px;background:#E7E7EB;border-radius:14px;padding:4px;">
+              <button onClick="{{ qrTabCode }}" style="{{ qrCodeBtn }}">Мой QR</button>
+              <button onClick="{{ qrTabSend }}" style="{{ qrSendBtn }}">Отправить</button>
+            </div>
+            <sc-if value="{{ qrShowCode }}" hint-placeholder-val="{{ true }}">
+              <div class="rev2 card pop" style="margin-top:16px;padding:28px;display:flex;flex-direction:column;align-items:center;">
+                <div style="background:#fff;border-radius:22px;padding:16px;box-shadow:inset 0 0 0 1px #F0F0F3;">{{ qrCode }}</div>
+                <div style="font-size:20px;font-weight:800;letter-spacing:-.5px;color:#1D1D1F;margin-top:18px;">DEMO · AYOO</div>
+                <div style="font-size:13px;font-weight:600;color:#9A9AA0;margin-top:4px;">Покажите на кассе</div>
+              </div>
+              <div class="rev2 card" style="margin-top:12px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;">
+                <div><div style="font-size:11px;font-weight:600;color:#9A9AA0;">Доступно</div><div style="font-size:28px;font-weight:800;letter-spacing:-1px;color:#1D1D1F;margin-top:2px;">{{ balance }}</div></div>
+                <div style="text-align:right;"><div style="font-size:11px;font-weight:600;color:#9A9AA0;">Welcome · 82 дн</div><div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#F0531C;margin-top:2px;">+320</div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ qrShowSend }}" hint-placeholder-val="{{ false }}">
+              <div class="rev2 card" style="margin-top:16px;padding:22px;">
+                <div style="font-size:12px;font-weight:600;color:#9A9AA0;">Сумма к отправке</div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;"><span style="font-size:56px;font-weight:800;letter-spacing:-2.5px;color:#1D1D1F;line-height:0.85;">{{ sendAmt }}</span><span style="font-size:15px;font-weight:700;color:#B0B0B8;">pts</span></div>
+                <div style="display:flex;gap:8px;margin-top:18px;"><sc-for list="{{ sendChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" style="{{ c.style }}">{{ c.label }}</button></sc-for></div>
+              </div>
+              <div style="font-size:13px;font-weight:700;color:#1D1D1F;margin-top:22px;">Кому</div>
+              <div class="rev3" style="margin-top:10px;display:flex;flex-direction:column;gap:9px;">
+                <sc-for list="{{ friends }}" as="fr" hint-placeholder-count="3">
+                  <div onClick="{{ fr.pick }}" class="card" style="cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:{{ fr.shadow }};outline:{{ fr.ring }};">
+                    <div style="width:42px;height:42px;border-radius:14px;background:{{ fr.avBg }};display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:800;">{{ fr.i }}</div>
+                    <div style="flex:1;"><div style="font-size:16px;font-weight:800;letter-spacing:-.4px;color:#1D1D1F;">{{ fr.n }}</div><div style="font-size:12px;font-weight:500;color:#9A9AA0;">{{ fr.h }}</div></div>
+                    <span style="font-size:18px;color:{{ fr.check }};font-weight:800;">✓</span>
+                  </div>
+                </sc-for>
+              </div>
+              <button class="rev3" style="margin-top:20px;width:100%;border:none;cursor:pointer;background:#F0531C;color:#fff;font-size:16px;font-weight:700;letter-spacing:-.3px;padding:18px;border-radius:18px;box-shadow:0 10px 24px rgba(240,83,28,0.26);">Отправить {{ sendAmt }} баллов →</button>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ PET ============ -->
+        <sc-if value="{{ isPet }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 130px;">
+            <div class="rev card pop" style="padding:30px 22px 24px;display:flex;flex-direction:column;align-items:center;background:linear-gradient(165deg,#FFFFFF,#FFF3EC);">
+              <div style="width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 50% 38%,#FFE7DA,#FFD5C2);display:flex;align-items:center;justify-content:center;">
+                <div class="floaty" style="font-size:82px;line-height:1;">{{ petFaceBig }}</div>
+              </div>
+              <div style="font-size:26px;font-weight:800;letter-spacing:-.7px;color:#1D1D1F;margin-top:18px;">{{ activePetName }}</div>
+              <div style="font-size:13px;font-weight:600;color:#9A9AA0;margin-top:4px;">{{ activePetLvl }} · {{ petMood }}</div>
+            </div>
+            <div class="rev2 card" style="margin-top:14px;padding:18px 20px;display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ petStats }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="width:44px;font-size:12px;font-weight:600;color:#86868B;">{{ s.label }}</span>
+                  <div style="flex:1;height:8px;border-radius:99px;background:#EFEFF2;overflow:hidden;"><div style="width:{{ s.pct }};height:100%;border-radius:99px;background:{{ s.color }};"></div></div>
+                  <span style="width:32px;text-align:right;font-size:12px;font-weight:800;color:#1D1D1F;">{{ s.val }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#1D1D1F;margin-top:22px;">Коллекция</div>
+            <div class="rev3" style="margin-top:12px;display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ pets }}" as="p" hint-placeholder-count="5">
+                <div onClick="{{ p.select }}" class="card" style="cursor:{{ p.cursor }};padding:12px 14px;display:flex;align-items:center;gap:14px;outline:{{ p.ring }};opacity:{{ p.op }};">
+                  <div style="width:50px;height:50px;border-radius:16px;background:{{ p.thumbBg }};display:flex;align-items:center;justify-content:center;font-size:26px;flex:none;">{{ p.emoji }}</div>
+                  <div style="flex:1;"><div style="font-size:18px;font-weight:800;letter-spacing:-.4px;color:#1D1D1F;">{{ p.n }}</div><div style="font-size:12px;font-weight:500;color:#9A9AA0;margin-top:2px;">{{ p.lvl }} · {{ p.pts }} pts</div></div>
+                  <span style="font-size:12px;font-weight:800;color:{{ p.tagColor }};">{{ p.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ PROFILE ============ -->
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:6px 20px 130px;">
+            <h2 class="h1 rev" style="margin-top:6px;">Профиль</h2>
+            <div class="rev" style="margin-top:18px;display:flex;align-items:center;gap:14px;">
+              <div style="width:66px;height:66px;border-radius:22px;background:linear-gradient(150deg,#FFE9DE,#FFD3C0);display:flex;align-items:center;justify-content:center;font-size:32px;">{{ petFace }}</div>
+              <div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#1D1D1F;">Demo</div><div style="font-size:13px;font-weight:600;color:#9A9AA0;margin-top:2px;">Ур. 1 · Росток · {{ cityName }}</div></div>
+            </div>
+            <div class="rev2" style="display:flex;gap:10px;margin-top:18px;">
+              <div style="flex:1;background:#1D1D1F;border-radius:22px;padding:16px;"><div style="font-size:11px;font-weight:600;color:#8A8A90;">Баллов</div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#fff;margin-top:3px;">1 842</div></div>
+              <div class="card" style="flex:1;padding:16px;"><div style="font-size:11px;font-weight:600;color:#9A9AA0;">Стрик</div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#F0531C;margin-top:3px;">12</div></div>
+              <div class="card" style="flex:1;padding:16px;"><div style="font-size:11px;font-weight:600;color:#9A9AA0;">Друзей</div><div style="font-size:24px;font-weight:800;letter-spacing:-.7px;color:#1D1D1F;margin-top:3px;">8</div></div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#1D1D1F;margin-top:24px;">Активность · 14 дней</div>
+            <div class="rev2 card" style="margin-top:12px;padding:18px 18px 14px;">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;height:76px;">
+                <sc-for list="{{ streakBars }}" as="b" hint-placeholder-count="14">
+                  <div style="width:6px;border-radius:99px;height:{{ b.h }};background:{{ b.color }};"></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#1D1D1F;margin-top:24px;">Бейджи</div>
+            <div class="rev3" style="margin-top:14px;display:flex;gap:14px;">
+              <sc-for list="{{ badges }}" as="b" hint-placeholder-count="5">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="width:56px;height:56px;border-radius:18px;background:{{ b.bg }};display:flex;align-items:center;justify-content:center;font-size:26px;opacity:{{ b.op }};">{{ b.emoji }}</div><span style="font-size:9px;font-weight:600;color:#9A9AA0;">{{ b.label }}</span></div>
+              </sc-for>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#1D1D1F;margin-top:24px;">История</div>
+            <div class="rev3 card" style="margin-top:12px;padding:6px 16px;">
+              <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+                <div style="border-top:1px solid #F0F0F3;padding:14px 0;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:15px;font-weight:700;letter-spacing:-.3px;color:#1D1D1F;">{{ h.t }}</div><div style="font-size:12px;font-weight:500;color:#9A9AA0;margin-top:2px;">{{ h.d }}</div></div><span style="font-size:15px;font-weight:800;color:{{ h.c }};">{{ h.v }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- TAB BAR -->
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,0.86);backdrop-filter:blur(18px);border-top:1px solid rgba(17,17,20,0.06);padding:9px 10px 27px;display:flex;z-index:40;">
+        <button class="tab" onClick="{{ goHome }}"><span>{{ tabHomeIcon }}</span><span class="lbl" style="{{ tabHomeLbl }}">Дом</span></button>
+        <button class="tab" onClick="{{ goSearch }}"><span>{{ tabSearchIcon }}</span><span class="lbl" style="{{ tabSearchLbl }}">Поиск</span></button>
+        <button class="tab" onClick="{{ goQr }}"><span>{{ tabQrIcon }}</span><span class="lbl" style="{{ tabQrLbl }}">QR</span></button>
+        <button class="tab" onClick="{{ goPet }}"><span>{{ tabPetIcon }}</span><span class="lbl" style="{{ tabPetLbl }}">Питомец</span></button>
+        <button class="tab" onClick="{{ goProfile }}"><span>{{ tabProfileIcon }}</span><span class="lbl" style="{{ tabProfileLbl }}">Я</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'home', prev: 'home', frame: 0, sel: 0, filter: 'all', venueId: 0, qrTab: 'code', sendAmt: 100, friendSel: 0, count: 0, city: 'bg', lang: 'ru' };
+
+  componentDidMount() {
+    this._t = setInterval(() => this.setState(s => ({ frame: s.frame + 1 })), 900);
+    const target = 1842, dur = 900, t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      this.setState({ count: Math.round(target * e) });
+      if (p < 1) this._raf = requestAnimationFrame(step);
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+  componentWillUnmount() { clearInterval(this._t); cancelAnimationFrame(this._raf); }
+
+  // ---- clean filled SF-style tab icons ----
+  tabIcon(name, active) {
+    const color = active ? '#1D1D1F' : '#B4B4BC';
+    const P = d => React.createElement('path', { d, fill: color });
+    const svg = kids => React.createElement('svg', { width: 25, height: 25, viewBox: '0 0 24 24' }, kids);
+    if (name === 'home') return svg(P('M11.3 2.7a1 1 0 0 1 1.4 0l8.3 7.5c.2.2.3.5.3.8V20a1 1 0 0 1-1 1h-4.4a1 1 0 0 1-1-1v-4.1h-3.8V20a1 1 0 0 1-1 1H5.7a1 1 0 0 1-1-1v-9a1 1 0 0 1 .3-.8z'));
+    if (name === 'search') return svg(P('M10 3a7 7 0 1 0 4.2 12.6l4.1 4.1a1 1 0 0 0 1.5-1.4l-4.1-4.1A7 7 0 0 0 10 3m0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z'));
+    if (name === 'person') return svg(P('M12 12a4.4 4.4 0 1 0 0-8.8 4.4 4.4 0 0 0 0 8.8m0 1.6c-4 0-7.7 2-7.7 5.2V20a1 1 0 0 0 1 1h13.4a1 1 0 0 0 1-1v-1.2c0-3.2-3.7-5.2-7.7-5.2z'));
+    if (name === 'qr') {
+      const box = (x, y) => React.createElement('rect', { key: x + '-' + y, x, y, width: 6.5, height: 6.5, rx: 2, fill: 'none', stroke: color, strokeWidth: 2 });
+      const dot = (x, y) => React.createElement('rect', { key: 'd' + x + '-' + y, x, y, width: 2.4, height: 2.4, rx: .6, fill: color });
+      return svg([box(3, 3), box(14.5, 3), box(3, 14.5), dot(15, 15), dot(19, 15), dot(15, 19), dot(19, 19)]);
+    }
+    // pet paw
+    const c = (cx, cy, r) => React.createElement('circle', { key: cx + '-' + cy, cx, cy, r, fill: color });
+    return svg([c(7, 8.5, 2), c(12, 6.8, 2.2), c(17, 8.5, 2), React.createElement('ellipse', { key: 'pad', cx: 12, cy: 15.5, rx: 4.6, ry: 3.9, fill: color }), c(5, 13.5, 1.7), c(19, 13.5, 1.7)]);
+  }
+
+  iconSearch() {
+    return React.createElement('svg', { width: 18, height: 18, viewBox: '0 0 24 24' },
+      React.createElement('path', { d: 'M10 3a7 7 0 1 0 4.2 12.6l4.1 4.1a1 1 0 0 0 1.5-1.4l-4.1-4.1A7 7 0 0 0 10 3m0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z', fill: '#9A9AA0' }));
+  }
+
+  qrCode() {
+    const N = 23, cell = 7;
+    const g = Array.from({ length: N }, () => Array(N).fill(0));
+    const finder = (r, c) => { for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) { const edge = i === 0 || i === 6 || j === 0 || j === 6; const core = i >= 2 && i <= 4 && j >= 2 && j <= 4; g[r + i][c + j] = (edge || core) ? 1 : 0; } };
+    finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+    const inF = (r, c) => (r < 8 && c < 8) || (r < 8 && c > N - 9) || (r > N - 9 && c < 8);
+    let s = 99;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { if (inF(r, c)) continue; s = (s * 1103515245 + 12345) & 0x7fffffff; g[r][c] = (s >> 17) & 1; }
+    const rects = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (g[r][c]) rects.push(React.createElement('rect', { key: r + '-' + c, x: c * cell, y: r * cell, width: cell, height: cell, rx: 2, fill: '#1D1D1F' }));
+    return React.createElement('svg', { width: N * cell, height: N * cell, viewBox: `0 0 ${N * cell} ${N * cell}` }, rects);
+  }
+
+  creatures() {
+    return [
+      { n: 'Hatchling', lvl: 'Ур. 1', pts: '500', emoji: '🐣', unlocked: true },
+      { n: 'Малыш', lvl: 'Ур. 2', pts: '1 500', emoji: '🐥', unlocked: true },
+      { n: 'Лис', lvl: 'Ур. 3', pts: '3 000', emoji: '🦊', unlocked: false },
+      { n: 'Дракон', lvl: 'Ур. 4', pts: '5 000', emoji: '🐲', unlocked: false },
+      { n: 'Феникс', lvl: 'Ур. 5', pts: '8 000', emoji: '🔥', unlocked: false },
+    ];
+  }
+
+  venuesData() {
+    return [
+      { n: 'Café Willow', cat: 'Кафе', code: 'cafe', dist: '0.2 км', rateShort: '0.010', off: 'Латте за 200', partner: true, hot: false, emoji: '☕️', tint: '#FFF0E6', city: 'Белград', rating: '4.8', discount: '30%', about: 'Уютная кофейня в Дорчоле. Двойной курс баллов по будням до 12:00. Стартовая награда — эспрессо за 100 баллов.', rewards: [{ t: 'Эспрессо', p: '100' }, { t: 'Латте', p: '200' }, { t: 'Круассан', p: '150' }] },
+      { n: 'JAN', cat: 'Ресторан', code: 'rest', dist: '0.5 км', rateShort: '0.012', off: '−30% баллами', partner: true, hot: false, emoji: '🍽️', tint: '#EEF3FF', city: 'Белград', rating: '4.6', discount: '50%', about: 'Современный ресторан. Оплата баллами до 50% чека. Средний чек 1 800 RSD.', rewards: [{ t: 'Десерт', p: '250' }, { t: 'Бокал вина', p: '400' }, { t: '−50% на счёт', p: '900' }] },
+      { n: 'Dorćol Platz', cat: 'Кафе', code: 'cafe', dist: '0.8 км', rateShort: '0.008', off: '2× сегодня', partner: true, hot: true, emoji: '🎪', tint: '#FFF0E6', city: 'Белград', rating: '4.7', discount: '20%', about: 'Двор с уличной едой и маркетом. Сегодня двойной курс баллов на всё.', rewards: [{ t: 'Лимонад', p: '120' }, { t: 'Бургер', p: '380' }] },
+      { n: 'Koffein', cat: 'Кафе', code: 'cafe', dist: '1.1 км', rateShort: '0.009', off: 'Круассан 80', partner: true, hot: false, emoji: '🥐', tint: '#FFF6E6', city: 'Белград', rating: '4.5', discount: '25%', about: 'Сеть спешелти-кофеен. Круассан за 80 баллов новым гостям.', rewards: [{ t: 'Флэт уайт', p: '160' }, { t: 'Круассан', p: '80' }] },
+      { n: 'Aviator Store', cat: 'Ритейл', code: 'retail', dist: '1.4 км', rateShort: 'Скан', off: 'Скан чека', partner: false, hot: false, emoji: '🛍️', tint: '#F0F0F3', city: 'Белград', rating: '—', discount: '—', about: 'Магазин ещё не партнёр — баллы можно накопить сканом чека по базовому курсу.', rewards: [] },
+      { n: 'Supernatural', cat: 'Ресторан', code: 'rest', dist: '1.9 км', rateShort: '0.011', off: 'Веган-сет', partner: true, hot: false, emoji: '🥗', tint: '#ECFAEF', city: 'Белград', rating: '4.9', discount: '40%', about: 'Растительная кухня. Оплата баллами до 40% чека, веган-сет со скидкой.', rewards: [{ t: 'Смузи', p: '180' }, { t: 'Веган-сет', p: '650' }] },
+    ];
+  }
+
+  chip(active) {
+    const base = 'border:none;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:-.2px;padding:9px 16px;border-radius:99px;white-space:nowrap;flex:none;';
+    return base + (active ? 'background:#1D1D1F;color:#fff;' : 'background:#fff;color:#6E6E76;box-shadow:0 1px 3px rgba(17,17,20,0.05);');
+  }
+  seg(active) {
+    const base = 'border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:-.1px;padding:6px 11px;border-radius:9px;white-space:nowrap;';
+    return base + (active ? 'background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(17,17,20,0.12);' : 'background:transparent;color:#9A9AA0;');
+  }
+  tabPill(active) {
+    const base = 'flex:1;border:none;cursor:pointer;text-align:center;font-size:15px;font-weight:700;letter-spacing:-.2px;padding:11px;border-radius:11px;';
+    return base + (active ? 'background:#fff;color:#1D1D1F;box-shadow:0 1px 3px rgba(17,17,20,0.12);' : 'background:transparent;color:#9A9AA0;');
+  }
+
+  go(screen) { this.setState(s => ({ prev: s.screen, screen })); }
+  fmt(n) { return n.toLocaleString('ru-RU').replace(/,/g, ' '); }
+
+  renderVals() {
+    const { screen, frame, sel, filter, venueId, qrTab, sendAmt, friendSel, count, city, lang } = this.state;
+
+    const cities = { bg: { ru: 'Белград', sb: 'Београд', en: 'Belgrade' }, ns: { ru: 'Нови-Сад', sb: 'Нови Сад', en: 'Novi Sad' } };
+    const greetHi = { ru: 'Привет', sb: 'Здраво', en: 'Hi' }[lang];
+    const subByLang = { ru: 'Рады видеть снова', sb: 'Драго нам је', en: 'Good to see you' }[lang];
+    const cityName = cities[city][lang];
+    const cityBtns = ['bg', 'ns'].map(k => ({ label: cities[k][lang], style: this.seg(city === k), pick: () => this.setState({ city: k }) }));
+    const langBtns = [['ru', 'RU'], ['sb', 'SB'], ['en', 'EN']].map(([k, lbl]) => ({ label: lbl, style: this.seg(lang === k), pick: () => this.setState({ lang: k }) }));
+
+    const cr = this.creatures();
+    const active = cr[sel];
+    const moods = ['всё отлично', 'сыт и рад', 'хочет играть', 'ждёт тебя'];
+    const petMood = moods[frame % moods.length];
+    const petStats = [
+      { label: 'Сыт', pct: '82%', val: '82', color: '#FF8A5B' },
+      { label: 'Чист', pct: '60%', val: '60', color: '#5AC8FA' },
+      { label: 'Энер', pct: '90%', val: '90', color: '#AF8CFF' },
+      { label: 'Рад', pct: '70%', val: '70', color: '#34C759' },
+    ];
+
+    const allV = this.venuesData();
+    const filters = [{ key: 'all', label: 'Рядом' }, { key: 'cafe', label: 'Кафе' }, { key: 'rest', label: 'Рестораны' }, { key: 'retail', label: 'Ритейл' }, { key: 'partner', label: 'Партнёры' }]
+      .map(f => ({ label: f.label, style: this.chip(filter === f.key), pick: () => this.setState({ filter: f.key }) }));
+    const matches = (v) => filter === 'all' ? true : filter === 'partner' ? v.partner : v.code === filter;
+    const filtered = allV.map((v, i) => ({ v, i })).filter(({ v }) => matches(v));
+    const shownVenues = filtered.map(({ v, i }, idx) => ({ ...v,
+      tag: v.partner ? 'Партнёр' : 'Скан',
+      tagStyle: 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;' + (v.partner ? 'background:#FFEDE5;color:#F0531C;' : 'background:#EDEDF0;color:#9A9AA0;'),
+      rateColor: v.hot ? '#F0531C' : '#1D1D1F',
+      dot: v.hot ? '#F0531C' : (v.partner ? '#34C759' : '#D0D0D6'),
+      border: idx === 0 ? 'transparent' : '#F0F0F3',
+      open: () => this.setState(s => ({ prev: s.screen, screen: 'venue', venueId: i })),
+    }));
+
+    const offerDefs = [
+      { title: 'Двойной курс', venue: 'Dorćol Platz · сегодня', pts: 60, emoji: '🎪', bg: '#1D1D1F', fg: '#fff', pfg: '#FF9A5B', sub: '#9A9AA0', badgeBg: 'rgba(255,255,255,0.1)', vi: 2 },
+      { title: 'Круассан за 80', venue: 'Koffein', pts: 40, emoji: '🥐', bg: '#fff', fg: '#1D1D1F', pfg: '#F0531C', sub: '#9A9AA0', badgeBg: '#FFF6E6', vi: 3 },
+      { title: 'Веган-сет −40%', venue: 'Supernatural', pts: 120, emoji: '🥗', bg: '#fff', fg: '#1D1D1F', pfg: '#F0531C', sub: '#9A9AA0', badgeBg: '#ECFAEF', vi: 5 },
+    ];
+    const offers = offerDefs.map(o => ({ ...o, open: () => this.setState(s => ({ prev: s.screen, screen: 'venue', venueId: o.vi })) }));
+
+    const v = allV[venueId] || allV[0];
+    const vd = { ...v };
+
+    const pets = cr.map((p, i) => ({ n: p.n, lvl: p.lvl, pts: p.pts, emoji: p.emoji,
+      thumbBg: p.unlocked ? '#FFF0E6' : '#F0F0F3',
+      tag: p.unlocked ? (i === sel ? 'Выбран' : 'Открыт') : 'Закрыт',
+      tagColor: i === sel ? '#F0531C' : (p.unlocked ? '#86868B' : '#B4B4BC'),
+      ring: i === sel ? '2px solid #F0531C' : 'none', op: p.unlocked ? '1' : '0.55',
+      cursor: p.unlocked ? 'pointer' : 'default',
+      select: p.unlocked ? () => this.setState({ sel: i }) : () => {} }));
+
+    const sendChips = [50, 100, 250, 500].map(a => ({ label: '' + a, style: this.chip(sendAmt === a), pick: () => this.setState({ sendAmt: a }) }));
+    const friendDefs = [{ n: 'Milan K.', h: '@milan', i: 'M', avBg: '#F0531C' }, { n: 'Ана П.', h: '@anap', i: 'А', avBg: '#5AC8FA' }, { n: 'Ivan R.', h: '@ivanr', i: 'I', avBg: '#AF8CFF' }];
+    const friends = friendDefs.map((f, i) => ({ ...f,
+      check: i === friendSel ? '#F0531C' : 'transparent',
+      ring: i === friendSel ? '2px solid #F0531C' : 'none',
+      shadow: i === friendSel ? '0 8px 22px rgba(240,83,28,0.12)' : '0 1px 3px rgba(17,17,20,0.05)',
+      pick: () => this.setState({ friendSel: i }) }));
+
+    const badgeDefs = [{ emoji: '🏆', label: 'Марафон', bg: '#FFF6E6', got: true }, { emoji: '🥇', label: 'Гурман', bg: '#FFEDE5', got: true }, { emoji: '📍', label: 'Местный', bg: '#EEF3FF', got: true }, { emoji: '💎', label: 'Первый', bg: '#ECFAEF', got: true }, { emoji: '🔒', label: '?', bg: '#F0F0F3', got: false }];
+    const badges = badgeDefs.map(b => ({ emoji: b.emoji, label: b.label, bg: b.bg, op: b.got ? '1' : '0.5' }));
+
+    const streakVals = [2, 3, 1, 4, 3, 5, 4, 6, 5, 7, 6, 5, 7, 8];
+    const streakBars = streakVals.map((val, i) => ({ h: (val * 9 + 6) + 'px', color: i >= streakVals.length - 3 ? '#F0531C' : '#E2E2E7' }));
+
+    const history = [
+      { t: 'Café Willow', d: 'Скан чека · сегодня', v: '+18', c: '#34C759' },
+      { t: 'JAN', d: 'Оплата баллами · вчера', v: '−400', c: '#FF3B30' },
+      { t: 'Подарок · Milan', d: 'Отправлено · 2 дн', v: '−100', c: '#FF3B30' },
+      { t: 'Стрик 7 дней', d: 'Бонус · 3 дн', v: '+50', c: '#34C759' },
+    ];
+
+    return {
+      isHome: screen === 'home', isSearch: screen === 'search', isVenue: screen === 'venue', isQr: screen === 'qr', isPet: screen === 'pet', isProfile: screen === 'profile',
+      petFace: active.emoji, petFaceBig: active.emoji, petMood, petStats,
+      activePetName: active.n, activePetLvl: active.lvl,
+      balance: this.fmt(count),
+      iconSearch: this.iconSearch(),
+      greetLine: greetHi + ', Demo', subGreet: subByLang, cityName, cityBtns, langBtns,
+      offers, filters, shownVenues, resultCount: shownVenues.length + ' мест · ' + cityName,
+      vd, pets, sendChips, friends, badges, history, streakBars, qrCode: this.qrCode(), sendAmt,
+      qrShowCode: qrTab === 'code', qrShowSend: qrTab === 'send',
+      qrCodeBtn: this.tabPill(qrTab === 'code'), qrSendBtn: this.tabPill(qrTab === 'send'),
+      qrTabCode: () => this.setState({ qrTab: 'code' }), qrTabSend: () => this.setState({ qrTab: 'send' }),
+      goHome: () => this.go('home'), goSearch: () => this.go('search'), goQr: () => this.go('qr'), goPet: () => this.go('pet'), goProfile: () => this.go('profile'),
+      back: () => this.setState(s => ({ screen: s.prev })),
+      tabHomeIcon: this.tabIcon('home', screen === 'home'), tabSearchIcon: this.tabIcon('search', screen === 'search' || screen === 'venue'), tabQrIcon: this.tabIcon('qr', screen === 'qr'), tabPetIcon: this.tabIcon('pet', screen === 'pet'), tabProfileIcon: this.tabIcon('person', screen === 'profile'),
+      tabHomeLbl: 'color:' + (screen === 'home' ? '#1D1D1F' : '#B4B4BC') + ';',
+      tabSearchLbl: 'color:' + ((screen === 'search' || screen === 'venue') ? '#1D1D1F' : '#B4B4BC') + ';',
+      tabQrLbl: 'color:' + (screen === 'qr' ? '#1D1D1F' : '#B4B4BC') + ';',
+      tabPetLbl: 'color:' + (screen === 'pet' ? '#1D1D1F' : '#B4B4BC') + ';',
+      tabProfileLbl: 'color:' + (screen === 'profile' ? '#1D1D1F' : '#B4B4BC') + ';',
+    };
+  }
+}
+</script>
+</body>
+</html>
