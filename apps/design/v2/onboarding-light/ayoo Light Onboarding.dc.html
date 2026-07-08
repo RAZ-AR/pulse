@@ -174,13 +174,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { step: 0, lang: 'ru', city: null, name: '', frame: 0, cracks: 0 };
-
-  componentDidMount() {
-    if (window.__oblTimer) clearInterval(window.__oblTimer);
-    window.__oblTimer = this._t = setInterval(() => this.setState(s => ({ frame: s.frame + 1 })), 620);
-  }
-  componentWillUnmount() { clearInterval(this._t); if (window.__oblTimer === this._t) window.__oblTimer = null; }
+  state = { step: 0, lang: 'ru', city: null, name: '', cracks: 0 };
 
   STR() {
     return {
@@ -248,7 +242,7 @@ class Component extends DCLogic {
   back() { this.setState(s => ({ step: Math.max(0, s.step - 1) })); }
 
   renderVals() {
-    const { step, lang, city, name, frame, cracks } = this.state;
+    const { step, lang, city, name, cracks } = this.state;
     const t = this.STR();
     const C = this.cities();
     const hatched = cracks >= 3;

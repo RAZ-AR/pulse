@@ -166,9 +166,20 @@
     var focusInput = active && active.tagName === 'INPUT' && this.__mount.contains(active);
     var caret = focusInput ? active.selectionStart : null;
 
+    var first = !this.__didFirst;
+    this.__didFirst = true;
+
     var vals = this.renderVals();
     var frag = document.createDocumentFragment();
     renderChildren(this.__template, vals, frag);
+
+    // entrance animations (.rev/.pop) should play once, on first mount — not on
+    // every state change, otherwise clicks make the whole screen flicker/jump.
+    if (!first) {
+      var anim = frag.querySelectorAll('.rev, .rev2, .rev3, .pop');
+      for (var i = 0; i < anim.length; i++) anim[i].classList.remove('rev', 'rev2', 'rev3', 'pop');
+    }
+
     this.__mount.textContent = '';
     this.__mount.appendChild(frag);
 

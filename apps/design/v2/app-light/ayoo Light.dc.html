@@ -325,20 +325,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { screen: 'home', prev: 'home', frame: 0, sel: 0, filter: 'all', venueId: 0, qrTab: 'code', sendAmt: 100, friendSel: 0, count: 0, city: 'bg', lang: 'ru' };
-
-  componentDidMount() {
-    this._t = setInterval(() => this.setState(s => ({ frame: s.frame + 1 })), 900);
-    const target = 1842, dur = 900, t0 = performance.now();
-    const step = (now) => {
-      const p = Math.min(1, (now - t0) / dur);
-      const e = 1 - Math.pow(1 - p, 3);
-      this.setState({ count: Math.round(target * e) });
-      if (p < 1) this._raf = requestAnimationFrame(step);
-    };
-    this._raf = requestAnimationFrame(step);
-  }
-  componentWillUnmount() { clearInterval(this._t); cancelAnimationFrame(this._raf); }
+  state = { screen: 'home', prev: 'home', sel: 0, filter: 'all', venueId: 0, qrTab: 'code', sendAmt: 100, friendSel: 0, city: 'bg', lang: 'ru' };
 
   // ---- clean filled SF-style tab icons ----
   tabIcon(name, active) {
@@ -414,7 +401,7 @@ class Component extends DCLogic {
   fmt(n) { return n.toLocaleString('ru-RU').replace(/,/g, ' '); }
 
   renderVals() {
-    const { screen, frame, sel, filter, venueId, qrTab, sendAmt, friendSel, count, city, lang } = this.state;
+    const { screen, sel, filter, venueId, qrTab, sendAmt, friendSel, city, lang } = this.state;
 
     const cities = { bg: { ru: 'Белград', sb: 'Београд', en: 'Belgrade' }, ns: { ru: 'Нови-Сад', sb: 'Нови Сад', en: 'Novi Sad' } };
     const greetHi = { ru: 'Привет', sb: 'Здраво', en: 'Hi' }[lang];
@@ -425,8 +412,7 @@ class Component extends DCLogic {
 
     const cr = this.creatures();
     const active = cr[sel];
-    const moods = ['всё отлично', 'сыт и рад', 'хочет играть', 'ждёт тебя'];
-    const petMood = moods[frame % moods.length];
+    const petMood = 'сыт и рад';
     const petStats = [
       { label: 'Сыт', pct: '82%', val: '82', color: '#FF8A5B' },
       { label: 'Чист', pct: '60%', val: '60', color: '#5AC8FA' },
@@ -491,7 +477,7 @@ class Component extends DCLogic {
       isHome: screen === 'home', isSearch: screen === 'search', isVenue: screen === 'venue', isQr: screen === 'qr', isPet: screen === 'pet', isProfile: screen === 'profile',
       petFace: active.emoji, petFaceBig: active.emoji, petMood, petStats,
       activePetName: active.n, activePetLvl: active.lvl,
-      balance: this.fmt(count),
+      balance: this.fmt(1842),
       iconSearch: this.iconSearch(),
       greetLine: greetHi + ', Demo', subGreet: subByLang, cityName, cityBtns, langBtns,
       offers, filters, shownVenues, resultCount: shownVenues.length + ' мест · ' + cityName,
