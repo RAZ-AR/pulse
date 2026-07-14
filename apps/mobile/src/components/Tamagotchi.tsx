@@ -20,7 +20,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Circle, Defs, Pattern, Rect } from "react-native-svg"
 import { fonts } from "../lib/theme"
 import { AyooPet, PixelSprite } from "./AyooPet"
-import { ComicBubble, REACTION_WORDS } from "./ComicBubble"
+import { ComicBubble, REACTION_WORDS, StarBurst } from "./ComicBubble"
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
@@ -168,6 +168,14 @@ export function TamagotchiWindow({
   // Tap the pet for a bounce + a comic-bubble reaction (word cycles per tap).
   const [petTapNonce, setPetTapNonce] = useState(0)
 
+  // Evolving into the next pet gets a bigger celebration: star burst + "HOORAY".
+  const [levelUpNonce, setLevelUpNonce] = useState(0)
+  const prevPetKey = useRef(petKey)
+  useEffect(() => {
+    if (prevPetKey.current !== petKey) setLevelUpNonce((n) => n + 1)
+    prevPetKey.current = petKey
+  }, [petKey])
+
   // Every so often the pet "says" a localized word, then goes back to its name.
   const [flash, setFlash] = useState<string | null>(null)
   useEffect(() => {
@@ -219,12 +227,15 @@ export function TamagotchiWindow({
         <View style={s.mainPetWrap}>
           <View style={s.petBox}>
             <PixelEmote ink={lcd.ink} />
+            <StarBurst trigger={petTapNonce} count={3} radius={22} tint={lcd.ink} />
             <ComicBubble
               text={REACTION_WORDS[Math.max(0, petTapNonce - 1) % REACTION_WORDS.length]!}
               trigger={petTapNonce}
               tint={lcd.ink}
               style={s.petTapBubble}
             />
+            <StarBurst trigger={levelUpNonce} count={8} radius={54} tint={lcd.ink} />
+            <ComicBubble text="HOORAY" trigger={levelUpNonce} tint={lcd.ink} style={s.levelUpBubble} />
             <AyooPet
               petKey={petKey}
               streak={streak}
@@ -335,6 +346,7 @@ const s = StyleSheet.create({
   petBox: { alignItems: "center", justifyContent: "center" },
   emote: { position: "absolute", top: -18, left: 0, right: 0, alignItems: "center" },
   petTapBubble: { top: -12, left: "62%" },
+  levelUpBubble: { top: -34, left: "50%", marginLeft: -40 },
   nameCaption: { fontSize: 11, marginTop: 12 },
   captionFlash: { color: "#E23B22" },
 

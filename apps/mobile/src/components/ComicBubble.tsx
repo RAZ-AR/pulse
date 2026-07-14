@@ -62,8 +62,58 @@ export function ComicBubble({
   )
 }
 
+/**
+ * StarBurst — a handful of ✦ glyphs that pop out from the center and fade,
+ * comic-style. Bump `trigger` to replay it; `count`/`radius` size the burst
+ * (small for a tap, bigger for a milestone like a level-up or a hatch).
+ */
+export function StarBurst({
+  trigger,
+  count = 6,
+  radius = 40,
+  tint = INK,
+}: {
+  trigger: number
+  count?: number
+  radius?: number
+  tint?: string
+}) {
+  const stars = useRef(Array.from({ length: count }, () => new Animated.Value(0))).current
+
+  useEffect(() => {
+    if (trigger <= 0) return
+    stars.forEach((v) => v.setValue(0))
+    Animated.stagger(
+      25,
+      stars.map((v) => Animated.timing(v, { toValue: 1, duration: 550, easing: Easing.out(Easing.quad), useNativeDriver: true }))
+    ).start()
+  }, [trigger]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <View pointerEvents="none" style={s.burstWrap}>
+      {stars.map((v, i) => {
+        const angle = (i / count) * Math.PI * 2
+        const dx = v.interpolate({ inputRange: [0, 1], outputRange: [0, Math.cos(angle) * radius] })
+        const dy = v.interpolate({ inputRange: [0, 1], outputRange: [0, Math.sin(angle) * radius] })
+        const opacity = v.interpolate({ inputRange: [0, 0.6, 1], outputRange: [1, 1, 0] })
+        const scale = v.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1, 0.6] })
+        return (
+          <Animated.Text
+            key={i}
+            style={[s.starGlyph, { color: tint, opacity, transform: [{ translateX: dx }, { translateY: dy }, { scale }] }]}
+          >
+            ✦
+          </Animated.Text>
+        )
+      })}
+    </View>
+  )
+}
+
 const s = StyleSheet.create({
   wrap: { position: "absolute", zIndex: 10 },
+  burstWrap: { position: "absolute", top: "50%", left: "50%", width: 0, height: 0, zIndex: 9 },
+  starGlyph: { position: "absolute", fontSize: 14, left: -7, top: -7 },
   bubble: {
     backgroundColor: FILL,
     borderWidth: 2,

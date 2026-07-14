@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from "react"
 import { Animated, Easing, StyleSheet, Text, View } from "react-native"
 import { LcdScreen } from "./console"
 import { PixelSprite, PET_SPRITES } from "./AyooPet"
-import { ComicBubble, REACTION_WORDS } from "./ComicBubble"
+import { ComicBubble, REACTION_WORDS, StarBurst } from "./ComicBubble"
 import { fonts } from "../lib/theme"
 
 const HATCHLING = PET_SPRITES.HATCHLING!
@@ -89,14 +89,16 @@ export function HatchStage({
   }, [fed, hatched, pop, shake])
   const reactionWord = REACTION_WORDS[Math.floor(fed / 100) % REACTION_WORDS.length]!
 
-  // One-shot hatch: sprite pop + a flashing greeting word.
+  // One-shot hatch: sprite pop + a flashing greeting word + a star burst.
   const hatchPop = useRef(new Animated.Value(1)).current
   const [flash, setFlash] = useState(false)
+  const [hatchBurst, setHatchBurst] = useState(0)
   const fired = useRef(false)
   useEffect(() => {
     if (!hatched || fired.current) return
     fired.current = true
     setFlash(true)
+    setHatchBurst((n) => n + 1)
     Animated.sequence([
       Animated.timing(hatchPop, { toValue: 1.5, duration: 150, useNativeDriver: true }),
       Animated.spring(hatchPop, { toValue: 1, friction: 4, useNativeDriver: true }),
@@ -128,6 +130,7 @@ export function HatchStage({
       <Animated.View style={{ transform: [{ translateX: shakeX }, { scale: hatchPop }] }}>
         <PixelSprite rows={spriteRows} px={9} />
       </Animated.View>
+      <StarBurst trigger={hatchBurst} count={7} radius={46} tint={HATCH_GREEN} />
 
       <Text style={[s.hint, { fontFamily: fonts.pixel }, flash && s.hintFlash]}>
         {hatched ? hatchWord : tapHint}
