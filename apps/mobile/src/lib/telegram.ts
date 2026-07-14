@@ -38,8 +38,19 @@ export function getTgInitData(): string | undefined {
   return getTgWebApp()?.initData || getHashInitData()
 }
 
+// Escape hatch for previewing the web/guest flow outside real Telegram:
+// the SDK script (telegram-web-app.js) creates window.Telegram.WebApp even
+// when the page is opened in a plain browser, so isTelegramRuntime() would
+// otherwise always report true and get stuck waiting for initData that
+// never arrives. Visiting a URL with ?guest=1 forces the guest flow instead.
+function forcedGuestMode(): boolean {
+  if (!isBrowser) return false
+  return new URLSearchParams(window.location.search).get("guest") === "1"
+}
+
 export function isTelegramRuntime(): boolean {
   if (!isBrowser) return false
+  if (forcedGuestMode()) return false
   if (getTgInitData()) return true
   if (getTgWebApp()) return true
   return navigator.userAgent.includes("Telegram")
