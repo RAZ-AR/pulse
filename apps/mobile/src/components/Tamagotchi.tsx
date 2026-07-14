@@ -15,11 +15,14 @@
  */
 
 import { useEffect, useRef, useState } from "react"
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native"
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Circle, Defs, Pattern, Rect } from "react-native-svg"
 import { fonts } from "../lib/theme"
 import { AyooPet, PixelSprite } from "./AyooPet"
+import { ComicBubble, REACTION_WORDS } from "./ComicBubble"
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle)
 
 // Tiny pixel emotes the main pet "sends" now and then.
 const EMOTES: string[][] = [
@@ -155,6 +158,16 @@ export function TamagotchiWindow({
   const name = (petName?.trim() || petDefaultName(petKey))
   const lcd = dark ? LCD_DARK : LCD_LIGHT
 
+  // Progress ring eases toward its target fill instead of snapping to it.
+  const ringAnim = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    Animated.timing(ringAnim, { toValue: ringProgress, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start()
+  }, [ringProgress, ringAnim])
+  const ringDashoffset = ringAnim.interpolate({ inputRange: [0, 1], outputRange: [150.8, 0] })
+
+  // Tap the pet for a bounce + a comic-bubble reaction (word cycles per tap).
+  const [petTapNonce, setPetTapNonce] = useState(0)
+
   // Every so often the pet "says" a localized word, then goes back to its name.
   const [flash, setFlash] = useState<string | null>(null)
   useEffect(() => {
@@ -203,10 +216,23 @@ export function TamagotchiWindow({
         </View>
 
         {/* main pet — big, roams the centre, now and then pops a pixel emote */}
-        <View style={s.mainPetWrap} pointerEvents="none">
+        <View style={s.mainPetWrap}>
           <View style={s.petBox}>
             <PixelEmote ink={lcd.ink} />
-            <AyooPet petKey={petKey} streak={streak} pixelSize={8} walkRange={28} {...(lcd.petInk ? { ink: lcd.petInk } : {})} />
+            <ComicBubble
+              text={REACTION_WORDS[Math.max(0, petTapNonce - 1) % REACTION_WORDS.length]!}
+              trigger={petTapNonce}
+              tint={lcd.ink}
+              style={s.petTapBubble}
+            />
+            <AyooPet
+              petKey={petKey}
+              streak={streak}
+              pixelSize={8}
+              walkRange={28}
+              onPress={() => setPetTapNonce((n) => n + 1)}
+              {...(lcd.petInk ? { ink: lcd.petInk } : {})}
+            />
           </View>
           <Text
             style={[s.nameCaption, { fontFamily: fonts.pixel, color: lcd.ink }, flash ? s.captionFlash : null]}
@@ -221,7 +247,7 @@ export function TamagotchiWindow({
           <View style={s.smallRing}>
             <Svg width={54} height={54}>
               <Circle cx={27} cy={27} r={24} stroke={lcd.track} strokeWidth={4} fill="none" />
-              <Circle
+              <AnimatedCircle
                 cx={27}
                 cy={27}
                 r={24}
@@ -230,7 +256,7 @@ export function TamagotchiWindow({
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray={150.8}
-                strokeDashoffset={150.8 * (1 - Math.max(0, Math.min(1, ringProgress)))}
+                strokeDashoffset={ringDashoffset}
                 transform="rotate(-90 27 27)"
               />
             </Svg>
@@ -308,6 +334,7 @@ const s = StyleSheet.create({
   mainPetWrap: { position: "absolute", left: 0, right: 0, top: 30, bottom: 70, alignItems: "center", justifyContent: "center" },
   petBox: { alignItems: "center", justifyContent: "center" },
   emote: { position: "absolute", top: -18, left: 0, right: 0, alignItems: "center" },
+  petTapBubble: { top: -12, left: "62%" },
   nameCaption: { fontSize: 11, marginTop: 12 },
   captionFlash: { color: "#E23B22" },
 

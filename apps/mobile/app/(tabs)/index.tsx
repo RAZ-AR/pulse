@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react"
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { useState } from "react"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { TamagotchiWindow } from "../../src/components/Tamagotchi"
+import { DeviceChrome, ModuleGrid, ScreenToggle } from "../../src/components/console"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { i18n, setLocale } from "../../src/lib/i18n"
@@ -8,7 +10,6 @@ import type { SupportedLocale } from "@pulse/shared"
 import { trpc } from "../../src/lib/trpc"
 import { colors, fonts, space, typeScale, useTheme } from "../../src/lib/theme"
 import { LavaLampSurface } from "../../src/components/neu"
-import { ComicBubble, REACTION_WORDS } from "../../src/components/ComicBubble"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
 type RewardItem = {
@@ -84,7 +85,10 @@ export default function HomeScreen() {
   const petWords = PET_MOODS[(i18n.language ?? "en").slice(0, 2)] ?? PET_MOODS.en
 
   const [activeFilterKey, setActiveFilterKey] = useState("all")
-  const [petTapNonce, setPetTapNonce] = useState(0)
+  // Screen theme — dark glass (default) or the original light LCD.
+  const [screenDark, setScreenDark] = useState(true)
+  // Body tint — the COLOR key shuffles it.
+  const [bodyColor, setBodyColor] = useState<readonly [string, string]>(BODY_COLORS[0]!)
   const me = trpc.user.me.useQuery()
   const utils = trpc.useUtils()
   const updateProfile = trpc.user.updateProfile.useMutation({
@@ -120,13 +124,6 @@ export default function HomeScreen() {
   const weeklyEarned = me.data?.weeklyEarnedPoints ?? 15
   const weeklySpent = me.data?.weeklySpentPoints ?? 10
   const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
-
-  // Progress bar eases toward its target fill instead of snapping to it.
-  const progressAnim = useRef(new Animated.Value(0)).current
-  useEffect(() => {
-    Animated.timing(progressAnim, { toValue: progress, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start()
-  }, [progress, progressAnim])
-  const progressWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] })
 
   return (
     <ScrollView
@@ -175,42 +172,45 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={s.petStage}>
-        <View style={s.petHeading}>
-          <Text style={[s.petKicker, { fontFamily: fonts.pixel }]}>PET STATUS / {petKey}</Text>
-          <Pressable onPress={() => router.push("/pet" as Parameters<typeof router.push>[0])}>
-            <Text style={[s.petOpen, { fontFamily: fonts.pixel }]}>OPEN ↗</Text>
-          </Pressable>
-        </View>
-        <View style={s.petSpriteWrap}>
-          <DotMatrixPet onPress={() => setPetTapNonce((n) => n + 1)} />
-          <ComicBubble
-            text={REACTION_WORDS[Math.max(0, petTapNonce - 1) % REACTION_WORDS.length]!}
-            trigger={petTapNonce}
-            tint="#111111"
-            style={s.petBubble}
-          />
-        </View>
-        <View style={s.petStats}>
-          <PetStat label="POINTS" value={total.toLocaleString()} />
-          <PetStat label="STREAK" value={`${streak}D`} />
-          <PetStat label="LEVEL" value={`${Math.round(progress * 100)}%`} />
-        </View>
-        <View style={s.petProgress}><Animated.View style={[s.petProgressFill, { width: progressWidth }]} /></View>
-      </View>
+      <DeviceChrome colors={bodyColor} color={{ swatches: BODY_COLORS, onPick: setBodyColor }} right={<ScreenToggle dark={screenDark} onToggle={() => setScreenDark((v) => !v)} />}>
+        <TamagotchiWindow
+          petKey={petKey}
+          streak={streak}
+          petName={me.data?.petName}
+          coins={total}
+          nextPetKey={nextPetKey}
+          lifetimePoints={lifetimePoints}
+          ringProgress={petRingProgress}
+          weeklyEarned={weeklyEarned}
+          weeklySpent={weeklySpent}
+          words={petWords}
+          earnedLabel={t("earnedThisWeek")}
+          spentLabel={t("spentThisWeek")}
+          dark={screenDark}
+          info={[
+            { label: "STREAK",  value: `${streak}d` },
+            { label: "WELCOME", value: `${welcomeDays}d` },
+            { label: "QUESTS",  value: `${activeChallenges.length}` },
+          ]}
+          onOpen={() => router.push("/pet" as Parameters<typeof router.push>[0])}
+        />
 
-      <View style={s.actionCards}>
-        <Pressable onPress={() => router.push("/rewards")} style={[s.actionCard, s.offerActionCard]}>
-          <Text style={[s.actionLabel, { fontFamily: fonts.pixel }]}>SPECIAL OFFERS</Text>
-          <Text style={[s.actionValue, { fontFamily: fonts.displayHeavy }]}>VIEW</Text>
-          <Text style={[s.actionMeta, { fontFamily: fonts.pixel }]}>DISCOUNTS / REWARDS ↗</Text>
-        </Pressable>
-        <Pressable onPress={() => router.push("/gift")} style={[s.actionCard, s.sendActionCard]}>
-          <Text style={[s.actionLabel, { fontFamily: fonts.pixel }]}>SEND POINTS</Text>
-          <Text style={[s.actionValue, { fontFamily: fonts.displayHeavy }]}>GIFT</Text>
-          <Text style={[s.actionMeta, { fontFamily: fonts.pixel }]}>MESSAGE / QR / SHARE ↗</Text>
-        </Pressable>
-      </View>
+        {/* Reference control grid — fixed hardware modules, like a lock-screen device */}
+        <ModuleGrid
+          map={{ glyph: "⌖", label: "MAP", color: "#2B6EFF", onPress: () => router.push("/map") }}
+          check={{ glyph: "✓", label: "CHECK", color: "#13B36B", onPress: () => router.push("/checkin") }}
+          reward={{ glyph: "▶", label: "REWARD", color: "#F2A024", onPress: () => router.push("/rewards") }}
+          scan={{ glyph: "+", label: "SCAN", onPress: () => router.push("/scan") }}
+          earn={{ glyph: "→", label: "SEND", color: "#E23B22", onPress: () => router.push("/gift") }}
+          body={bodyColor}
+        />
+
+        <View style={s.deviceFooter}>
+          <Text style={[s.deviceFooterText, { fontFamily: fonts.pixel }]}>--- ayoo! --- beta 1 ---</Text>
+        </View>
+      </DeviceChrome>
+
+      <View style={s.afterDevice} />
 
       <SectionHeader title={t("specialOffers")} action={t("allRewards")} onPress={() => router.push("/rewards")} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.offerRail}>
@@ -322,15 +322,6 @@ export default function HomeScreen() {
           )
         })}
       </View>
-
-      <View style={s.controlDock}>
-        <CircleControl glyph="⌖" label="PLACES" onPress={() => router.push("/map")} />
-        <Pressable onPress={() => router.push("/scan")} style={s.scanControl}>
-          <Text style={s.scanGlyph}>♥</Text>
-          <Text style={[s.scanLabel, { fontFamily: fonts.pixel }]}>SCAN</Text>
-        </Pressable>
-        <CircleControl glyph="◎" label="PROFILE" onPress={() => router.push("/(tabs)/profile")} />
-      </View>
     </ScrollView>
   )
 }
@@ -374,59 +365,6 @@ function LanguageSwitcher() {
       })}
     </View>
   )
-}
-
-const DOT_PET_ROWS = [
-  "      ●●●     ",
-  "    ●●●●●●●   ",
-  "   ●● ●● ●●   ",
-  "   ●●●●●●●●   ",
-  "    ●●●●●●    ",
-  "  ●●●●●●●●●●  ",
-  " ●●●  ●●  ●●● ",
-  " ●●●●●●●●●●●  ",
-  "    ●●  ●●    ",
-]
-
-// Idle "breathing" loop + a bounce-and-react tap, so the pet reads as alive
-// even while its dot-matrix frame itself stays fixed.
-function DotMatrixPet({ onPress }: { onPress?: () => void }) {
-  const breathe = useRef(new Animated.Value(1)).current
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(breathe, { toValue: 1.035, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(breathe, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    )
-    loop.start()
-    return () => loop.stop()
-  }, [breathe])
-
-  const tapScale = useRef(new Animated.Value(1)).current
-  function handleTap() {
-    Animated.sequence([
-      Animated.timing(tapScale, { toValue: 1.16, duration: 90, useNativeDriver: true }),
-      Animated.spring(tapScale, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start()
-    onPress?.()
-  }
-
-  return (
-    <Pressable onPress={handleTap}>
-      <Animated.View style={{ transform: [{ scale: Animated.multiply(breathe, tapScale) }] }}>
-        <View style={s.dotPet}>{DOT_PET_ROWS.map((row, index) => <Text key={index} style={s.dotPetRow}>{row}</Text>)}</View>
-      </Animated.View>
-    </Pressable>
-  )
-}
-
-function PetStat({ label, value }: { label: string; value: string }) {
-  return <View style={s.petStat}><Text style={s.petStatLabel}>{label}</Text><Text style={s.petStatValue}>{value}</Text></View>
-}
-
-function CircleControl({ glyph, label, onPress }: { glyph: string; label: string; onPress: () => void }) {
-  return <Pressable onPress={onPress} style={s.circleControl}><Text style={s.circleGlyph}>{glyph}</Text><Text style={[s.circleLabel, { fontFamily: fonts.pixel }]}>{label}</Text></Pressable>
 }
 
 function SectionHeader({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
@@ -570,34 +508,7 @@ function VenueSkeleton() {
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: space.screen, paddingBottom: space.bottomGutter },
-  petStage: { backgroundColor: "#B9B6B3", padding: 16, marginBottom: 24, borderRadius: 8 },
-  petHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  petKicker: { color: "#111111", fontSize: 8, letterSpacing: 1 },
-  petOpen: { color: "#111111", fontSize: 8, letterSpacing: 1 },
-  petSpriteWrap: { position: "relative" },
-  petBubble: { top: 10, right: 16 },
-  dotPet: { alignItems: "center", justifyContent: "center", minHeight: 210, paddingVertical: 18 },
-  dotPetRow: { color: "#111111", fontSize: 18, lineHeight: 19, letterSpacing: 3 },
-  petStats: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "rgba(17,17,17,0.2)", paddingTop: 12, gap: 20 },
-  petStat: { flex: 1 },
-  petStatLabel: { color: "#5D5B58", fontFamily: "monospace", fontSize: 8, letterSpacing: 1 },
-  petStatValue: { color: "#111111", fontFamily: fonts.displayHeavy, fontSize: 22, marginTop: 4 },
-  petProgress: { height: 4, backgroundColor: "rgba(17,17,17,0.18)", marginTop: 14 },
-  petProgressFill: { height: 4, backgroundColor: "#111111" },
-  actionCards: { flexDirection: "row", gap: 10, marginBottom: 26 },
-  actionCard: { flex: 1, minHeight: 168, borderRadius: 8, padding: 14, justifyContent: "space-between", borderWidth: 1, borderColor: "rgba(17,17,17,0.18)" },
-  offerActionCard: { backgroundColor: colors.orange },
-  sendActionCard: { backgroundColor: "#D8D6D0" },
-  actionLabel: { color: "#111111", fontSize: 8, letterSpacing: 0.8 },
-  actionValue: { color: "#111111", fontSize: 30, lineHeight: 32 },
-  actionMeta: { color: "rgba(17,17,17,0.68)", fontSize: 7, letterSpacing: 0.5 },
-  controlDock: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 20, paddingBottom: 8 },
-  circleControl: { alignItems: "center", justifyContent: "center", width: 72, height: 72, borderRadius: 36, backgroundColor: "#E4E1DC" },
-  circleGlyph: { color: "#111111", fontSize: 28, lineHeight: 30 },
-  circleLabel: { color: "#111111", fontSize: 7, letterSpacing: 0.8, marginTop: 2 },
-  scanControl: { alignItems: "center", justifyContent: "center", width: 90, height: 90, borderRadius: 45, backgroundColor: "#111111" },
-  scanGlyph: { color: "#F04432", fontSize: 29, lineHeight: 32 },
-  scanLabel: { color: "#F1F0EC", fontSize: 8, letterSpacing: 1, marginTop: 3 },
+  afterDevice: { height: 16 },
   // enlarged device bottom — beta signature in pixel font
   deviceFooter: { alignItems: "center", paddingTop: 10, paddingBottom: 16, marginTop: 2 },
   deviceFooterText: { fontSize: 9, letterSpacing: 1.5, color: "#8A887F" },
@@ -623,9 +534,9 @@ const s = StyleSheet.create({
 
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  sectionMark: { fontSize: 9, color: colors.orange },
-  sectionTitle: { color: colors.ink, fontSize: typeScale.title.size, lineHeight: typeScale.title.line, letterSpacing: 0 },
-  sectionButton: { backgroundColor: colors.paper, borderRadius: 4, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1, borderColor: "#D8D6CF" },
+  sectionMark: { fontSize: 9, color: "#fd4600" },
+  sectionTitle: { color: "#015634", fontSize: typeScale.title.size, lineHeight: typeScale.title.line, letterSpacing: 0 },
+  sectionButton: { backgroundColor: "#FFFFFF", borderRadius: 99, paddingHorizontal: 13, paddingVertical: 8, shadowColor: "#C9C4B4", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.24, shadowRadius: 6, elevation: 1 },
   sectionButtonText: { color: "#75736A", fontSize: 11 },
 
   langSwitch: { flexDirection: "row", gap: 4, marginTop: 6 },
@@ -648,22 +559,22 @@ const s = StyleSheet.create({
   filterChipText: { fontSize: 11 },
   offerRail: { gap: 12, paddingBottom: 20 },
 
-  partnerOfferCard: { width: 148, minHeight: 168, backgroundColor: colors.orange, borderRadius: 8, padding: 14, gap: 6, borderWidth: 1, borderColor: "rgba(17,17,17,0.16)" },
-  partnerOfferPtsBox: { backgroundColor: "rgba(255,255,255,0.72)", borderWidth: 1, borderColor: "rgba(17,17,17,0.12)", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", flexDirection: "row", alignItems: "baseline", gap: 2 },
+  partnerOfferCard: { width: 140, backgroundColor: "#efeeea", borderRadius: 18, padding: 14, gap: 6, borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 4, borderBottomColor: "rgba(110,102,86,0.16)" },
+  partnerOfferPtsBox: { backgroundColor: "#DBDBD7", borderWidth: 1, borderColor: "#C4C4BE", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start", flexDirection: "row", alignItems: "baseline", gap: 2 },
   partnerOfferPts: { fontSize: 18, lineHeight: 20 },
   partnerOfferPtsLabel: { fontSize: 10 },
   partnerOfferTitle: { fontSize: 13, lineHeight: 17 },
   partnerOfferVenue: { fontSize: 11 },
   offerPressable: { width: 176 },
-  offerCard: { minHeight: 150, borderRadius: 8, padding: 14, overflow: "hidden", backgroundColor: colors.paper, borderWidth: 1, borderColor: "#D8D6CF", shadowColor: "#111111", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 0, elevation: 1 },
-  offerCardFeatured: { backgroundColor: colors.cobalt, borderColor: colors.cobalt },
+  offerCard: { minHeight: 150, borderRadius: 24, padding: 14, overflow: "hidden", backgroundColor: "#efeeea", borderTopWidth: 1.5, borderTopColor: "rgba(255,255,255,0.95)", borderBottomWidth: 5, borderBottomColor: "rgba(110,102,86,0.18)", shadowColor: "#9A958A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 14, elevation: 4 },
+  offerCardFeatured: { borderBottomColor: "rgba(242,166,110,0.5)" },
   offerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
-  offerLogo: { width: 38, height: 38, borderRadius: 4, alignItems: "center", justifyContent: "center", backgroundColor: "#E5E3DE", borderWidth: 1, borderColor: "#D8D6CF" },
+  offerLogo: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   offerLogoText: { fontSize: 16, fontWeight: "900" },
   offerPoints: { backgroundColor: "#DBDBD7", color: "#015634", borderRadius: 8, overflow: "hidden", borderWidth: 1, borderColor: "#C4C4BE", paddingHorizontal: 9, paddingVertical: 7, fontSize: 8, letterSpacing: 0.5 },
   offerTitle: { fontSize: typeScale.card.size, lineHeight: typeScale.card.line, letterSpacing: 0, minHeight: 40 },
   offerVenue: { fontSize: 12, marginTop: 8 },
-  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 4, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: "#E5E3DE", borderWidth: 1, borderColor: "#D8D6CF" },
+  offerLink: { marginTop: "auto", alignSelf: "flex-start", borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, backgroundColor: "#efeeea", borderWidth: 1, borderColor: "rgba(110,102,86,0.12)" },
   offerLinkText: { fontSize: 8, letterSpacing: 0.5 },
 
   venueList: { gap: 12 },
