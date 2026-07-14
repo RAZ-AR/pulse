@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react"
 import { Animated, Easing, StyleSheet, Text, View } from "react-native"
 import { LcdScreen } from "./console"
 import { PixelSprite, PET_SPRITES } from "./AyooPet"
+import { ComicBubble, REACTION_WORDS } from "./ComicBubble"
 import { fonts } from "../lib/theme"
 
 const HATCHLING = PET_SPRITES.HATCHLING!
@@ -65,10 +66,9 @@ export function HatchStage({
     Animated.timing(count, { toValue: shown, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start()
   }, [shown, count])
 
-  // On each feed tap: counter pop, a "+100" floats up, the egg wobbles.
+  // On each feed tap: counter pop, a comic "+100" bubble, a cycling reaction
+  // word, the egg wobbles.
   const pop = useRef(new Animated.Value(1)).current
-  const floatY = useRef(new Animated.Value(0)).current
-  const floatOp = useRef(new Animated.Value(0)).current
   const shake = useRef(new Animated.Value(0)).current
   const prev = useRef(fed)
   useEffect(() => {
@@ -78,12 +78,6 @@ export function HatchStage({
         Animated.spring(pop, { toValue: 1, friction: 5, useNativeDriver: true }),
       ]).start()
       if (!hatched) {
-        floatY.setValue(8)
-        floatOp.setValue(1)
-        Animated.parallel([
-          Animated.timing(floatY, { toValue: -26, duration: 650, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(floatOp, { toValue: 0, duration: 650, useNativeDriver: true }),
-        ]).start()
         Animated.sequence([
           Animated.timing(shake, { toValue: 1, duration: 55, useNativeDriver: true }),
           Animated.timing(shake, { toValue: -1, duration: 55, useNativeDriver: true }),
@@ -92,7 +86,8 @@ export function HatchStage({
       }
     }
     prev.current = fed
-  }, [fed, hatched, pop, floatY, floatOp, shake])
+  }, [fed, hatched, pop, shake])
+  const reactionWord = REACTION_WORDS[Math.floor(fed / 100) % REACTION_WORDS.length]!
 
   // One-shot hatch: sprite pop + a flashing greeting word.
   const hatchPop = useRef(new Animated.Value(1)).current
@@ -116,14 +111,17 @@ export function HatchStage({
 
   return (
     <LcdScreen accent={HATCH_GREEN} dark={false}>
-      {/* counter — animated, with a floating "+100" on each tap */}
+      {/* counter — animated, with a comic "+100" burst + a reaction word each tap */}
       <View style={s.counterRow}>
         <Animated.Text style={[s.counter, { fontFamily: fonts.pixel, transform: [{ scale: pop }] }]}>
           +{displayed} / {goal}
         </Animated.Text>
-        <Animated.Text style={[s.floatPlus, { fontFamily: fonts.pixel, opacity: floatOp, transform: [{ translateY: floatY }] }]}>
-          +100
-        </Animated.Text>
+        {!hatched ? (
+          <>
+            <ComicBubble text="+100" trigger={fed} tint={HATCH_GREEN} style={s.bubblePoints} />
+            <ComicBubble text={reactionWord} trigger={fed} tint={HATCH_GREEN} style={s.bubbleWord} />
+          </>
+        ) : null}
       </View>
 
       {/* egg (cracks each tap) / hatchling */}
@@ -141,7 +139,8 @@ export function HatchStage({
 const s = StyleSheet.create({
   counterRow: { alignItems: "center", justifyContent: "center", minHeight: 22 },
   counter: { fontSize: 15, color: HATCH_GREEN, letterSpacing: 1 },
-  floatPlus: { position: "absolute", top: -4, fontSize: 12, color: "#fd4600", letterSpacing: 1 },
+  bubblePoints: { top: -6, left: "50%", marginLeft: -34 },
+  bubbleWord: { top: 26, right: -10 },
   hint: { fontSize: 9, color: "#8C887E", letterSpacing: 1, marginTop: 4 },
   hintFlash: { color: "#fd4600" },
 })

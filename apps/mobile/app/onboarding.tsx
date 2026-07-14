@@ -8,6 +8,7 @@ import { setLocale } from "../src/lib/i18n"
 import { colors, fonts, useTheme } from "../src/lib/theme"
 import { DeviceChrome, Keypad, ConsentToggle, LcdScreen } from "../src/components/console"
 import { HatchStage } from "../src/components/HatchStage"
+import { ComicBubble } from "../src/components/ComicBubble"
 import { PixelSprite, PET_SPRITES } from "../src/components/AyooPet"
 import { getTgInitData, getTgUser, getTgStartParam as getTgParam, isTelegramRuntime } from "../src/lib/telegram"
 import type { SupportedLocale } from "@pulse/shared"
@@ -295,6 +296,12 @@ function DeviceOnboarding({
   const [consent, setConsent] = useState(false)
   const hatched = fed >= HATCH_GOAL
 
+  // One-shot comic bubbles: greet on reaching the name step, cheer when consent flips on.
+  const [nameHi, setNameHi] = useState(0)
+  const [consentYay, setConsentYay] = useState(0)
+  useEffect(() => { if (step === "name") setNameHi((n) => n + 1) }, [step])
+  useEffect(() => { if (consent) setConsentYay((n) => n + 1) }, [consent])
+
   const afterHatch = () => setStep(petName ? "consent" : "name")
   function submit() {
     if (!consent || isPending) return
@@ -320,7 +327,10 @@ function DeviceOnboarding({
     const backPad = { key: "back", symbol: "◀", label: t("back", "BACK"), color: "#8C887E", onPress: () => setStep("hatch") }
     return (
       <Shell langSwitcher={langSwitcher}>
-        <PetStage caption={name.trim() ? `${t("petHi", "HI")}, ${name.trim().toUpperCase()}` : t("nameQ", "NAME?")} />
+        <View style={d.bubbleAnchor}>
+          <PetStage caption={name.trim() ? `${t("petHi", "HI")}, ${name.trim().toUpperCase()}` : t("nameQ", "NAME?")} />
+          <ComicBubble text="HI" trigger={nameHi} tint={GREEN} style={d.bubbleTopRight} />
+        </View>
         <TextInput
           value={name}
           onChangeText={setName}
@@ -362,7 +372,10 @@ function DeviceOnboarding({
   return (
     <Shell langSwitcher={langSwitcher}>
       <PetStage asleep={!consent} caption={consent ? t("ready", "READY!") : t("flipToWake", "FLIP TO WAKE")} />
-      <ConsentToggle value={consent} onChange={setConsent} label={t("consentShort", "I AGREE · DATA PROCESSING")} />
+      <View style={d.bubbleAnchor}>
+        <ConsentToggle value={consent} onChange={setConsent} label={t("consentShort", "I AGREE · DATA PROCESSING")} />
+        <ComicBubble text="YEAH" trigger={consentYay} tint={GREEN} style={d.bubbleTopRight} />
+      </View>
       {error ? <Text style={[d.error, { fontFamily: fonts.pixel }]} numberOfLines={2}>{error}</Text> : null}
       <Keypad pads={isPending ? [] : consent ? [backPad, goPad] : [backPad]} />
       {isPending ? <ActivityIndicator color={GREEN_EDGE} style={{ marginTop: 6 }} /> : null}
@@ -419,6 +432,8 @@ const d = StyleSheet.create({
   pageBg: { flex: 1, backgroundColor: "#efeeea" },
   page: { padding: 18, paddingTop: 48, paddingBottom: 60, flexGrow: 1, justifyContent: "center" },
   petCaption: { fontSize: 11, letterSpacing: 1, color: "#013d24", marginTop: 6 },
+  bubbleAnchor: { position: "relative" },
+  bubbleTopRight: { top: -8, right: 4 },
   input: {
     backgroundColor: "#DBDBD7",
     borderRadius: 12,
