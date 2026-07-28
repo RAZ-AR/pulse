@@ -12,6 +12,7 @@
     "deploy:web": "npm run build:web && node scripts/deploy-web.js"
   },
   "dependencies": {
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
     "@expo-google-fonts/space-grotesk": "^0.2.3",
     "@expo/metro-runtime": "^4.0.1",
     "@pulse/shared": "workspace:*",

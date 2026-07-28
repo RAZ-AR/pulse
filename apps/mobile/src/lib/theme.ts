@@ -223,11 +223,15 @@ export function useTheme(): Theme {
   return mode === "rainbow" ? rainbowTheme : pastelTheme
 }
 
+// Headings use Instrument Serif (editorial). Only Regular ships — no bold cut.
+const instrumentSerif =
+  Platform.OS === "web" ? "\"Instrument Serif\", serif" : "InstrumentSerif_400Regular"
+
 export const fonts = {
-  display: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_700Bold",
-  displayHeavy: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_800ExtraBold",
-  displayBlack: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_700Bold",
-  serif: Platform.OS === "web" ? "\"Instrument Serif\", serif" : "SpaceGrotesk_700Bold",
+  display: instrumentSerif,
+  displayHeavy: instrumentSerif,
+  displayBlack: instrumentSerif,
+  serif: instrumentSerif,
   roboto: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_500Medium",
   robotoMedium: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_600SemiBold",
   robotoBold: Platform.OS === "web" ? "Roboto, sans-serif" : "SpaceGrotesk_700Bold",

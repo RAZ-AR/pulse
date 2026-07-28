@@ -7,6 +7,7 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk"
+import { InstrumentSerif_400Regular } from "@expo-google-fonts/instrument-serif"
 import { trpc, createTRPCClient } from "../lib/trpc"
 import { initI18n } from "../lib/i18n"
 import { useAuth } from "../store/auth"
@@ -23,11 +24,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   // Map 800ExtraBold to 700Bold — extra-bold isn't in the @expo-google-fonts package,
   // and 800 is rendered as 700 by RN anyway.
+  // Instrument Serif only ships Regular — used for all heading/display tokens.
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_500Medium,
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
     SpaceGrotesk_800ExtraBold: SpaceGrotesk_700Bold,
+    InstrumentSerif_400Regular,
   })
 
   useEffect(() => {
