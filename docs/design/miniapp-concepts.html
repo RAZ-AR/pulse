@@ -1,0 +1,1415 @@
+<title>ayoo miniapp — 3 концепции интерфейса</title>
+<style>
+  /* ── Shell tokens (light) ───────────────────────────────────── */
+  :root {
+    --ground: #EDEDE8;
+    --ground-2: #E3E3DC;
+    --ink: #101314;
+    --ink-soft: #4C524F;
+    --ink-faint: #878C87;
+    --rule: #C7C7BF;
+    --accent: #1F71B8;
+    --accent-soft: rgba(31, 113, 184, 0.12);
+
+    --f-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --w: 1120px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131517;
+      --ground-2: #1B1E21;
+      --ink: #E9E9E3;
+      --ink-soft: #A5ABA6;
+      --ink-faint: #6F756F;
+      --rule: #2E3336;
+      --accent: #62A9E3;
+      --accent-soft: rgba(98, 169, 227, 0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #131517;
+    --ground-2: #1B1E21;
+    --ink: #E9E9E3;
+    --ink-soft: #A5ABA6;
+    --ink-faint: #6F756F;
+    --rule: #2E3336;
+    --accent: #62A9E3;
+    --accent-soft: rgba(98, 169, 227, 0.16);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--w); margin: 0 auto; padding: 0 24px; }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ── Masthead ───────────────────────────────────────────────── */
+  .masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--rule); }
+  .masthead h1 {
+    margin: 14px 0 0;
+    font-size: clamp(38px, 7vw, 74px);
+    line-height: 0.94;
+    letter-spacing: -0.045em;
+    font-weight: 800;
+    text-wrap: balance;
+  }
+  .masthead h1 em { font-style: normal; color: var(--accent); }
+  .lede {
+    margin: 22px 0 0;
+    max-width: 60ch;
+    font-size: 17px;
+    color: var(--ink-soft);
+  }
+  .meta {
+    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+  }
+  .meta span {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+  }
+
+  /* ── Diagnosis ──────────────────────────────────────────────── */
+  .diagnosis { padding: 48px 0 56px; border-bottom: 1px solid var(--rule); }
+  .diag-grid {
+    margin-top: 24px;
+    display: grid;
+    gap: 28px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .diag-grid h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .diag-grid p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+  .diag-grid ul { margin: 8px 0 0; padding-left: 18px; color: var(--ink-soft); font-size: 15px; }
+  .diag-grid li { margin-bottom: 4px; }
+
+  /* ── Concept band ───────────────────────────────────────────── */
+  .band { padding: 72px 0 80px; position: relative; overflow: hidden; }
+  .band-inner { position: relative; z-index: 2; max-width: var(--w); margin: 0 auto; padding: 0 24px; }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    z-index: 1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .band h2 {
+    margin: 12px 0 0;
+    font-size: clamp(34px, 6vw, 62px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    font-weight: 800;
+    text-wrap: balance;
+  }
+  .mood { margin: 14px 0 0; font-size: 18px; max-width: 52ch; }
+
+  .refs { margin: 26px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .refs b {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    padding: 5px 9px;
+    border: 1px solid currentColor;
+    opacity: 0.75;
+  }
+
+  .rationale {
+    margin: 40px 0 0;
+    display: grid;
+    gap: 26px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+  .rationale h4 {
+    margin: 0 0 6px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 400;
+    opacity: 0.6;
+  }
+  .rationale p { margin: 0; font-size: 15px; line-height: 1.55; }
+
+  .stage {
+    margin: 48px 0 0;
+    display: flex;
+    gap: 28px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    scrollbar-width: thin;
+  }
+  .frame-wrap { flex: 0 0 auto; width: 300px; }
+  .frame-cap {
+    margin-top: 12px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+    line-height: 1.4;
+  }
+
+  .phone {
+    width: 300px;
+    height: 630px;
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .closing {
+    margin: 44px 0 0;
+    display: grid;
+    gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    border-top: 1px solid currentColor;
+    padding-top: 24px;
+  }
+  .closing h4 {
+    margin: 0 0 6px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 400;
+    opacity: 0.6;
+  }
+  .closing p { margin: 0; font-size: 15px; }
+
+  /* ═══ CONCEPT 1 — ПОСЛЕ ПОЛУНОЧИ ═══════════════════════════ */
+  .b1 {
+    background: #0A0D18;
+    color: #E8EAF2;
+  }
+  .b1::after { opacity: 0.20; mix-blend-mode: overlay; }
+  .b1 h2 { color: #D8FF3C; }
+  .b1 .eyebrow { color: #FF2E93; }
+  .b1 .mood { color: #A9AEC4; }
+
+  .c1 {
+    background: #0A0D18;
+    color: #E8EAF2;
+    font-family: var(--f-sans);
+    padding: 16px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .c1::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.13;
+    mix-blend-mode: overlay;
+  }
+  .c1-status {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #5E6483;
+  }
+  .c1-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .c1-mark {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: #E8EAF2;
+  }
+  .c1-open { font-family: var(--f-mono); font-size: 10px; color: #D8FF3C; letter-spacing: 0.08em; }
+  .c1-bal { display: flex; align-items: flex-end; gap: 8px; margin-top: 2px; }
+  .c1-num {
+    font-size: 64px;
+    line-height: 0.8;
+    font-weight: 800;
+    letter-spacing: -0.06em;
+    color: #FFFFFF;
+    font-variant-numeric: tabular-nums;
+  }
+  .c1-unit { font-family: var(--f-mono); font-size: 11px; color: #5E6483; letter-spacing: 0.14em; padding-bottom: 4px; }
+  .c1-delta {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: #D8FF3C;
+    letter-spacing: 0.04em;
+  }
+
+  .c1-pet {
+    position: relative;
+    border: 1px solid #262C46;
+    padding: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background:
+      repeating-linear-gradient(180deg, rgba(216,255,60,0.05) 0 1px, transparent 1px 4px),
+      #0D1122;
+  }
+  .c1-petmeta { flex: 1; min-width: 0; }
+  .c1-petname {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: #D8FF3C;
+  }
+  .c1-petstate { font-family: var(--f-mono); font-size: 10px; color: #6E7599; margin-top: 3px; letter-spacing: 0.04em; }
+  .c1-bar { margin-top: 7px; height: 3px; background: #1D2340; position: relative; }
+  .c1-bar i { position: absolute; inset: 0 38% 0 0; background: #FF2E93; }
+
+  .c1-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid #262C46;
+  }
+  .c1-cell { padding: 9px 8px; border-right: 1px solid #262C46; }
+  .c1-cell:last-child { border-right: 0; }
+  .c1-cellnum { font-size: 22px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+  .c1-celllab { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.12em; color: #5E6483; margin-top: 2px; }
+
+  .c1-cta { display: grid; grid-template-columns: 1.4fr 1fr; gap: 6px; }
+  .c1-btn {
+    padding: 13px 12px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-align: center;
+  }
+  .c1-btn-a { background: #D8FF3C; color: #0A0D18; font-weight: 700; }
+  .c1-btn-b { border: 1px solid #3A4166; color: #C6CBE0; }
+
+  .c1-secthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: #5E6483;
+    border-top: 1px solid #262C46;
+    padding-top: 10px;
+  }
+  .c1-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid #191E36;
+  }
+  .c1-rowname { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+  .c1-rowmeta { font-family: var(--f-mono); font-size: 9.5px; color: #5E6483; letter-spacing: 0.06em; margin-top: 2px; }
+  .c1-rate {
+    margin-left: auto;
+    text-align: right;
+    font-family: var(--f-mono);
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    color: #E8EAF2;
+  }
+  .c1-rate.best { color: #FF2E93; }
+  .c1-ratelab { display: block; font-size: 8.5px; color: #5E6483; letter-spacing: 0.1em; }
+
+  .c1-tabs {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #262C46;
+    padding: 12px 4px 16px;
+    font-family: var(--f-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    color: #4E5474;
+  }
+  .c1-tabs b { color: #D8FF3C; font-weight: 400; }
+
+  /* concept 1 — scan screen */
+  .c1s { background: #0A0D18; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .c1s-view {
+    flex: 1;
+    border: 1px solid #262C46;
+    position: relative;
+    background:
+      radial-gradient(120% 80% at 50% 0%, #1B2140 0%, #0C1020 60%, #080B14 100%);
+    overflow: hidden;
+  }
+  .c1s-corner { position: absolute; width: 26px; height: 26px; border: 2px solid #D8FF3C; }
+  .c1s-corner.tl { top: 16px; left: 16px; border-right: 0; border-bottom: 0; }
+  .c1s-corner.tr { top: 16px; right: 16px; border-left: 0; border-bottom: 0; }
+  .c1s-corner.bl { bottom: 16px; left: 16px; border-right: 0; border-top: 0; }
+  .c1s-corner.br { bottom: 16px; right: 16px; border-left: 0; border-top: 0; }
+  .c1s-scanline {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: #FF2E93;
+    box-shadow: 0 0 18px 2px rgba(255,46,147,0.6);
+    animation: c1scan 2.8s ease-in-out infinite;
+  }
+  @keyframes c1scan { 0%,100% { top: 18%; } 50% { top: 78%; } }
+  @media (prefers-reduced-motion: reduce) { .c1s-scanline { animation: none; top: 48%; } }
+  .c1s-receipt {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%) rotate(-3deg);
+    width: 118px; height: 168px;
+    background: #E8EAF2;
+    opacity: 0.14;
+  }
+  .c1s-readout { font-family: var(--f-mono); font-size: 10px; color: #6E7599; line-height: 1.8; letter-spacing: 0.04em; }
+  .c1s-readout b { color: #D8FF3C; font-weight: 400; }
+  .c1s-total { display: flex; align-items: flex-end; justify-content: space-between; }
+  .c1s-total .n { font-size: 46px; font-weight: 800; letter-spacing: -0.05em; color: #fff; }
+
+  /* ═══ CONCEPT 2 — ТИРАЖ ════════════════════════════════════ */
+  .b2 { background: #EFE9DC; color: #1A1712; }
+  .b2::after { opacity: 0.30; mix-blend-mode: multiply; }
+  .b2 h2 {
+    font-family: Didot, "Bodoni 72", "Times New Roman", Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: #17130E;
+  }
+  .b2 .eyebrow { color: #EA5B0C; }
+  .b2 .mood { color: #4A4238; font-family: Didot, "Bodoni 72", Georgia, serif; font-size: 20px; }
+
+  .c2 {
+    background: #F4EFE4;
+    color: #17130E;
+    padding: 18px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  .c2::before {
+    content: "";
+    position: absolute; inset: 0; z-index: 6; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.22;
+    mix-blend-mode: multiply;
+  }
+  .c2-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .c2-issue {
+    font-family: var(--f-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #8A7F6E;
+  }
+  .c2-serif {
+    font-family: Didot, "Bodoni 72", "Times New Roman", Georgia, serif;
+  }
+  .c2-title { font-size: 30px; line-height: 0.95; letter-spacing: -0.02em; }
+  .c2-title i { font-style: italic; color: #1F71B8; }
+  .c2-rule { height: 1px; background: #17130E; opacity: 0.45; }
+  .c2-rule.thick { height: 3px; opacity: 1; }
+
+  .c2-balance { display: flex; align-items: flex-end; gap: 10px; }
+  .c2-balnum {
+    font-family: Didot, "Bodoni 72", Georgia, serif;
+    font-size: 62px;
+    line-height: 0.82;
+    letter-spacing: -0.03em;
+    color: #EA5B0C;
+    position: relative;
+  }
+  .c2-balnum::after {
+    content: "2 480";
+    position: absolute;
+    left: 2px; top: 2px;
+    color: #1F71B8;
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+  }
+  .c2-balside { padding-bottom: 6px; }
+  .c2-ballab { font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.16em; color: #6E6152; }
+
+  .c2-pet {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 12px;
+    border: 1.5px solid #17130E;
+    background: #FBF7EE;
+  }
+  .c2-petcopy { flex: 1; }
+  .c2-petname { font-family: Didot, "Bodoni 72", Georgia, serif; font-size: 19px; line-height: 1; }
+  .c2-petsub { font-size: 11px; color: #6E6152; margin-top: 4px; }
+  .c2-stamp {
+    width: 52px; height: 52px;
+    border: 1.5px solid #EA5B0C;
+    border-radius: 50%;
+    color: #EA5B0C;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-family: var(--f-mono);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    transform: rotate(-9deg);
+    text-align: center;
+    line-height: 1.25;
+  }
+  .c2-stamp b { font-size: 15px; font-weight: 700; letter-spacing: 0; }
+
+  .c2-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .c2-act {
+    padding: 11px 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1.5px solid #17130E;
+  }
+  .c2-act.ink { background: #17130E; color: #F4EFE4; }
+  .c2-act.blue { background: #1F71B8; color: #FBF7EE; border-color: #17130E; }
+
+  .c2-idxhead {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.18em; color: #8A7F6E;
+  }
+  .c2-idx { display: flex; flex-direction: column; gap: 9px; }
+  .c2-item { display: flex; align-items: baseline; gap: 6px; }
+  .c2-iname { font-family: Didot, "Bodoni 72", Georgia, serif; font-size: 17px; white-space: nowrap; }
+  .c2-icat { font-size: 10px; color: #8A7F6E; white-space: nowrap; }
+  .c2-leader { flex: 1; border-bottom: 1px dotted #A79A87; transform: translateY(-3px); }
+  .c2-irate {
+    font-family: Didot, "Bodoni 72", Georgia, serif;
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .c2-irate.top { color: #EA5B0C; }
+  .c2-foot {
+    margin-top: auto;
+    display: flex; justify-content: space-between;
+    padding: 11px 2px 16px;
+    border-top: 1.5px solid #17130E;
+    font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.12em; color: #8A7F6E;
+  }
+  .c2-foot b { color: #EA5B0C; font-weight: 400; }
+
+  /* concept 2 — reward screen */
+  .c2r { background: #F4EFE4; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .c2r-poster {
+    border: 1.5px solid #17130E;
+    background: #1F71B8;
+    color: #FBF7EE;
+    padding: 18px 16px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .c2r-poster h3 {
+    margin: 0;
+    font-family: Didot, "Bodoni 72", Georgia, serif;
+    font-size: 34px;
+    line-height: 0.94;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+  }
+  .c2r-poster h3 i { font-style: italic; color: #F4C89A; }
+  .c2r-over {
+    position: absolute; right: -22px; bottom: -26px;
+    width: 130px; height: 130px; border-radius: 50%;
+    background: #EA5B0C; mix-blend-mode: multiply; opacity: 0.9;
+  }
+  .c2r-price { position: relative; z-index: 2; margin-top: 12px; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.16em; }
+  .c2r-body { font-size: 13px; line-height: 1.5; color: #3B342B; }
+  .c2r-cta { border: 1.5px solid #17130E; background: #17130E; color: #F4EFE4; text-align: center; padding: 13px; font-weight: 700; font-size: 13px; }
+  .c2r-fine { font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.1em; color: #8A7F6E; }
+
+  /* ═══ CONCEPT 3 — ЖИВОЙ КВАРТАЛ ═════════════════════════════ */
+  .b3 { background: #E7EEFF; color: #101733; }
+  .b3::after { opacity: 0.12; mix-blend-mode: multiply; }
+  .b3 h2 {
+    color: #101733;
+    font-family: Futura, "Avenir Next", "Trebuchet MS", var(--f-sans);
+    letter-spacing: -0.03em;
+  }
+  .b3 .eyebrow { color: #2B6EFF; }
+  .b3 .mood { color: #40507F; }
+
+  .c3 {
+    background: linear-gradient(180deg, #BFDCFF 0%, #E3EEFF 46%, #F6F3E9 46%, #F1EADA 100%);
+    color: #101733;
+    font-family: Futura, "Avenir Next", "Trebuchet MS", var(--f-sans);
+    display: flex;
+    flex-direction: column;
+  }
+  .c3-top { padding: 16px 16px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+  .c3-coins { display: flex; align-items: center; gap: 7px; }
+  .c3-coin {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(160deg, #FFD75E 0%, #FF9A2E 100%);
+    box-shadow: 0 2px 0 #C96A12, 0 5px 10px rgba(201,106,18,0.35);
+  }
+  .c3-cnum { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .c3-clab { font-size: 9px; letter-spacing: 0.14em; color: #5A6893; }
+  .c3-lvl {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(43,110,255,0.25);
+    border-radius: 999px;
+    padding: 5px 11px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: #2B6EFF;
+  }
+  .c3-scene { position: relative; height: 268px; margin-top: 2px; }
+  .c3-cloud { position: absolute; background: #FFFFFF; opacity: 0.85; border-radius: 999px; }
+  .c3-hill {
+    position: absolute; left: -12%; right: -12%; bottom: 0; height: 96px;
+    background: #F6F3E9;
+    border-radius: 50% 50% 0 0 / 60px 60px 0 0;
+  }
+  .c3-bubble {
+    position: absolute; left: 14px; top: 8px;
+    max-width: 168px;
+    background: #FFFFFF;
+    border-radius: 16px 16px 16px 4px;
+    padding: 9px 11px;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: #26304F;
+    box-shadow: 0 6px 18px rgba(16,23,51,0.14);
+  }
+  .c3-bubble b { color: #2B6EFF; }
+  .c3-pin {
+    position: absolute;
+    display: flex; align-items: center; gap: 5px;
+    background: #FFFFFF;
+    border-radius: 999px;
+    padding: 4px 9px 4px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(16,23,51,0.16);
+  }
+  .c3-pin i {
+    width: 16px; height: 16px; border-radius: 50%;
+    display: block;
+  }
+  .c3-sheet {
+    flex: 1;
+    background: #FFFFFF;
+    border-radius: 26px 26px 0 0;
+    margin-top: -18px;
+    padding: 16px 16px 0;
+    position: relative;
+    z-index: 3;
+    box-shadow: 0 -8px 24px rgba(16,23,51,0.10);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .c3-quest {
+    display: flex; align-items: center; gap: 11px;
+    background: linear-gradient(135deg, #2B6EFF 0%, #12B7D6 100%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 18px rgba(43,110,255,0.32);
+  }
+  .c3-qtitle { font-size: 13.5px; font-weight: 700; }
+  .c3-qsub { font-size: 10.5px; opacity: 0.86; margin-top: 2px; }
+  .c3-qgo {
+    margin-left: auto;
+    background: #fff; color: #2B6EFF;
+    border-radius: 999px; padding: 6px 12px;
+    font-size: 11px; font-weight: 700;
+  }
+  .c3-placehead { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; color: #5A6893; letter-spacing: 0.1em; }
+  .c3-places { display: flex; flex-direction: column; gap: 9px; }
+  .c3-place { display: flex; align-items: center; gap: 11px; }
+  .c3-thumb {
+    width: 44px; height: 44px; border-radius: 15px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.08);
+  }
+  .c3-pname { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+  .c3-pmeta { font-size: 10.5px; color: #6C79A0; margin-top: 1px; }
+  .c3-prate {
+    margin-left: auto;
+    background: #EAF1FF; color: #2B6EFF;
+    border-radius: 999px; padding: 5px 10px;
+    font-size: 11px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .c3-prate.hot { background: #FFEEE2; color: #F06A18; }
+  .c3-dock {
+    margin-top: auto;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 8px 18px;
+    font-size: 10px; color: #93A0C2; letter-spacing: 0.06em;
+  }
+  .c3-dock b { color: #2B6EFF; font-weight: 700; }
+
+  /* concept 3 — venue screen */
+  .c3v { background: #F1EADA; display: flex; flex-direction: column; }
+  .c3v-hero {
+    height: 232px;
+    background: linear-gradient(180deg, #FFC9A3 0%, #FFE3C4 60%, #F1EADA 100%);
+    position: relative;
+  }
+  .c3v-sun {
+    position: absolute; right: 26px; top: 26px;
+    width: 62px; height: 62px; border-radius: 50%;
+    background: radial-gradient(circle at 34% 32%, #FFF3B0, #FFB03A);
+    box-shadow: 0 0 40px rgba(255,176,58,0.55);
+  }
+  .c3v-sheet {
+    flex: 1; background: #fff; border-radius: 26px 26px 0 0; margin-top: -22px;
+    padding: 18px 16px 0; display: flex; flex-direction: column; gap: 13px;
+    box-shadow: 0 -8px 24px rgba(16,23,51,0.10);
+  }
+  .c3v-title { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .c3v-sub { font-size: 11.5px; color: #6C79A0; margin-top: 5px; }
+  .c3v-rate {
+    background: linear-gradient(135deg, #FF8A34 0%, #F0552A 100%);
+    color: #fff; border-radius: 20px; padding: 14px 16px;
+    box-shadow: 0 8px 18px rgba(240,85,42,0.30);
+  }
+  .c3v-ratenum { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .c3v-ratelab { font-size: 10.5px; opacity: 0.9; margin-top: 4px; letter-spacing: 0.06em; }
+  .c3v-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+  .c3v-chip { background: #F1F4FB; border-radius: 999px; padding: 6px 11px; font-size: 10.5px; color: #45527D; font-weight: 700; }
+  .c3v-cta {
+    margin-top: auto; margin-bottom: 18px;
+    background: #101733; color: #fff; border-radius: 18px;
+    text-align: center; padding: 15px; font-size: 13.5px; font-weight: 700;
+  }
+
+  /* ── Verdict ────────────────────────────────────────────────── */
+  .verdict { padding: 64px 0 96px; }
+  .verdict h2 {
+    margin: 12px 0 0;
+    font-size: clamp(28px, 4.6vw, 44px);
+    letter-spacing: -0.035em;
+    line-height: 1;
+    font-weight: 800;
+  }
+  .compare { margin-top: 34px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 14px 12px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+  td b { font-weight: 700; }
+  .pick {
+    margin-top: 34px;
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 18px;
+    max-width: 62ch;
+  }
+  .pick p { margin: 0 0 10px; color: var(--ink-soft); font-size: 15px; }
+  .pick p:last-child { margin-bottom: 0; }
+  .pick strong { color: var(--ink); }
+
+  .sources { margin-top: 44px; font-size: 13px; color: var(--ink-faint); max-width: 70ch; }
+  .sources a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-soft); }
+  .sources a:hover, .sources a:focus-visible { border-bottom-color: currentColor; }
+
+  :where(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  @media (max-width: 640px) {
+    .masthead { padding: 48px 0 32px; }
+    .band { padding: 52px 0 60px; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">ayoo · клиентский Mini App · арт-дирекшн</p>
+    <h1>Три способа<br>перестать быть<br><em>предметом</em></h1>
+    <p class="lede">
+      Сейчас главный экран — это скеуоморфный объект: билет с перфорацией, штрих-кодом,
+      трёхпиксельной обводкой и жёсткой тенью. Он читается как вещь в руках, а не как продукт.
+      Ниже — три принципиально разных направления. Питомец остаётся в каждом, но в каждом
+      он играет разную роль: индикатор, персонаж-печать или главный герой всего экрана.
+    </p>
+    <div class="meta">
+      <span>Expo / React Native Web</span>
+      <span>Telegram Mini App</span>
+      <span>Белград · Нови-Сад</span>
+      <span>3 направления</span>
+    </div>
+  </div>
+</header>
+
+<section class="diagnosis">
+  <div class="wrap">
+    <p class="eyebrow">Точка отсчёта</p>
+    <div class="diag-grid">
+      <div>
+        <h3>Что уходит</h3>
+        <ul>
+          <li>Билет-скеуоморф: перфорация, штрих-код, «оторви здесь»</li>
+          <li>Обводка 3px + hard shadow 8/8 на каждом элементе</li>
+          <li>Два несовместимых режима темы (pastel + rainbow) в одном коде</li>
+          <li>Одинаковый радиус и одинаковый вес у всего подряд</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Что остаётся</h3>
+        <ul>
+          <li>Питомец — эмоциональный якорь и причина возвращаться</li>
+          <li>Курс баллов как главная цифра продукта</li>
+          <li>Логика экранов: баланс → заработать → потратить → карта</li>
+          <li>Фирменные <b>#1f71b8</b> и <b>#ea5b0c</b> — но в новых ролях</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Что должно измениться по сути</h3>
+        <p>
+          Иерархию сейчас держат рамки. В любом из направлений ниже её держат
+          масштаб, контраст и ритм — рамка перестаёт быть несущей конструкцией.
+          Это и есть выход из «гаджета».
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CONCEPT 1 ══════════════ -->
+<section class="band grain b1">
+  <div class="band-inner">
+    <p class="eyebrow">Направление · графическое, ночное</p>
+    <h2>После полуночи</h2>
+    <p class="mood">Не приложение лояльности, а ночной протокол города. Чек-ины происходят вечером — экран это признаёт.</p>
+
+    <div class="refs">
+      <b>Tactile brutalism 2026 (Fireart)</b>
+      <b>Acid palette на cyber-monochrome</b>
+      <b>CSS film grain / SVG noise</b>
+      <b>Данные как моно-сетка</b>
+    </div>
+
+    <div class="rationale">
+      <div>
+        <h4>Типографика</h4>
+        <p>
+          Два голоса и никаких промежуточных. Плотный гротеск с трекингом −6% на баланс
+          и названия — и моноширинный на всё, что является данными: курс, дистанция,
+          состояние питомца. Продукт про цифры, поэтому цифры получают отдельный шрифт.
+        </p>
+      </div>
+      <div>
+        <h4>Цвет</h4>
+        <p>
+          Глубокий сине-чёрный <b>#0A0D18</b> вместо нейтрально-чёрного, и две кислоты, а не одна:
+          шартрез <b>#D8FF3C</b> — действие, маджента <b>#FF2E93</b> — лучший курс и живое состояние
+          питомца. Одна кислота на чёрном — уже клише; конфликт двух даёт напряжение.
+        </p>
+      </div>
+      <div>
+        <h4>Композиция</h4>
+        <p>
+          Карточек нет вообще. Экран собирается волосяными линиями в 1px и настоящей сеткой,
+          заведения — строки реестра, где справа выровнены курсы. Читается сверху вниз
+          как сводка, а не как лента плиток.
+        </p>
+      </div>
+      <div>
+        <h4>Питомец</h4>
+        <p>
+          Существо живёт в отдельном блоке со сканлайнами и светится кислотой:
+          это единственный органический объект среди сухих данных. Модель состояний
+          заимствована у Finch — сыт / бодр / скучает — и меняет свечение и полосу энергии.
+        </p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="frame-wrap">
+        <div class="phone c1">
+          <div class="c1-status"><span>01:24</span><span>ТГ · AYOO</span></div>
+          <div class="c1-top">
+            <span class="c1-mark">A Y O O</span>
+            <span class="c1-open">ОТКРЫТО СЕЙЧАС · 14</span>
+          </div>
+          <div>
+            <div class="c1-bal">
+              <span class="c1-num">2480</span>
+              <span class="c1-unit">PTS</span>
+            </div>
+            <div class="c1-delta" style="margin-top:8px;">+180 СЕГОДНЯ · СГОРАЕТ 340 ЧЕРЕЗ 12Д</div>
+          </div>
+
+          <div class="c1-pet">
+            <svg width="54" height="54" viewBox="0 0 54 54" aria-label="Питомец Эхо">
+              <ellipse cx="27" cy="30" rx="19" ry="17" fill="#0A0D18" stroke="#D8FF3C" stroke-width="1.5"></ellipse>
+              <ellipse cx="27" cy="30" rx="19" ry="17" fill="none" stroke="#FF2E93" stroke-width="1.5" opacity="0.45" transform="translate(1.5,-1.5)"></ellipse>
+              <circle cx="20" cy="27" r="3.4" fill="#D8FF3C"></circle>
+              <circle cx="34" cy="27" r="3.4" fill="#D8FF3C"></circle>
+              <path d="M21 37 q6 4 12 0" stroke="#D8FF3C" stroke-width="1.4" fill="none"></path>
+              <path d="M14 16 l5 7 M40 16 l-5 7" stroke="#D8FF3C" stroke-width="1.4"></path>
+            </svg>
+            <div class="c1-petmeta">
+              <div class="c1-petname">ЭХО · LVL 4</div>
+              <div class="c1-petstate">СОСТОЯНИЕ: БОДР · ЖДЁТ ЧЕК-ИН</div>
+              <div class="c1-bar"><i></i></div>
+            </div>
+          </div>
+
+          <div class="c1-grid">
+            <div class="c1-cell"><div class="c1-cellnum">6</div><div class="c1-celllab">СТРИК</div></div>
+            <div class="c1-cell"><div class="c1-cellnum">12</div><div class="c1-celllab">WELCOME</div></div>
+            <div class="c1-cell"><div class="c1-cellnum">3</div><div class="c1-celllab">КВЕСТЫ</div></div>
+          </div>
+
+          <div class="c1-cta">
+            <div class="c1-btn c1-btn-a">СКАН ЧЕКА</div>
+            <div class="c1-btn c1-btn-b">ЧЕК-ИН</div>
+          </div>
+
+          <div class="c1-secthead"><span>РЯДОМ · ДОРЧОЛ</span><span>КУРС ↓</span></div>
+          <div>
+            <div class="c1-row">
+              <div>
+                <div class="c1-rowname">Mood Coffee</div>
+                <div class="c1-rowmeta">КОФЕ · 240 М · ДО 23:00</div>
+              </div>
+              <div class="c1-rate best">0.084<span class="c1-ratelab">PTS / RSD</span></div>
+            </div>
+            <div class="c1-row">
+              <div>
+                <div class="c1-rowname">Torii Sushi Bar</div>
+                <div class="c1-rowmeta">РЕСТОРАН · 610 М · −15%</div>
+              </div>
+              <div class="c1-rate">0.061<span class="c1-ratelab">PTS / RSD</span></div>
+            </div>
+            <div class="c1-row">
+              <div>
+                <div class="c1-rowname">Café Willow</div>
+                <div class="c1-rowmeta">КОФЕ · 1.2 КМ</div>
+              </div>
+              <div class="c1-rate">0.042<span class="c1-ratelab">PTS / RSD</span></div>
+            </div>
+          </div>
+
+          <div class="c1-tabs">
+            <b>ГЛАВНАЯ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span>
+          </div>
+        </div>
+        <p class="frame-cap">Главная. Иерархию держит масштаб цифры и волосяная сетка — рамок нет.</p>
+      </div>
+
+      <div class="frame-wrap">
+        <div class="phone c1s">
+          <div class="c1-status"><span>01:26</span><span>СКАН ЧЕКА</span></div>
+          <div class="c1s-view">
+            <div class="c1s-receipt"></div>
+            <div class="c1s-corner tl"></div>
+            <div class="c1s-corner tr"></div>
+            <div class="c1s-corner bl"></div>
+            <div class="c1s-corner br"></div>
+            <div class="c1s-scanline"></div>
+          </div>
+          <div class="c1s-readout">
+            OCR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>ГОТОВО</b><br>
+            ЗАВЕДЕНИЕ&nbsp;<b>MOOD COFFEE</b><br>
+            ПОЗИЦИЙ&nbsp;&nbsp;&nbsp;4<br>
+            КУРС&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.084 PTS/RSD · ×10 ПАРТНЁР
+          </div>
+          <div class="c1s-total">
+            <div>
+              <div class="c1-unit" style="letter-spacing:.14em;">НАЧИСЛИТЬ</div>
+              <div class="n">+168</div>
+            </div>
+            <div class="c1-btn c1-btn-a" style="padding:13px 18px;">ПОДТВЕРДИТЬ</div>
+          </div>
+        </div>
+        <p class="frame-cap">Скан чека. Камера как измерительный прибор: маджента-луч, моно-сводка, никаких иллюстраций.</p>
+      </div>
+    </div>
+
+    <div class="closing">
+      <div>
+        <h4>Как притушить</h4>
+        <p>Убрать мадженту и оставить один шартрез только на кнопке действия, снизить зерно до 6% — направление станет строгим тёмным продуктом без клубной интонации.</p>
+      </div>
+      <div>
+        <h4>Что это значит в коде</h4>
+        <p>Самое дешёвое из трёх: удаляются <b>neu.tsx</b>, перфорация, штрих-код и оба режима темы. Остаются один тёмный токен-сет, 1px-бордеры и моношрифт. Зерно — один PNG-оверлей.</p>
+      </div>
+      <div>
+        <h4>Риск</h4>
+        <p>Тёмный кислотный UI хорошо продаёт «ночь» и хуже — «завтрак и кофе». Если аудитория шире ночной, направление сузит восприятие продукта.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CONCEPT 2 ══════════════ -->
+<section class="band grain b2">
+  <div class="band-inner">
+    <p class="eyebrow">Направление · печатное, авторское</p>
+    <h2>Тираж</h2>
+    <p class="mood">Приложение как ризограф-зин про город: бумага, две краски, смещение печати, живая рука вместо идеального рендера.</p>
+
+    <div class="refs">
+      <b>Risograph / overprint 2026</b>
+      <b>«Carefully unpolished» — It's Nice That</b>
+      <b>Fontfabric: Imperfect by Design</b>
+      <b>Serif revival: Fraunces, ALT Erogenous</b>
+    </div>
+
+    <div class="rationale">
+      <div>
+        <h4>Типографика</h4>
+        <p>
+          Флаговый серифный дисплей (Didot / Fraunces) на числах и названиях — редакционный,
+          с курсивом как акцентом. Рядом — прагматичный гротеск на 11–13px для
+          интерфейсной механики. Контраст эпох вместо контраста весов.
+        </p>
+      </div>
+      <div>
+        <h4>Цвет</h4>
+        <p>
+          Ровно две краски — существующие фирменные <b>#1f71b8</b> и <b>#ea5b0c</b> — печатаются
+          друг поверх друга через multiply на бумаге <b>#F4EFE4</b>. Третий цвет рождается
+          на пересечении, а не выбирается. Смещение краски на 2px — намеренное.
+        </p>
+      </div>
+      <div>
+        <h4>Композиция</h4>
+        <p>
+          Список заведений — не карточки, а оглавление: название, точечный выноситель,
+          курс справа. Награды — типографские плакаты, а не купоны. Скидка ставится
+          круглым штампом под углом, как оттиск.
+        </p>
+      </div>
+      <div>
+        <h4>Питомец</h4>
+        <p>
+          Питомец становится печатным персонажем: две краски со сдвигом, грубая заливка,
+          обводка с дрожью. Он не анимируется постоянно — он «переиздаётся»: новый уровень
+          = новый оттиск, коллекционный отпечаток в профиле.
+        </p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="frame-wrap">
+        <div class="phone c2">
+          <div class="c2-head">
+            <span class="c2-issue">AYOO · БЕЛГРАД · №14</span>
+            <span class="c2-issue">ЧТ 12.08</span>
+          </div>
+          <div class="c2-rule thick"></div>
+
+          <div class="c2-serif c2-title">Твой <i>курс</i><br>на сегодня</div>
+
+          <div class="c2-balance">
+            <div class="c2-balnum">2 480</div>
+            <div class="c2-balside">
+              <div class="c2-ballab">БАЛЛОВ</div>
+              <div class="c2-ballab" style="color:#EA5B0C;">+180 ЗА ДЕНЬ</div>
+            </div>
+          </div>
+          <div class="c2-rule"></div>
+
+          <div class="c2-pet">
+            <svg width="50" height="50" viewBox="0 0 50 50" aria-label="Питомец Эхо">
+              <g style="mix-blend-mode: multiply;">
+                <ellipse cx="26.5" cy="28.5" rx="17" ry="15.5" fill="#1F71B8" opacity="0.85"></ellipse>
+                <ellipse cx="24" cy="27" rx="17" ry="15.5" fill="#EA5B0C" opacity="0.8"></ellipse>
+              </g>
+              <circle cx="19" cy="25" r="2.8" fill="#17130E"></circle>
+              <circle cx="30" cy="25" r="2.8" fill="#17130E"></circle>
+              <path d="M19 34 q5.5 4 11 0" stroke="#17130E" stroke-width="1.6" fill="none"></path>
+              <path d="M13 14 l4.5 7 M37 14 l-4.5 7" stroke="#17130E" stroke-width="1.6"></path>
+            </svg>
+            <div class="c2-petcopy">
+              <div class="c2-petname">Эхо, оттиск №4</div>
+              <div class="c2-petsub">Ещё 2 чек-ина — и выйдет новый тираж</div>
+            </div>
+            <div class="c2-stamp"><b>×10</b>ПАРТНЁР</div>
+          </div>
+
+          <div class="c2-acts">
+            <div class="c2-act ink">Скан чека</div>
+            <div class="c2-act blue">Чек-ин</div>
+          </div>
+
+          <div class="c2-idxhead"><span>УКАЗАТЕЛЬ · РЯДОМ</span><span>PTS/RSD</span></div>
+          <div class="c2-idx">
+            <div class="c2-item">
+              <span class="c2-iname">Mood Coffee</span>
+              <span class="c2-icat">кофе</span>
+              <span class="c2-leader"></span>
+              <span class="c2-irate top">0,084</span>
+            </div>
+            <div class="c2-item">
+              <span class="c2-iname">Torii Sushi</span>
+              <span class="c2-icat">ресторан</span>
+              <span class="c2-leader"></span>
+              <span class="c2-irate">0,061</span>
+            </div>
+            <div class="c2-item">
+              <span class="c2-iname">Café Willow</span>
+              <span class="c2-icat">кофе</span>
+              <span class="c2-leader"></span>
+              <span class="c2-irate">0,042</span>
+            </div>
+            <div class="c2-item">
+              <span class="c2-iname">Luma Beauty</span>
+              <span class="c2-icat">услуги</span>
+              <span class="c2-leader"></span>
+              <span class="c2-irate">0,038</span>
+            </div>
+          </div>
+
+          <div class="c2-foot"><b>ГЛАВНАЯ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span></div>
+        </div>
+        <p class="frame-cap">Главная. Оглавление вместо плиток, серифные числа, оттиск-штамп на партнёрском курсе.</p>
+      </div>
+
+      <div class="frame-wrap">
+        <div class="phone c2r">
+          <div class="c2-issue">НАГРАДА · MOOD COFFEE</div>
+          <div class="c2r-poster">
+            <div class="c2r-over"></div>
+            <h3 style="position:relative;z-index:2;">Фильтр<br><i>бесплатно</i><br>до 15.09</h3>
+            <div class="c2r-price">450 БАЛЛОВ · ОСТАЛОСЬ 12 ШТ</div>
+          </div>
+          <div class="c2r-body">
+            Показываешь этот разворот бариста — он сканирует код, награда гасится
+            сразу и списывается с баланса. Действует в обеих точках на Дорчоле.
+          </div>
+          <div class="c2-rule"></div>
+          <div class="c2r-fine">УСЛОВИЯ · ОДИН РАЗ В ДЕНЬ · НЕ СУММИРУЕТСЯ СО СКИДКОЙ ЗАВЕДЕНИЯ</div>
+          <div style="margin-top:auto;margin-bottom:16px;">
+            <div class="c2r-cta">Активировать за 450</div>
+          </div>
+        </div>
+        <p class="frame-cap">Награда. Типографский плакат вместо купона: overprint-круг, курсив, мелкий шрифт как в выходных данных.</p>
+      </div>
+    </div>
+
+    <div class="closing">
+      <div>
+        <h4>Как притушить</h4>
+        <p>Убрать смещение красок и зерно, оставить бумажный фон, серифный дисплей и две краски без наложения — получится сдержанный редакционный стиль без «зина».</p>
+      </div>
+      <div>
+        <h4>Что это значит в коде</h4>
+        <p>Средняя сложность. Overprint в RN даётся полупрозрачными слоями (multiply на вебе, opacity в native), зерно — тайл-PNG. Главное — <b>серифный шрифт нужно упаковать в приложение</b>, системного аналога нет.</p>
+      </div>
+      <div>
+        <h4>Риск</h4>
+        <p>Печатная эстетика сильнее всего работает на крупных экранах и хуже — на плотных списках. Потребует дисциплины: одна «неидеальность» на экран, иначе рассыплется.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CONCEPT 3 ══════════════ -->
+<section class="band grain b3">
+  <div class="band-inner">
+    <p class="eyebrow">Направление · продуктовое, персонажное</p>
+    <h2>Живой квартал</h2>
+    <p class="mood">Питомец перестаёт быть виджетом и становится продуктом: главный экран — его среда обитания, а город — карта его прогулок.</p>
+
+    <div class="refs">
+      <b>Finch: состояния питомца · 2.34M загрузок</b>
+      <b>Duolingo: персонаж как драйвер стрика</b>
+      <b>Мультяшный бренд-стиль в TG Mini Apps</b>
+      <b>Геометрический гротеск, высокая хрома</b>
+    </div>
+
+    <div class="rationale">
+      <div>
+        <h4>Типографика</h4>
+        <p>
+          Геометрический гротеск (Futura / Avenir Next) в тяжёлых начертаниях и с плотным
+          трекингом: он звучит как вывеска, а не как системный текст. Мелкий кегль вообще
+          не используется — если информацию нельзя дать крупно, её выносим на второй экран.
+        </p>
+      </div>
+      <div>
+        <h4>Цвет</h4>
+        <p>
+          Не пастель. Насыщенные «гелевые» градиенты — синий <b>#2B6EFF</b> → бирюза,
+          оранжевый <b>#F0552A</b> на курсе — на тёплом песочном грунте. Небо сверху,
+          земля снизу: цвет разделяет мир и интерфейс, а не просто раскрашивает карточки.
+        </p>
+      </div>
+      <div>
+        <h4>Композиция</h4>
+        <p>
+          Сцена + шторка. Верхняя треть — живой мир питомца с пинами заведений, нижняя —
+          лист с делами, который поднимается. Заведение — не строка каталога, а место,
+          куда питомец собирается пойти.
+        </p>
+      </div>
+      <div>
+        <h4>Питомец</h4>
+        <p>
+          Главный герой. Он просит конкретное действие («хочу кофе в Mood — там курс лучший»),
+          у него есть состояния из модели Finch и он несёт баллы физически — стопкой монет.
+          Мотивация смещается с «накопи» на «не подведи».
+        </p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="frame-wrap">
+        <div class="phone c3">
+          <div class="c3-top">
+            <div>
+              <div class="c3-coins">
+                <div class="c3-coin"></div>
+                <div class="c3-cnum">2 480</div>
+              </div>
+              <div class="c3-clab">БАЛЛОВ · +180 СЕГОДНЯ</div>
+            </div>
+            <div class="c3-lvl">Эхо · ур. 4</div>
+          </div>
+
+          <div class="c3-scene">
+            <div class="c3-cloud" style="width:64px;height:20px;left:22px;top:16px;"></div>
+            <div class="c3-cloud" style="width:44px;height:15px;right:34px;top:52px;opacity:.6;"></div>
+            <div class="c3-hill"></div>
+
+            <div class="c3-pin" style="right:16px;top:104px;">
+              <i style="background:linear-gradient(140deg,#FFB03A,#F0552A);"></i>Mood · 0,084
+            </div>
+            <div class="c3-pin" style="left:20px;top:150px;">
+              <i style="background:linear-gradient(140deg,#54D2FF,#2B6EFF);"></i>Torii · 0,061
+            </div>
+
+            <svg width="132" height="132" viewBox="0 0 132 132" style="position:absolute;left:50%;bottom:6px;transform:translateX(-50%);" aria-label="Питомец Эхо">
+              <ellipse cx="66" cy="122" rx="34" ry="7" fill="#101733" opacity="0.14"></ellipse>
+              <path d="M40 40 L48 62 M92 40 L84 62" stroke="#2B6EFF" stroke-width="5" stroke-linecap="round"></path>
+              <circle cx="40" cy="38" r="6" fill="#FFB03A"></circle>
+              <circle cx="92" cy="38" r="6" fill="#FFB03A"></circle>
+              <ellipse cx="66" cy="82" rx="40" ry="36" fill="url(#gel)"></ellipse>
+              <ellipse cx="53" cy="66" rx="13" ry="9" fill="#FFFFFF" opacity="0.42"></ellipse>
+              <circle cx="53" cy="78" r="6" fill="#101733"></circle>
+              <circle cx="79" cy="78" r="6" fill="#101733"></circle>
+              <circle cx="55" cy="76" r="2" fill="#FFFFFF"></circle>
+              <circle cx="81" cy="76" r="2" fill="#FFFFFF"></circle>
+              <path d="M56 94 q10 9 20 0" stroke="#101733" stroke-width="3.4" fill="none" stroke-linecap="round"></path>
+              <ellipse cx="46" cy="116" rx="10" ry="5" fill="#1B4FD8"></ellipse>
+              <ellipse cx="86" cy="116" rx="10" ry="5" fill="#1B4FD8"></ellipse>
+              <defs>
+                <radialGradient id="gel" cx="36%" cy="28%" r="82%">
+                  <stop offset="0%" stop-color="#7FC4FF"></stop>
+                  <stop offset="55%" stop-color="#2B6EFF"></stop>
+                  <stop offset="100%" stop-color="#1B3FC0"></stop>
+                </radialGradient>
+              </defs>
+            </svg>
+
+            <div class="c3-bubble">Хочу в <b>Mood Coffee</b> — там сегодня лучший курс в Дорчоле</div>
+          </div>
+
+          <div class="c3-sheet">
+            <div class="c3-quest">
+              <div>
+                <div class="c3-qtitle">Прогулка с Эхо</div>
+                <div class="c3-qsub">Чек-ин в Mood · 240 м · +60 баллов</div>
+              </div>
+              <div class="c3-qgo">Пойти</div>
+            </div>
+
+            <div class="c3-placehead"><span>МЕСТА РЯДОМ</span><span>КУРС</span></div>
+            <div class="c3-places">
+              <div class="c3-place">
+                <div class="c3-thumb" style="background:linear-gradient(150deg,#FFD9A8,#FFB06A);">☕</div>
+                <div>
+                  <div class="c3-pname">Mood Coffee</div>
+                  <div class="c3-pmeta">Кофе · 240 м · открыто</div>
+                </div>
+                <div class="c3-prate hot">0,084</div>
+              </div>
+              <div class="c3-place">
+                <div class="c3-thumb" style="background:linear-gradient(150deg,#BFE4FF,#7FBBFF);">🍣</div>
+                <div>
+                  <div class="c3-pname">Torii Sushi Bar</div>
+                  <div class="c3-pmeta">Ресторан · 610 м · −15%</div>
+                </div>
+                <div class="c3-prate">0,061</div>
+              </div>
+            </div>
+
+            <div class="c3-dock"><b>ДОМ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span></div>
+          </div>
+        </div>
+        <p class="frame-cap">Главная. Сцена питомца сверху, шторка с делами снизу. Баланс — это монеты, которые он несёт.</p>
+      </div>
+
+      <div class="frame-wrap">
+        <div class="phone c3v">
+          <div class="c3v-hero">
+            <div class="c3v-sun"></div>
+            <svg width="104" height="104" viewBox="0 0 132 132" style="position:absolute;left:24px;bottom:26px;" aria-label="Питомец у заведения">
+              <ellipse cx="66" cy="122" rx="30" ry="6" fill="#101733" opacity="0.13"></ellipse>
+              <path d="M40 40 L48 62 M92 40 L84 62" stroke="#2B6EFF" stroke-width="5" stroke-linecap="round"></path>
+              <circle cx="40" cy="38" r="6" fill="#FFB03A"></circle>
+              <circle cx="92" cy="38" r="6" fill="#FFB03A"></circle>
+              <ellipse cx="66" cy="82" rx="40" ry="36" fill="url(#gel2)"></ellipse>
+              <ellipse cx="53" cy="66" rx="13" ry="9" fill="#FFFFFF" opacity="0.42"></ellipse>
+              <path d="M45 78 q8 -7 16 0" stroke="#101733" stroke-width="3.4" fill="none" stroke-linecap="round"></path>
+              <path d="M71 78 q8 -7 16 0" stroke="#101733" stroke-width="3.4" fill="none" stroke-linecap="round"></path>
+              <path d="M56 92 q10 10 20 0" stroke="#101733" stroke-width="3.4" fill="none" stroke-linecap="round"></path>
+              <defs>
+                <radialGradient id="gel2" cx="36%" cy="28%" r="82%">
+                  <stop offset="0%" stop-color="#7FC4FF"></stop>
+                  <stop offset="55%" stop-color="#2B6EFF"></stop>
+                  <stop offset="100%" stop-color="#1B3FC0"></stop>
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="c3v-sheet">
+            <div>
+              <div class="c3v-title">Mood Coffee</div>
+              <div class="c3v-sub">Кофейня · Дорчол, Kralja Petra 18 · 240 м</div>
+            </div>
+            <div class="c3v-rate">
+              <div class="c3v-ratenum">0,084</div>
+              <div class="c3v-ratelab">БАЛЛА ЗА КАЖДЫЙ ДИНАР · ×10 КАК У ПАРТНЁРА</div>
+            </div>
+            <div class="c3v-chips">
+              <span class="c3v-chip">Открыто до 23:00</span>
+              <span class="c3v-chip">Скидка −15%</span>
+              <span class="c3v-chip">3 награды</span>
+              <span class="c3v-chip">Эхо был тут 2 раза</span>
+            </div>
+            <div class="c3v-cta">Пойти с Эхо · +60 за чек-ин</div>
+          </div>
+        </div>
+        <p class="frame-cap">Заведение. Курс — самый крупный объект экрана, питомец физически стоит у входа.</p>
+      </div>
+    </div>
+
+    <div class="closing">
+      <div>
+        <h4>Как притушить</h4>
+        <p>Уменьшить сцену до 120px, снять градиенты с кнопок и оставить питомца только в шапке — получится обычный дружелюбный продукт с маскотом, без «мира».</p>
+      </div>
+      <div>
+        <h4>Что это значит в коде</h4>
+        <p>Самое дорогое: нужен реальный дизайн персонажа с состояниями (позы, реакции), Reanimated-анимации и серверная модель настроения. Зато это единственный вариант, который меняет не только вид, но и механику удержания.</p>
+      </div>
+      <div>
+        <h4>Риск</h4>
+        <p>Персонаж требует ухода — без регулярных новых состояний он быстро «мертвеет». И он смещает продукт в сторону игры: заведениям это может нравиться меньше, чем строгий финансовый тон.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="verdict">
+  <div class="wrap">
+    <p class="eyebrow">Как выбирать</p>
+    <h2>Три ставки, а не три палитры</h2>
+
+    <div class="compare">
+      <table>
+        <thead>
+          <tr>
+            <th>Направление</th>
+            <th>Ставка</th>
+            <th>Роль питомца</th>
+            <th>Работы</th>
+            <th>Кому попадёт</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>После полуночи</b></td>
+            <td>Продукт про цифры, поданные графически</td>
+            <td>Индикатор состояния</td>
+            <td>Низкая</td>
+            <td>18–30, вечер, бары и кофейни</td>
+          </tr>
+          <tr>
+            <td><b>Тираж</b></td>
+            <td>Узнаваемый авторский стиль вместо трендового</td>
+            <td>Печатный персонаж, коллекционный оттиск</td>
+            <td>Средняя</td>
+            <td>Тем, кто ценит вкус: спешелти, бьюти, локальные бренды</td>
+          </tr>
+          <tr>
+            <td><b>Живой квартал</b></td>
+            <td>Удержание через привязанность, а не через баллы</td>
+            <td>Главный герой продукта</td>
+            <td>Высокая</td>
+            <td>Массовая аудитория, ежедневный возврат</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pick">
+      <p>
+        <strong>Если нужен максимальный отрыв от текущего вида при минимальных сроках</strong> — «После полуночи».
+        Он снимает весь скеуоморфизм одним движением и стоит примерно одну неделю работы по экранам.
+      </p>
+      <p>
+        <strong>Если задача — чтобы приложение ни на что не было похоже</strong> — «Тираж». Это единственное
+        направление, которое нельзя повторить сменой палитры: стиль держится на печатной логике,
+        а не на цветах.
+      </p>
+      <p>
+        <strong>Если питомец действительно центральный элемент</strong> — «Живой квартал» единственный, где
+        это правда: в двух других он остаётся украшением. Но он требует художника по персонажу
+        и продуктовой работы над состояниями, а не только редизайна экранов.
+      </p>
+      <p>
+        Рабочая гибридная ставка, если хочется и то и другое: взять композицию и роль питомца
+        из «Живого квартала», а графический язык — из «Тиража». Это даёт персонажный продукт
+        с авторским стилем, но исключает ночную кислоту.
+      </p>
+    </div>
+
+    <div class="sources">
+      Референсы и материалы:
+      <a href="https://fireart.studio/blog/the-best-web-design-trends/">Fireart — Web Design Trends 2026: Tactile Brutalism</a> ·
+      <a href="https://www.fontfabric.com/blog/top-typography-trends-for-2026/">Fontfabric — Top Typography Trends 2026</a> ·
+      <a href="https://www.itsnicethat.com/features/forward-thinking-graphic-trends-2026-graphic-design-120126">It's Nice That — Graphic trends 2026</a> ·
+      <a href="https://www.deconstructoroffun.com/blog/x0hd2ssr80y5n7gv0w967pg7hwd7tl">Deconstructor of Fun — как Finch удерживает через питомца</a> ·
+      <a href="https://yukaichou.com/advanced-gamification/the-pet-companion-design-in-gamification/">Yu-kai Chou — Pet Companion Design</a> ·
+      <a href="https://propellerads.com/blog/adv-best-telegram-mini-apps/">PropellerAds — Best Telegram Mini Apps 2026</a>
+    </div>
+  </div>
+</section>
