@@ -1,0 +1,791 @@
+<title>ayoo pts–01 — система</title>
+<style>
+  :root {
+    --paper: #E9E5DB;
+    --paper-2: #F1EEE6;
+    --ink: #14130F;
+    --mid: #8D8878;
+    --rule: #CBC5B7;
+    --dot-off: #D4CFC2;
+    --sig: #DE2A16;
+
+    --f: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #171613;
+      --paper-2: #1F1E1A;
+      --ink: #EAE6DC;
+      --mid: #8D8878;
+      --rule: #35332C;
+      --dot-off: #2E2C26;
+      --sig: #FF4E36;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #171613;
+    --paper-2: #1F1E1A;
+    --ink: #EAE6DC;
+    --mid: #8D8878;
+    --rule: #35332C;
+    --dot-off: #2E2C26;
+    --sig: #FF4E36;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 26px; }
+  .lab {
+    font-family: var(--f-mono);
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid);
+  }
+  section { border-top: 1px solid var(--ink); padding: 52px 0 60px; }
+  section h2 {
+    margin: 10px 0 0;
+    font-size: clamp(30px, 5.4vw, 54px);
+    line-height: 0.92; letter-spacing: -0.045em; font-weight: 700;
+  }
+  section h2 em { font-style: normal; color: var(--mid); }
+  .intro { margin: 16px 0 0; max-width: 60ch; color: var(--mid); font-size: 16px; }
+  .intro b { color: var(--ink); font-weight: 700; }
+
+  /* Masthead */
+  .mast { border-top: 0; padding: 60px 0 44px; }
+  .mast .rule { height: 1px; background: var(--ink); }
+  .mast h1 {
+    margin: 16px 0 0;
+    font-size: clamp(42px, 8.4vw, 96px);
+    line-height: 0.86; letter-spacing: -0.05em; font-weight: 700;
+  }
+  .mast h1 span { display: block; color: var(--mid); }
+  .mast h1 i { display: block; font-style: normal; color: var(--dot-off); }
+
+  /* Dot + pixel engines */
+  .dotgrid { display: grid; width: 100%; }
+  .dotgrid i { aspect-ratio: 1/1; border-radius: 50%; background: var(--g-off, var(--dot-off)); }
+  .dotgrid i.on { background: var(--g-on, var(--ink)); }
+  .pixgrid { display: grid; width: 100%; gap: 0; }
+  .pixgrid i { aspect-ratio: 1/1; background: transparent; }
+  .pixgrid i.on { background: var(--g-on, var(--ink)); }
+
+  /* Changes list */
+  .changes { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-top: 24px; border-top: 1px solid var(--ink); }
+  .changes > div { padding: 15px 20px 20px 0; border-bottom: 1px solid var(--rule); }
+  .changes h3 { margin: 0 0 6px; font-size: 15px; letter-spacing: -0.015em; }
+  .changes p { margin: 0; font-size: 13.5px; color: var(--mid); line-height: 1.45; }
+  .changes s { color: var(--mid); }
+
+  /* Palette */
+  .pal { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 26px; }
+  .pal > div { width: 116px; }
+  .pal i { display: block; height: 76px; border: 1px solid var(--rule); }
+  .pal b { display: block; font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.05em; margin-top: 7px; font-weight: 400; }
+  .pal span { display: block; font-size: 11px; color: var(--mid); }
+
+  /* Type specimen */
+  .spec3 { margin-top: 28px; }
+  .spec3 div { font-weight: 700; letter-spacing: -0.045em; line-height: 0.98; font-size: clamp(28px, 5vw, 48px); }
+  .t1 { color: var(--ink); }
+  .t2 { color: var(--mid); }
+  .t3 { color: var(--dot-off); }
+  .scale { margin-top: 30px; border-top: 1px solid var(--ink); }
+  .scale > div { display: flex; align-items: baseline; gap: 20px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .scale u { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--mid); text-decoration: none; width: 190px; flex: 0 0 auto; }
+
+  /* Numerals */
+  .nums { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 26px; }
+  .nums > div { width: 54px; }
+  .nums .dotgrid { gap: 2px; }
+  .nums u { display: block; text-align: center; font-family: var(--f-mono); font-size: 9px; color: var(--mid); margin-top: 7px; text-decoration: none; }
+  .numdemo { margin-top: 30px; background: var(--paper-2); border: 1px solid var(--rule); padding: 22px 20px; }
+  .numdemo .dotgrid { gap: 4px; max-width: 420px; }
+
+  /* Icons */
+  .icons {
+    margin-top: 26px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    background: var(--paper-2); border: 1px solid var(--rule);
+  }
+  .icons > div {
+    padding: 22px 16px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  }
+  .icons .pixgrid { width: 54px; }
+  .icons u { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.08em; color: var(--mid); text-decoration: none; text-transform: uppercase; }
+
+  /* Stage */
+  .stage { margin: 40px 0 0; display: flex; gap: 24px; overflow-x: auto; padding-bottom: 14px; }
+  .fw { flex: 0 0 auto; width: 300px; }
+  .cap { margin-top: 12px; font-family: var(--f-mono); font-size: 10px; line-height: 1.55; color: var(--mid); letter-spacing: 0.03em; }
+  .phone { width: 300px; height: 640px; overflow: hidden; position: relative; border-radius: 30px; background: #E9E5DB; color: #14130F; display: flex; flex-direction: column; }
+
+  /* Shared phone chrome */
+  .st {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 20px 6px; font-size: 12px; font-weight: 700;
+  }
+  .st span { font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.1em; color: #8D8878; font-weight: 400; }
+  .hr { height: 1px; background: #14130F; margin: 0 18px; }
+  .hr.thin { background: #CBC5B7; }
+  .stack { padding: 14px 18px 0; }
+  .stack div { font-size: 27px; line-height: 1.0; font-weight: 700; letter-spacing: -0.045em; }
+  .s1 { color: #14130F; }
+  .s2 { color: #9A9488; }
+  .s3 { color: #C6C0B2; }
+  .tabs {
+    margin-top: auto; display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 18px 16px; border-top: 1px solid #14130F;
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: #8D8878;
+  }
+  .tabs b { color: #14130F; font-weight: 400; }
+
+  /* p1 hero field */
+  .hero { flex: 1; padding: 20px 18px 0; overflow: hidden; }
+  .hero .dotgrid { gap: 3px; --g-off: #D4CFC2; --g-on: #14130F; }
+  .heroCap {
+    display: flex; justify-content: space-between;
+    padding: 10px 18px 0;
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: #8D8878;
+  }
+  .heroCap b { color: #DE2A16; font-weight: 400; }
+
+  /* p2 */
+  .pairs { padding: 12px 18px 0; }
+  .pair {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-top: 1px solid #CBC5B7; font-size: 13px;
+  }
+  .pair span { color: #78735F; }
+  .pair b { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
+  .pair b.hi { color: #DE2A16; }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 16px 18px 0; }
+  .key {
+    border-radius: 5px; height: 68px; border: 1px solid #14130F;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 7px;
+  }
+  .key .pixgrid { width: 27px; }
+  .key b { font-size: 8.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+  .k-sig { background: #DE2A16; color: #FFFFFF; --g-on: #FFFFFF; }
+  .k-ink { background: #14130F; color: #F1EEE6; --g-on: #F1EEE6; }
+  .k-pap { background: #F1EEE6; color: #14130F; --g-on: #14130F; }
+  .chanhead {
+    display: flex; justify-content: space-between; padding: 18px 18px 5px;
+    font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; color: #8D8878;
+  }
+  .chan {
+    display: flex; align-items: center; gap: 9px;
+    margin: 0 18px; padding: 7px 0; border-top: 1px solid #CBC5B7;
+  }
+  .chan .pixgrid { width: 18px; flex: 0 0 auto; }
+  .chan em { font-style: normal; font-family: var(--f-mono); font-size: 9px; color: #8D8878; }
+  .chan strong { font-size: 13px; font-weight: 700; letter-spacing: -0.02em; }
+  .chan .dots { flex: 1; border-bottom: 1px dotted #B8B2A2; transform: translateY(-3px); }
+  .chan var { font-style: normal; font-family: var(--f-mono); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .chan var.hi { color: #DE2A16; }
+
+  /* p3 scan */
+  .view {
+    margin: 14px 18px 0; height: 224px; position: relative;
+    background: #DFDACE; border: 1px solid #14130F; overflow: hidden;
+  }
+  .view .pixgrid { position: absolute; width: 20px; --g-on: #DE2A16; }
+  .paper {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) rotate(-2deg);
+    width: 104px; height: 138px; background: rgba(255,255,255,0.55); border: 1px solid rgba(20,19,15,0.22);
+  }
+  .rule-h { position: absolute; left: 34px; right: 34px; top: 50%; height: 1px; background: rgba(222,42,22,0.55); }
+  .readout { padding: 14px 18px 0; font-family: var(--f-mono); font-size: 9.5px; line-height: 1.95; color: #78735F; }
+  .readout b { color: #14130F; font-weight: 400; }
+  .readout i { font-style: normal; color: #DE2A16; }
+  .out { display: flex; align-items: flex-end; justify-content: space-between; padding: 12px 18px 0; }
+  .out .n { font-size: 52px; font-weight: 700; letter-spacing: -0.055em; line-height: 0.82; }
+  .out .go { background: #DE2A16; color: #fff; border: 1px solid #14130F; border-radius: 5px; padding: 12px 16px; font-size: 11px; font-weight: 700; }
+  .meter { display: flex; gap: 2px; height: 20px; padding: 0 18px; margin-top: 12px; }
+  .meter i { flex: 1; background: #CBC5B7; }
+  .meter i.on { background: #14130F; }
+  .meter i.pk { background: #DE2A16; }
+
+  /* p4 tiles */
+  .tiles { padding: 14px 14px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tile { border-radius: 22px; padding: 14px; overflow: hidden; position: relative; }
+  .tile.sig { background: #DE2A16; color: #fff; --g-on: #fff; }
+  .tile.ink { background: #14130F; color: #F1EEE6; --g-on: #F1EEE6; --g-off: rgba(241,238,230,0.13); }
+  .tile.pap { background: #F5F2EA; color: #14130F; --g-on: #14130F; }
+  .tile.wide { grid-column: 1 / -1; }
+  .tilelab { font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; opacity: 0.72; }
+  .tilebig { font-size: 30px; font-weight: 700; letter-spacing: -0.045em; line-height: 1; margin-top: 8px; }
+  .tilesub { font-size: 11px; margin-top: 6px; opacity: 0.8; }
+  .tile .dotgrid { gap: 2.5px; }
+  .toggles { display: flex; gap: 8px; padding: 10px 14px 0; }
+  .tog {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: #F5F2EA; display: flex; align-items: center; justify-content: center;
+  }
+  .tog.on { background: #14130F; --g-on: #F1EEE6; }
+  .tog .pixgrid { width: 18px; }
+
+  /* p5 pet */
+  .petwrap { padding: 16px 18px 0; display: flex; flex-direction: column; align-items: center; }
+  .petstage {
+    width: 100%; background: #F5F2EA; border: 1px solid #14130F;
+    padding: 18px 0 14px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .petname { font-size: 22px; font-weight: 700; letter-spacing: -0.04em; }
+  .petbadge {
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.12em;
+    border: 1px solid #14130F; border-radius: 99px; padding: 4px 10px;
+  }
+  .states { display: flex; gap: 6px; padding: 14px 18px 0; }
+  .state {
+    flex: 1; border: 1px solid #CBC5B7; border-radius: 5px; padding: 8px 6px;
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+  }
+  .state.act { border-color: #14130F; background: #F5F2EA; }
+  .state .dotgrid { width: 44px; gap: 1.5px; }
+  .state u { font-family: var(--f-mono); font-size: 7.5px; letter-spacing: 0.08em; color: #8D8878; text-decoration: none; }
+  .state.act u { color: #14130F; }
+
+  /* Rules */
+  .rules { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; border-top: 1px solid var(--ink); }
+  .rules > div { padding: 14px 22px 18px 0; border-bottom: 1px solid var(--rule); }
+  .rules h4 { margin: 0 0 8px; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 400; color: var(--mid); }
+  .rules ul { margin: 0; padding-left: 17px; font-size: 13.5px; }
+  .rules li { margin-bottom: 5px; }
+  .rules li b { font-weight: 700; }
+
+  .srcs { margin-top: 34px; font-size: 12.5px; color: var(--mid); max-width: 74ch; }
+  :where(a, button):focus-visible { outline: 2px solid var(--sig); outline-offset: 3px; }
+  @media (max-width: 640px) { .mast { padding: 40px 0 26px; } section { padding: 40px 0 46px; } }
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="rule"></div>
+    <p class="lab" style="margin-top:12px;">ayoo · клиентский mini app · направление принято</p>
+    <h1>pts–01<span>точечная</span><i>система</i></h1>
+    <p class="intro">
+      Направление «Прибор» переработано под три новых референса. Главное изменение:
+      <b>точечная матрица перестала быть окошком и стала главным героем экрана</b> —
+      ровно как в будильнике. Плюс тёплый греж вместо холодного серого, пиксельная
+      иконочная система и точечные цифры. Питомец теперь живёт в той же матрице,
+      что и баланс: одна техника, ноль ассетов.
+    </p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="lab">Что изменилось по сравнению с прошлой версией</p>
+    <div class="changes">
+      <div>
+        <h3>Грунт стал тёплым</h3>
+        <p><s>#D6D6D2 холодный серый</s> → <b>#E9E5DB</b>. Все три референса на тёплом бумажном греже — на нём чёрный читается мягче, а красный не кричит.</p>
+      </div>
+      <div>
+        <h3>Матрица стала экраном</h3>
+        <p>Было ЖК-окошко 76px в углу. Стало поле 24×32, которое занимает две трети экрана и уходит под нижний край — как циферблат в будильнике.</p>
+      </div>
+      <div>
+        <h3>Появились точечные цифры</h3>
+        <p>Свой растровый шрифт 5×7. Баланс набирается точками в той же сетке, что и питомец — они физически на одном дисплее.</p>
+      </div>
+      <div>
+        <h3>Иконки стали пиксельными</h3>
+        <p>Ни одной линейной иконки. 16 знаков на сетке 9×9, только прямые углы. Это единственная графика в системе.</p>
+      </div>
+      <div>
+        <h3>Сигнал стал красным</h3>
+        <p><b>#DE2A16</b> вместо оранжевого — по референсу Nothing. Меняется одним токеном: если хочется остаться на фирменном #EA5B0C, это правка в одной строке.</p>
+      </div>
+      <div>
+        <h3>Добавились плитки</h3>
+        <p>Для каталога и виджетов — скруглённые 22px плашки в духе Nothing OS. Единственное место, где радиус больше 5px, и это осознанное исключение.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">01 · Палитра</p>
+    <h2>Шесть значений <em>и ни одного больше</em></h2>
+    <div class="pal">
+      <div><i style="background:#E9E5DB;"></i><b>#E9E5DB</b><span>грунт</span></div>
+      <div><i style="background:#F1EEE6;"></i><b>#F1EEE6</b><span>плашка</span></div>
+      <div><i style="background:#D4CFC2;"></i><b>#D4CFC2</b><span>точка выкл.</span></div>
+      <div><i style="background:#14130F;"></i><b>#14130F</b><span>тушь / точка вкл.</span></div>
+      <div><i style="background:#9A9488;"></i><b>#9A9488</b><span>второй тон</span></div>
+      <div><i style="background:#DE2A16;"></i><b>#DE2A16</b><span>сигнал</span></div>
+    </div>
+    <p class="intro" style="margin-top:22px;">
+      Сигнальный красный имеет право появляться <b>один раз на экран</b>: либо клавиша действия,
+      либо лучший курс, либо срочность. Два красных объекта в одном кадре — ошибка системы.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">02 · Типографика</p>
+    <h2>Одна гарнитура, <em>три тона</em></h2>
+    <p class="intro">
+      Helvetica Neue Bold — системная на iOS и в Telegram-вебвью, ставить ничего не нужно.
+      Иерархию держит тон, а не кегль: заголовок всегда одного размера, меняется только цвет строки.
+    </p>
+    <div class="spec3">
+      <div class="t1">Баланс</div>
+      <div class="t2">2 480 баллов</div>
+      <div class="t3">+180 за сегодня</div>
+    </div>
+    <div class="scale">
+      <div><u>ЗАГОЛОВОК · 27/27 · −4.5%</u><span style="font-size:27px;font-weight:700;letter-spacing:-0.045em;">Лучший курс рядом</span></div>
+      <div><u>ЧИСЛО · 52/43 · −5.5%</u><span style="font-size:38px;font-weight:700;letter-spacing:-0.055em;">+168</span></div>
+      <div><u>ТЕЛО · 13/19</u><span style="font-size:13px;">Курс места · открыто до 23:00</span></div>
+      <div><u>МОНО-ЛЕЙБЛ · 8.5 · +0.14em</u><span class="lab">КАНАЛЫ · РЯДОМ · PTS/RSD</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">03 · Точечные цифры</p>
+    <h2>Растр 5×7 <em>вместо шрифта</em></h2>
+    <p class="intro">
+      Цифры собираются из тех же точек, что и питомец, поэтому дисплей выглядит единым устройством.
+      Это <b>не шрифт, а массив</b>: не нужно ни лицензии, ни загрузки, ни фолбэка — и он одинаково
+      выглядит на iOS, Android и в вебе.
+    </p>
+    <div class="nums" id="numspec"></div>
+    <div class="numdemo">
+      <p class="lab" style="margin:0 0 14px;">БАЛАНС НА ГЛАВНОЙ · 24 КОЛОНКИ</p>
+      <div class="dotgrid" data-num="2480" data-w="24"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">04 · Иконки</p>
+    <h2>Шестнадцать знаков <em>на сетке 9×9</em></h2>
+    <p class="intro">
+      Только прямые углы, только один вес, никаких обводок и скруглений. Иконка рисуется
+      включёнными клетками — тем же способом, что цифры и питомец. За счёт этого набор
+      расширяется кем угодно за пять минут и не расползается по стилю.
+    </p>
+    <div class="icons" id="iconset"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">05 · Экраны</p>
+    <h2>Пять экранов <em>в системе</em></h2>
+
+    <div class="stage">
+      <!-- 1 — Главная -->
+      <div class="fw">
+        <div class="phone">
+          <div class="st"><b>9:41</b><span>AYOO · PTS–01</span></div>
+          <div class="hr"></div>
+          <div class="stack">
+            <div class="s1">Баланс</div>
+            <div class="s2">2 480 баллов</div>
+            <div class="s3">+180 за сегодня</div>
+          </div>
+          <div class="heroCap"><span>ЭХО · УРОВЕНЬ 4</span><b>62 % ДО СЛЕДУЮЩЕГО</b></div>
+          <div class="hero">
+            <div class="dotgrid" data-hero="2480" data-w="24" data-rows="32"></div>
+          </div>
+        </div>
+        <p class="cap">Главная. Стек из трёх тонов и поле 24×32, уходящее под край. Сверху матрицы — баланс точками, ниже — питомец. Один дисплей, два содержания.</p>
+      </div>
+
+      <!-- 2 — Главная, ниже -->
+      <div class="fw">
+        <div class="phone">
+          <div class="st"><b>9:41</b><span>ПРОКРУТКА ВНИЗ</span></div>
+          <div class="hr"></div>
+          <div class="stack">
+            <div class="s1">Рядом</div>
+            <div class="s2">14 партнёров</div>
+          </div>
+          <div class="pairs">
+            <div class="pair"><span>Лучший курс</span><b class="hi">0,084</b></div>
+            <div class="pair"><span>Стрик</span><b>6 дней</b></div>
+            <div class="pair"><span>Welcome сгорит через</span><b>12 дней</b></div>
+            <div class="pair"><span>Активных квестов</span><b>3</b></div>
+          </div>
+          <div class="keys">
+            <div class="key k-sig"><div class="pixgrid" data-icon="scan"></div><b>СКАН<br>ЧЕКА</b></div>
+            <div class="key k-ink"><div class="pixgrid" data-icon="pin"></div><b>ЧЕК-<br>ИН</b></div>
+            <div class="key k-pap"><div class="pixgrid" data-icon="gift"></div><b>НА-<br>ГРАДЫ</b></div>
+            <div class="key k-pap"><div class="pixgrid" data-icon="nav"></div><b>КАР-<br>ТА</b></div>
+          </div>
+          <div class="chanhead"><span>КАНАЛЫ · ДОРЧОЛ</span><span>PTS/RSD</span></div>
+          <div class="chan">
+            <div class="pixgrid" data-icon="coffee"></div>
+            <strong>Mood Coffee</strong><span class="dots"></span><var class="hi">0.084</var>
+          </div>
+          <div class="chan">
+            <div class="pixgrid" data-icon="food"></div>
+            <strong>Torii Sushi</strong><span class="dots"></span><var>0.061</var>
+          </div>
+          <div class="chan">
+            <div class="pixgrid" data-icon="coffee"></div>
+            <strong>Café Willow</strong><span class="dots"></span><var>0.042</var>
+          </div>
+          <div class="chan">
+            <div class="pixgrid" data-icon="beauty"></div>
+            <strong>Luma Beauty</strong><span class="dots"></span><var>0.038</var>
+          </div>
+          <div class="tabs"><b>ГЛАВНАЯ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span></div>
+        </div>
+        <p class="cap">Продолжение главной. Пары «лейбл — значение», четыре клавиши с пиксельными знаками, список каналов с точечным выносителем.</p>
+      </div>
+
+      <!-- 3 — Скан -->
+      <div class="fw">
+        <div class="phone">
+          <div class="st"><b>Скан чека</b><span>MODE 01 / 04</span></div>
+          <div class="hr"></div>
+          <div class="meter">
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="pk"></i><i></i><i></i><i></i>
+          </div>
+          <div class="view">
+            <div class="paper"></div>
+            <div class="rule-h"></div>
+            <div class="pixgrid" data-icon="corner-tl" style="left:14px;top:14px;"></div>
+            <div class="pixgrid" data-icon="corner-tr" style="right:14px;top:14px;"></div>
+            <div class="pixgrid" data-icon="corner-bl" style="left:14px;bottom:14px;"></div>
+            <div class="pixgrid" data-icon="corner-br" style="right:14px;bottom:14px;"></div>
+          </div>
+          <div class="readout">
+            OCR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>ГОТОВО · 4 ПОЗИЦИИ</b><br>
+            МЕСТО&nbsp;&nbsp;&nbsp;&nbsp;<b>MOOD COFFEE</b><br>
+            КУРС&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>0.084</b> <i>×10 ПАРТНЁР</i>
+          </div>
+          <div class="out">
+            <div>
+              <p class="lab" style="margin:0;">К НАЧИСЛЕНИЮ</p>
+              <div class="n">+168</div>
+            </div>
+            <div class="go">ЗАПИСАТЬ</div>
+          </div>
+          <div class="tabs"><span>ОТМЕНА</span><b>ВВЕСТИ ВРУЧНУЮ</b><span>ПОМОЩЬ</span></div>
+        </div>
+        <p class="cap">Скан. Камера подана как измерение: уровень сигнала, пиксельные углы кадра, моно-сводка, красная клавиша записи.</p>
+      </div>
+
+      <!-- 4 — Награды -->
+      <div class="fw">
+        <div class="phone">
+          <div class="st"><b>9:41</b><span>НАГРАДЫ</span></div>
+          <div class="hr"></div>
+          <div class="stack">
+            <div class="s1">Что взять</div>
+            <div class="s2">на 2 480</div>
+          </div>
+          <div class="tiles">
+            <div class="tile ink wide">
+              <div class="tilelab">ДОСТУПНО СЕЙЧАС · MOOD COFFEE</div>
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;">
+                <div>
+                  <div class="tilebig">Фильтр<br>бесплатно</div>
+                  <div class="tilesub">Kralja Petra 18 · 240 м</div>
+                </div>
+                <div style="width:104px;flex:0 0 auto;">
+                  <div class="dotgrid" data-num="450" data-w="17" style="gap:2px;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="tile sig">
+              <div class="pixgrid" data-icon="gift" style="width:26px;"></div>
+              <div class="tilebig">900</div>
+              <div class="tilesub">Сет на двоих −50%<br>Torii Sushi</div>
+            </div>
+            <div class="tile pap">
+              <div class="pixgrid" data-icon="beauty" style="width:26px;"></div>
+              <div class="tilebig">1 200</div>
+              <div class="tilesub">Уход за руками<br>Luma Beauty</div>
+            </div>
+          </div>
+          <div class="toggles">
+            <div class="tog on"><div class="pixgrid" data-icon="coffee"></div></div>
+            <div class="tog"><div class="pixgrid" data-icon="food"></div></div>
+            <div class="tog"><div class="pixgrid" data-icon="beauty"></div></div>
+            <div class="tog"><div class="pixgrid" data-icon="shop"></div></div>
+          </div>
+          <div class="tabs"><span>ГЛАВНАЯ</span><span>ЗАРАБОТАТЬ</span><b>НАГРАДЫ</b><span>КАРТА</span><span>Я</span></div>
+        </div>
+        <p class="cap">Награды. Плитки в духе Nothing OS: чёрная — доступное сейчас, цена набрана точками; круглые переключатели категорий с пиксельными знаками.</p>
+      </div>
+
+      <!-- 5 — Питомец -->
+      <div class="fw">
+        <div class="phone">
+          <div class="st"><b>9:41</b><span>ЭХО · PET 04</span></div>
+          <div class="hr"></div>
+          <div class="petwrap">
+            <div class="petstage">
+              <div style="width:150px;">
+                <div class="dotgrid" data-pet="1" style="--g-off:#DDD8CB;--g-on:#14130F;gap:3px;"></div>
+              </div>
+              <div class="petname">Эхо</div>
+              <div class="petbadge">УРОВЕНЬ 4 · БОДР</div>
+            </div>
+          </div>
+          <div class="states">
+            <div class="state act"><div class="dotgrid" data-face="ok" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>БОДР</u></div>
+            <div class="state"><div class="dotgrid" data-face="hungry" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>СКУЧАЕТ</u></div>
+            <div class="state"><div class="dotgrid" data-face="happy" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>СЫТ</u></div>
+            <div class="state"><div class="dotgrid" data-face="sleep" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>СПИТ</u></div>
+          </div>
+          <div class="pairs">
+            <div class="pair"><span>До следующего уровня</span><b class="hi">62 %</b></div>
+            <div class="pair"><span>Чек-инов за неделю</span><b>4</b></div>
+            <div class="pair"><span>Последний раз кормили</span><b>2 ч назад</b></div>
+          </div>
+          <div class="tabs"><span>ГЛАВНАЯ</span><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><b>Я</b></div>
+        </div>
+        <p class="cap">Питомец. Тот же растр крупно, состояния — четыре кадра 11×9. Меняется массив, а не картинка: новые состояния добавляются строкой кода.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">06 · Правила</p>
+    <h2>Что держит систему <em>вместе</em></h2>
+    <div class="rules">
+      <div>
+        <h4>Всегда</h4>
+        <ul>
+          <li>Радиусы только <b>0, 5 и 22</b>. 22 — исключительно для плиток каталога.</li>
+          <li>Разделитель — <b>линия 1px</b>, а не отступ и не карточка.</li>
+          <li>Числа — <b>tabular-nums</b>, чтобы столбцы курсов не плясали.</li>
+          <li>Любая графика собирается из клеток: иконка, цифра, питомец.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Никогда</h4>
+        <ul>
+          <li>Ни одной <b>тени</b> и ни одного градиента. Совсем.</li>
+          <li>Не больше <b>одного красного объекта</b> на экран.</li>
+          <li>Никаких линейных иконок из библиотек — они ломают растр.</li>
+          <li>Не больше <b>трёх тонов</b> в заголовочном стеке.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Что удаляется из кода</h4>
+        <ul>
+          <li><b>neu.tsx</b> целиком — NeuCard, VolumeGradient, LavaLampSurface.</li>
+          <li>Перфорация, штрих-код и весь «билет» на главной.</li>
+          <li>Режим <b>rainbow</b> и второй набор градиентов из theme.ts.</li>
+          <li>Шрифт Climate Crisis — заменяется системной Helvetica Neue.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Что появляется</h4>
+        <ul>
+          <li><b>DotMatrix</b> — компонент, рисующий массив строк точками.</li>
+          <li><b>PixIcon</b> — то же самое квадратами, набор из 16 знаков.</li>
+          <li><b>digits()</b> — сборка числа из растра 5×7.</li>
+          <li>Один плоский токен-сет вместо двух тем.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="intro" style="margin-top:26px;">
+      Ни один из этих компонентов не требует изображений, шрифтов или анимационных библиотек —
+      только <b>View</b> и цвет. Питомец, иконки и цифры весят ноль килобайт и одинаково
+      выглядят на всех платформах.
+    </p>
+    <div class="srcs">
+      Референсы: три ваших скриншота (сняты попиксельно) · Nothing OS 3.0 — точечный растр и плитки ·
+      Teenage Engineering OP–1 / EP–133 — клавиши и шелкография · пиксельный иконочный набор на сетке 9×9.
+    </div>
+  </div>
+</section>
+
+<script>
+  /* ── 5×7 растр цифр ───────────────────────────────────────── */
+  var FONT = {
+    "0": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+    "1": ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
+    "2": [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
+    "3": [".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###."],
+    "4": ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
+    "5": ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
+    "6": ["..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."],
+    "7": ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
+    "8": [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
+    "9": [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."],
+    " ": [".....", ".....", ".....", ".....", ".....", ".....", "....."]
+  };
+
+  /* ── Питомец 16×13 ────────────────────────────────────────── */
+  var PET = [
+    "...#........#...",
+    "....#......#....",
+    "....########....",
+    "...##########...",
+    "..############..",
+    "..##..####..##..",
+    "..##..####..##..",
+    "..############..",
+    "..############..",
+    "..###......###..",
+    "..############..",
+    "...##########...",
+    "....###..###...."
+  ];
+
+  /* ── Состояния 11×9 ───────────────────────────────────────── */
+  var FACES = {
+    ok:     ["..#######..", ".#########.", "##.##.##.##", "##.##.##.##", "###########", "##.......##", "###########", ".#########.", "..#######.."],
+    hungry: ["..#######..", ".#########.", "##.##.##.##", "##.##.##.##", "###########", "####...####", "###########", ".#########.", "..#######.."],
+    happy:  ["..#######..", ".#########.", "###.###.###", "##.#.#.#.##", "###########", "##.......##", "##.#####.##", ".#########.", "..#######.."],
+    sleep:  ["..#######..", ".#########.", "###########", "##.##.##.##", "###########", "###.###.###", "###########", ".#########.", "..#######.."]
+  };
+
+  /* ── Иконки 9×9 ───────────────────────────────────────────── */
+  var ICONS = {
+    scan:   ["###...###", "#.......#", ".........", ".........", "#########", ".........", ".........", "#.......#", "###...###"],
+    pin:    ["..#####..", ".#######.", "#########", "###...###", "###...###", "###...###", ".#######.", "..#####..", "...###..."],
+    gift:   ["..#...#..", "...###...", "#########", "#..###..#", "#..###..#", "#..###..#", "#..###..#", "#..###..#", "#########"],
+    nav:    ["....#....", "...###...", "...###...", "..#####..", "..#####..", ".#######.", ".##...##.", "##.....##", "#.......#"],
+    me:     ["...###...", "..#####..", "..#####..", "...###...", ".........", ".#######.", "#########", "#########", "#########"],
+    coin:   ["..#####..", ".#######.", "##.....##", "#..###..#", "#..###..#", "#..###..#", "##.....##", ".#######.", "..#####.."],
+    streak: ["....#....", "...##....", "..###....", "..####...", ".#####...", ".######..", "#########", "#########", ".#######."],
+    coffee: [".........", "#######..", "#.....#..", "#.....###", "#.....#.#", "#.....###", "#.....#..", ".#####...", "........."],
+    food:   ["..#...#..", "..#...#..", "..#...#..", ".........", "#########", "#########", ".#######.", "..#####..", "...###..."],
+    beauty: ["....#....", "...###...", "..#####..", ".#######.", "#########", "#########", "#########", ".#######.", "..#####.."],
+    shop:   ["..#####..", "..#...#..", "#########", "#.......#", "#.......#", "#..###..#", "#.......#", "#.......#", "#########"],
+    friends:[".........", "..##.##..", "..##.##..", ".........", ".#######.", "#########", "#########", "#########", "........."],
+    qr:     ["###...###", "#.#.#.#.#", "###...###", ".....#...", "..#.#.#..", ".....#...", "###...###", "#.#.#.#.#", "###...###"],
+    clock:  ["..#####..", ".#..#..#.", "#...#...#", "#...#...#", "#...####.", "#.......#", "#.......#", ".#.....#.", "..#####.."],
+    arrow:  [".........", "....##...", ".....##..", "#########", "#########", ".....##..", "....##...", ".........", "........."],
+    plus:   [".........", "...###...", "...###...", "#########", "#########", "#########", "...###...", "...###...", "........."],
+    /* углы кадра для экрана скана */
+    "corner-tl": ["####.....", "####.....", "####.....", "##.......", "##.......", ".........", ".........", ".........", "........."],
+    "corner-tr": [".....####", ".....####", ".....####", ".......##", ".......##", ".........", ".........", ".........", "........."],
+    "corner-bl": [".........", ".........", ".........", ".........", "##.......", "##.......", "####.....", "####.....", "####....."],
+    "corner-br": [".........", ".........", ".........", ".........", ".......##", ".......##", ".....####", ".....####", ".....####"]
+  };
+
+  var ICON_LABELS = [
+    ["scan", "скан"], ["pin", "чек-ин"], ["gift", "награда"], ["nav", "карта"],
+    ["me", "профиль"], ["coin", "баллы"], ["streak", "стрик"], ["clock", "срок"],
+    ["coffee", "кофе"], ["food", "еда"], ["beauty", "бьюти"], ["shop", "магазин"],
+    ["friends", "друзья"], ["qr", "код"], ["arrow", "дальше"], ["plus", "добавить"]
+  ];
+
+  function center(row, width) {
+    var pad = width - row.length;
+    if (pad <= 0) return row.slice(0, width);
+    var left = Math.floor(pad / 2);
+    return new Array(left + 1).join(".") + row + new Array(pad - left + 1).join(".");
+  }
+  function empty(width) { return new Array(width + 1).join("."); }
+
+  function digits(text) {
+    var rows = ["", "", "", "", "", "", ""];
+    text.split("").forEach(function (ch, i) {
+      var g = FONT[ch] || FONT[" "];
+      for (var r = 0; r < 7; r++) rows[r] += (i ? "." : "") + g[r];
+    });
+    return rows;
+  }
+
+  function paint(el, rows, shape) {
+    var w = rows[0].length;
+    el.style.gridTemplateColumns = "repeat(" + w + ", 1fr)";
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (row) {
+      row.split("").forEach(function (ch) {
+        var c = document.createElement("i");
+        if (ch === "#") c.className = "on";
+        frag.appendChild(c);
+      });
+    });
+    el.appendChild(frag);
+    if (shape) el.dataset.shape = shape;
+  }
+
+  /* Явные растры */
+  document.querySelectorAll("[data-pat]").forEach(function (el) {
+    paint(el, el.dataset.pat.trim().split("\n").map(function (r) { return r.trim(); }));
+  });
+
+  /* Число точками */
+  document.querySelectorAll("[data-num]").forEach(function (el) {
+    var w = parseInt(el.dataset.w, 10) || 24;
+    paint(el, digits(el.dataset.num).map(function (r) { return center(r, w); }));
+  });
+
+  /* Главный экран: число сверху, питомец снизу */
+  document.querySelectorAll("[data-hero]").forEach(function (el) {
+    var w = parseInt(el.dataset.w, 10) || 24;
+    var total = parseInt(el.dataset.rows, 10) || 32;
+    var rows = [empty(w)];
+    digits(el.dataset.hero).forEach(function (r) { rows.push(center(r, w)); });
+    rows.push(empty(w), empty(w));
+    PET.forEach(function (r) { rows.push(center(r, w)); });
+    while (rows.length < total) rows.push(empty(w));
+    paint(el, rows.slice(0, total));
+  });
+
+  /* Питомец отдельно */
+  document.querySelectorAll("[data-pet]").forEach(function (el) { paint(el, PET); });
+
+  /* Состояния */
+  document.querySelectorAll("[data-face]").forEach(function (el) {
+    paint(el, FACES[el.dataset.face] || FACES.ok);
+  });
+
+  /* Иконки */
+  document.querySelectorAll("[data-icon]").forEach(function (el) {
+    paint(el, ICONS[el.dataset.icon] || ICONS.plus);
+  });
+
+  /* Спецификация цифр */
+  var ns = document.getElementById("numspec");
+  if (ns) {
+    "0123456789".split("").forEach(function (d) {
+      var box = document.createElement("div");
+      var g = document.createElement("div");
+      g.className = "dotgrid";
+      paint(g, FONT[d]);
+      var u = document.createElement("u");
+      u.textContent = d;
+      box.appendChild(g); box.appendChild(u);
+      ns.appendChild(box);
+    });
+  }
+
+  /* Набор иконок */
+  var is = document.getElementById("iconset");
+  if (is) {
+    ICON_LABELS.forEach(function (pair) {
+      var box = document.createElement("div");
+      var g = document.createElement("div");
+      g.className = "pixgrid";
+      paint(g, ICONS[pair[0]]);
+      var u = document.createElement("u");
+      u.textContent = pair[1];
+      box.appendChild(g); box.appendChild(u);
+      is.appendChild(box);
+    });
+  }
+</script>
