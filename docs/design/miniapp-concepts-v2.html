@@ -1,0 +1,976 @@
+<title>ayoo miniapp — 3 концепции v2 · Swiss / Teenage Engineering</title>
+<style>
+  /* ── Shell tokens ───────────────────────────────────────────── */
+  :root {
+    --ground: #E2E2E0;
+    --panel: #EAEAE8;
+    --ink: #0A0A0A;
+    --mid: #8B8B87;
+    --light: #BFBFBB;
+    --rule: #C4C4C0;
+    --signal: #FF5500;
+
+    --f: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #171716;
+      --panel: #1F1F1E;
+      --ink: #E8E8E4;
+      --mid: #8B8B85;
+      --light: #56564F;
+      --rule: #33332F;
+      --signal: #FF6B24;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #171716;
+    --panel: #1F1F1E;
+    --ink: #E8E8E4;
+    --mid: #8B8B85;
+    --light: #56564F;
+    --rule: #33332F;
+    --signal: #FF6B24;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 26px; }
+
+  .lab {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  /* ── Masthead ───────────────────────────────────────────────── */
+  .mast { padding: 64px 0 34px; }
+  .mast-rule { height: 1px; background: var(--ink); }
+  .mast h1 {
+    margin: 16px 0 0;
+    font-size: clamp(40px, 8vw, 92px);
+    line-height: 0.88;
+    letter-spacing: -0.045em;
+    font-weight: 700;
+  }
+  .mast h1 span { color: var(--light); display: block; }
+  .mast .lede { margin: 24px 0 0; max-width: 58ch; color: var(--mid); }
+  .mast .lede b { color: var(--ink); font-weight: 700; }
+
+  /* ── Reading the references ─────────────────────────────────── */
+  .read { padding: 40px 0 56px; }
+  .read-grid {
+    margin-top: 20px;
+    display: grid;
+    gap: 0;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    border-top: 1px solid var(--ink);
+  }
+  .read-grid > div { padding: 16px 18px 20px 0; border-bottom: 1px solid var(--rule); }
+  .read-grid h3 { margin: 0 0 6px; font-size: 15px; letter-spacing: -0.01em; }
+  .read-grid p { margin: 0; font-size: 13.5px; color: var(--mid); line-height: 1.45; }
+
+  .swatches { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 2px; }
+  .sw { width: 92px; }
+  .sw i { display: block; height: 54px; }
+  .sw span { display: block; font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.06em; color: var(--mid); margin-top: 6px; }
+
+  /* ── Concept bands ──────────────────────────────────────────── */
+  .band { padding: 66px 0 74px; border-top: 1px solid var(--ink); }
+  .band-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .band h2 {
+    margin: 10px 0 0;
+    font-size: clamp(34px, 6.4vw, 68px);
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+    font-weight: 700;
+  }
+  .band h2 em { font-style: normal; color: var(--mid); }
+  .mood { margin: 16px 0 0; max-width: 56ch; font-size: 17px; color: var(--mid); }
+  .mood b { color: var(--ink); font-weight: 700; }
+
+  .refs { margin: 24px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .refs b {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    padding: 5px 8px;
+    border: 1px solid var(--rule);
+    color: var(--mid);
+  }
+
+  .spec {
+    margin: 36px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    border-top: 1px solid var(--ink);
+  }
+  .spec > div { padding: 14px 20px 18px 0; border-bottom: 1px solid var(--rule); }
+  .spec h4 {
+    margin: 0 0 6px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 400;
+    color: var(--mid);
+  }
+  .spec p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+
+  .stage { margin: 44px 0 0; display: flex; gap: 26px; overflow-x: auto; padding-bottom: 14px; }
+  .fw { flex: 0 0 auto; width: 300px; }
+  .cap { margin-top: 12px; font-family: var(--f-mono); font-size: 10px; line-height: 1.5; color: var(--mid); letter-spacing: 0.03em; }
+
+  .phone { width: 300px; height: 640px; overflow: hidden; position: relative; border-radius: 30px; }
+
+  .notes {
+    margin: 40px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    border-top: 1px solid var(--ink);
+  }
+  .notes > div { padding: 14px 20px 18px 0; border-bottom: 1px solid var(--rule); }
+  .notes h4 {
+    margin: 0 0 6px;
+    font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; font-weight: 400; color: var(--mid);
+  }
+  .notes p { margin: 0; font-size: 13.5px; }
+
+  /* ── Dot matrix engine ──────────────────────────────────────── */
+  .dotgrid { display: grid; width: 100%; }
+  .dotgrid i { aspect-ratio: 1 / 1; border-radius: 50%; background: var(--dot-off, #C9C9C5); }
+  .dotgrid i.on { background: var(--dot-on, #0A0A0A); }
+
+  /* ═══════ A · ПРИБОР ═══════════════════════════════════════ */
+  .pA {
+    background: #D6D6D2;
+    color: #0A0A0A;
+    font-family: var(--f);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+  .pA-bar {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 16px 16px 9px;
+  }
+  .pA-mark { font-size: 15px; font-weight: 700; letter-spacing: -0.03em; }
+  .pA-mark sup { font-size: 8px; font-weight: 400; letter-spacing: 0.1em; vertical-align: super; color: #6E6E6A; }
+  .pA-sn { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: #6E6E6A; }
+  .pA-hr { height: 1px; background: #0A0A0A; margin: 0 16px; }
+  .pA-hr.thin { background: #B4B4AF; }
+
+  .pA-screen {
+    margin: 12px 16px 0;
+    background: #C3C7BC;
+    border: 1px solid #0A0A0A;
+    padding: 11px 12px 12px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .pA-scrlab { font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; color: #4A4E44; }
+  .pA-scrnum {
+    font-size: 50px; line-height: 0.84; font-weight: 700;
+    letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+  }
+  .pA-scrsub { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.06em; color: #4A4E44; margin-top: 7px; }
+  .pA-lcd { width: 76px; flex: 0 0 auto; }
+  .pA-lcd .dotgrid { --dot-off: rgba(10,10,10,0.09); --dot-on: #16180F; gap: 1.5px; }
+  .pA-lcdlab { font-family: var(--f-mono); font-size: 7.5px; letter-spacing: 0.1em; color: #4A4E44; text-align: center; margin-top: 5px; }
+
+  .pA-knobs { display: flex; gap: 0; margin: 14px 16px 0; }
+  .pA-knob { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .pA-dial {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #E4E4E0; border: 1px solid #0A0A0A;
+    position: relative;
+  }
+  .pA-dial::after {
+    content: ""; position: absolute; left: 50%; top: 4px;
+    width: 1.5px; height: 16px; background: #0A0A0A;
+    transform-origin: 50% 100%;
+  }
+  .pA-dial.d1::after { transform: translateX(-50%) rotate(38deg); }
+  .pA-dial.d2::after { transform: translateX(-50%) rotate(-52deg); }
+  .pA-dial.d3::after { transform: translateX(-50%) rotate(122deg); }
+  .pA-knoblab { font-family: var(--f-mono); font-size: 7.5px; letter-spacing: 0.08em; color: #55554F; text-align: center; line-height: 1.3; }
+  .pA-knoblab b { display: block; font-family: var(--f); font-size: 13px; letter-spacing: -0.02em; color: #0A0A0A; }
+
+  .pA-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 16px 16px 0; }
+  .pA-key {
+    border-radius: 5px; height: 52px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 6px 7px;
+    border: 1px solid #0A0A0A;
+  }
+  .pA-key u { font-family: var(--f-mono); font-size: 7.5px; text-decoration: none; opacity: 0.7; }
+  .pA-key b { font-size: 9.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.05; }
+  .k-orange { background: #FF5500; color: #FFFFFF; }
+  .k-black { background: #0A0A0A; color: #FFFFFF; }
+  .k-white { background: #EDEDE9; color: #0A0A0A; }
+
+  .pA-listhead {
+    display: flex; justify-content: space-between;
+    margin: 18px 16px 6px;
+    font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; color: #6E6E6A;
+  }
+  .pA-row {
+    display: flex; align-items: baseline; gap: 8px;
+    margin: 0 16px; padding: 7px 0;
+    border-top: 1px solid #B4B4AF;
+  }
+  .pA-idx { font-family: var(--f-mono); font-size: 9px; color: #6E6E6A; width: 16px; flex: 0 0 auto; }
+  .pA-nm { font-size: 13px; font-weight: 700; letter-spacing: -0.02em; }
+  .pA-dot { flex: 1; border-bottom: 1px dotted #A9A9A4; transform: translateY(-3px); }
+  .pA-val { font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .pA-val.hi { color: #FF5500; }
+  .pA-foot {
+    margin-top: auto;
+    display: flex; justify-content: space-between;
+    padding: 10px 16px 16px;
+    border-top: 1px solid #0A0A0A;
+    font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.1em; color: #6E6E6A;
+  }
+  .pA-foot b { color: #0A0A0A; font-weight: 400; }
+
+  /* A — screen 2 */
+  .pA2 { background: #D6D6D2; display: flex; flex-direction: column; }
+  .pA2-meter { margin: 14px 16px 0; display: flex; gap: 2px; height: 26px; }
+  .pA2-meter i { flex: 1; background: #BEBEB9; }
+  .pA2-meter i.on { background: #0A0A0A; }
+  .pA2-meter i.pk { background: #FF5500; }
+  .pA2-view {
+    margin: 14px 16px 0; height: 196px;
+    background: #C3C7BC; border: 1px solid #0A0A0A;
+    position: relative; overflow: hidden;
+  }
+  .pA2-frame { position: absolute; inset: 22px; border: 1px solid rgba(10,10,10,0.35); }
+  .pA2-cross { position: absolute; background: #FF5500; }
+  .pA2-paper {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%,-50%) rotate(-2deg);
+    width: 96px; height: 128px; background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(10,10,10,0.25);
+  }
+  .pA2-read { margin: 14px 16px 0; font-family: var(--f-mono); font-size: 9.5px; line-height: 1.9; color: #55554F; }
+  .pA2-read b { color: #0A0A0A; font-weight: 400; }
+  .pA2-read span { color: #FF5500; }
+  .pA2-out { margin: 12px 16px 0; display: flex; align-items: flex-end; justify-content: space-between; }
+  .pA2-num { font-size: 54px; font-weight: 700; letter-spacing: -0.055em; line-height: 0.8; }
+  .pA2-go {
+    background: #FF5500; color: #fff; border: 1px solid #0A0A0A; border-radius: 5px;
+    padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  }
+
+  /* ═══════ B · ТАБЛО ════════════════════════════════════════ */
+  .pB {
+    background: #E7E7E5; color: #0A0A0A;
+    display: flex; flex-direction: column;
+  }
+  .pB-bar {
+    display: flex; justify-content: space-between;
+    padding: 15px 18px 10px;
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.12em; color: #8B8B87;
+  }
+  .pB-hr { height: 1px; background: #0A0A0A; margin: 0 18px; }
+  .pB-stack { padding: 16px 18px 0; }
+  .pB-stack div { font-size: 34px; line-height: 0.98; font-weight: 700; letter-spacing: -0.045em; }
+  .pB-l1 { color: #0A0A0A; }
+  .pB-l2 { color: #9A9A96; font-variant-numeric: tabular-nums; }
+  .pB-l3 { color: #C3C3BF; }
+
+  .pB-field { padding: 18px 18px 0; }
+  .pB-field .dotgrid { --dot-off: #CFCFCB; --dot-on: #0A0A0A; gap: 4px; }
+  .pB-fieldcap {
+    display: flex; justify-content: space-between;
+    margin-top: 12px;
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: #8B8B87;
+  }
+  .pB-fieldcap b { color: #0A0A0A; font-weight: 400; }
+
+  .pB-specs { padding: 14px 18px 0; }
+  .pB-srow {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 0; border-top: 1px solid #C9C9C5;
+    font-size: 12.5px;
+  }
+  .pB-srow span { color: #777773; }
+  .pB-srow b { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  .pB-flood {
+    margin-top: auto;
+    background: #FFD400;
+    padding: 16px 18px 20px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .pB-floodlab { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.12em; }
+  .pB-floodbig { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; margin-top: 6px; }
+  .pB-arrow { font-size: 30px; line-height: 1; }
+
+  /* B — screen 2 */
+  .pB2 { background: #FFFFFF; color: #0A0A0A; display: flex; flex-direction: column; position: relative; }
+  .pB2-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 18px; font-size: 12px; font-weight: 700;
+  }
+  .pB2-route {
+    display: flex; align-items: center; justify-content: center; gap: 18px;
+    padding: 22px 18px 0;
+  }
+  .pB2-code { font-size: 40px; font-weight: 700; letter-spacing: -0.05em; line-height: 1; }
+  .pB2-city { font-size: 10px; color: #8B8B87; text-align: center; margin-bottom: 5px; }
+  .pB2-time { font-size: 10px; color: #8B8B87; text-align: center; margin-top: 5px; }
+  .pB2-arrow { font-size: 22px; }
+  .pB2-name {
+    padding: 34px 18px 0;
+    font-size: 34px; font-weight: 700; letter-spacing: -0.045em; line-height: 0.95;
+  }
+  .pB2-circle {
+    position: absolute; z-index: 1;
+    left: 50%; bottom: 44px; transform: translateX(-50%);
+    width: 250px; height: 250px; border-radius: 50%;
+    background: #FFD400;
+  }
+  .pB2-grid {
+    position: relative; z-index: 2;
+    padding: 16px 18px 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px;
+  }
+  .pB2-cell { border-top: 1px solid #0A0A0A; padding: 7px 0 11px; }
+  .pB2-cell u { display: block; font-size: 9px; text-decoration: none; color: #55554F; letter-spacing: 0.04em; }
+  .pB2-cell b { display: block; font-size: 16px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; }
+  .pB2-code128 {
+    position: relative; z-index: 2;
+    margin: auto 18px 22px; display: flex; gap: 1.5px; height: 40px; align-items: stretch;
+  }
+  .pB2-code128 i { background: #0A0A0A; }
+
+  /* ═══════ C · ЦЕХ ══════════════════════════════════════════ */
+  .grain::before {
+    content: ""; position: absolute; inset: 0; z-index: 9; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.20; mix-blend-mode: multiply;
+  }
+  .pC { background: #F0511F; color: #100D0B; display: flex; flex-direction: column; }
+  .pC-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 16px 0; font-size: 11px; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .pC-menu { display: flex; align-items: center; gap: 6px; }
+  .pC-menu i { width: 11px; height: 11px; border-radius: 50%; background: #100D0B; display: block; }
+  .pC-hero { padding: 10px 16px 0; }
+  .pC-kick { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.16em; }
+  .pC-title {
+    font-size: 54px; line-height: 0.84; font-weight: 700; letter-spacing: -0.05em;
+    margin-top: 8px;
+  }
+  .alt-flip { display: inline-block; transform: scaleX(-1); }
+  .alt-tilt { display: inline-block; transform: rotate(-11deg) scale(1.06); }
+
+  .pC-blob { position: relative; height: 122px; margin: 4px 0 0; }
+  .pC-card {
+    background: #100D0B; color: #F2EFEA;
+    border-radius: 14px; margin: 6px 16px 0; padding: 13px 14px;
+  }
+  .pC-cardlab { font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; color: #9A938C; }
+  .pC-cardnum { font-size: 44px; font-weight: 700; letter-spacing: -0.05em; line-height: 0.9; margin-top: 5px; color: #FF7A45; }
+  .pC-cardrow { display: flex; justify-content: space-between; align-items: baseline; margin-top: 9px; font-size: 11px; }
+  .pC-cardrow span { color: #9A938C; }
+  .pC-duo { display: flex; gap: 8px; margin: 8px 16px 0; }
+  .pC-tile {
+    flex: 1; border-radius: 14px; padding: 12px 12px 14px;
+    background: #EFEAE1; color: #100D0B;
+  }
+  .pC-tile.dark { background: #100D0B; color: #EFEAE1; }
+  .pC-tilenum { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+  .pC-tilelab { font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.12em; margin-top: 7px; opacity: 0.7; }
+  .pC-foot {
+    margin-top: auto; display: flex; justify-content: space-between;
+    padding: 12px 16px 18px;
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em;
+  }
+  .pC-foot b { font-weight: 400; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* C — screen 2 */
+  .pC2 { background: #DDD7CC; color: #100D0B; display: flex; flex-direction: column; }
+  .pC2-head { padding: 16px 16px 0; }
+  .pC2-h {
+    font-size: 40px; font-weight: 700; letter-spacing: -0.05em; line-height: 0.88; margin-top: 8px;
+  }
+  .pC2-list { padding: 14px 16px 0; display: flex; flex-direction: column; gap: 8px; }
+  .pC2-item {
+    background: #100D0B; color: #EFEAE1; border-radius: 14px;
+    padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+  }
+  .pC2-item.o { background: #F0511F; color: #100D0B; }
+  .pC2-cost { font-size: 24px; font-weight: 700; letter-spacing: -0.04em; }
+  .pC2-t { font-size: 12.5px; font-weight: 700; }
+  .pC2-s { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.08em; opacity: 0.65; margin-top: 3px; }
+  .pC2-go { margin-left: auto; font-size: 17px; }
+
+  /* ── Verdict ────────────────────────────────────────────────── */
+  .verdict { padding: 60px 0 90px; border-top: 1px solid var(--ink); }
+  .verdict h2 { margin: 10px 0 0; font-size: clamp(28px, 4.6vw, 46px); letter-spacing: -0.045em; line-height: 0.95; font-weight: 700; }
+  .cmp { margin-top: 30px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 680px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 11px 16px 11px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); font-weight: 400; border-bottom-color: var(--ink); }
+  .pick { margin-top: 32px; max-width: 64ch; }
+  .pick p { margin: 0 0 12px; color: var(--mid); }
+  .pick p:last-child { margin-bottom: 0; }
+  .pick b { color: var(--ink); }
+  .srcs { margin-top: 40px; font-size: 12.5px; color: var(--mid); max-width: 74ch; }
+  .srcs a { color: var(--signal); text-decoration: none; }
+  .srcs a:hover, .srcs a:focus-visible { text-decoration: underline; }
+  :where(a, button):focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+
+  @media (max-width: 640px) { .mast { padding: 44px 0 26px; } .band { padding: 46px 0 54px; } }
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="mast-rule"></div>
+    <p class="lab" style="margin-top:12px;">ayoo · клиентский mini app · заход 2</p>
+    <h1>Прибор,<br>а не<br><span>приложение</span></h1>
+    <p class="lede">
+      Первый заход промахнулся. По вашим референсам и Teenage Engineering видно другое:
+      <b>швейцарская типографика, тёплый серый грунт, один сигнальный цвет как заливка,
+      волосяные линейки с парами «лейбл — значение», гигантские числа и точечные матрицы.</b>
+      Не «уйти от гаджета» — а уйти от <i>имитации</i> гаджета к языку измерительного прибора.
+      Питомец остаётся в каждом направлении и в каждом решён разной техникой.
+    </p>
+  </div>
+</header>
+
+<section class="read">
+  <div class="wrap">
+    <p class="lab">Что я снял с ваших референсов</p>
+    <div class="read-grid">
+      <div>
+        <h3>Трёхтоновый стек</h3>
+        <p>«Flight / New York / to San Francisco» — одна гарнитура, один кегль, три тона серого. Иерархия строится тоном, а не размером и не рамкой.</p>
+      </div>
+      <div>
+        <h3>Цвет как заливка</h3>
+        <p>Жёлтый в Cargo 250W не красит кнопку — он физически заполняет экран на уровень заряда. Цвет несёт величину, а не украшает.</p>
+      </div>
+      <div>
+        <h3>Пары лейбл — значение</h3>
+        <p>Battery Level · 85%. Волосяная линейка, лейбл слева мелким, значение справа жирным. Это весь «карточный» слой, который вообще нужен.</p>
+      </div>
+      <div>
+        <h3>Точечная матрица</h3>
+        <p>Поле кругов, часть которых включена. Одновременно текстура, диаграмма и дисплей — прямая линия от Crouwel к OP‑1.</p>
+      </div>
+      <div>
+        <h3>Микро-лейблы</h3>
+        <p>8–9px, разрядка, серый. Шелкография на корпусе прибора: {0033}, part no., mph. Даёт инженерную интонацию почти без цвета.</p>
+      </div>
+      <div>
+        <h3>Зерно и альт-глифы</h3>
+        <p>Tbilisi-афиша — единственный «горячий» референс: пыль, оранжевая заливка, вывернутые буквы. Отсюда третье направление.</p>
+      </div>
+    </div>
+
+    <div class="swatches">
+      <div class="sw"><i style="background:#E2E2E0;"></i><span>#E2E2E0 грунт</span></div>
+      <div class="sw"><i style="background:#C3C7BC;"></i><span>#C3C7BC дисплей</span></div>
+      <div class="sw"><i style="background:#0A0A0A;"></i><span>#0A0A0A тушь</span></div>
+      <div class="sw"><i style="background:#9A9A96;"></i><span>#9A9A96 второй тон</span></div>
+      <div class="sw"><i style="background:#FFD400;"></i><span>#FFD400 сигнал</span></div>
+      <div class="sw"><i style="background:#FF5500;"></i><span>#FF5500 te оранж</span></div>
+      <div class="sw"><i style="background:#F0511F;"></i><span>#F0511F цех</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ A ═══════════ -->
+<section class="band">
+  <div class="wrap">
+    <div class="band-head"><span class="lab">Направление A · аппаратное</span></div>
+    <h2>Прибор <em>ayoo pts–01</em></h2>
+    <p class="mood">
+      Экран как передняя панель устройства: шелкографические лейблы, ручки, цветные функциональные
+      клавиши и <b>ЖК-окно, в котором живёт питомец</b>. Плоско, напечатано, без единого градиента —
+      TE переведён в интерфейс, а не отрисован в 3D.
+    </p>
+
+    <div class="refs">
+      <b>Teenage Engineering OP–1 field</b>
+      <b>EP–133 K.O. II: клавиши + шелкография</b>
+      <b>Braun ET66 / T3 — Dieter Rams</b>
+      <b>Точечный ЖК как персонаж</b>
+    </div>
+
+    <div class="spec">
+      <div>
+        <h4>Типографика</h4>
+        <p>Helvetica Neue Bold с трекингом −4% на числах и названиях; всё остальное — моноширинный 8px с разрядкой 0.14em. Промежуточных размеров нет: либо крупно, либо шелкография.</p>
+      </div>
+      <div>
+        <h4>Цвет</h4>
+        <p>Корпус #D6D6D2, дисплей #C3C7BC, тушь #0A0A0A. Оранжевый #FF5500 — только на клавише действия и на лучшем курсе. Четыре цвета на весь экран, больше не появляется.</p>
+      </div>
+      <div>
+        <h4>Композиция</h4>
+        <p>Панель, а не лента: окно дисплея → три ручки-индикатора → ряд из четырёх клавиш → список каналов. Порядок физический, поэтому его можно запомнить пальцем.</p>
+      </div>
+      <div>
+        <h4>Питомец</h4>
+        <p>Живёт внутри ЖК-окна и нарисован точками 16×14 — как анимированные персонажи OP‑1. Мигает, реагирует на начисление, меняет позу по состоянию. Пиксельность здесь не стилизация, а физика дисплея.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="fw">
+        <div class="phone pA">
+          <div class="pA-bar">
+            <div class="pA-mark">ayoo <sup>PTS–01</sup></div>
+            <div class="pA-sn">BEOGRAD · REV.B</div>
+          </div>
+          <div class="pA-hr"></div>
+
+          <div class="pA-screen">
+            <div style="flex:1;min-width:0;">
+              <div class="pA-scrlab">БАЛАНС · PTS</div>
+              <div class="pA-scrnum">2480</div>
+              <div class="pA-scrsub">+180 СЕГОДНЯ<br>−340 СГОРИТ ЧЕРЕЗ 12 Д</div>
+            </div>
+            <div class="pA-lcd">
+              <div class="dotgrid" data-pat="
+...#........#...
+....#......#....
+....########....
+...##########...
+..############..
+..##..####..##..
+..##..####..##..
+..############..
+..############..
+..###......###..
+..############..
+...##########...
+....###..###....
+"></div>
+              <div class="pA-lcdlab">ЭХО · LV4</div>
+            </div>
+          </div>
+
+          <div class="pA-knobs">
+            <div class="pA-knob">
+              <div class="pA-dial d1"></div>
+              <div class="pA-knoblab"><b>6</b>СТРИК</div>
+            </div>
+            <div class="pA-knob">
+              <div class="pA-dial d2"></div>
+              <div class="pA-knoblab"><b>12</b>WELCOME</div>
+            </div>
+            <div class="pA-knob">
+              <div class="pA-dial d3"></div>
+              <div class="pA-knoblab"><b>3</b>КВЕСТЫ</div>
+            </div>
+          </div>
+
+          <div class="pA-keys">
+            <div class="pA-key k-orange"><u>01</u><b>СКАН<br>ЧЕКА</b></div>
+            <div class="pA-key k-black"><u>02</u><b>ЧЕК-<br>ИН</b></div>
+            <div class="pA-key k-white"><u>03</u><b>НА-<br>ГРАДЫ</b></div>
+            <div class="pA-key k-white"><u>04</u><b>КАР-<br>ТА</b></div>
+          </div>
+
+          <div class="pA-listhead"><span>КАНАЛЫ · РЯДОМ</span><span>PTS/RSD</span></div>
+          <div class="pA-row">
+            <span class="pA-idx">01</span><span class="pA-nm">Mood Coffee</span>
+            <span class="pA-dot"></span><span class="pA-val hi">0.084</span>
+          </div>
+          <div class="pA-row">
+            <span class="pA-idx">02</span><span class="pA-nm">Torii Sushi</span>
+            <span class="pA-dot"></span><span class="pA-val">0.061</span>
+          </div>
+          <div class="pA-row">
+            <span class="pA-idx">03</span><span class="pA-nm">Café Willow</span>
+            <span class="pA-dot"></span><span class="pA-val">0.042</span>
+          </div>
+
+          <div class="pA-foot"><b>ГЛАВНАЯ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span></div>
+        </div>
+        <p class="cap">Главная. Дисплей, три ручки, четыре клавиши, список каналов. Питомец — точечный, внутри ЖК.</p>
+      </div>
+
+      <div class="fw">
+        <div class="phone pA2">
+          <div class="pA-bar">
+            <div class="pA-mark">скан <sup>MODE 01</sup></div>
+            <div class="pA-sn">REC · ГОТОВ</div>
+          </div>
+          <div class="pA-hr"></div>
+          <div class="pA2-meter">
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+            <i class="on"></i><i class="on"></i><i class="on"></i><i class="pk"></i><i></i>
+            <i></i><i></i><i></i><i></i>
+          </div>
+          <div class="pA2-view">
+            <div class="pA2-frame"></div>
+            <div class="pA2-paper"></div>
+            <div class="pA2-cross" style="left:22px;right:22px;top:50%;height:1px;"></div>
+            <div class="pA2-cross" style="top:22px;bottom:22px;left:50%;width:1px;"></div>
+          </div>
+          <div class="pA2-read">
+            OCR&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>ГОТОВО · 4 ПОЗИЦИИ</b><br>
+            МЕСТО&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>MOOD COFFEE</b><br>
+            КУРС&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>0.084</b> <span>×10 ПАРТНЁР</span>
+          </div>
+          <div class="pA2-out">
+            <div>
+              <div class="pA-scrlab">К НАЧИСЛЕНИЮ</div>
+              <div class="pA2-num">+168</div>
+            </div>
+            <div class="pA2-go">ЗАПИСАТЬ</div>
+          </div>
+          <div class="pA-foot" style="margin-top:auto;"><span>ОТМЕНА</span><b>MODE 01 / 04</b><span>ВРУЧНУЮ</span></div>
+        </div>
+        <p class="cap">Скан чека. Камера подана как измерение: уровень, перекрестье, моно-сводка, клавиша «записать».</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div><h4>Как притушить</h4><p>Убрать ручки и оставить три пары «лейбл — значение», клавиши сделать одинаково белыми с оранжевой только первой. Панель станет спокойной, но узнаваемость упадёт.</p></div>
+      <div><h4>В коде</h4><p>Дёшево. Всё строится на View + 1px бордерах и Helvetica — системная на iOS. Точечный питомец — массив 16×14 и обычный `map`, анимация состояний — смена кадра, никакой графики не нужно.</p></div>
+      <div><h4>Риск</h4><p>Аппаратная метафора требует дисциплины: любая случайная тень или радиус 20px мгновенно ломает иллюзию панели. Нужен жёсткий токен-сет и запрет на «исключения».</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ B ═══════════ -->
+<section class="band">
+  <div class="wrap">
+    <div class="band-head"><span class="lab">Направление B · типографическое</span></div>
+    <h2>Табло <em>arrivals</em></h2>
+    <p class="mood">
+      Ноль хрома, кроме одного жёлтого. Заголовки — трёхтоновым стеком, данные — парами с волосяной
+      линейкой, а <b>питомец и есть точечная матрица</b>: он проявляется по мере накопления баллов.
+      Самое близкое к вашим первому и третьему референсам.
+    </p>
+
+    <div class="refs">
+      <b>Ref 1 — трёхтоновый стек + dot field</b>
+      <b>Ref 2 — жёлтая заливка как величина</b>
+      <b>Ref 3 — жёлтый круг поверх сетки</b>
+      <b>Wim Crouwel · Vignelli · split-flap</b>
+    </div>
+
+    <div class="spec">
+      <div>
+        <h4>Типографика</h4>
+        <p>Одна гарнитура, один вес, два кегля. Заголовок 34px тремя тонами (#0A0A0A → #9A9A96 → #C3C3BF), данные 12.5px, лейблы 8.5px моно. Больше в системе ничего нет — и это её сила.</p>
+      </div>
+      <div>
+        <h4>Цвет</h4>
+        <p>Серый #E7E7E5, тушь, два серых для стека — и жёлтый #FFD400 строго как площадь: нижняя заливка = главное действие, круг на экране заведения = величина награды. Жёлтый никогда не бывает текстом.</p>
+      </div>
+      <div>
+        <h4>Композиция</h4>
+        <p>Экран делится на четыре горизонтальных пояса: шапка, стек, матрица, данные. Пятый пояс — жёлтый — прижат к низу и растёт снизу вверх. Прокрутка почти не нужна.</p>
+      </div>
+      <div>
+        <h4>Питомец</h4>
+        <p>Самое интересное решение из трёх: питомец нарисован тем же полем, что и прогресс. Точки включаются по мере роста баллов — сначала силуэт угадывается, к следующему уровню он собран целиком. Питомец = диаграмма.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="fw">
+        <div class="phone pB">
+          <div class="pB-bar"><span>AYOO · БЕЛГРАД</span><span>ЧТ 12.08 · 19:40</span></div>
+          <div class="pB-hr"></div>
+          <div class="pB-stack">
+            <div class="pB-l1">Баланс</div>
+            <div class="pB-l2">2 480 баллов</div>
+            <div class="pB-l3">+180 за сегодня</div>
+          </div>
+
+          <div class="pB-field">
+            <div class="dotgrid" data-pat="
+......................
+......#........#......
+.......#......#.......
+.......########.......
+......##########......
+.....############.....
+.....##..####..##.....
+.....##..####..##.....
+.....############.....
+.....############.....
+.....###......###.....
+.....############.....
+......##########......
+.......###..###.......
+......................
+"></div>
+            <div class="pB-fieldcap"><span>ЭХО · УРОВЕНЬ 4</span><b>62 % ДО СЛЕДУЮЩЕГО</b></div>
+          </div>
+
+          <div class="pB-specs">
+            <div class="pB-srow"><span>Лучший курс рядом</span><b>0,084</b></div>
+            <div class="pB-srow"><span>Партнёров в радиусе 1 км</span><b>14</b></div>
+            <div class="pB-srow"><span>Стрик</span><b>6 дней</b></div>
+            <div class="pB-srow"><span>Welcome сгорит через</span><b>12 дней</b></div>
+          </div>
+
+          <div class="pB-flood">
+            <div>
+              <div class="pB-floodlab">ГЛАВНОЕ ДЕЙСТВИЕ</div>
+              <div class="pB-floodbig">Сканировать чек</div>
+            </div>
+            <div class="pB-arrow">→</div>
+          </div>
+        </div>
+        <p class="cap">Главная. Четыре пояса + жёлтая заливка снизу. Точки собираются в питомца по мере роста баллов.</p>
+      </div>
+
+      <div class="fw">
+        <div class="phone pB2">
+          <div class="pB2-nav"><span>←</span><span>Награда</span><span>≡</span></div>
+          <div class="pB2-route">
+            <div>
+              <div class="pB2-city">Баллы</div>
+              <div class="pB2-code">450</div>
+              <div class="pB2-time">спишется</div>
+            </div>
+            <div class="pB2-arrow">→</div>
+            <div>
+              <div class="pB2-city">Mood Coffee</div>
+              <div class="pB2-code">V60</div>
+              <div class="pB2-time">до 15.09</div>
+            </div>
+          </div>
+          <div class="pB2-name">Фильтр<br>бесплатно</div>
+          <div class="pB2-circle"></div>
+          <div class="pB2-grid">
+            <div class="pB2-cell"><u>Адрес</u><b>Kralja Petra 18</b></div>
+            <div class="pB2-cell"><u>Осталось</u><b>12 шт</b></div>
+            <div class="pB2-cell"><u>Курс места</u><b>0,084</b></div>
+            <div class="pB2-cell"><u>Скидка</u><b>−15 %</b></div>
+            <div class="pB2-cell"><u>Действует</u><b>1 раз в день</b></div>
+            <div class="pB2-cell"><u>Код</u><b>69080534850</b></div>
+          </div>
+          <div class="pB2-code128" id="bc"></div>
+        </div>
+        <p class="cap">Награда. Прямая цитата третьего референса: жёлтый круг как площадь, сетка пар и штрих-код гашения.</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div><h4>Как притушить</h4><p>Уменьшить жёлтый пояс до высоты кнопки и убрать круг — останется чистое монохромное табло. Тише уже некуда, и оно всё ещё работает.</p></div>
+      <div><h4>В коде</h4><p>Самое дешёвое из трёх и самое устойчивое: ни одной картинки, ни одного градиента, ни одной тени. Матрица — сетка из `View` со сменой цвета; прогресс = сколько точек включено.</p></div>
+      <div><h4>Риск</h4><p>Монохром не даёт эмоции сам по себе — вся теплота ложится на питомца и копирайт. Если тексты будут канцелярскими, экран станет холодным.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ C ═══════════ -->
+<section class="band">
+  <div class="wrap">
+    <div class="band-head"><span class="lab">Направление C · плакатное</span></div>
+    <h2>Цех <em>смена 23.12</em></h2>
+    <p class="mood">
+      Тот же инженерный костяк, но громко: сплошная оранжевая заливка, пыль и зерно, вывернутые
+      глифы в заголовке, чёрные скруглённые плашки. <b>Это ваш тбилисский референс</b>, переведённый
+      в продукт — единственное направление, у которого есть характер бренда, а не только система.
+    </p>
+
+    <div class="refs">
+      <b>Ref 4 — Performance Days Tbilisi</b>
+      <b>Зерно / пыль поверх плоской заливки</b>
+      <b>Альтернативные глифы в дисплейном начертании</b>
+      <b>TE: оранжевый как корпоративный сигнал</b>
+    </div>
+
+    <div class="spec">
+      <div>
+        <h4>Типографика</h4>
+        <p>Тот же гротеск, но в заголовках 2–3 буквы заменены на альтернативные начертания: перевёрнутая «а», наклонённая «е», «о» как окружность. Приём точечный — одна аномалия на строку, иначе превращается в шум.</p>
+      </div>
+      <div>
+        <h4>Цвет</h4>
+        <p>Оранжевый #F0511F заливает экран целиком, чёрный #100D0B — плашки и текст, песочный #DDD7CC — второй экран. Зерно 20% через multiply снимает цифровую стерильность.</p>
+      </div>
+      <div>
+        <h4>Композиция</h4>
+        <p>Афишная логика: одно крупное высказывание на экран, под ним — плашки с числами. Курс подаётся как дата события на постере, а не как строка в таблице.</p>
+      </div>
+      <div>
+        <h4>Питомец</h4>
+        <p>Отпечатанное пятно: чёрная жидкая форма с зерном, глаза выбиты насквозь до оранжевого фона. Он меняет силуэт, а не позу — как клякса на разных афишах одной серии.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="fw">
+        <div class="phone pC grain">
+          <div class="pC-bar">
+            <span>ayoo / белград</span>
+            <span class="pC-menu">МЕНЮ <i></i></span>
+          </div>
+          <div class="pC-hero">
+            <div class="pC-kick">СМЕНА ЧЕТВЕРГ · 19:40</div>
+            <div class="pC-title">К<span class="alt-flip">у</span>рс<br>дн<span class="alt-tilt">я</span></div>
+          </div>
+
+          <div class="pC-blob">
+            <svg viewBox="0 0 300 122" width="100%" height="122" aria-label="Питомец Эхо">
+              <path d="M96 118 C60 118 44 96 48 74 C52 52 68 40 92 36 C106 20 128 14 150 18 C168 8 194 12 206 28 C232 30 248 48 246 72 C244 98 224 118 190 118 Z" fill="#100D0B"></path>
+              <ellipse cx="126" cy="66" rx="11" ry="13" fill="#F0511F"></ellipse>
+              <ellipse cx="172" cy="66" rx="11" ry="13" fill="#F0511F"></ellipse>
+              <path d="M128 92 q20 16 40 0" stroke="#F0511F" stroke-width="7" fill="none" stroke-linecap="round"></path>
+              <path d="M84 34 L74 12 M214 26 L226 6" stroke="#100D0B" stroke-width="7" stroke-linecap="round"></path>
+            </svg>
+          </div>
+
+          <div class="pC-card">
+            <div class="pC-cardlab">ЛУЧШИЙ КУРС РЯДОМ · 240 М</div>
+            <div class="pC-cardnum">0,084</div>
+            <div class="pC-cardrow"><b>Mood Coffee</b><span>ДО 23:00 · ×10</span></div>
+          </div>
+
+          <div class="pC-duo">
+            <div class="pC-tile">
+              <div class="pC-tilenum">2 480</div>
+              <div class="pC-tilelab">БАЛЛОВ · +180</div>
+            </div>
+            <div class="pC-tile dark">
+              <div class="pC-tilenum">6</div>
+              <div class="pC-tilelab">ДНЕЙ ПОДРЯД</div>
+            </div>
+          </div>
+
+          <div class="pC-foot"><b>ГЛАВНАЯ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span></div>
+        </div>
+        <p class="cap">Главная. Афиша дня: заливка, зерно, клякса-питомец и курс как главное событие смены.</p>
+      </div>
+
+      <div class="fw">
+        <div class="phone pC2 grain">
+          <div class="pC2-head">
+            <div class="pC-kick">НАГРАДЫ · 2 480 БАЛЛОВ</div>
+            <div class="pC2-h">Ч<span class="alt-tilt">т</span>о<br>взять</div>
+          </div>
+          <div class="pC2-list">
+            <div class="pC2-item o">
+              <div class="pC2-cost">450</div>
+              <div>
+                <div class="pC2-t">Фильтр бесплатно</div>
+                <div class="pC2-s">MOOD COFFEE · 240 М</div>
+              </div>
+              <div class="pC2-go">→</div>
+            </div>
+            <div class="pC2-item">
+              <div class="pC2-cost">900</div>
+              <div>
+                <div class="pC2-t">Сет на двоих −50%</div>
+                <div class="pC2-s">TORII SUSHI · 610 М</div>
+              </div>
+              <div class="pC2-go">→</div>
+            </div>
+            <div class="pC2-item">
+              <div class="pC2-cost">1 200</div>
+              <div>
+                <div class="pC2-t">Уход за руками</div>
+                <div class="pC2-s">LUMA BEAUTY · 1.4 КМ</div>
+              </div>
+              <div class="pC2-go">→</div>
+            </div>
+            <div class="pC2-item">
+              <div class="pC2-cost">300</div>
+              <div>
+                <div class="pC2-t">Второй кофе в подарок</div>
+                <div class="pC2-s">CAFÉ WILLOW · 1.2 КМ</div>
+              </div>
+              <div class="pC2-go">→</div>
+            </div>
+          </div>
+          <div class="pC-foot"><span>ГЛАВНАЯ</span><span>ЗАРАБОТАТЬ</span><b>НАГРАДЫ</b><span>КАРТА</span><span>Я</span></div>
+        </div>
+        <p class="cap">Награды. Плашки-афиши: цена крупно слева, оранжевая — та, что доступна прямо сейчас.</p>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div><h4>Как притушить</h4><p>Снять альт-глифы и зерно, оставить оранжевую заливку только на шапке. Получится обычный бодрый бренд — но вместе с приёмами уйдёт и вся индивидуальность.</p></div>
+      <div><h4>В коде</h4><p>Средне. Зерно — один тайл-PNG поверх экрана. Альт-глифы придётся вшивать в шрифт или собирать заголовки из отдельных `Text` со сдвигом — это ручная работа на каждом экране.</p></div>
+      <div><h4>Риск</h4><p>Сплошной оранжевый плохо переносит длинные списки и мелкий текст. Направление живёт, только если у каждого экрана есть ровно одно крупное высказывание.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="verdict">
+  <div class="wrap">
+    <p class="lab">Как выбирать</p>
+    <h2>Одна система, три громкости</h2>
+    <div class="cmp">
+      <table>
+        <thead>
+          <tr><th>Направление</th><th>Что даёт</th><th>Питомец</th><th>Цвет</th><th>Работы</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><b>A · Прибор</b></td><td>Узнаваемость TE, тактильную логику панели</td><td>Точечный ЖК-персонаж</td><td>Серый + #FF5500</td><td>Низкая</td></tr>
+          <tr><td><b>B · Табло</b></td><td>Предельную ясность, лучший из трёх ход с питомцем</td><td>Сама матрица прогресса</td><td>Серый + #FFD400</td><td>Самая низкая</td></tr>
+          <tr><td><b>C · Цех</b></td><td>Характер бренда, а не только систему</td><td>Печатная клякса</td><td>#F0511F + зерно</td><td>Средняя</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pick">
+      <p><b>Моя ставка — B как основа, A как слой.</b> «Табло» задаёт скелет: пояса, трёхтоновый стек, пары «лейбл — значение», жёлтый как площадь. «Прибор» даёт этому скелету характер на экранах действия — скан, чек-ин, активация награды, где уместны клавиши, уровень и перекрестье.</p>
+      <p>Питомец при этом решается один раз и работает в обоих: <b>точечная матрица</b> — и диаграмма прогресса на главной, и анимированный персонаж в ЖК-окне на экране скана. Одна техника, две функции, ноль ассетов.</p>
+      <p><b>C держать как язык кампаний</b> — онбординг, экраны праздников, реферальные приглашения, посты бота. Там оранжевая афиша с зерном работает лучше всего, а в ежедневных списках она мешает.</p>
+    </div>
+    <div class="srcs">
+      Референсы: ваши четыре скриншота (сняты попиксельно: палитра, кегли, сетка) ·
+      <a href="https://teenage.engineering/products">teenage engineering — products</a> ·
+      <a href="https://en.wikipedia.org/wiki/Teenage_Engineering_OP-1">OP–1: «music and machine in one», Design S Award</a> ·
+      <a href="https://www.awwwards.com/less-but-better-dieter-rams-s-influence-on-today-s-ui-design.html">Awwwards — влияние Дитера Рамса на современный UI</a> ·
+      <a href="https://medium.com/@ihorkostiuk.design/the-product-design-of-teenage-engineering-why-it-works-71071f359a97">Разбор продуктового дизайна Teenage Engineering</a>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll("[data-pat]").forEach(function (el) {
+    var rows = el.dataset.pat.trim().split("\n").map(function (r) { return r.trim(); });
+    el.style.gridTemplateColumns = "repeat(" + rows[0].length + ", 1fr)";
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (row) {
+      row.split("").forEach(function (ch) {
+        var d = document.createElement("i");
+        if (ch === "#") d.className = "on";
+        frag.appendChild(d);
+      });
+    });
+    el.appendChild(frag);
+  });
+
+  var bc = document.getElementById("bc");
+  if (bc) {
+    [3,1,2,1,4,1,2,3,1,2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,1,2,4,1,2,3,1,2,1,3,2,1].forEach(function (w) {
+      var b = document.createElement("i");
+      b.style.width = (w * 1.6) + "px";
+      bc.appendChild(b);
+    });
+  }
+</script>
