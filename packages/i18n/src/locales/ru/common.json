@@ -146,5 +146,28 @@
   "noJoinedDesc": "Выбери из доступных и зарабатывай бонусные баллы",
   "browseAvailable": "Смотреть доступные",
   "noAvailable": "Всё выполнено!",
-  "noAvailableDesc": "Ты вступил во все активные задания."
+  "noAvailableDesc": "Ты вступил во все активные задания.",
+  "bestRateNearby": "Лучший курс рядом",
+  "partnersNearby": "Партнёров рядом",
+  "welcomeBurnsIn": "Welcome сгорит через",
+  "activeQuests": "Активных квестов",
+  "noStreak": "Стрик не начат",
+  "daysShort": "{{n}} дн",
+  "levelShort": "ур. {{n}}",
+  "topForm": "Старшая форма",
+  "pet": {
+    "spore": "Спора",
+    "bug": "Клоп",
+    "crab": "Краб",
+    "moth": "Мотылёк",
+    "ajax": "Аякс",
+    "jelly": "Медуза",
+    "octo": "Осьминог",
+    "horn": "Рогач",
+    "ghost": "Призрак",
+    "squid": "Кальмар",
+    "sphinx": "Сфинкс"
+  },
+  "metersShort": "{{n}} м",
+  "kmShort": "{{n}} км"
 }

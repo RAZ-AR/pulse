@@ -1,124 +1,52 @@
 import { useState } from "react"
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle } from "react-native"
-import { AyooLogo } from "../../src/components/AyooLogo"
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native"
 import { useRouter } from "expo-router"
 import { useTranslation } from "react-i18next"
+import { Matrix, PixIcon, cellFor } from "../../src/components/Matrix"
 import { trpc } from "../../src/lib/trpc"
-import { fonts } from "../../src/lib/theme"
+import { fonts, pts, radius } from "../../src/lib/theme"
+import {
+  creatureRaster,
+  digits,
+  evolutionOf,
+  heroRows,
+  iconForCategory,
+  type CreatureState,
+} from "../../src/lib/raster"
 import { CITY_OPTIONS, DEFAULT_VENUE_FILTER, getDemoVenues, resolveCity, VENUE_FILTERS } from "../../src/lib/venues"
 
-const ticketColors = {
-  black: "#000000",
-  white: "#FFFFFF",
-  bg: "#F5F4F0",
-  blue: "#273AA8",
-  pink: "#ea5b0c",
-  brown: "#806828",
-  teal: "#1f71b8",
-  lavender: "#B38BC8",
-  inkSoft: "rgba(0,0,0,0.62)",
-  whiteSoft: "rgba(255,255,255,0.72)",
-  whiteFaint: "rgba(255,255,255,0.18)",
-}
-
-const ticketFonts = {
-  display: fonts.displayBlack,
-  body: fonts.body,
-  bodyBold: fonts.bodyBold,
-}
-
-const webTextBreak = Platform.OS === "web"
-  ? ({ overflowWrap: "anywhere", wordBreak: "break-word" } as unknown as TextStyle)
-  : null
-
-// ── Helpers ───────────────────────────────────────────────────
-
-function fmt(n: number) {
-  return n.toLocaleString()
-}
+// Поле главной: 24 колонки, зазор 3, всё поле вписано в ширину контента.
+// 21 строка = пустая + 7 цифр + 3 пустых + 8 питомца + 2 запаса.
+const HERO_COLS = 24
+const HERO_ROWS = 21
+const HERO_GAP = 3
+const PAD = 18
+const MAX_W = 460
 
 function daysLeft(d: Date | string | null | undefined): number {
   if (!d) return 0
   return Math.max(0, Math.round((new Date(d).getTime() - Date.now()) / 86_400_000))
 }
 
-function distanceLabel(meters: number | null | undefined) {
-  if (meters === null || meters === undefined) return "Nearby"
-  if (meters < 1000) return `${Math.round(meters)}m`
-  return `${(meters / 1000).toFixed(1)}km`
+/** Чистая функция: отдаёт ключ и число, переводит уже вызывающий. */
+function distanceKey(meters: number | null | undefined): { key: string; n: string } | null {
+  if (meters === null || meters === undefined) return null
+  if (meters < 1000) return { key: "metersShort", n: String(Math.round(meters)) }
+  return { key: "kmShort", n: (meters / 1000).toFixed(1) }
 }
 
-function initials(name: string | null | undefined) {
-  return (name ?? "?").slice(0, 1).toUpperCase()
-}
-
-function userTier(points: number) {
-  if (points <= 1000) return { name: "Sprout",  emoji: "🌱" }
-  if (points <= 3000) return { name: "Flower",  emoji: "🌸" }
-  if (points <= 5000) return { name: "Garnet",  emoji: "🍎" }
-  if (points <= 7000) return { name: "Ruby",    emoji: "💎" }
-  return               { name: "Diamond", emoji: "✦" }
-}
-
-// ── Decorative components ──────────────────────────────────────
-
-function Perforation() {
-  return (
-    <View style={s.perfRow}>
-      <View style={s.perfCutLeft} />
-      <View style={s.perfLineWrap}>
-        {Array.from({ length: 36 }).map((_, i) => (
-          <View key={i} style={s.perfDash} />
-        ))}
-      </View>
-      <View style={s.perfCutRight} />
-    </View>
-  )
-}
-
-function BarcodeDecor() {
-  const bars = [3,1,2,1,4,1,2,3,1,2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,1,3,1,2,4,1,2,3,1,2,1]
-  return (
-    <View style={s.barcode}>
-      {bars.map((w, i) => (
-        <View key={i} style={[s.bar, { width: w * 2.2 }]} />
-      ))}
-    </View>
-  )
-}
-
-function TicketDots() {
-  return (
-    <View style={s.dotField} pointerEvents="none">
-      {Array.from({ length: 38 }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            s.dot,
-            {
-              left: `${(i * 23) % 96}%`,
-              top: `${(i * 37) % 92}%`,
-              opacity: i % 3 === 0 ? 0.18 : 0.09,
-            },
-          ]}
-        />
-      ))}
-    </View>
-  )
-}
-
-// ── Main screen ───────────────────────────────────────────────
-
-type RewardItem = {
-  id: string
-  title: string
-  pointsCost: number
-  venue: { id: string; name: string }
+/** Состояние питомца выводится из активности, отдельного поля в базе не нужно. */
+function petState(streak: number): CreatureState {
+  const hour = new Date().getHours()
+  if (hour < 8) return "asleep"
+  if (streak === 0) return "bored"
+  return streak >= 3 ? "fed" : "awake"
 }
 
 export default function HomeScreen() {
   const router = useRouter()
   const { t } = useTranslation(["common", "venue"])
+  const { width } = useWindowDimensions()
   const [activeFilterKey, setActiveFilterKey] = useState("all")
 
   const me = trpc.user.me.useQuery()
@@ -126,9 +54,7 @@ export default function HomeScreen() {
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => utils.user.me.invalidate(),
   })
-  const rewards = trpc.reward.list.useQuery({ limit: 8 })
   const selectedCity = resolveCity(me.data?.homeCity)
-  const partnerOffers = trpc.offer.list.useQuery({ city: selectedCity.name, limit: 6 })
   const activeFilter = VENUE_FILTERS.find((f) => f.key === activeFilterKey) ?? DEFAULT_VENUE_FILTER
   const nearby = trpc.venue.nearby.useQuery({
     lat: selectedCity.lat,
@@ -139,732 +65,241 @@ export default function HomeScreen() {
   })
   const challenges = trpc.challenge.listMine.useQuery()
 
-  const rewardItems = (rewards.data?.rewards ?? []) as RewardItem[]
-  const visibleNearby = nearby.data?.length ? nearby.data : getDemoVenues(selectedCity.name, activeFilter)
-  const activeChallenges = (challenges.data ?? []).filter((uc) => !uc.isCompleted)
   const total = me.data ? me.data.earnedPoints + me.data.welcomePoints : 0
-  const lifetimePoints = Math.max(me.data?.totalEarnedLifetime ?? 0, total + (me.data?.spentPoints ?? 0))
-  const tier = userTier(lifetimePoints)
-  const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
+  const lifetime = Math.max(me.data?.totalEarnedLifetime ?? 0, total + (me.data?.spentPoints ?? 0))
   const streak = me.data?.currentStreak ?? 0
+  const welcomeDays = daysLeft(me.data?.welcomeExpiresAt ?? null)
+  const questCount = (challenges.data ?? []).filter((uc) => !uc.isCompleted).length
+  const venues = nearby.data?.length ? nearby.data : getDemoVenues(selectedCity.name, activeFilter)
+  const bestRate = venues.reduce((max, v) => Math.max(max, v.pointsPerCurrency ?? 0), 0)
+
+  const petName = (id: string) => t(`pet.${id}`)
+  const evolution = evolutionOf(lifetime)
+  const creature = creatureRaster(evolution.current.id, petState(streak))
+
+  // Число может не поместиться в 24 колонки — тогда поле расширяется под него.
+  const value = String(total)
+  const cols = Math.max(HERO_COLS, digits(value)[0]?.length ?? HERO_COLS)
+  const contentW = Math.min(width, MAX_W) - PAD * 2
+  const cell = cellFor(contentW, cols, HERO_GAP)
 
   return (
-    <ScrollView
-      style={s.scroll}
-      contentContainerStyle={s.content}
-      scrollEventThrottle={16}
-      removeClippedSubviews
-    >
-      {/* ── Top bar ── */}
-      <View style={s.topBar}>
-        <View>
-          <Text style={[s.kicker, { fontFamily: ticketFonts.bodyBold }]}>AYOO MINIAPP</Text>
-          <Text style={[s.screenTitle, { fontFamily: ticketFonts.display }]}>Your pass</Text>
+    <ScrollView style={s.scroll} contentContainerStyle={s.content}>
+      <View style={s.inner}>
+        {/* ── Шапка ── */}
+        <View style={s.bar}>
+          <Text style={s.mark}>ayoo</Text>
+          <Text style={s.mono}>PTS–01 · {selectedCity.label.toUpperCase()}</Text>
         </View>
-        <AyooLogo width={66} height={30} />
-      </View>
+        <View style={s.ruleInk} />
 
-      <View style={s.cityRow}>
+        {/* ── Трёхтоновый стек ── */}
+        <View style={s.stack}>
+          <Text style={[s.stackLine, s.tone1]}>{t("balance")}</Text>
+          <Text style={[s.stackLine, s.tone2]}>{t("points", { count: total })}</Text>
+          <Text style={[s.stackLine, s.tone3]}>
+            {streak > 0 ? t("streak", { count: streak }) : t("noStreak")}
+          </Text>
+        </View>
+
+        {/* ── Дисплей: баланс точками + питомец ── */}
+        <View style={s.heroCap}>
+          <Text style={s.mono}>
+            {petName(evolution.current.id).toUpperCase()} · {t("levelShort", { n: evolution.level }).toUpperCase()}
+          </Text>
+          {evolution.next ? (
+            <Text style={[s.mono, s.monoSig]}>
+              {evolution.progress} % → {petName(evolution.next.id).toUpperCase()}
+            </Text>
+          ) : (
+            <Text style={[s.mono, s.monoSig]}>{t("topForm").toUpperCase()}</Text>
+          )}
+        </View>
+        <View style={s.hero}>
+          <Matrix
+            rows={heroRows(value, creature, cols, HERO_ROWS)}
+            cell={cell}
+            gap={HERO_GAP}
+            on={pts.ink}
+            off={pts.dotOff}
+            shape="dot"
+          />
+        </View>
+
+        {/* ── Пары «лейбл — значение» ── */}
+        <View style={s.pairs}>
+          <Pair label={t("bestRateNearby")} value={bestRate ? bestRate.toFixed(3) : "—"} highlight />
+          <Pair label={t("partnersNearby")} value={String(venues.length)} />
+          <Pair label={t("welcomeBurnsIn")} value={t("daysShort", { n: welcomeDays })} />
+          <Pair label={t("activeQuests")} value={String(questCount)} />
+        </View>
+
+        {/* ── Клавиши ── */}
+        <View style={s.keys}>
+          <Key tone="sig" icon="scan" label={t("scanReceipt")} onPress={() => router.push("/scan")} />
+          <Key tone="ink" icon="pin" label={t("checkIn")} onPress={() => router.push("/checkin")} />
+          <Key tone="pap" icon="gift" label={t("nav.rewards")} onPress={() => router.push("/rewards")} />
+          <Key tone="pap" icon="nav" label={t("nav.map")} onPress={() => router.push("/map")} />
+        </View>
+
+        {/* ── Города ── */}
+        <View style={s.cityRow}>
           {CITY_OPTIONS.map((city) => {
             const active = selectedCity.name === city.name
             return (
-              <Pressable
-                key={city.name}
-                onPress={() => updateProfile.mutate({ homeCity: city.name })}
-                style={[s.cityPill, active && s.cityPillActive]}
-              >
-                <Text style={[s.cityPillText, active && s.cityPillTextActive, { fontFamily: ticketFonts.bodyBold }]}>
-                  {city.label}
-                </Text>
+              <Pressable key={city.name} onPress={() => updateProfile.mutate({ homeCity: city.name })}>
+                <Text style={[s.mono, active && s.monoInk]}>{city.label.toUpperCase()}</Text>
               </Pressable>
             )
           })}
-        <Pressable onPress={() => router.push("/earn")} style={s.addBtn}>
-          <Text style={[s.addBtnText, { fontFamily: ticketFonts.display }]}>+</Text>
-        </Pressable>
-      </View>
-
-      {/* ── Member Pass Card ── */}
-      <View style={s.passWrapper}>
-        {/* Ticket top */}
-        <View style={s.passTop}>
-          <TicketDots />
-          <View style={s.passTopRow}>
-            <View style={s.passNameWrap}>
-              <Text style={[s.passLabel, { fontFamily: ticketFonts.bodyBold }]}>MEMBER PASS</Text>
-              <Text style={[s.passName, webTextBreak, { fontFamily: ticketFonts.display }]} numberOfLines={2}>
-                {me.data?.name?.split(" ")[0] ?? "AYOO"}
-              </Text>
-            </View>
-            <View style={s.tierBadge}>
-              <Text style={s.tierEmoji}>#{String(lifetimePoints || 500).slice(0, 4).padStart(4, "0")}</Text>
-              <Text style={[s.tierName, { fontFamily: ticketFonts.bodyBold }]}>{tier.name.toUpperCase()}</Text>
-            </View>
-          </View>
-
-          <View style={s.pointsBlock}>
-            <View style={s.pointsSide}>
-              <Text style={[s.pointsLabel, { fontFamily: ticketFonts.bodyBold }]}>POINTS</Text>
-              <Text style={[s.pointsCaption, { fontFamily: ticketFonts.bodyBold }]}>VALID MEMBER CREDIT</Text>
-            </View>
-            <Text style={[s.pointsNumber, { fontFamily: ticketFonts.display }]} numberOfLines={1}>
-              {fmt(total)}
-            </Text>
-          </View>
-
-          <View style={s.statsRow}>
-            <View style={s.statChip}>
-              <Text style={[s.statValue, { fontFamily: ticketFonts.display }]}>{streak}</Text>
-              <Text style={[s.statLabel, { fontFamily: ticketFonts.bodyBold }]}>DAY STREAK</Text>
-            </View>
-            <View style={s.statDivider} />
-            <View style={s.statChip}>
-              <Text style={[s.statValue, { fontFamily: ticketFonts.display }]}>{welcomeDays}</Text>
-              <Text style={[s.statLabel, { fontFamily: ticketFonts.bodyBold }]}>WELCOME LEFT</Text>
-            </View>
-            <View style={s.statDivider} />
-            <View style={s.statChip}>
-              <Text style={[s.statValue, { fontFamily: ticketFonts.display }]}>{activeChallenges.length}</Text>
-              <Text style={[s.statLabel, { fontFamily: ticketFonts.bodyBold }]}>QUESTS</Text>
-            </View>
-          </View>
         </View>
 
-        {/* Perforation */}
-        <Perforation />
-
-        {/* Light bottom */}
-        <View style={s.passBottom}>
-          <View style={s.memberMeta}>
-            <View>
-              <Text style={[s.metaLabel, { fontFamily: ticketFonts.bodyBold }]}>MEMBER SINCE</Text>
-              <Text style={[s.metaValue, { fontFamily: ticketFonts.bodyBold }]}>06.2026</Text>
-            </View>
-            <View>
-              <Text style={[s.metaLabel, { fontFamily: ticketFonts.bodyBold }]}>WELCOME LEFT</Text>
-              <Text style={[s.metaValue, { fontFamily: ticketFonts.bodyBold }]}>{welcomeDays} DAYS</Text>
-            </View>
-          </View>
-          <BarcodeDecor />
-          <View style={s.passActions}>
-            <Pressable onPress={() => router.push("/scan")} style={[s.actionBtn, s.actionBtnOrange]}>
-              <Text style={s.actionBtnIcon}>⌁</Text>
-              <Text style={[s.actionBtnText, s.actionBtnTextDark, { fontFamily: ticketFonts.bodyBold }]}>{t("scanReceipt")}</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push("/checkin")} style={[s.actionBtn, s.actionBtnDark]}>
-              <Text style={s.actionBtnIcon}>⌖</Text>
-              <Text style={[s.actionBtnText, s.actionBtnTextLight, { fontFamily: ticketFonts.bodyBold }]}>{t("checkIn")}</Text>
-            </Pressable>
-          </View>
+        {/* ── Каналы ── */}
+        <View style={s.chanHead}>
+          <Text style={s.mono}>{t("venuesNearby").toUpperCase()}</Text>
+          <Text style={s.mono}>PTS/RSD</Text>
         </View>
-      </View>
 
-      {/* ── Special Offers ── */}
-      {rewardItems.length > 0 && (
-        <>
-          <SectionHead
-            title={t("specialOffers")}
-            action={t("allRewards")}
-            onPress={() => router.push("/rewards")}
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ticketRail}>
-            {rewardItems.slice(0, 6).map((reward) => (
-              <OfferTicket
-                key={reward.id}
-                title={reward.title}
-                venue={reward.venue.name}
-                points={reward.pointsCost}
-                onPress={() => router.push({ pathname: "/reward/[id]", params: { id: reward.id } })}
-              />
-            ))}
-          </ScrollView>
-        </>
-      )}
-
-      {/* ── Partner Bonuses ── */}
-      {(partnerOffers.data?.offers ?? []).length > 0 && (
-        <>
-          <SectionHead
-            title={t("partnerBonuses", "Partner Bonuses")}
-            action={t("seeAll", "See all")}
-            onPress={() => router.push("/map")}
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.ticketRail}>
-            {(partnerOffers.data?.offers ?? []).map((offer) => (
-              <Pressable
-                key={offer.id}
-                onPress={() => router.push({ pathname: "/venue/[id]", params: { id: offer.venue.id } })}
-                style={s.partnerCard}
-              >
-                <View style={s.partnerPts}>
-                  <Text style={[s.partnerPtsNum, { fontFamily: ticketFonts.display }]}>+{offer.pointsReward}</Text>
-                  <Text style={[s.partnerPtsLabel, { fontFamily: ticketFonts.bodyBold }]}>pts</Text>
-                </View>
-                <Text style={[s.partnerTitle, { fontFamily: ticketFonts.bodyBold }]} numberOfLines={2}>{offer.title}</Text>
-                <Text style={s.partnerVenue} numberOfLines={1}>{offer.venue.name}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRail}>
+          {VENUE_FILTERS.map((filter) => {
+            const active = filter.key === activeFilterKey
+            return (
+              <Pressable key={filter.key} onPress={() => setActiveFilterKey(filter.key)}>
+                <Text style={[s.mono, active && s.monoInk]}>{filter.label.toUpperCase()}</Text>
               </Pressable>
-            ))}
-          </ScrollView>
-        </>
-      )}
+            )
+          })}
+        </ScrollView>
 
-      {/* ── Venues Nearby ── */}
-      <SectionHead
-        title={t("venuesNearby")}
-        action={t("nav.map")}
-        onPress={() => router.push("/map")}
-      />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRail}>
-        {VENUE_FILTERS.map((filter) => {
-          const isActive = filter.key === activeFilterKey
-          return (
+        {venues.length === 0 ? (
+          <Text style={[s.mono, s.empty]}>{t("venue:noVenuesYet")}</Text>
+        ) : (
+          venues.slice(0, 6).map((venue) => {
+            const dist = distanceKey(venue.distanceMeters)
+            return (
             <Pressable
-              key={filter.key}
-              onPress={() => setActiveFilterKey(filter.key)}
-              style={[s.filterChip, isActive && s.filterChipActive]}
+              key={venue.id}
+              style={s.chan}
+              onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
             >
-              <Text style={[s.filterChipText, isActive && s.filterChipTextActive, { fontFamily: ticketFonts.bodyBold }]}>
-                {filter.label}
+              <PixIcon name={iconForCategory(venue.category)} size={18} color={pts.ink} />
+              <View style={s.chanBody}>
+                <Text style={s.chanName} numberOfLines={1}>{venue.name}</Text>
+                <Text style={s.chanMeta} numberOfLines={1}>
+                  {dist ? t(dist.key, { n: dist.n }) : "—"}
+                  {venue.enableDiscount && venue.maxDiscountPercent ? ` · −${venue.maxDiscountPercent} %` : ""}
+                </Text>
+              </View>
+              <Text style={[s.rate, venue.pointsPerCurrency === bestRate && bestRate > 0 && s.rateBest]}>
+                {venue.pointsPerCurrency ? venue.pointsPerCurrency.toFixed(3) : "—"}
               </Text>
             </Pressable>
-          )
-        })}
-      </ScrollView>
-
-      <View style={s.venueList}>
-        {nearby.isLoading && (
-          <>
-            <VenueSkeleton />
-            <VenueSkeleton />
-          </>
+            )
+          })
         )}
-        {!nearby.isLoading && visibleNearby.length === 0 && (
-          <View style={s.emptyVenues}>
-            <Text style={[s.emptyText, { fontFamily: ticketFonts.bodyBold }]}>
-              {selectedCity.label}: {t("venue:noVenuesYet", "No venues yet")}
-            </Text>
-          </View>
-        )}
-        {visibleNearby.slice(0, 6).map((venue) => {
-          const offer = rewardItems.find((r) => r.venue.id === venue.id)
-          return (
-            <VenueRow
-              key={venue.id}
-              name={venue.name}
-              category={t(`venue:category.${venue.category}`, venue.category.toLowerCase())}
-              city={venue.city}
-              rate={venue.pointsPerCurrency ?? null}
-              distance={venue.distanceMeters}
-              discount={venue.enableDiscount ? venue.maxDiscountPercent : null}
-              onPress={() => router.push({ pathname: "/venue/[id]", params: { id: venue.id } })}
-            />
-          )
-        })}
       </View>
     </ScrollView>
   )
 }
 
-// ── Sub-components ────────────────────────────────────────────
+// ── Части ─────────────────────────────────────────────────────
 
-function SectionHead({ title, action, onPress }: { title: string; action: string; onPress: () => void }) {
+function Pair({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <View style={s.sectionHead}>
-      <Text style={[s.sectionTitle, webTextBreak, { fontFamily: ticketFonts.display }]}>{title}</Text>
-      <Pressable onPress={onPress} style={s.sectionBtn}>
-        <Text style={[s.sectionBtnText, { fontFamily: ticketFonts.bodyBold }]}>{action} →</Text>
-      </Pressable>
+    <View style={s.pair}>
+      <Text style={s.pairLabel}>{label}</Text>
+      <Text style={[s.pairValue, highlight && s.pairValueSig]}>{value}</Text>
     </View>
   )
 }
 
-function OfferTicket({
-  title, venue, points, onPress,
-}: { title: string; venue: string; points: number; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={s.offerTicket}>
-      <View style={s.offerTop}>
-        <Text style={[s.offerPoints, { fontFamily: ticketFonts.display }]}>{points}</Text>
-        <Text style={[s.offerPtsLabel, { fontFamily: ticketFonts.bodyBold }]}>pts</Text>
-      </View>
-      <View style={s.offerPerf}>
-        {Array.from({ length: 16 }).map((_, i) => (
-          <View key={i} style={s.offerPerfDash} />
-        ))}
-      </View>
-      <View style={s.offerBottom}>
-        <Text style={[s.offerTitle, { fontFamily: ticketFonts.bodyBold }]} numberOfLines={2}>{title}</Text>
-        <Text style={s.offerVenue} numberOfLines={1}>{venue}</Text>
-        <Text style={[s.offerCta, { fontFamily: ticketFonts.bodyBold }]}>Open ↗</Text>
-      </View>
-    </Pressable>
-  )
-}
-
-function VenueRow({
-  name, category, city, rate, distance, discount, onPress,
+function Key({
+  tone, icon, label, onPress,
 }: {
-  name: string; category: string; city: string
-  rate: number | null; distance: number
-  discount: number | null; onPress: () => void
+  tone: "sig" | "ink" | "pap"
+  icon: "scan" | "pin" | "gift" | "nav"
+  label: string
+  onPress: () => void
 }) {
+  const bg = tone === "sig" ? pts.sig : tone === "ink" ? pts.ink : pts.paper2
+  const fg = tone === "pap" ? pts.ink : pts.white
   return (
-    <Pressable onPress={onPress} style={s.venueRow}>
-      <View style={s.venueAccent} />
-      <View style={s.venueLogo}>
-        <AyooLogo width={40} height={18} />
-      </View>
-      <View style={s.venueMain}>
-        <View style={s.venueTitleRow}>
-          <Text style={[s.venueName, { fontFamily: ticketFonts.display }]} numberOfLines={1}>{name}</Text>
-          <Text style={s.venueArrow}>↗</Text>
-        </View>
-        <Text style={[s.venueMeta, { fontFamily: ticketFonts.bodyBold }]} numberOfLines={1}>
-          {category} · {city}
-        </Text>
-        <View style={s.venueChips}>
-          {rate ? (
-            <View style={s.chipOrange}>
-              <Text style={[s.chipOrangeText, { fontFamily: ticketFonts.bodyBold }]}>{rate.toFixed(3)} pts/RSD</Text>
-            </View>
-          ) : null}
-          <View style={s.chipGray}>
-            <Text style={[s.chipGrayText, { fontFamily: ticketFonts.bodyBold }]}>{distanceLabel(distance)}</Text>
-          </View>
-          {discount ? (
-            <View style={s.chipMint}>
-              <Text style={[s.chipMintText, { fontFamily: ticketFonts.bodyBold }]}>-{discount}%</Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
+    <Pressable onPress={onPress} style={({ pressed }) => [s.key, { backgroundColor: bg }, pressed && s.keyDown]}>
+      <PixIcon name={icon} size={27} color={fg} />
+      <Text style={[s.keyLabel, { color: fg }]} numberOfLines={2}>{label.toUpperCase()}</Text>
     </Pressable>
   )
 }
 
-function VenueSkeleton() {
-  return (
-    <View style={[s.venueRow, { opacity: 0.35 }]}>
-      <View style={s.venueAccent} />
-      <View style={[s.venueLogo, { backgroundColor: ticketColors.whiteFaint }]} />
-      <View style={{ flex: 1, gap: 8 }}>
-        <View style={{ height: 14, width: "60%", backgroundColor: ticketColors.whiteFaint, borderRadius: 6 }} />
-        <View style={{ height: 10, width: "40%", backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 6 }} />
-      </View>
-    </View>
-  )
-}
-
-// ── Styles ────────────────────────────────────────────────────
+// ── Стили ─────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: ticketColors.bg },
-  content: { padding: 14, paddingBottom: 118 },
+  scroll: { flex: 1, backgroundColor: pts.paper },
+  content: { paddingBottom: 118 },
+  inner: { width: "100%", maxWidth: MAX_W, alignSelf: "center", paddingHorizontal: PAD, paddingTop: 14 },
 
-  // Top bar
-  topBar: {
+  bar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingBottom: 8 },
+  mark: { fontFamily: fonts.bodyBold, fontWeight: "700", fontSize: 16, color: pts.ink, letterSpacing: -0.5 },
+
+  mono: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 1.2, color: pts.mid },
+  monoSig: { color: pts.sig },
+  monoInk: { color: pts.ink },
+
+  ruleInk: { height: 1, backgroundColor: pts.ink },
+
+  stack: { paddingTop: 14 },
+  stackLine: { fontFamily: fonts.display, fontWeight: "700", fontSize: 27, lineHeight: 28, letterSpacing: -1.2 },
+  tone1: { color: pts.ink },
+  tone2: { color: pts.mid },
+  tone3: { color: pts.dotOff },
+
+  heroCap: { flexDirection: "row", justifyContent: "space-between", paddingTop: 12 },
+  hero: { paddingTop: 12 },
+
+  pairs: { paddingTop: 18 },
+  pair: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
-    paddingTop: 2,
-  },
-  kicker: {
-    color: ticketColors.black,
-    fontSize: 10,
-    letterSpacing: 2,
-  },
-  screenTitle: {
-    color: ticketColors.black,
-    fontSize: 28,
-    lineHeight: 31,
-    letterSpacing: 0,
-  },
-  cityRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 14,
-    alignItems: "center",
-  },
-  cityPill: {
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    backgroundColor: ticketColors.white,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
-  },
-  cityPillActive: { backgroundColor: ticketColors.teal },
-  cityPillText: { fontSize: 11, color: ticketColors.black },
-  cityPillTextActive: { color: ticketColors.white },
-  addBtn: {
-    marginLeft: "auto",
-    width: 34,
-    height: 34,
-    borderRadius: 6,
-    backgroundColor: ticketColors.pink,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtnText: { color: ticketColors.black, fontSize: 22, lineHeight: 25 },
-
-  // Member Pass
-  passWrapper: {
-    marginBottom: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    borderColor: ticketColors.black,
-    shadowColor: ticketColors.black,
-    shadowOffset: { width: 8, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 12,
-  },
-
-  passTop: {
-    backgroundColor: ticketColors.pink,
-    borderTopLeftRadius: 9,
-    borderTopRightRadius: 9,
-    padding: 14,
-    paddingBottom: 14,
-    minHeight: 420,
-    justifyContent: "space-between",
-    overflow: "hidden",
-  },
-  passTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 8,
-    minHeight: 78,
-    paddingRight: 98,
-  },
-  passNameWrap: { flex: 1, minWidth: 0 },
-  passLabel: {
-    color: "rgba(0,0,0,0.62)",
-    fontSize: 10,
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  passName: {
-    color: ticketColors.black,
-    fontSize: 23,
-    lineHeight: 27,
-    letterSpacing: 0,
-    textTransform: "uppercase",
-  },
-  tierBadge: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    backgroundColor: ticketColors.black,
-    borderRadius: 4,
-    paddingHorizontal: 11,
+    alignItems: "baseline",
     paddingVertical: 8,
-    alignItems: "center",
-    minWidth: 76,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
+    borderTopWidth: 1,
+    borderTopColor: pts.rule,
   },
-  tierEmoji: { fontSize: 12, color: ticketColors.white },
-  tierName: { color: ticketColors.white, fontSize: 9, letterSpacing: 1.4, marginTop: 2 },
+  pairLabel: { fontFamily: fonts.body, fontSize: 13, color: pts.mid },
+  pairValue: { fontFamily: fonts.bodyBold, fontWeight: "700", fontSize: 13, color: pts.ink, letterSpacing: -0.2 },
+  pairValueSig: { color: pts.sig },
 
-  pointsBlock: {
-    minHeight: 230,
-    justifyContent: "flex-end",
-    marginBottom: 10,
-  },
-  pointsNumber: {
-    color: ticketColors.black,
-    fontSize: 80,
-    lineHeight: 78,
-    letterSpacing: 0,
-  },
-  pointsSide: {
-    alignItems: "flex-end",
-    alignSelf: "flex-end",
-    marginBottom: 6,
-  },
-  pointsLabel: {
-    color: ticketColors.black,
-    fontSize: 14,
-    letterSpacing: 2,
-  },
-  pointsCaption: {
-    color: "rgba(0,0,0,0.58)",
-    fontSize: 9,
-    letterSpacing: 1,
-    marginTop: 3,
-  },
-
-  statsRow: { flexDirection: "row", alignItems: "center" },
-  statChip: {
+  keys: { flexDirection: "row", gap: 5, paddingTop: 18 },
+  key: {
     flex: 1,
-    alignItems: "center",
-    backgroundColor: ticketColors.lavender,
-    borderRadius: 4,
-    paddingVertical: 7,
-    marginHorizontal: 3,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
-  },
-  statDivider: { width: 0, height: 28 },
-  statValue: { color: ticketColors.black, fontSize: 20, lineHeight: 22 },
-  statLabel: {
-    color: "rgba(0,0,0,0.58)",
-    fontSize: 8,
-    letterSpacing: 1,
-    marginTop: 2,
-    textAlign: "center",
-  },
-
-  dotField: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 1,
-  },
-  dot: {
-    position: "absolute",
-    width: 18,
-    height: 18,
-    borderRadius: 0,
-    backgroundColor: ticketColors.black,
-  },
-
-  // Perforation
-  perfRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ticketColors.pink,
-    height: 28,
-    borderTopWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: ticketColors.black,
-  },
-  perfCutLeft: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: ticketColors.bg,
-    marginLeft: -10,
-  },
-  perfLineWrap: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 3,
-    overflow: "hidden",
-    justifyContent: "center",
-  },
-  perfDash: { width: 7, height: 2, backgroundColor: "rgba(0,0,0,0.35)" },
-  perfCutRight: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: ticketColors.bg,
-    marginRight: -10,
-  },
-
-  // Pass bottom
-  passBottom: {
-    backgroundColor: ticketColors.white,
-    borderBottomLeftRadius: 9,
-    borderBottomRightRadius: 9,
-    padding: 18,
-    gap: 14,
-  },
-  memberMeta: {
-    flexDirection: "row",
+    height: 68,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: pts.ink,
+    padding: 7,
     justifyContent: "space-between",
-    gap: 16,
   },
-  metaLabel: {
-    color: "rgba(0,0,0,0.48)",
-    fontSize: 9,
-    letterSpacing: 1.2,
-  },
-  metaValue: {
-    color: ticketColors.black,
-    fontSize: 13,
-    marginTop: 3,
-  },
-  passActions: { flexDirection: "row", gap: 10 },
-  actionBtn: {
-    flex: 1,
+  keyDown: { opacity: 0.75 },
+  keyLabel: { fontFamily: fonts.bodyBold, fontWeight: "700", fontSize: 9, lineHeight: 11 },
+
+  cityRow: { flexDirection: "row", gap: 14, paddingTop: 22 },
+
+  chanHead: { flexDirection: "row", justifyContent: "space-between", paddingTop: 20, paddingBottom: 6 },
+  filterRail: { gap: 14, paddingBottom: 10 },
+
+  chan: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 13,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
+    gap: 10,
+    paddingVertical: 9,
+    borderTopWidth: 1,
+    borderTopColor: pts.rule,
   },
-  actionBtnOrange: { backgroundColor: ticketColors.teal },
-  actionBtnDark: { backgroundColor: ticketColors.black },
-  actionBtnIcon: { fontSize: 18, color: ticketColors.white },
-  actionBtnText: { fontSize: 13 },
-  actionBtnTextDark: { color: ticketColors.white },
-  actionBtnTextLight: { color: ticketColors.white },
+  chanBody: { flex: 1, minWidth: 0 },
+  chanName: { fontFamily: fonts.bodyBold, fontWeight: "700", fontSize: 13, color: pts.ink, letterSpacing: -0.3 },
+  chanMeta: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.8, color: pts.mid, marginTop: 2 },
+  rate: { fontFamily: fonts.mono, fontSize: 12, color: pts.ink },
+  rateBest: { color: pts.sig },
 
-  // Barcode
-  barcode: {
-    flexDirection: "row",
-    gap: 2,
-    height: 44,
-    alignItems: "stretch",
-    opacity: 0.92,
-  },
-  bar: { backgroundColor: ticketColors.black, borderRadius: 1 },
-
-  // Section head
-  sectionHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-    gap: 12,
-  },
-  sectionTitle: { color: ticketColors.black, fontSize: 23, lineHeight: 27, letterSpacing: 0, flex: 1, minWidth: 0 },
-  sectionBtn: {
-    backgroundColor: ticketColors.white,
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
-    flexShrink: 0,
-  },
-  sectionBtnText: { color: ticketColors.black, fontSize: 11 },
-
-  // Offer ticket
-  ticketRail: { gap: 10, paddingBottom: 20 },
-  offerTicket: {
-    width: 164,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: ticketColors.pink,
-    borderWidth: 3,
-    borderColor: ticketColors.black,
-  },
-  offerTop: {
-    padding: 14,
-    paddingBottom: 10,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 4,
-  },
-  offerPoints: { color: ticketColors.black, fontSize: 40, lineHeight: 40, letterSpacing: 0 },
-  offerPtsLabel: { color: "rgba(0,0,0,0.58)", fontSize: 12, marginBottom: 4 },
-  offerPerf: {
-    flexDirection: "row",
-    gap: 3,
-    paddingHorizontal: 14,
-    marginVertical: 2,
-    overflow: "hidden",
-  },
-  offerPerfDash: { width: 6, height: 2, backgroundColor: "rgba(0,0,0,0.26)" },
-  offerBottom: { backgroundColor: ticketColors.white, padding: 13, gap: 5, borderTopWidth: 3, borderColor: ticketColors.black },
-  offerTitle: { color: ticketColors.black, fontSize: 16, lineHeight: 18 },
-  offerVenue: { color: "rgba(0,0,0,0.58)", fontSize: 11 },
-  offerCta: { color: ticketColors.black, fontSize: 11, marginTop: 4 },
-
-  // Partner card
-  partnerCard: {
-    width: 156,
-    backgroundColor: ticketColors.lavender,
-    borderRadius: 8,
-    padding: 14,
-    gap: 6,
-    borderWidth: 3,
-    borderColor: ticketColors.black,
-  },
-  partnerPts: { flexDirection: "row", alignItems: "flex-end", gap: 3 },
-  partnerPtsNum: { color: ticketColors.black, fontSize: 30, lineHeight: 30 },
-  partnerPtsLabel: { color: ticketColors.black, fontSize: 11, marginBottom: 2 },
-  partnerTitle: { color: ticketColors.black, fontSize: 14, lineHeight: 17 },
-  partnerVenue: { color: ticketColors.black, fontSize: 11 },
-
-  // Filter chips
-  filterRail: { gap: 8, paddingBottom: 12 },
-  filterChip: {
-    borderRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: ticketColors.white,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
-  },
-  filterChipActive: { backgroundColor: ticketColors.teal },
-  filterChipText: { color: ticketColors.black, fontSize: 12 },
-  filterChipTextActive: { color: ticketColors.white },
-
-  // Venue row
-  venueList: { gap: 8 },
-  venueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ticketColors.white,
-    borderRadius: 8,
-    overflow: "hidden",
-    padding: 14,
-    gap: 12,
-    borderWidth: 3,
-    borderColor: ticketColors.black,
-  },
-  venueAccent: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    backgroundColor: ticketColors.brown,
-  },
-  venueLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 4,
-    backgroundColor: ticketColors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 4,
-    borderWidth: 2,
-    borderColor: ticketColors.black,
-  },
-  venueMain: { flex: 1 },
-  venueTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 3,
-  },
-  venueName: { color: ticketColors.black, fontSize: 17, flex: 1 },
-  venueArrow: { color: ticketColors.black, fontSize: 16 },
-  venueMeta: { color: ticketColors.black, fontSize: 11, marginBottom: 7 },
-  venueChips: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-
-  chipOrange: {
-    backgroundColor: ticketColors.pink,
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  chipOrangeText: { color: ticketColors.black, fontSize: 10 },
-  chipGray: {
-    backgroundColor: ticketColors.lavender,
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  chipGrayText: { color: ticketColors.black, fontSize: 10 },
-  chipMint: {
-    backgroundColor: ticketColors.teal,
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  chipMintText: { color: ticketColors.white, fontSize: 10 },
-
-  // Empty / skeleton
-  emptyVenues: { padding: 24, alignItems: "center" },
-  emptyText: { color: ticketColors.black, fontSize: 13, textAlign: "center" },
+  empty: { paddingVertical: 26, textAlign: "center" },
 })

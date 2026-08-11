@@ -146,5 +146,28 @@
   "noJoinedDesc": "Izaberi neki iz Dostupnih i zarađuj bonus bodove",
   "browseAvailable": "Pregledaj dostupne",
   "noAvailable": "Sve odrađeno!",
-  "noAvailableDesc": "Priključio si se svim aktivnim izazovima."
+  "noAvailableDesc": "Priključio si se svim aktivnim izazovima.",
+  "bestRateNearby": "Najbolji kurs u blizini",
+  "partnersNearby": "Partnera u blizini",
+  "welcomeBurnsIn": "Welcome ističe za",
+  "activeQuests": "Aktivnih zadataka",
+  "noStreak": "Niz nije počeo",
+  "daysShort": "{{n}} d",
+  "levelShort": "niv. {{n}}",
+  "topForm": "Najviši oblik",
+  "pet": {
+    "spore": "Spora",
+    "bug": "Stenica",
+    "crab": "Rak",
+    "moth": "Moljac",
+    "ajax": "Ajaks",
+    "jelly": "Meduza",
+    "octo": "Oktopod",
+    "horn": "Rogač",
+    "ghost": "Duh",
+    "squid": "Lignja",
+    "sphinx": "Sfinga"
+  },
+  "metersShort": "{{n}} m",
+  "kmShort": "{{n}} km"
 }

@@ -146,5 +146,28 @@
   "noJoinedDesc": "Pick one from Available to start earning bonus points",
   "browseAvailable": "Browse available",
   "noAvailable": "All caught up!",
-  "noAvailableDesc": "You've joined every active challenge."
+  "noAvailableDesc": "You've joined every active challenge.",
+  "bestRateNearby": "Best rate nearby",
+  "partnersNearby": "Partners nearby",
+  "welcomeBurnsIn": "Welcome expires in",
+  "activeQuests": "Active quests",
+  "noStreak": "Streak not started",
+  "daysShort": "{{n}}d",
+  "levelShort": "lv. {{n}}",
+  "topForm": "Top form",
+  "pet": {
+    "spore": "Spore",
+    "bug": "Bug",
+    "crab": "Crab",
+    "moth": "Moth",
+    "ajax": "Ajax",
+    "jelly": "Jelly",
+    "octo": "Octo",
+    "horn": "Horn",
+    "ghost": "Ghost",
+    "squid": "Squid",
+    "sphinx": "Sphinx"
+  },
+  "metersShort": "{{n}} m",
+  "kmShort": "{{n}} km"
 }
