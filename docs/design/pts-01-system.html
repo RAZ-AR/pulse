@@ -7,141 +7,128 @@
     --mid: #8D8878;
     --rule: #CBC5B7;
     --dot-off: #D4CFC2;
-    --sig: #DE2A16;
+    --sig: #EA5B0C;
 
     --f: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --paper: #171613;
-      --paper-2: #1F1E1A;
-      --ink: #EAE6DC;
-      --mid: #8D8878;
-      --rule: #35332C;
-      --dot-off: #2E2C26;
-      --sig: #FF4E36;
+      --paper: #171613; --paper-2: #1F1E1A; --ink: #EAE6DC;
+      --mid: #8D8878; --rule: #35332C; --dot-off: #2E2C26; --sig: #FF7A2E;
     }
   }
   :root[data-theme="dark"] {
-    --paper: #171613;
-    --paper-2: #1F1E1A;
-    --ink: #EAE6DC;
-    --mid: #8D8878;
-    --rule: #35332C;
-    --dot-off: #2E2C26;
-    --sig: #FF4E36;
+    --paper: #171613; --paper-2: #1F1E1A; --ink: #EAE6DC;
+    --mid: #8D8878; --rule: #35332C; --dot-off: #2E2C26; --sig: #FF7A2E;
   }
 
   * { box-sizing: border-box; }
   body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--f);
-    font-size: 15px;
-    line-height: 1.5;
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--f); font-size: 15px; line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 26px; }
-  .lab {
-    font-family: var(--f-mono);
-    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid);
-  }
+  .lab { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); }
   section { border-top: 1px solid var(--ink); padding: 52px 0 60px; }
-  section h2 {
-    margin: 10px 0 0;
-    font-size: clamp(30px, 5.4vw, 54px);
-    line-height: 0.92; letter-spacing: -0.045em; font-weight: 700;
-  }
+  section h2 { margin: 10px 0 0; font-size: clamp(30px, 5.4vw, 54px); line-height: 0.92; letter-spacing: -0.045em; font-weight: 700; }
   section h2 em { font-style: normal; color: var(--mid); }
-  .intro { margin: 16px 0 0; max-width: 60ch; color: var(--mid); font-size: 16px; }
+  .intro { margin: 16px 0 0; max-width: 62ch; color: var(--mid); font-size: 16px; }
   .intro b { color: var(--ink); font-weight: 700; }
 
-  /* Masthead */
   .mast { border-top: 0; padding: 60px 0 44px; }
   .mast .rule { height: 1px; background: var(--ink); }
-  .mast h1 {
-    margin: 16px 0 0;
-    font-size: clamp(42px, 8.4vw, 96px);
-    line-height: 0.86; letter-spacing: -0.05em; font-weight: 700;
-  }
+  .mast h1 { margin: 16px 0 0; font-size: clamp(42px, 8.4vw, 96px); line-height: 0.86; letter-spacing: -0.05em; font-weight: 700; }
   .mast h1 span { display: block; color: var(--mid); }
   .mast h1 i { display: block; font-style: normal; color: var(--dot-off); }
 
-  /* Dot + pixel engines */
+  /* ── Рендеры одного растра ────────────────────────────────── */
   .dotgrid { display: grid; width: 100%; }
   .dotgrid i { aspect-ratio: 1/1; border-radius: 50%; background: var(--g-off, var(--dot-off)); }
   .dotgrid i.on { background: var(--g-on, var(--ink)); }
+
   .pixgrid { display: grid; width: 100%; gap: 0; }
   .pixgrid i { aspect-ratio: 1/1; background: transparent; }
   .pixgrid i.on { background: var(--g-on, var(--ink)); }
 
-  /* Changes list */
-  .changes { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-top: 24px; border-top: 1px solid var(--ink); }
+  .vdot { display: grid; width: 100%; }
+  .vdot i { aspect-ratio: 1/1; display: grid; place-items: center; }
+  .vdot i b { display: block; border-radius: 50%; background: var(--g-on, #fff); width: 20%; height: 20%; }
+  .vdot i.s0 b { display: none; }
+  .vdot i.s1 b { width: 34%; height: 34%; }
+  .vdot i.s2 b { width: 52%; height: 52%; }
+  .vdot i.s3 b { width: 74%; height: 74%; }
+  .vdot i.s4 b { width: 96%; height: 96%; }
+
+  .changes { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin-top: 24px; border-top: 1px solid var(--ink); }
   .changes > div { padding: 15px 20px 20px 0; border-bottom: 1px solid var(--rule); }
   .changes h3 { margin: 0 0 6px; font-size: 15px; letter-spacing: -0.015em; }
   .changes p { margin: 0; font-size: 13.5px; color: var(--mid); line-height: 1.45; }
-  .changes s { color: var(--mid); }
 
-  /* Palette */
-  .pal { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 26px; }
+  .pal { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 24px; }
   .pal > div { width: 116px; }
   .pal i { display: block; height: 76px; border: 1px solid var(--rule); }
   .pal b { display: block; font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.05em; margin-top: 7px; font-weight: 400; }
   .pal span { display: block; font-size: 11px; color: var(--mid); }
 
-  /* Type specimen */
-  .spec3 { margin-top: 28px; }
+  .spec3 { margin-top: 26px; }
   .spec3 div { font-weight: 700; letter-spacing: -0.045em; line-height: 0.98; font-size: clamp(28px, 5vw, 48px); }
-  .t1 { color: var(--ink); }
-  .t2 { color: var(--mid); }
-  .t3 { color: var(--dot-off); }
-  .scale { margin-top: 30px; border-top: 1px solid var(--ink); }
-  .scale > div { display: flex; align-items: baseline; gap: 20px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
-  .scale u { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--mid); text-decoration: none; width: 190px; flex: 0 0 auto; }
+  .t1 { color: var(--ink); } .t2 { color: var(--mid); } .t3 { color: var(--dot-off); }
+  .lightdemo {
+    margin-top: 26px; background: var(--sig); color: #fff;
+    padding: 30px 26px 34px;
+  }
+  .lightdemo p { margin: 0; font-weight: 200; text-transform: uppercase; letter-spacing: 0.05em; font-size: clamp(28px, 5.6vw, 56px); line-height: 1.02; }
+  .lightdemo u { display: block; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.16em; text-decoration: none; opacity: 0.8; margin-bottom: 16px; }
 
-  /* Numerals */
-  .nums { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 26px; }
+  .scale { margin-top: 28px; border-top: 1px solid var(--ink); }
+  .scale > div { display: flex; align-items: baseline; gap: 20px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .scale u { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--mid); text-decoration: none; width: 210px; flex: 0 0 auto; }
+
+  .sizes { display: flex; gap: 20px; margin-top: 24px; flex-wrap: wrap; }
+  .sizes > div { text-align: center; }
+  .sizes .cell { width: 54px; height: 54px; background: var(--sig); display: grid; place-items: center; }
+  .sizes .cell b { display: block; border-radius: 50%; background: #fff; }
+  .sizes u { display: block; font-family: var(--f-mono); font-size: 9px; color: var(--mid); margin-top: 8px; text-decoration: none; }
+
+  .nums { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
   .nums > div { width: 54px; }
   .nums .dotgrid { gap: 2px; }
   .nums u { display: block; text-align: center; font-family: var(--f-mono); font-size: 9px; color: var(--mid); margin-top: 7px; text-decoration: none; }
-  .numdemo { margin-top: 30px; background: var(--paper-2); border: 1px solid var(--rule); padding: 22px 20px; }
+  .numdemo { margin-top: 28px; background: var(--paper-2); border: 1px solid var(--rule); padding: 22px 20px; }
   .numdemo .dotgrid { gap: 4px; max-width: 420px; }
 
-  /* Icons */
-  .icons {
-    margin-top: 26px;
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
-    background: var(--paper-2); border: 1px solid var(--rule);
-  }
-  .icons > div {
-    padding: 22px 16px 16px;
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
-  }
+  .icons { margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); background: var(--paper-2); border: 1px solid var(--rule); }
+  .icons > div { padding: 22px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
   .icons .pixgrid { width: 54px; }
   .icons u { font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.08em; color: var(--mid); text-decoration: none; text-transform: uppercase; }
 
-  /* Stage */
+  /* Питомцы */
+  .fam { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--ink); }
+  .fam > div { padding: 22px 16px 18px; border-bottom: 1px solid var(--rule); border-right: 1px solid var(--rule); text-align: center; }
+  .fam .pixgrid { width: 84px; margin: 0 auto; }
+  .fam b { display: block; margin-top: 14px; font-size: 15px; letter-spacing: -0.02em; }
+  .fam u { display: block; font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: var(--mid); text-decoration: none; margin-top: 4px; }
+  .fam .lvl { display: inline-block; font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.12em; color: var(--sig); }
+  .twin { margin-top: 30px; display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-start; }
+  .twin > div { width: 210px; }
+  .twin .box { background: var(--paper-2); border: 1px solid var(--rule); padding: 18px; }
+  .twin .box.sig { background: var(--sig); border-color: var(--sig); }
+  .twin .dotgrid { gap: 3px; --g-off: #D4CFC2; }
+  .twin p { margin: 12px 0 0; font-size: 13px; color: var(--mid); }
+
   .stage { margin: 40px 0 0; display: flex; gap: 24px; overflow-x: auto; padding-bottom: 14px; }
   .fw { flex: 0 0 auto; width: 300px; }
   .cap { margin-top: 12px; font-family: var(--f-mono); font-size: 10px; line-height: 1.55; color: var(--mid); letter-spacing: 0.03em; }
   .phone { width: 300px; height: 640px; overflow: hidden; position: relative; border-radius: 30px; background: #E9E5DB; color: #14130F; display: flex; flex-direction: column; }
 
-  /* Shared phone chrome */
-  .st {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 13px 20px 6px; font-size: 12px; font-weight: 700;
-  }
+  .st { display: flex; justify-content: space-between; align-items: center; padding: 13px 20px 6px; font-size: 12px; font-weight: 700; }
   .st span { font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.1em; color: #8D8878; font-weight: 400; }
   .hr { height: 1px; background: #14130F; margin: 0 18px; }
-  .hr.thin { background: #CBC5B7; }
   .stack { padding: 14px 18px 0; }
   .stack div { font-size: 27px; line-height: 1.0; font-weight: 700; letter-spacing: -0.045em; }
-  .s1 { color: #14130F; }
-  .s2 { color: #9A9488; }
-  .s3 { color: #C6C0B2; }
+  .s1 { color: #14130F; } .s2 { color: #9A9488; } .s3 { color: #C6C0B2; }
   .tabs {
     margin-top: auto; display: flex; justify-content: space-between; align-items: center;
     padding: 11px 18px 16px; border-top: 1px solid #14130F;
@@ -149,121 +136,79 @@
   }
   .tabs b { color: #14130F; font-weight: 400; }
 
-  /* p1 hero field */
-  .hero { flex: 1; padding: 20px 18px 0; overflow: hidden; }
+  .hero { flex: 1; padding: 16px 18px 0; overflow: hidden; }
   .hero .dotgrid { gap: 3px; --g-off: #D4CFC2; --g-on: #14130F; }
-  .heroCap {
-    display: flex; justify-content: space-between;
-    padding: 10px 18px 0;
-    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: #8D8878;
-  }
-  .heroCap b { color: #DE2A16; font-weight: 400; }
+  .heroCap { display: flex; justify-content: space-between; padding: 10px 18px 0; font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.1em; color: #8D8878; }
+  .heroCap b { color: #EA5B0C; font-weight: 400; }
 
-  /* p2 */
   .pairs { padding: 12px 18px 0; }
-  .pair {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 8px 0; border-top: 1px solid #CBC5B7; font-size: 13px;
-  }
+  .pair { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-top: 1px solid #CBC5B7; font-size: 13px; }
   .pair span { color: #78735F; }
   .pair b { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
-  .pair b.hi { color: #DE2A16; }
+  .pair b.hi { color: #EA5B0C; }
   .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 16px 18px 0; }
-  .key {
-    border-radius: 5px; height: 68px; border: 1px solid #14130F;
-    display: flex; flex-direction: column; justify-content: space-between; padding: 7px;
-  }
+  .key { border-radius: 5px; height: 68px; border: 1px solid #14130F; display: flex; flex-direction: column; justify-content: space-between; padding: 7px; }
   .key .pixgrid { width: 27px; }
   .key b { font-size: 8.5px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
-  .k-sig { background: #DE2A16; color: #FFFFFF; --g-on: #FFFFFF; }
+  .k-sig { background: #EA5B0C; color: #FFFFFF; --g-on: #FFFFFF; }
   .k-ink { background: #14130F; color: #F1EEE6; --g-on: #F1EEE6; }
   .k-pap { background: #F1EEE6; color: #14130F; --g-on: #14130F; }
-  .chanhead {
-    display: flex; justify-content: space-between; padding: 18px 18px 5px;
-    font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; color: #8D8878;
-  }
-  .chan {
-    display: flex; align-items: center; gap: 9px;
-    margin: 0 18px; padding: 7px 0; border-top: 1px solid #CBC5B7;
-  }
+  .chanhead { display: flex; justify-content: space-between; padding: 18px 18px 5px; font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; color: #8D8878; }
+  .chan { display: flex; align-items: center; gap: 9px; margin: 0 18px; padding: 7px 0; border-top: 1px solid #CBC5B7; }
   .chan .pixgrid { width: 18px; flex: 0 0 auto; }
-  .chan em { font-style: normal; font-family: var(--f-mono); font-size: 9px; color: #8D8878; }
   .chan strong { font-size: 13px; font-weight: 700; letter-spacing: -0.02em; }
   .chan .dots { flex: 1; border-bottom: 1px dotted #B8B2A2; transform: translateY(-3px); }
   .chan var { font-style: normal; font-family: var(--f-mono); font-size: 11.5px; font-variant-numeric: tabular-nums; }
-  .chan var.hi { color: #DE2A16; }
+  .chan var.hi { color: #EA5B0C; }
 
-  /* p3 scan */
-  .view {
-    margin: 14px 18px 0; height: 224px; position: relative;
-    background: #DFDACE; border: 1px solid #14130F; overflow: hidden;
-  }
-  .view .pixgrid { position: absolute; width: 20px; --g-on: #DE2A16; }
-  .paper {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) rotate(-2deg);
-    width: 104px; height: 138px; background: rgba(255,255,255,0.55); border: 1px solid rgba(20,19,15,0.22);
-  }
-  .rule-h { position: absolute; left: 34px; right: 34px; top: 50%; height: 1px; background: rgba(222,42,22,0.55); }
+  .view { margin: 14px 18px 0; height: 224px; position: relative; background: #DFDACE; border: 1px solid #14130F; overflow: hidden; }
+  .view .pixgrid { position: absolute; width: 20px; --g-on: #EA5B0C; }
+  .paper { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) rotate(-2deg); width: 104px; height: 138px; background: rgba(255,255,255,0.55); border: 1px solid rgba(20,19,15,0.22); }
+  .rule-h { position: absolute; left: 34px; right: 34px; top: 50%; height: 1px; background: rgba(234,91,12,0.6); }
   .readout { padding: 14px 18px 0; font-family: var(--f-mono); font-size: 9.5px; line-height: 1.95; color: #78735F; }
   .readout b { color: #14130F; font-weight: 400; }
-  .readout i { font-style: normal; color: #DE2A16; }
+  .readout i { font-style: normal; color: #EA5B0C; }
   .out { display: flex; align-items: flex-end; justify-content: space-between; padding: 12px 18px 0; }
   .out .n { font-size: 52px; font-weight: 700; letter-spacing: -0.055em; line-height: 0.82; }
-  .out .go { background: #DE2A16; color: #fff; border: 1px solid #14130F; border-radius: 5px; padding: 12px 16px; font-size: 11px; font-weight: 700; }
+  .out .go { background: #EA5B0C; color: #fff; border: 1px solid #14130F; border-radius: 5px; padding: 12px 16px; font-size: 11px; font-weight: 700; }
   .meter { display: flex; gap: 2px; height: 20px; padding: 0 18px; margin-top: 12px; }
   .meter i { flex: 1; background: #CBC5B7; }
   .meter i.on { background: #14130F; }
-  .meter i.pk { background: #DE2A16; }
+  .meter i.pk { background: #EA5B0C; }
 
-  /* p4 tiles */
-  .tiles { padding: 14px 14px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .tile { border-radius: 22px; padding: 14px; overflow: hidden; position: relative; }
-  .tile.sig { background: #DE2A16; color: #fff; --g-on: #fff; }
-  .tile.ink { background: #14130F; color: #F1EEE6; --g-on: #F1EEE6; --g-off: rgba(241,238,230,0.13); }
-  .tile.pap { background: #F5F2EA; color: #14130F; --g-on: #14130F; }
-  .tile.wide { grid-column: 1 / -1; }
-  .tilelab { font-family: var(--f-mono); font-size: 8px; letter-spacing: 0.14em; opacity: 0.72; }
-  .tilebig { font-size: 30px; font-weight: 700; letter-spacing: -0.045em; line-height: 1; margin-top: 8px; }
-  .tilesub { font-size: 11px; margin-top: 6px; opacity: 0.8; }
-  .tile .dotgrid { gap: 2.5px; }
-  .toggles { display: flex; gap: 8px; padding: 10px 14px 0; }
-  .tog {
-    width: 54px; height: 54px; border-radius: 50%;
-    background: #F5F2EA; display: flex; align-items: center; justify-content: center;
+  /* Сигнальный экран */
+  .sig-p { background: #EA5B0C; color: #FFFFFF; }
+  .sig-bar { display: flex; justify-content: space-between; padding: 15px 18px 0; font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.12em; color: rgba(255,255,255,0.78); }
+  .sig-hr { height: 1px; background: rgba(255,255,255,0.42); margin: 10px 18px 0; }
+  .sig-h {
+    padding: 18px 18px 0;
+    font-weight: 200; text-transform: uppercase;
+    font-size: 44px; line-height: 0.98; letter-spacing: 0.035em;
   }
-  .tog.on { background: #14130F; --g-on: #F1EEE6; }
-  .tog .pixgrid { width: 18px; }
+  .sig-sub { padding: 12px 18px 0; font-family: var(--f-mono); font-size: 9.5px; letter-spacing: 0.1em; color: rgba(255,255,255,0.86); line-height: 1.8; }
+  .sig-field { flex: 1; padding: 14px 16px 0; overflow: hidden; }
+  .sig-field .vdot { gap: 3px; --g-on: #FFFFFF; }
+  .sig-foot {
+    margin-top: auto; display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px 18px; border-top: 1px solid rgba(255,255,255,0.42);
+    font-family: var(--f-mono); font-size: 9px; letter-spacing: 0.1em;
+  }
 
-  /* p5 pet */
-  .petwrap { padding: 16px 18px 0; display: flex; flex-direction: column; align-items: center; }
-  .petstage {
-    width: 100%; background: #F5F2EA; border: 1px solid #14130F;
-    padding: 18px 0 14px; display: flex; flex-direction: column; align-items: center; gap: 12px;
-  }
-  .petname { font-size: 22px; font-weight: 700; letter-spacing: -0.04em; }
-  .petbadge {
-    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.12em;
-    border: 1px solid #14130F; border-radius: 99px; padding: 4px 10px;
-  }
-  .states { display: flex; gap: 6px; padding: 14px 18px 0; }
-  .state {
-    flex: 1; border: 1px solid #CBC5B7; border-radius: 5px; padding: 8px 6px;
-    display: flex; flex-direction: column; align-items: center; gap: 7px;
-  }
-  .state.act { border-color: #14130F; background: #F5F2EA; }
-  .state .dotgrid { width: 44px; gap: 1.5px; }
-  .state u { font-family: var(--f-mono); font-size: 7.5px; letter-spacing: 0.08em; color: #8D8878; text-decoration: none; }
-  .state.act u { color: #14130F; }
+  /* Коллекция */
+  .coll { padding: 14px 18px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .cbox { border: 1px solid #CBC5B7; border-radius: 5px; padding: 11px 6px 9px; text-align: center; background: #F1EEE6; }
+  .cbox.lock { background: transparent; --g-on: #D4CFC2; }
+  .cbox.own { border-color: #14130F; }
+  .cbox .pixgrid { width: 46px; margin: 0 auto; }
+  .cbox u { display: block; font-family: var(--f-mono); font-size: 7.5px; letter-spacing: 0.06em; color: #8D8878; margin-top: 8px; text-decoration: none; }
+  .cbox.own u { color: #14130F; }
 
-  /* Rules */
-  .rules { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; border-top: 1px solid var(--ink); }
+  .rules { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); border-top: 1px solid var(--ink); }
   .rules > div { padding: 14px 22px 18px 0; border-bottom: 1px solid var(--rule); }
   .rules h4 { margin: 0 0 8px; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 400; color: var(--mid); }
   .rules ul { margin: 0; padding-left: 17px; font-size: 13.5px; }
   .rules li { margin-bottom: 5px; }
-  .rules li b { font-weight: 700; }
-
-  .srcs { margin-top: 34px; font-size: 12.5px; color: var(--mid); max-width: 74ch; }
+  .srcs { margin-top: 34px; font-size: 12.5px; color: var(--mid); max-width: 76ch; }
   :where(a, button):focus-visible { outline: 2px solid var(--sig); outline-offset: 3px; }
   @media (max-width: 640px) { .mast { padding: 40px 0 26px; } section { padding: 40px 0 46px; } }
 </style>
@@ -271,45 +216,44 @@
 <header class="mast">
   <div class="wrap">
     <div class="rule"></div>
-    <p class="lab" style="margin-top:12px;">ayoo · клиентский mini app · направление принято</p>
-    <h1>pts–01<span>точечная</span><i>система</i></h1>
+    <p class="lab" style="margin-top:12px;">ayoo · клиентский mini app · система, версия 3</p>
+    <h1>pts–01<span>один растр</span><i>три рендера</i></h1>
     <p class="intro">
-      Направление «Прибор» переработано под три новых референса. Главное изменение:
-      <b>точечная матрица перестала быть окошком и стала главным героем экрана</b> —
-      ровно как в будильнике. Плюс тёплый греж вместо холодного серого, пиксельная
-      иконочная система и точечные цифры. Питомец теперь живёт в той же матрице,
-      что и баланс: одна техника, ноль ассетов.
+      Питомец получил <b>семейство форм в духе Space Invaders</b> и эволюцию по уровням,
+      а дисплей — <b>второй режим</b>: оранжевый, со светлым начертанием и точками
+      переменного диаметра. Один и тот же массив клеток рисуется тремя способами —
+      квадратами, ровными точками и точками разного размера. Ни одной картинки в системе по-прежнему нет.
     </p>
   </div>
 </header>
 
 <section>
   <div class="wrap">
-    <p class="lab">Что изменилось по сравнению с прошлой версией</p>
+    <p class="lab">Что изменилось в этой версии</p>
     <div class="changes">
       <div>
-        <h3>Грунт стал тёплым</h3>
-        <p><s>#D6D6D2 холодный серый</s> → <b>#E9E5DB</b>. Все три референса на тёплом бумажном греже — на нём чёрный читается мягче, а красный не кричит.</p>
+        <h3>Питомец стал видом, а не особью</h3>
+        <p>Одна абстрактная клякса заменена на семейство: пять форм эволюции по уровням и шесть редких за достижения. Это ваш второй референс, переведённый в механику.</p>
       </div>
       <div>
-        <h3>Матрица стала экраном</h3>
-        <p>Было ЖК-окошко 76px в углу. Стало поле 24×32, которое занимает две трети экрана и уходит под нижний край — как циферблат в будильнике.</p>
+        <h3>Появился сигнальный режим</h3>
+        <p>Оранжевый экран со светлым начертанием и белыми точками — для моментов: начислено, новый уровень, чек-ин принят. Рабочий режим остаётся грежевым.</p>
       </div>
       <div>
-        <h3>Появились точечные цифры</h3>
-        <p>Свой растровый шрифт 5×7. Баланс набирается точками в той же сетке, что и питомец — они физически на одном дисплее.</p>
+        <h3>Точки получили диаметр</h3>
+        <p>Пять размеров вместо «вкл./выкл». Фоновая сетка дышит, а питомец собран из самых крупных — ровно как в референсе с DON'T TOUCH.</p>
       </div>
       <div>
-        <h3>Иконки стали пиксельными</h3>
-        <p>Ни одной линейной иконки. 16 знаков на сетке 9×9, только прямые углы. Это единственная графика в системе.</p>
+        <h3>Второй голос типографики</h3>
+        <p>К плотному Bold добавлен Helvetica Neue Light в верхнем регистре с разрядкой. Bold — данные, Light — высказывание. Только на оранжевом.</p>
       </div>
       <div>
-        <h3>Сигнал стал красным</h3>
-        <p><b>#DE2A16</b> вместо оранжевого — по референсу Nothing. Меняется одним токеном: если хочется остаться на фирменном #EA5B0C, это правка в одной строке.</p>
+        <h3>Сигнал вернулся к фирменному</h3>
+        <p>Красный не нужен: оранжевый в референсе практически совпадает с вашим <b>#EA5B0C</b>. Берём фирменный — вопрос смены бренд-цвета снят.</p>
       </div>
       <div>
-        <h3>Добавились плитки</h3>
-        <p>Для каталога и виджетов — скруглённые 22px плашки в духе Nothing OS. Единственное место, где радиус больше 5px, и это осознанное исключение.</p>
+        <h3>Один растр, три рендера</h3>
+        <p>Квадраты — иконки и коллекция. Ровные точки — рабочий дисплей. Точки с диаметром — сигнальный. Массив клеток при этом один и тот же.</p>
       </div>
     </div>
   </div>
@@ -318,18 +262,19 @@
 <section>
   <div class="wrap">
     <p class="lab">01 · Палитра</p>
-    <h2>Шесть значений <em>и ни одного больше</em></h2>
+    <h2>Рабочий режим <em>и сигнальный</em></h2>
     <div class="pal">
       <div><i style="background:#E9E5DB;"></i><b>#E9E5DB</b><span>грунт</span></div>
       <div><i style="background:#F1EEE6;"></i><b>#F1EEE6</b><span>плашка</span></div>
       <div><i style="background:#D4CFC2;"></i><b>#D4CFC2</b><span>точка выкл.</span></div>
-      <div><i style="background:#14130F;"></i><b>#14130F</b><span>тушь / точка вкл.</span></div>
-      <div><i style="background:#9A9488;"></i><b>#9A9488</b><span>второй тон</span></div>
-      <div><i style="background:#DE2A16;"></i><b>#DE2A16</b><span>сигнал</span></div>
+      <div><i style="background:#14130F;"></i><b>#14130F</b><span>тушь</span></div>
+      <div><i style="background:#8D8878;"></i><b>#8D8878</b><span>второй тон</span></div>
+      <div><i style="background:#EA5B0C;"></i><b>#EA5B0C</b><span>сигнал · фирменный</span></div>
+      <div><i style="background:#FFFFFF;"></i><b>#FFFFFF</b><span>точка на сигнале</span></div>
     </div>
-    <p class="intro" style="margin-top:22px;">
-      Сигнальный красный имеет право появляться <b>один раз на экран</b>: либо клавиша действия,
-      либо лучший курс, либо срочность. Два красных объекта в одном кадре — ошибка системы.
+    <p class="intro">
+      В рабочем режиме оранжевый появляется <b>один раз на экран</b> — клавиша действия или лучший курс.
+      В сигнальном он занимает весь экран, и тогда на нём нет ничего, кроме белого. Третьего варианта нет.
     </p>
   </div>
 </section>
@@ -337,33 +282,101 @@
 <section>
   <div class="wrap">
     <p class="lab">02 · Типографика</p>
-    <h2>Одна гарнитура, <em>три тона</em></h2>
+    <h2>Два голоса: <em>плотный и тонкий</em></h2>
     <p class="intro">
-      Helvetica Neue Bold — системная на iOS и в Telegram-вебвью, ставить ничего не нужно.
-      Иерархию держит тон, а не кегль: заголовок всегда одного размера, меняется только цвет строки.
+      Helvetica Neue — системная на iOS и в Telegram-вебвью. Bold с отрицательным трекингом
+      держит данные, Light в верхнем регистре с разрядкой <b>+0.035em</b> говорит одну фразу
+      на сигнальном экране. Смешивать их в одном блоке нельзя.
     </p>
     <div class="spec3">
       <div class="t1">Баланс</div>
       <div class="t2">2 480 баллов</div>
       <div class="t3">+180 за сегодня</div>
     </div>
+    <div class="lightdemo">
+      <u>СИГНАЛЬНОЕ ВЫСКАЗЫВАНИЕ · HELVETICA NEUE LIGHT</u>
+      <p>Зачтено</p>
+    </div>
     <div class="scale">
-      <div><u>ЗАГОЛОВОК · 27/27 · −4.5%</u><span style="font-size:27px;font-weight:700;letter-spacing:-0.045em;">Лучший курс рядом</span></div>
-      <div><u>ЧИСЛО · 52/43 · −5.5%</u><span style="font-size:38px;font-weight:700;letter-spacing:-0.055em;">+168</span></div>
-      <div><u>ТЕЛО · 13/19</u><span style="font-size:13px;">Курс места · открыто до 23:00</span></div>
-      <div><u>МОНО-ЛЕЙБЛ · 8.5 · +0.14em</u><span class="lab">КАНАЛЫ · РЯДОМ · PTS/RSD</span></div>
+      <div><u>ЗАГОЛОВОК · BOLD 27/27 · −4.5%</u><span style="font-size:27px;font-weight:700;letter-spacing:-0.045em;">Лучший курс рядом</span></div>
+      <div><u>ЧИСЛО · BOLD 52/43 · −5.5%</u><span style="font-size:38px;font-weight:700;letter-spacing:-0.055em;">+168</span></div>
+      <div><u>СИГНАЛ · LIGHT 44 · +3.5% · CAPS</u><span style="font-size:30px;font-weight:200;text-transform:uppercase;letter-spacing:0.035em;">Новый уровень</span></div>
+      <div><u>ТЕЛО · REGULAR 13/19</u><span style="font-size:13px;">Курс места · открыто до 23:00</span></div>
+      <div><u>МОНО-ЛЕЙБЛ · 8.5 · +14%</u><span class="lab">КАНАЛЫ · РЯДОМ · PTS/RSD</span></div>
     </div>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <p class="lab">03 · Точечные цифры</p>
+    <p class="lab">03 · Дисплей</p>
+    <h2>Пять диаметров <em>вместо двух состояний</em></h2>
+    <p class="intro">
+      В рабочем режиме точка либо включена, либо нет. В сигнальном у неё пять размеров:
+      фоновая сетка модулируется мелким шумом, а объект собирается из самых крупных.
+      Поле при этом остаётся строго регулярным — <b>меняется только диаметр, никогда не позиция</b>.
+    </p>
+    <div class="sizes" id="sizespec"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">04 · Питомец</p>
+    <h2>Пять форм эволюции <em>и шесть редких</em></h2>
+    <p class="intro">
+      Растр 11×8, строгая симметрия, только прямые углы. Форма меняется с уровнем —
+      питомец не «растёт в размере», а <b>превращается в другое существо</b>, и это
+      главный визуальный приз продукта. Редкие формы выдаются за конкретные действия,
+      а не за баллы, поэтому их нельзя купить — только заработать поведением.
+    </p>
+    <div class="fam" id="evolution"></div>
+
+    <p class="lab" style="margin-top:34px;">Редкие формы · за достижения</p>
+    <div class="fam" id="rare"></div>
+
+    <div class="twin">
+      <div>
+        <div class="box">
+          <div class="pixgrid" data-inv="crab" style="--g-on:#14130F;"></div>
+        </div>
+        <p><b style="color:var(--ink);">Квадраты.</b> Коллекция, иконки, мелкие места — форма читается при 40px.</p>
+      </div>
+      <div>
+        <div class="box">
+          <div class="dotgrid" data-invdot="crab" style="--g-on:#14130F;gap:4px;"></div>
+        </div>
+        <p><b style="color:var(--ink);">Ровные точки.</b> Рабочий дисплей на грежевом — питомец живёт в той же сетке, что и баланс.</p>
+      </div>
+      <div>
+        <div class="box sig">
+          <div class="vdot" data-field="crab" data-w="13" data-rows="10" style="gap:3px;--g-on:#FFFFFF;"></div>
+        </div>
+        <p><b style="color:var(--ink);">Точки с диаметром.</b> Сигнальный экран — тот же массив, но фон дышит шумом.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">05 · Состояния</p>
+    <h2>Четыре кадра <em>одной формы</em></h2>
+    <p class="intro">
+      Состояние — это не отдельная картинка, а вариант того же растра: сдвинутые «глаза»,
+      подобранные лапы, закрытые веки. Меняются 6–10 клеток из 88.
+    </p>
+    <div class="fam" id="states"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="lab">06 · Цифры</p>
     <h2>Растр 5×7 <em>вместо шрифта</em></h2>
     <p class="intro">
-      Цифры собираются из тех же точек, что и питомец, поэтому дисплей выглядит единым устройством.
-      Это <b>не шрифт, а массив</b>: не нужно ни лицензии, ни загрузки, ни фолбэка — и он одинаково
-      выглядит на iOS, Android и в вебе.
+      Не шрифт, а массив: ни лицензии, ни загрузки, ни фолбэка. Числа набираются
+      в той же сетке, что питомец, поэтому дисплей выглядит одним устройством.
     </p>
     <div class="nums" id="numspec"></div>
     <div class="numdemo">
@@ -375,12 +388,12 @@
 
 <section>
   <div class="wrap">
-    <p class="lab">04 · Иконки</p>
+    <p class="lab">07 · Иконки</p>
     <h2>Шестнадцать знаков <em>на сетке 9×9</em></h2>
     <p class="intro">
-      Только прямые углы, только один вес, никаких обводок и скруглений. Иконка рисуется
-      включёнными клетками — тем же способом, что цифры и питомец. За счёт этого набор
-      расширяется кем угодно за пять минут и не расползается по стилю.
+      Только прямые углы, один вес, никаких обводок. Иконка рисуется включёнными клетками —
+      тем же способом, что цифры и питомец, поэтому набор расширяется за пять минут
+      и не расползается по стилю.
     </p>
     <div class="icons" id="iconset"></div>
   </div>
@@ -388,11 +401,11 @@
 
 <section>
   <div class="wrap">
-    <p class="lab">05 · Экраны</p>
-    <h2>Пять экранов <em>в системе</em></h2>
+    <p class="lab">08 · Экраны</p>
+    <h2>Шесть экранов <em>в двух режимах</em></h2>
 
     <div class="stage">
-      <!-- 1 — Главная -->
+      <!-- 1 Главная -->
       <div class="fw">
         <div class="phone">
           <div class="st"><b>9:41</b><span>AYOO · PTS–01</span></div>
@@ -402,15 +415,15 @@
             <div class="s2">2 480 баллов</div>
             <div class="s3">+180 за сегодня</div>
           </div>
-          <div class="heroCap"><span>ЭХО · УРОВЕНЬ 4</span><b>62 % ДО СЛЕДУЮЩЕГО</b></div>
+          <div class="heroCap"><span>ЭХО · КРАБ · УРОВЕНЬ 3</span><b>62 % ДО МОТЫЛЬКА</b></div>
           <div class="hero">
-            <div class="dotgrid" data-hero="2480" data-w="24" data-rows="32"></div>
+            <div class="dotgrid" data-hero="2480" data-w="24" data-rows="30"></div>
           </div>
         </div>
-        <p class="cap">Главная. Стек из трёх тонов и поле 24×32, уходящее под край. Сверху матрицы — баланс точками, ниже — питомец. Один дисплей, два содержания.</p>
+        <p class="cap">Главная, рабочий режим. Трёхтоновый стек и поле 24×30: сверху баланс точками, ниже питомец текущей формы.</p>
       </div>
 
-      <!-- 2 — Главная, ниже -->
+      <!-- 2 Продолжение -->
       <div class="fw">
         <div class="phone">
           <div class="st"><b>9:41</b><span>ПРОКРУТКА ВНИЗ</span></div>
@@ -432,28 +445,16 @@
             <div class="key k-pap"><div class="pixgrid" data-icon="nav"></div><b>КАР-<br>ТА</b></div>
           </div>
           <div class="chanhead"><span>КАНАЛЫ · ДОРЧОЛ</span><span>PTS/RSD</span></div>
-          <div class="chan">
-            <div class="pixgrid" data-icon="coffee"></div>
-            <strong>Mood Coffee</strong><span class="dots"></span><var class="hi">0.084</var>
-          </div>
-          <div class="chan">
-            <div class="pixgrid" data-icon="food"></div>
-            <strong>Torii Sushi</strong><span class="dots"></span><var>0.061</var>
-          </div>
-          <div class="chan">
-            <div class="pixgrid" data-icon="coffee"></div>
-            <strong>Café Willow</strong><span class="dots"></span><var>0.042</var>
-          </div>
-          <div class="chan">
-            <div class="pixgrid" data-icon="beauty"></div>
-            <strong>Luma Beauty</strong><span class="dots"></span><var>0.038</var>
-          </div>
+          <div class="chan"><div class="pixgrid" data-icon="coffee"></div><strong>Mood Coffee</strong><span class="dots"></span><var class="hi">0.084</var></div>
+          <div class="chan"><div class="pixgrid" data-icon="food"></div><strong>Torii Sushi</strong><span class="dots"></span><var>0.061</var></div>
+          <div class="chan"><div class="pixgrid" data-icon="coffee"></div><strong>Café Willow</strong><span class="dots"></span><var>0.042</var></div>
+          <div class="chan"><div class="pixgrid" data-icon="beauty"></div><strong>Luma Beauty</strong><span class="dots"></span><var>0.038</var></div>
           <div class="tabs"><b>ГЛАВНАЯ</b><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><span>Я</span></div>
         </div>
-        <p class="cap">Продолжение главной. Пары «лейбл — значение», четыре клавиши с пиксельными знаками, список каналов с точечным выносителем.</p>
+        <p class="cap">Продолжение главной. Пары «лейбл — значение», четыре клавиши с пиксельными знаками, список каналов.</p>
       </div>
 
-      <!-- 3 — Скан -->
+      <!-- 3 Скан -->
       <div class="fw">
         <div class="phone">
           <div class="st"><b>Скан чека</b><span>MODE 01 / 04</span></div>
@@ -484,81 +485,56 @@
           </div>
           <div class="tabs"><span>ОТМЕНА</span><b>ВВЕСТИ ВРУЧНУЮ</b><span>ПОМОЩЬ</span></div>
         </div>
-        <p class="cap">Скан. Камера подана как измерение: уровень сигнала, пиксельные углы кадра, моно-сводка, красная клавиша записи.</p>
+        <p class="cap">Скан. Уровень сигнала, пиксельные углы кадра, моно-сводка, оранжевая клавиша записи.</p>
       </div>
 
-      <!-- 4 — Награды -->
+      <!-- 4 Сигнал: зачтено -->
+      <div class="fw">
+        <div class="phone sig-p">
+          <div class="sig-bar"><span>AYOO · PTS–01</span><span>19:42</span></div>
+          <div class="sig-hr"></div>
+          <div class="sig-h">Зачтено</div>
+          <div class="sig-sub">MOOD COFFEE · 2 000 RSD<br>КУРС 0.084 · ×10 ПАРТНЁР</div>
+          <div class="sig-field">
+            <div class="vdot" data-field="crab" data-w="18" data-rows="22" data-top="5"></div>
+          </div>
+          <div class="sig-foot"><span>+168 БАЛЛОВ</span><span>ЭХО СЫТ →</span></div>
+        </div>
+        <p class="cap">Сигнальный экран после скана. Светлое начертание, белые точки переменного диаметра, питомец в реакции. Держится 2 секунды и уходит.</p>
+      </div>
+
+      <!-- 5 Сигнал: уровень -->
+      <div class="fw">
+        <div class="phone sig-p">
+          <div class="sig-bar"><span>ЭВОЛЮЦИЯ</span><span>УРОВЕНЬ 4</span></div>
+          <div class="sig-hr"></div>
+          <div class="sig-h">Новая<br>форма</div>
+          <div class="sig-sub">КРАБ → МОТЫЛЁК<br>6 000 БАЛЛОВ ЗА ВСЁ ВРЕМЯ</div>
+          <div class="sig-field">
+            <div class="vdot" data-field="moth" data-w="18" data-rows="20" data-top="4"></div>
+          </div>
+          <div class="sig-foot"><span>ФОРМА 4 ИЗ 5</span><span>СМОТРЕТЬ →</span></div>
+        </div>
+        <p class="cap">Новый уровень. Единственный момент, когда экран говорит одну фразу и больше ничего — питомец сменил вид.</p>
+      </div>
+
+      <!-- 6 Коллекция -->
       <div class="fw">
         <div class="phone">
-          <div class="st"><b>9:41</b><span>НАГРАДЫ</span></div>
+          <div class="st"><b>Эхо</b><span>КОЛЛЕКЦИЯ 5 / 11</span></div>
           <div class="hr"></div>
           <div class="stack">
-            <div class="s1">Что взять</div>
-            <div class="s2">на 2 480</div>
+            <div class="s1">Формы</div>
+            <div class="s2">5 из 11</div>
           </div>
-          <div class="tiles">
-            <div class="tile ink wide">
-              <div class="tilelab">ДОСТУПНО СЕЙЧАС · MOOD COFFEE</div>
-              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;">
-                <div>
-                  <div class="tilebig">Фильтр<br>бесплатно</div>
-                  <div class="tilesub">Kralja Petra 18 · 240 м</div>
-                </div>
-                <div style="width:104px;flex:0 0 auto;">
-                  <div class="dotgrid" data-num="450" data-w="17" style="gap:2px;"></div>
-                </div>
-              </div>
-            </div>
-            <div class="tile sig">
-              <div class="pixgrid" data-icon="gift" style="width:26px;"></div>
-              <div class="tilebig">900</div>
-              <div class="tilesub">Сет на двоих −50%<br>Torii Sushi</div>
-            </div>
-            <div class="tile pap">
-              <div class="pixgrid" data-icon="beauty" style="width:26px;"></div>
-              <div class="tilebig">1 200</div>
-              <div class="tilesub">Уход за руками<br>Luma Beauty</div>
-            </div>
-          </div>
-          <div class="toggles">
-            <div class="tog on"><div class="pixgrid" data-icon="coffee"></div></div>
-            <div class="tog"><div class="pixgrid" data-icon="food"></div></div>
-            <div class="tog"><div class="pixgrid" data-icon="beauty"></div></div>
-            <div class="tog"><div class="pixgrid" data-icon="shop"></div></div>
-          </div>
-          <div class="tabs"><span>ГЛАВНАЯ</span><span>ЗАРАБОТАТЬ</span><b>НАГРАДЫ</b><span>КАРТА</span><span>Я</span></div>
-        </div>
-        <p class="cap">Награды. Плитки в духе Nothing OS: чёрная — доступное сейчас, цена набрана точками; круглые переключатели категорий с пиксельными знаками.</p>
-      </div>
-
-      <!-- 5 — Питомец -->
-      <div class="fw">
-        <div class="phone">
-          <div class="st"><b>9:41</b><span>ЭХО · PET 04</span></div>
-          <div class="hr"></div>
-          <div class="petwrap">
-            <div class="petstage">
-              <div style="width:150px;">
-                <div class="dotgrid" data-pet="1" style="--g-off:#DDD8CB;--g-on:#14130F;gap:3px;"></div>
-              </div>
-              <div class="petname">Эхо</div>
-              <div class="petbadge">УРОВЕНЬ 4 · БОДР</div>
-            </div>
-          </div>
-          <div class="states">
-            <div class="state act"><div class="dotgrid" data-face="ok" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>БОДР</u></div>
-            <div class="state"><div class="dotgrid" data-face="hungry" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>СКУЧАЕТ</u></div>
-            <div class="state"><div class="dotgrid" data-face="happy" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>СЫТ</u></div>
-            <div class="state"><div class="dotgrid" data-face="sleep" style="--g-off:#DDD8CB;--g-on:#14130F;"></div><u>СПИТ</u></div>
-          </div>
+          <div class="coll" id="collection"></div>
           <div class="pairs">
-            <div class="pair"><span>До следующего уровня</span><b class="hi">62 %</b></div>
-            <div class="pair"><span>Чек-инов за неделю</span><b>4</b></div>
-            <div class="pair"><span>Последний раз кормили</span><b>2 ч назад</b></div>
+            <div class="pair"><span>До следующей формы</span><b class="hi">62 %</b></div>
+            <div class="pair"><span>Редких открыто</span><b>2 из 6</b></div>
           </div>
           <div class="tabs"><span>ГЛАВНАЯ</span><span>ЗАРАБОТАТЬ</span><span>НАГРАДЫ</span><span>КАРТА</span><b>Я</b></div>
         </div>
-        <p class="cap">Питомец. Тот же растр крупно, состояния — четыре кадра 11×9. Меняется массив, а не картинка: новые состояния добавляются строкой кода.</p>
+        <p class="cap">Коллекция. Открытые формы чёрные, закрытые — цветом выключенной точки: силуэт видно, значит понятно, за чем идти.</p>
       </div>
     </div>
   </div>
@@ -566,29 +542,30 @@
 
 <section>
   <div class="wrap">
-    <p class="lab">06 · Правила</p>
+    <p class="lab">09 · Правила</p>
     <h2>Что держит систему <em>вместе</em></h2>
     <div class="rules">
       <div>
         <h4>Всегда</h4>
         <ul>
-          <li>Радиусы только <b>0, 5 и 22</b>. 22 — исключительно для плиток каталога.</li>
-          <li>Разделитель — <b>линия 1px</b>, а не отступ и не карточка.</li>
+          <li>Радиусы только <b>0, 5 и 22</b>. 22 — исключительно плитки каталога.</li>
+          <li>Разделитель — <b>линия 1px</b>, не отступ и не карточка.</li>
           <li>Числа — <b>tabular-nums</b>, чтобы столбцы курсов не плясали.</li>
-          <li>Любая графика собирается из клеток: иконка, цифра, питомец.</li>
+          <li>Любая графика — включённые клетки: иконка, цифра, питомец.</li>
+          <li>Питомец на всех экранах — <b>текущей формы</b>, а не универсальный логотип.</li>
         </ul>
       </div>
       <div>
         <h4>Никогда</h4>
         <ul>
-          <li>Ни одной <b>тени</b> и ни одного градиента. Совсем.</li>
-          <li>Не больше <b>одного красного объекта</b> на экран.</li>
-          <li>Никаких линейных иконок из библиотек — они ломают растр.</li>
-          <li>Не больше <b>трёх тонов</b> в заголовочном стеке.</li>
+          <li>Ни одной <b>тени</b> и ни одного градиента.</li>
+          <li>Light и Bold — <b>не в одном блоке</b>.</li>
+          <li>Сигнальный экран не показывает данных: одна фраза и две строки моно.</li>
+          <li>Точка не двигается — <b>меняется только её диаметр</b>.</li>
         </ul>
       </div>
       <div>
-        <h4>Что удаляется из кода</h4>
+        <h4>Удаляется из кода</h4>
         <ul>
           <li><b>neu.tsx</b> целиком — NeuCard, VolumeGradient, LavaLampSurface.</li>
           <li>Перфорация, штрих-код и весь «билет» на главной.</li>
@@ -597,29 +574,32 @@
         </ul>
       </div>
       <div>
-        <h4>Что появляется</h4>
+        <h4>Появляется</h4>
         <ul>
-          <li><b>DotMatrix</b> — компонент, рисующий массив строк точками.</li>
-          <li><b>PixIcon</b> — то же самое квадратами, набор из 16 знаков.</li>
+          <li><b>Matrix</b> — один компонент, три режима рендера.</li>
+          <li><b>PixIcon</b> — 16 знаков, массив 9×9.</li>
+          <li><b>CREATURES</b> — 11 растров 11×8 + 4 состояния.</li>
           <li><b>digits()</b> — сборка числа из растра 5×7.</li>
-          <li>Один плоский токен-сет вместо двух тем.</li>
+          <li>Поле <code>creatureForm</code> в профиле — какая форма открыта.</li>
         </ul>
       </div>
     </div>
     <p class="intro" style="margin-top:26px;">
-      Ни один из этих компонентов не требует изображений, шрифтов или анимационных библиотек —
-      только <b>View</b> и цвет. Питомец, иконки и цифры весят ноль килобайт и одинаково
-      выглядят на всех платформах.
+      Ни один компонент не требует изображений, шрифтов или анимационных библиотек — только
+      <b>View</b> и цвет. Одиннадцать питомцев, шестнадцать иконок и десять цифр
+      весят вместе <b>около двух килобайт текста</b> и одинаково выглядят на всех платформах.
     </p>
     <div class="srcs">
-      Референсы: три ваших скриншота (сняты попиксельно) · Nothing OS 3.0 — точечный растр и плитки ·
-      Teenage Engineering OP–1 / EP–133 — клавиши и шелкография · пиксельный иконочный набор на сетке 9×9.
+      Референсы: пять ваших изображений, снятых попиксельно — будильник (ровная матрица и трёхтоновый стек),
+      Nothing OS 3.0 (растровые цифры и плитки), пиксельный иконочный набор 9×9,
+      DON'T TOUCH (оранжевый, светлое начертание, точки переменного диаметра),
+      Space Invaders (семейство существ 11×8) · Teenage Engineering OP–1 / EP–133 — клавиши и шелкография.
     </div>
   </div>
 </section>
 
 <script>
-  /* ── 5×7 растр цифр ───────────────────────────────────────── */
+  /* ── Растр цифр 5×7 ──────────────────────────────────────── */
   var FONT = {
     "0": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
     "1": ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
@@ -634,32 +614,31 @@
     " ": [".....", ".....", ".....", ".....", ".....", ".....", "....."]
   };
 
-  /* ── Питомец 16×13 ────────────────────────────────────────── */
-  var PET = [
-    "...#........#...",
-    "....#......#....",
-    "....########....",
-    "...##########...",
-    "..############..",
-    "..##..####..##..",
-    "..##..####..##..",
-    "..############..",
-    "..############..",
-    "..###......###..",
-    "..############..",
-    "...##########...",
-    "....###..###...."
-  ];
+  /* ── Существа 11×8 ───────────────────────────────────────── */
+  var INV = {
+    spore: ["....#.#....", "...#####...", "..#######..", "..##.#.##..", "..#######..", "...#.#.#...", "..#.....#..", "...#...#..."],
+    bug:   ["...#...#...", "....#.#....", "..#######..", ".##.###.##.", ".#########.", "..#.....#..", ".##.....##.", "..#.....#.."],
+    crab:  ["..#.....#..", "...#...#...", "..#######..", ".##.###.##.", "###########", "#.#######.#", "#.#.....#.#", "...##.##..."],
+    moth:  ["#....#....#", "##...#...##", ".##.###.##.", "..#######..", ".##.###.##.", "##...#...##", "#....#....#", "...#####..."],
+    boss:  ["#.#.....#.#", ".#.#####.#.", "#.#######.#", ".###.#.###.", "###########", "#.#######.#", "#.#.....#.#", "..##...##.."],
 
-  /* ── Состояния 11×9 ───────────────────────────────────────── */
-  var FACES = {
-    ok:     ["..#######..", ".#########.", "##.##.##.##", "##.##.##.##", "###########", "##.......##", "###########", ".#########.", "..#######.."],
-    hungry: ["..#######..", ".#########.", "##.##.##.##", "##.##.##.##", "###########", "####...####", "###########", ".#########.", "..#######.."],
-    happy:  ["..#######..", ".#########.", "###.###.###", "##.#.#.#.##", "###########", "##.......##", "##.#####.##", ".#########.", "..#######.."],
-    sleep:  ["..#######..", ".#########.", "###########", "##.##.##.##", "###########", "###.###.###", "###########", ".#########.", "..#######.."]
+    jelly: ["...#####...", "..#######..", ".####.####.", ".#########.", "..#.#.#.#..", "...#...#...", "..#.....#..", ".#.......#."],
+    octo:  ["...#####...", ".#########.", "###########", "###.###.###", "###########", "...##.##...", "..##.#.##..", "..#.....#.."],
+    horn:  ["#.........#", ".#.......#.", "..#######..", ".#########.", "##.#####.##", "##.......##", ".#.......#.", "..##...##.."],
+    ghost: ["..#######..", ".#########.", "###########", "###.###.###", "###########", "###########", "##.##.##.##", "#.#.#.#.#.#"],
+    squid: ["....###....", "...#####...", "..#######..", "..##.#.##..", "..#######..", "....#.#....", "...#.#.#...", "..#.....#.."],
+    sphinx:["..##...##..", ".###...###.", "..#######..", ".##.###.##.", "###########", "##.#####.##", "#..#####..#", "..#.....#.."]
   };
 
-  /* ── Иконки 9×9 ───────────────────────────────────────────── */
+  /* ── Состояния текущей формы ─────────────────────────────── */
+  var STATES = {
+    awake:  INV.crab,
+    fed:    ["..#.....#..", "...#...#...", "..#######..", ".##.###.##.", "###########", "#.#.....#.#", "#.#######.#", "...##.##..."],
+    bored:  ["...........", "..#.....#..", "...#...#...", "..#######..", ".##.###.##.", "###########", "#..#####..#", "..#.....#.."],
+    asleep: ["...........", "...........", "..#######..", ".#########.", "###########", "##.#.#.#.##", "###########", "..##...##.."]
+  };
+
+  /* ── Иконки 9×9 ──────────────────────────────────────────── */
   var ICONS = {
     scan:   ["###...###", "#.......#", ".........", ".........", "#########", ".........", ".........", "#.......#", "###...###"],
     pin:    ["..#####..", ".#######.", "#########", "###...###", "###...###", "###...###", ".#######.", "..#####..", "...###..."],
@@ -677,7 +656,6 @@
     clock:  ["..#####..", ".#..#..#.", "#...#...#", "#...#...#", "#...####.", "#.......#", "#.......#", ".#.....#.", "..#####.."],
     arrow:  [".........", "....##...", ".....##..", "#########", "#########", ".....##..", "....##...", ".........", "........."],
     plus:   [".........", "...###...", "...###...", "#########", "#########", "#########", "...###...", "...###...", "........."],
-    /* углы кадра для экрана скана */
     "corner-tl": ["####.....", "####.....", "####.....", "##.......", "##.......", ".........", ".........", ".........", "........."],
     "corner-tr": [".....####", ".....####", ".....####", ".......##", ".......##", ".........", ".........", ".........", "........."],
     "corner-bl": [".........", ".........", ".........", ".........", "##.......", "##.......", "####.....", "####.....", "####....."],
@@ -691,6 +669,24 @@
     ["friends", "друзья"], ["qr", "код"], ["arrow", "дальше"], ["plus", "добавить"]
   ];
 
+  var EVOLUTION = [
+    ["spore", "Спора", "УРОВЕНЬ 1 · ДО 500"],
+    ["bug", "Клоп", "УРОВЕНЬ 2 · 500"],
+    ["crab", "Краб", "УРОВЕНЬ 3 · 1 500"],
+    ["moth", "Мотылёк", "УРОВЕНЬ 4 · 6 000"],
+    ["boss", "Аякс", "УРОВЕНЬ 5 · 15 000"]
+  ];
+  var RARE = [
+    ["jelly", "Медуза", "7 ДНЕЙ ПОДРЯД"],
+    ["octo", "Осьминог", "10 РАЗНЫХ МЕСТ"],
+    ["horn", "Рогач", "ПЕРВЫЙ ДРУГ ПО КОДУ"],
+    ["ghost", "Призрак", "ЧЕК-ИН ПОСЛЕ ПОЛУНОЧИ"],
+    ["squid", "Кальмар", "50 ЧЕКОВ"],
+    ["sphinx", "Сфинкс", "СЕЗОННАЯ · БЕЛГРАД"]
+  ];
+  var STATE_LABELS = [["awake", "Бодр", "ПО УМОЛЧАНИЮ"], ["fed", "Сыт", "ПОСЛЕ НАЧИСЛЕНИЯ"], ["bored", "Скучает", "3 ДНЯ БЕЗ АКТИВНОСТИ"], ["asleep", "Спит", "НОЧЬ · 00:00–08:00"]];
+
+  /* ── Утилиты ─────────────────────────────────────────────── */
   function center(row, width) {
     var pad = width - row.length;
     if (pad <= 0) return row.slice(0, width);
@@ -698,7 +694,6 @@
     return new Array(left + 1).join(".") + row + new Array(pad - left + 1).join(".");
   }
   function empty(width) { return new Array(width + 1).join("."); }
-
   function digits(text) {
     var rows = ["", "", "", "", "", "", ""];
     text.split("").forEach(function (ch, i) {
@@ -707,10 +702,15 @@
     });
     return rows;
   }
+  function noise(r, c) {
+    var v = Math.abs(Math.sin(r * 12.9898 + c * 78.233) * 43758.5453) % 1;
+    if (v < 0.58) return ".";
+    if (v < 0.84) return "-";
+    return "+";
+  }
 
-  function paint(el, rows, shape) {
-    var w = rows[0].length;
-    el.style.gridTemplateColumns = "repeat(" + w + ", 1fr)";
+  function paintBinary(el, rows) {
+    el.style.gridTemplateColumns = "repeat(" + rows[0].length + ", 1fr)";
     var frag = document.createDocumentFragment();
     rows.forEach(function (row) {
       row.split("").forEach(function (ch) {
@@ -720,72 +720,139 @@
       });
     });
     el.appendChild(frag);
-    if (shape) el.dataset.shape = shape;
   }
 
-  /* Явные растры */
-  document.querySelectorAll("[data-pat]").forEach(function (el) {
-    paint(el, el.dataset.pat.trim().split("\n").map(function (r) { return r.trim(); }));
-  });
+  var SIZE_CLASS = { "_": "s0", ".": "", "-": "s1", "+": "s2", "#": "s3", "@": "s4" };
+  function paintVariable(el, rows) {
+    el.style.gridTemplateColumns = "repeat(" + rows[0].length + ", 1fr)";
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (row) {
+      row.split("").forEach(function (ch) {
+        var c = document.createElement("i");
+        var cls = SIZE_CLASS[ch];
+        if (cls) c.className = cls;
+        c.appendChild(document.createElement("b"));
+        frag.appendChild(c);
+      });
+    });
+    el.appendChild(frag);
+  }
 
-  /* Число точками */
+  /* Поле переменных точек с существом внутри */
+  function field(name, w, rows, top) {
+    var art = INV[name] || INV.crab;
+    var left = Math.floor((w - art[0].length) / 2);
+    var out = [];
+    for (var r = 0; r < rows; r++) {
+      var line = "";
+      for (var c = 0; c < w; c++) {
+        var ar = r - top, ac = c - left;
+        var inside = ar >= 0 && ar < art.length && ac >= 0 && ac < art[0].length;
+        line += (inside && art[ar][ac] === "#") ? "@" : noise(r, c);
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  /* ── Разводка по атрибутам ───────────────────────────────── */
   document.querySelectorAll("[data-num]").forEach(function (el) {
     var w = parseInt(el.dataset.w, 10) || 24;
-    paint(el, digits(el.dataset.num).map(function (r) { return center(r, w); }));
+    paintBinary(el, digits(el.dataset.num).map(function (r) { return center(r, w); }));
   });
 
-  /* Главный экран: число сверху, питомец снизу */
   document.querySelectorAll("[data-hero]").forEach(function (el) {
     var w = parseInt(el.dataset.w, 10) || 24;
-    var total = parseInt(el.dataset.rows, 10) || 32;
+    var total = parseInt(el.dataset.rows, 10) || 30;
     var rows = [empty(w)];
     digits(el.dataset.hero).forEach(function (r) { rows.push(center(r, w)); });
-    rows.push(empty(w), empty(w));
-    PET.forEach(function (r) { rows.push(center(r, w)); });
+    rows.push(empty(w), empty(w), empty(w));
+    (INV.crab).forEach(function (r) { rows.push(center(r, w)); });
     while (rows.length < total) rows.push(empty(w));
-    paint(el, rows.slice(0, total));
+    paintBinary(el, rows.slice(0, total));
   });
 
-  /* Питомец отдельно */
-  document.querySelectorAll("[data-pet]").forEach(function (el) { paint(el, PET); });
-
-  /* Состояния */
-  document.querySelectorAll("[data-face]").forEach(function (el) {
-    paint(el, FACES[el.dataset.face] || FACES.ok);
+  document.querySelectorAll("[data-inv]").forEach(function (el) { paintBinary(el, INV[el.dataset.inv]); });
+  document.querySelectorAll("[data-invdot]").forEach(function (el) { paintBinary(el, INV[el.dataset.invdot]); });
+  document.querySelectorAll("[data-icon]").forEach(function (el) { paintBinary(el, ICONS[el.dataset.icon] || ICONS.plus); });
+  document.querySelectorAll("[data-field]").forEach(function (el) {
+    paintVariable(el, field(
+      el.dataset.field,
+      parseInt(el.dataset.w, 10) || 18,
+      parseInt(el.dataset.rows, 10) || 20,
+      parseInt(el.dataset.top, 10) || 1
+    ));
   });
 
-  /* Иконки */
-  document.querySelectorAll("[data-icon]").forEach(function (el) {
-    paint(el, ICONS[el.dataset.icon] || ICONS.plus);
-  });
-
-  /* Спецификация цифр */
-  var ns = document.getElementById("numspec");
-  if (ns) {
-    "0123456789".split("").forEach(function (d) {
-      var box = document.createElement("div");
-      var g = document.createElement("div");
-      g.className = "dotgrid";
-      paint(g, FONT[d]);
-      var u = document.createElement("u");
-      u.textContent = d;
-      box.appendChild(g); box.appendChild(u);
-      ns.appendChild(box);
-    });
+  /* ── Сборка спецификаций ─────────────────────────────────── */
+  function famBox(container, art, name, note, badge) {
+    var box = document.createElement("div");
+    var g = document.createElement("div");
+    g.className = "pixgrid";
+    paintBinary(g, art);
+    box.appendChild(g);
+    if (badge) {
+      var lv = document.createElement("span");
+      lv.className = "lvl";
+      lv.textContent = badge;
+      box.appendChild(lv);
+    }
+    var b = document.createElement("b"); b.textContent = name;
+    var u = document.createElement("u"); u.textContent = note;
+    box.appendChild(b); box.appendChild(u);
+    container.appendChild(box);
   }
 
-  /* Набор иконок */
+  var ev = document.getElementById("evolution");
+  if (ev) EVOLUTION.forEach(function (p, i) { famBox(ev, INV[p[0]], p[1], p[2], "ФОРМА " + (i + 1)); });
+
+  var ra = document.getElementById("rare");
+  if (ra) RARE.forEach(function (p) { famBox(ra, INV[p[0]], p[1], p[2], "РЕДКАЯ"); });
+
+  var stc = document.getElementById("states");
+  if (stc) STATE_LABELS.forEach(function (p) { famBox(stc, STATES[p[0]], p[1], p[2], ""); });
+
+  var ns = document.getElementById("numspec");
+  if (ns) "0123456789".split("").forEach(function (d) {
+    var box = document.createElement("div");
+    var g = document.createElement("div"); g.className = "dotgrid";
+    paintBinary(g, FONT[d]);
+    var u = document.createElement("u"); u.textContent = d;
+    box.appendChild(g); box.appendChild(u); ns.appendChild(box);
+  });
+
   var is = document.getElementById("iconset");
-  if (is) {
-    ICON_LABELS.forEach(function (pair) {
+  if (is) ICON_LABELS.forEach(function (pair) {
+    var box = document.createElement("div");
+    var g = document.createElement("div"); g.className = "pixgrid";
+    paintBinary(g, ICONS[pair[0]]);
+    var u = document.createElement("u"); u.textContent = pair[1];
+    box.appendChild(g); box.appendChild(u); is.appendChild(box);
+  });
+
+  var sz = document.getElementById("sizespec");
+  if (sz) [["s0", "0 · пусто", "0"], ["", "1 · сетка", "20%"], ["s1", "2 · фон", "34%"], ["s2", "3 · шум", "52%"], ["s3", "4 · акцент", "74%"], ["s4", "5 · объект", "96%"]]
+    .forEach(function (p) {
       var box = document.createElement("div");
-      var g = document.createElement("div");
-      g.className = "pixgrid";
-      paint(g, ICONS[pair[0]]);
-      var u = document.createElement("u");
-      u.textContent = pair[1];
-      box.appendChild(g); box.appendChild(u);
-      is.appendChild(box);
+      var cell = document.createElement("div"); cell.className = "cell";
+      var dot = document.createElement("b");
+      if (p[2] !== "0") { dot.style.width = p[2]; dot.style.height = p[2]; }
+      else { dot.style.display = "none"; }
+      cell.appendChild(dot);
+      var u = document.createElement("u"); u.textContent = p[1];
+      box.appendChild(cell); box.appendChild(u); sz.appendChild(box);
+    });
+
+  var col = document.getElementById("collection");
+  if (col) {
+    var owned = { spore: 1, bug: 1, crab: 1, jelly: 1, ghost: 1 };
+    EVOLUTION.concat(RARE).forEach(function (p) {
+      var box = document.createElement("div");
+      box.className = "cbox " + (owned[p[0]] ? "own" : "lock");
+      var g = document.createElement("div"); g.className = "pixgrid";
+      paintBinary(g, INV[p[0]]);
+      var u = document.createElement("u"); u.textContent = owned[p[0]] ? p[1] : "?";
+      box.appendChild(g); box.appendChild(u); col.appendChild(box);
     });
   }
 </script>
