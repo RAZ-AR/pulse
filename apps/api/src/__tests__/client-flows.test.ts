@@ -122,15 +122,50 @@ describe("Онбординг — запуск бота и приветствие
 
   it("пользователь вводит дату рождения DD.MM.YYYY — конвертируется в ISO", () => {
     function parseBirthday(raw: string): string | undefined {
-      const parts = raw.split(".")
+      const trimmed = raw.trim()
+      if (!trimmed) return undefined
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+      const dotted = trimmed.includes(".")
+      const parts = dotted ? trimmed.split(".") : trimmed.split("-")
       if (parts.length !== 3) return undefined
-      const [d, m, y] = parts
-      if (!d || !m || !y || y.length !== 4) return undefined
-      return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`
+      const [a, b, c] = parts
+      if (!a || !b || !c) return undefined
+      const iso = dotted
+        ? (c.length === 4 ? `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}` : undefined)
+        : (a.length === 4 ? `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}` : undefined)
+      return iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : undefined
     }
     expect(parseBirthday("15.03.1995")).toBe("1995-03-15")
     expect(parseBirthday("01.01.2000")).toBe("2000-01-01")
+    expect(parseBirthday("1995-3-5")).toBe("1995-03-05")
+    expect(parseBirthday("1995-03-15")).toBe("1995-03-15")
     expect(parseBirthday("bad")).toBeUndefined()
+  })
+
+  it("язык онбординга нормализуется в EN/RU/SR — иначе API отклоняет запрос", () => {
+    function toApiLang(lng: string | undefined): "EN" | "RU" | "SR" {
+      const code = (lng ?? "en").slice(0, 2).toUpperCase()
+      if (code === "RU") return "RU"
+      if (code === "SR") return "SR"
+      return "EN"
+    }
+    expect(toApiLang("ru")).toBe("RU")
+    expect(toApiLang("ru-RU")).toBe("RU")
+    expect(toApiLang("sr-Latn")).toBe("SR")
+    expect(toApiLang("en-US")).toBe("EN")
+    expect(toApiLang(undefined)).toBe("EN")
+  })
+
+  it("после согласия пустое имя или ошибка API не глотаются — пользователь видит причину", () => {
+    function canFinish(form: { consent: boolean; name: string }, apiOk: boolean) {
+      if (!form.consent) return { ok: false, error: "consent" }
+      if (!form.name.trim()) return { ok: false, error: "name" }
+      if (!apiOk) return { ok: false, error: "network" }
+      return { ok: true, error: null }
+    }
+    expect(canFinish({ consent: true, name: "" }, true)).toEqual({ ok: false, error: "name" })
+    expect(canFinish({ consent: true, name: "Марко" }, false)).toEqual({ ok: false, error: "network" })
+    expect(canFinish({ consent: true, name: "Марко" }, true)).toEqual({ ok: true, error: null })
   })
 
   it("согласие на обработку данных — обязательное поле перед завершением", () => {

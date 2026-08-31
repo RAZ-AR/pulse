@@ -91,6 +91,7 @@ export function AppDock() {
   const { mode } = useColorMode()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
+  const onOnboarding = pathname === "/onboarding" || pathname.startsWith("/onboarding/")
   const index = useMemo(() => activeIndex(pathname), [pathname])
   const indX = useRef(new Animated.Value(index * slotW + (slotW - indW) / 2)).current
   const isRainbow = mode === "rainbow"
@@ -104,6 +105,8 @@ export function AppDock() {
       friction: 15,
     }).start()
   }, [index, indX])
+
+  if (onOnboarding) return null
 
   const activeColor = colors.white
   const inactiveColor = isRainbow ? "rgba(190,170,255,0.50)" : colors.black

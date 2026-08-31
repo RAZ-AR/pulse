@@ -20,6 +20,13 @@ function cleanReferralCode(value: string) {
   return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6)
 }
 
+function toApiLang(lng: string | undefined): "EN" | "RU" | "SR" {
+  const code = (lng ?? "en").slice(0, 2).toUpperCase()
+  if (code === "RU") return "RU"
+  if (code === "SR") return "SR"
+  return "EN"
+}
+
 function friendlyAuthError(message: string, fallback: string) {
   const lower = message.toLowerCase()
   if (lower.includes("network") || lower.includes("fetch")) return fallback
@@ -146,6 +153,7 @@ function TelegramOnboarding() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [consent, setConsent] = useState(false)
   const [consentError, setConsentError] = useState(false)
+  const [submitError, setSubmitError] = useState("")
   const currentLng = (i18n.language ?? "en") as SupportedLocale
   const userName = me.data?.name ?? ""
   const referralLink = me.data?.referralCode
@@ -238,15 +246,22 @@ function TelegramOnboarding() {
   }
 
   async function finish() {
+    setSubmitError("")
     if (!consent) { setConsentError(true); return }
     const nameToSave = (displayName.trim() || userName || "").trim()
-    if (!nameToSave) return
-    const lng = (i18n.language ?? "en").toUpperCase() as "EN" | "RU" | "SR"
+    if (!nameToSave) {
+      setSubmitError(t("nameRequired", "Please enter your name"))
+      return
+    }
+    if (birthday.trim() && !parseBirthday(birthday)) {
+      setSubmitError(t("birthdayInvalid", "Enter a valid date of birth"))
+      return
+    }
     const isoDate = parseBirthday(birthday)
     try {
       await completeOnboarding.mutateAsync({
         name: nameToSave,
-        language: lng,
+        language: toApiLang(i18n.language),
         consentGiven: true,
         ...(isoDate ? { birthday: isoDate } : {}),
         ...(referralCode ? { referralCode } : {}),
@@ -254,10 +269,18 @@ function TelegramOnboarding() {
       })
     } catch (e: unknown) {
       const code = (e as { data?: { code?: string } })?.data?.code
-      if (code !== "CONFLICT") throw e
+      if (code !== "CONFLICT") {
+        const message = e instanceof Error ? e.message : t("errors.network", "Could not connect. Check the API and try again.")
+        setSubmitError(message)
+        return
+      }
     }
     const finalAvatarUrl = avatarUploadUrl ?? `color:${avatarColor}`
-    updateProfile.mutate({ avatarUrl: finalAvatarUrl })
+    try {
+      await updateProfile.mutateAsync({ avatarUrl: finalAvatarUrl })
+    } catch {
+      // Avatar is optional — don't block the rest of onboarding if it fails.
+    }
     setStep(3)
   }
 
@@ -314,6 +337,7 @@ function TelegramOnboarding() {
       consent={consent}
       setConsent={(v) => { setConsent(v); if (v) setConsentError(false) }}
       consentError={consentError}
+      submitError={submitError}
       isPending={completeOnboarding.isPending}
       onBack={() => setStep(1)}
       onFinish={finish}
@@ -491,17 +515,19 @@ function TgCouponStep({ name, giftToken, onContinue }: {
 const AVATAR_COLORS = ["#3B82F6", "#8B5CF6", "#EC4899", "#EF4444", "#F59E0B", "#10B981", "#6366F1", "#0EA5E9"]
 
 function parseBirthday(raw: string): string | undefined {
-  // Accepts DD.MM.YYYY or YYYY-MM-DD
-  const parts = raw.includes(".") ? raw.split(".") : raw.split("-")
-  if (raw.includes(".") && parts.length === 3) {
-    const [d, m, y] = parts
-    if (d && m && y && y.length === 4) return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`
-  }
-  if (!raw.includes(".") && parts.length === 3) {
-    const [y, m, d] = parts
-    if (y && y.length === 4 && m && d) return `${y}-${m}-${d}`
-  }
-  return undefined
+  // Accepts DD.MM.YYYY or YYYY-M-D. Always returns padded YYYY-MM-DD for the API.
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+  const dotted = trimmed.includes(".")
+  const parts = dotted ? trimmed.split(".") : trimmed.split("-")
+  if (parts.length !== 3) return undefined
+  const [a, b, c] = parts
+  if (!a || !b || !c) return undefined
+  const iso = dotted
+    ? (c.length === 4 ? `${c}-${b.padStart(2, "0")}-${a.padStart(2, "0")}` : undefined)
+    : (a.length === 4 ? `${a}-${b.padStart(2, "0")}-${c.padStart(2, "0")}` : undefined)
+  return iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : undefined
 }
 
 // ── Step 2: Profile ────────────────────────────────────────────
@@ -510,14 +536,14 @@ function TgProfileStep({
   birthday, setBirthday,
   avatarColor, setAvatarColor,
   avatarUri, avatarUploading, onPickPhoto,
-  consent, setConsent, consentError,
+  consent, setConsent, consentError, submitError,
   isPending, onBack, onFinish,
 }: {
   displayName: string; setDisplayName: (v: string) => void; userName: string
   birthday: string; setBirthday: (v: string) => void
   avatarColor: number; setAvatarColor: (i: number) => void
   avatarUri: string | null; avatarUploading: boolean; onPickPhoto: () => void
-  consent: boolean; setConsent: (v: boolean) => void; consentError: boolean
+  consent: boolean; setConsent: (v: boolean) => void; consentError: boolean; submitError: string
   isPending: boolean; onBack: () => void; onFinish: () => void
 }) {
   const theme = useTheme()
@@ -527,132 +553,133 @@ function TgProfileStep({
 
   return (
     <KeyboardAvoidingView style={[s.container, { backgroundColor: theme.bg }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        <View style={s.step}>
-          <Pressable onPress={onBack} style={s.backBtn}>
-            <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>←</Text>
+      <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: 12 }]} keyboardShouldPersistTaps="handled">
+        <Pressable onPress={onBack} style={s.backBtn}>
+          <Text style={[s.backText, { color: theme.textSecondary, fontFamily: fonts.bodyBold }]}>←</Text>
+        </Pressable>
+
+        <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
+          {t("profileTitle", "Tell us about you")}
+        </Text>
+        <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 28 }]}>
+          {t("profileSubtitle", "Takes 30 seconds")}
+        </Text>
+
+        {/* Avatar preview + photo button */}
+        <View style={{ alignItems: "center", marginBottom: 24 }}>
+          <Pressable onPress={onPickPhoto} style={s.avatarPreviewWrap}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={s.avatarPreviewPhoto} />
+            ) : (
+              <View style={[s.avatarPreviewCircle, { backgroundColor: selectedColor }]}>
+                <Text style={[s.avatarPreviewInitials, { fontFamily: fonts.bodyBold }]}>{initials}</Text>
+              </View>
+            )}
+            <View style={s.avatarCameraBtn}>
+              {avatarUploading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={{ color: "#fff", fontSize: 14 }}>📷</Text>
+              }
+            </View>
           </Pressable>
 
-          <Text style={[s.bigTitle, { color: theme.text, fontFamily: fonts.displayHeavy }]}>
-            {t("profileTitle", "Tell us about you")}
-          </Text>
-          <Text style={[s.subtitle, { color: theme.textSecondary, marginBottom: 28 }]}>
-            {t("profileSubtitle", "Takes 30 seconds")}
-          </Text>
-
-          {/* Avatar preview + photo button */}
-          <View style={{ alignItems: "center", marginBottom: 24 }}>
-            <Pressable onPress={onPickPhoto} style={s.avatarPreviewWrap}>
-              {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={s.avatarPreviewPhoto} />
-              ) : (
-                <View style={[s.avatarPreviewCircle, { backgroundColor: selectedColor }]}>
-                  <Text style={[s.avatarPreviewInitials, { fontFamily: fonts.bodyBold }]}>{initials}</Text>
-                </View>
-              )}
-              <View style={s.avatarCameraBtn}>
-                {avatarUploading
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={{ color: "#fff", fontSize: 14 }}>📷</Text>
-                }
-              </View>
-            </Pressable>
-
-            {/* Color picker row */}
-            <View style={[s.avatarRow, { marginTop: 16 }]}>
-              {AVATAR_COLORS.map((color, i) => (
-                <Pressable key={color} onPress={() => setAvatarColor(i)}
-                  style={[s.avatarCircle, { backgroundColor: color }, i === avatarColor && s.avatarCircleActive]} />
-              ))}
-            </View>
+          {/* Color picker row */}
+          <View style={[s.avatarRow, { marginTop: 16 }]}>
+            {AVATAR_COLORS.map((color, i) => (
+              <Pressable key={color} onPress={() => setAvatarColor(i)}
+                style={[s.avatarCircle, { backgroundColor: color }, i === avatarColor && s.avatarCircleActive]} />
+            ))}
           </View>
+        </View>
 
-          {/* Nickname */}
-          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
-            {t("yourNickname", "Your nickname").toUpperCase()}
-          </Text>
-          <NeuInset style={{ marginBottom: 6 }}>
+        {/* Nickname */}
+        <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
+          {t("yourNickname", "Your nickname").toUpperCase()}
+        </Text>
+        <NeuInset style={{ marginBottom: 6 }}>
+          <TextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={userName || "friend"}
+            placeholderTextColor={theme.textMuted}
+            autoCapitalize="words"
+            style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
+          />
+        </NeuInset>
+        <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 16 }]}>
+          {t("nicknameHint", "You can change this later in your profile")}
+        </Text>
+
+        {/* Birthday */}
+        <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
+          {t("birthday", "Date of birth").toUpperCase()}
+          <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
+        </Text>
+        <NeuInset style={{ marginBottom: 6 }}>
+          {Platform.OS === "web" ? (
+            <input
+              type="date"
+              value={birthday}
+              onChange={(e) => setBirthday((e.target as HTMLInputElement).value)}
+              max={new Date().toISOString().split("T")[0]}
+              min="1924-01-01"
+              style={{
+                width: "100%",
+                height: 44,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                padding: "0 14px",
+                fontSize: 15,
+                color: birthday ? theme.text : theme.textMuted,
+                fontFamily: fonts.body,
+                boxSizing: "border-box",
+                cursor: "pointer",
+              } as React.CSSProperties}
+            />
+          ) : (
             <TextInput
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder={userName || "friend"}
+              value={birthday}
+              onChangeText={setBirthday}
+              placeholder={t("birthdayPlaceholder", "DD.MM.YYYY")}
               placeholderTextColor={theme.textMuted}
-              autoCapitalize="words"
+              keyboardType="numeric"
               style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
             />
-          </NeuInset>
-          <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 16 }]}>
-            {t("nicknameHint", "You can change this later in your profile")}
-          </Text>
-
-          {/* Birthday */}
-          <Text style={[s.label, { color: theme.textSecondary, fontFamily: fonts.bodyBold, marginBottom: 6 }]}>
-            {t("birthday", "Date of birth").toUpperCase()}
-            <Text style={[s.optional, { color: theme.textMuted }]}> · {t("optional", "optional")}</Text>
-          </Text>
-          <NeuInset style={{ marginBottom: 6 }}>
-            {Platform.OS === "web" ? (
-              <input
-                type="date"
-                value={birthday}
-                onChange={(e) => setBirthday((e.target as HTMLInputElement).value)}
-                max={new Date().toISOString().split("T")[0]}
-                min="1924-01-01"
-                style={{
-                  width: "100%",
-                  height: 44,
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  padding: "0 14px",
-                  fontSize: 15,
-                  color: birthday ? theme.text : theme.textMuted,
-                  fontFamily: fonts.body,
-                  boxSizing: "border-box",
-                  cursor: "pointer",
-                } as React.CSSProperties}
-              />
-            ) : (
-              <TextInput
-                value={birthday}
-                onChangeText={setBirthday}
-                placeholder={t("birthdayPlaceholder", "DD.MM.YYYY")}
-                placeholderTextColor={theme.textMuted}
-                keyboardType="numeric"
-                style={[s.input, { color: theme.text, fontFamily: fonts.body }]}
-              />
-            )}
-          </NeuInset>
-          <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 20 }]}>
-            {t("birthdayHint", "We'll surprise you on your birthday 🎂")}
-          </Text>
-
-          {/* Consent */}
-          <Pressable onPress={() => setConsent(!consent)} style={s.consentRow}>
-            <View style={[s.checkbox, consent && s.checkboxActive, consentError && s.checkboxError]}>
-              {consent && <Text style={s.checkmark}>✓</Text>}
-            </View>
-            <Text style={[s.consentText, { color: consentError ? "#EF4444" : theme.textSecondary, fontFamily: fonts.body }]}>
-              {t("consentLabel", "I agree to the processing of personal data")}
-            </Text>
-          </Pressable>
-          {consentError && (
-            <Text style={[s.emailHint, { color: "#EF4444", fontFamily: fonts.body, marginTop: 4 }]}>
-              {t("consentRequired", "Please accept to continue")}
-            </Text>
           )}
-
-          <View style={{ height: 24 }} />
-
-          <NeuCard gradient={gradients.black} onPress={onFinish} disabled={isPending || avatarUploading}
-            style={{ padding: 16, alignItems: "center", borderRadius: 99 }}>
-            {isPending
-              ? <ActivityIndicator color={colors.ink} />
-              : <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Get started")}</Text>
-            }
-          </NeuCard>
-        </View>
+        </NeuInset>
+        <Text style={[s.emailHint, { color: theme.textMuted, fontFamily: fonts.body, marginBottom: 8 }]}>
+          {t("birthdayHint", "We'll surprise you on your birthday 🎂")}
+        </Text>
       </ScrollView>
+
+      <View style={[s.tgBottomSheet, { backgroundColor: theme.bg }]}>
+        <Pressable onPress={() => setConsent(!consent)} style={s.consentRow}>
+          <View style={[s.checkbox, consent && s.checkboxActive, consentError && s.checkboxError]}>
+            {consent && <Text style={s.checkmark}>✓</Text>}
+          </View>
+          <Text style={[s.consentText, { color: consentError ? "#EF4444" : theme.textSecondary, fontFamily: fonts.body }]}>
+            {t("consentLabel", "I agree to the processing of personal data")}
+          </Text>
+        </Pressable>
+        {consentError && (
+          <Text style={[s.emailHint, { color: "#EF4444", fontFamily: fonts.body, marginTop: 8, marginBottom: 0 }]}>
+            {t("consentRequired", "Please accept to continue")}
+          </Text>
+        )}
+        {submitError ? <Text style={[s.err, { marginTop: 8, marginBottom: 0 }]}>{submitError}</Text> : null}
+        <NeuCard
+          gradient={gradients.black}
+          onPress={onFinish}
+          disabled={isPending || avatarUploading}
+          style={{ padding: 16, alignItems: "center", borderRadius: 99, marginTop: 16 }}
+        >
+          {isPending
+            ? <ActivityIndicator color={colors.ink} />
+            : <Text style={[s.cta, { fontFamily: fonts.displayHeavy }]}>{t("getStarted", "Get started")}</Text>
+          }
+        </NeuCard>
+      </View>
     </KeyboardAvoidingView>
   )
 }
@@ -1121,7 +1148,7 @@ const s = StyleSheet.create({
   },
   tgBottomSheet: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 40,
     paddingTop: 12,
   },
   tgInput: {
